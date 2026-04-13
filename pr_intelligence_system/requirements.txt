@@ -1,0 +1,9 @@
+pandas
+geopandas
+numpy
+networkx
+shapely
+rasterio
+scikit-learn
+fastapi
+uvicorn

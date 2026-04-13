@@ -1,0 +1,57 @@
+import rasterio
+import rasterio.transform
+import numpy as np
+import pandas as pd
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+MAX_RASTER_POINTS = 10000
+
+
+def load_raster(filepath: str, max_points: int = MAX_RASTER_POINTS) -> pd.DataFrame:
+    """Load a raster file (GeoTIFF) and convert to point features DataFrame.
+
+    Samples up to max_points valid pixels to keep memory bounded.
+    Longitude is stored in 'lon', latitude in 'lat'.
+    """
+    try:
+        with rasterio.open(filepath) as src:
+            data = src.read(1)
+            transform = src.transform
+            nodata = src.nodata
+
+            if nodata is not None:
+                valid_mask = data != nodata
+            else:
+                valid_mask = np.isfinite(data.astype(float))
+
+            rows, cols = np.where(valid_mask)
+
+            # Sample if too many valid pixels
+            if len(rows) > max_points:
+                rng = np.random.RandomState(42)
+                indices = rng.choice(len(rows), max_points, replace=False)
+                rows = rows[indices]
+                cols = cols[indices]
+
+            xs, ys = rasterio.transform.xy(transform, rows, cols)
+            values = data[rows, cols]
+
+            df = pd.DataFrame({
+                'lat': np.array(ys),
+                'lon': np.array(xs),
+                'raster_value': values.astype(float),
+            })
+            df['source_file'] = os.path.basename(filepath)
+            df['source_format'] = 'raster'
+            logger.info(
+                f"Loaded raster: {filepath} -> {len(df)} point features "
+                f"(sampled from {valid_mask.sum()} valid pixels)"
+            )
+            return df
+
+    except Exception as e:
+        logger.error(f"Failed to load raster {filepath}: {e}")
+        raise
