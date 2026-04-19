@@ -156,7 +156,7 @@ def fetch_copernicus_dem(
                 for src in src_files:
                     src.close()
 
-        df = load_raster(merged_path)
+        df = load_raster(merged_path, min_valid_value=0)  # exclude ocean (elev ≤ 0)
         if len(df) == 0:
             logger.warning("Copernicus DEM: load_raster returned empty DataFrame")
             return empty_fetcher_df(['data_type'])

@@ -47,7 +47,7 @@ def compute_elevation_proxy(df: pd.DataFrame) -> pd.DataFrame:
         if os.path.exists(dem_disk_path):
             try:
                 from core.ingest.loaders.raster_loader import load_raster
-                dem_df = load_raster(dem_disk_path)
+                dem_df = load_raster(dem_disk_path, min_valid_value=0)  # exclude ocean
                 if len(dem_df) > 0:
                     logger.info(f"elevation_proxy: loaded DEM from disk cache ({len(dem_df)} pts)")
                     # Re-populate module-level cache for subsequent calls in this process
