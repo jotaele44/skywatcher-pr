@@ -66,6 +66,20 @@ def compute_elevation_proxy(df: pd.DataFrame) -> pd.DataFrame:
         dem_lons = dem_df['lon'].values.astype(float)
         dem_vals = dem_df['raster_value'].values.astype(float)
 
+        # Guard: if variance is near-zero the DEM read returned nodata-as-zero;
+        # fall back to the synthetic proxy rather than silently corrupt hydrology.
+        if dem_vals.std() < 0.5:
+            logger.warning(
+                "elevation_proxy: DEM cache appears degenerate "
+                f"(std={dem_vals.std():.4f}) — using synthetic fallback"
+            )
+            dem_df = None
+
+    if dem_df is not None and len(dem_df) > 0:
+        dem_lats = dem_df['lat'].values.astype(float)
+        dem_lons = dem_df['lon'].values.astype(float)
+        dem_vals = dem_df['raster_value'].values.astype(float)
+
         elevations = np.empty(len(lat), dtype=float)
         for i in range(len(lat)):
             dists2 = (dem_lats - lat[i]) ** 2 + (dem_lons - lon[i]) ** 2
