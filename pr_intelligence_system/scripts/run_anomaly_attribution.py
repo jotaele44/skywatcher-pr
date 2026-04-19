@@ -30,6 +30,7 @@ from core.attribution.advanced_attribution import (
     compute_composite_attribution_score,
 )
 from core.masking.infrastructure_overlay import adjust_classification_for_infrastructure
+from core.analysis.infrastructure_validator import validate_proposed_routes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -65,7 +66,13 @@ def run_anomaly_attribution() -> pd.DataFrame:
     # Composite attribution score
     df = compute_composite_attribution_score(df)
 
-    # Reclassify anomalies inside infrastructure zones
+    # Satellite-based infrastructure validation
+    # (SAR linear scores, NDVI disturbance corridors, moisture anomalies,
+    #  evidence fusion, infra_status: confirmed/suspected/proposed/absent)
+    df = validate_proposed_routes(df)
+
+    # Reclassify anomalies inside known PR infrastructure zones
+    # (preserves infra_status='suspected' as anomaly for review)
     df = adjust_classification_for_infrastructure(df)
 
     # Rank all observations by physics_score + confidence

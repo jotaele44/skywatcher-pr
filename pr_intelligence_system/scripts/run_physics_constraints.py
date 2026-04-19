@@ -18,7 +18,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.preprocessing.normalize_coords import normalize_coordinates, add_coordinate_metadata
 from core.physics.terrain_bathy_engine import apply_terrain_constraints
 from core.physics.slope import compute_slope, classify_slope
-from core.physics.hydrology import compute_hydrology_alignment, compute_drainage_index
+from core.physics.hydrology import (
+    run_full_hydrology,
+    compute_hydrology_alignment,
+    compute_drainage_index,
+)
+from core.physics.infrastructure_model import run_infrastructure_model
 from core.physics.constraint_engine import compute_physics_score, apply_physics_filters
 
 logging.basicConfig(
@@ -54,11 +59,15 @@ def run_physics_constraints() -> pd.DataFrame:
     df = compute_slope(df, elevation_col='elevation_proxy')
     df = classify_slope(df)
 
-    # Hydrological alignment and drainage index
-    df = compute_hydrology_alignment(df)
-    df = compute_drainage_index(df)
+    # Full hydrological analysis (D8 flow direction, accumulation, TWI,
+    # karst zones, river basin assignment, hydro_align, drainage_index)
+    df = run_full_hydrology(df)
 
-    # Physics score (combined constraint score)
+    # Subsurface infrastructure routing model (cost surface + Dijkstra corridors
+    # + infrastructure type classification — PR hub network)
+    df = run_infrastructure_model(df)
+
+    # Physics score (hydrography-backbone 5-component formula)
     df = compute_physics_score(df)
 
     # Apply threshold filter (0.0 = retain all)
