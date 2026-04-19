@@ -7,3 +7,11 @@ __pycache__/
 venv/
 *.env
 .DS_Store
+
+# Raw satellite imagery downloads (large binary files)
+data/raw/fetcher_cache/sentinel1/
+data/raw/fetcher_cache/sentinel2/
+data/raw/fetcher_cache/noaa_goes/
+data/raw/fetcher_cache/oisst/
+data/raw/fetcher_cache/landsat_c2/
+data/raw/fetcher_cache/chirps/
