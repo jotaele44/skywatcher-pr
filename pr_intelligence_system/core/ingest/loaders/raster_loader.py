@@ -25,17 +25,14 @@ def load_raster(
     """
     try:
         with rasterio.open(filepath) as src:
-            data = src.read(1)
+            raw = src.read(1, masked=True)   # masked array; nodata cells are masked
+            data = raw.filled(np.nan).astype(float)
             transform = src.transform
-            nodata = src.nodata
 
-            if nodata is not None:
-                valid_mask = data != nodata
-            else:
-                valid_mask = np.isfinite(data.astype(float))
+            valid_mask = np.isfinite(data)
 
             if min_valid_value is not None:
-                valid_mask = valid_mask & (data.astype(float) > min_valid_value)
+                valid_mask = valid_mask & (data > min_valid_value)
 
             rows, cols = np.where(valid_mask)
 
@@ -47,7 +44,7 @@ def load_raster(
                 cols = cols[indices]
 
             xs, ys = rasterio.transform.xy(transform, rows, cols)
-            values = data[rows, cols]
+            values = data[rows, cols]   # already float with nodata → NaN (filtered above)
 
             df = pd.DataFrame({
                 'lat': np.array(ys),

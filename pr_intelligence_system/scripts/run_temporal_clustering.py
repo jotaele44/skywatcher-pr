@@ -162,9 +162,7 @@ def run_temporal_clustering() -> pd.DataFrame:
             print(f"    {label:<18}: {count}")
 
     if 'cluster' in df.columns:
-        n_clusters = int((df['cluster'] >= 0).astype(bool).groupby(df['cluster']).ngroups
-                         if (df['cluster'] >= 0).any() else 0)
-        n_noise    = int((df['cluster'] == -1).sum())
+        n_noise         = int((df['cluster'] == -1).sum())
         unique_clusters = df.loc[df['cluster'] >= 0, 'cluster'].nunique()
         print(f"\n  Unique clusters    : {unique_clusters}")
         print(f"  Noise points       : {n_noise}")

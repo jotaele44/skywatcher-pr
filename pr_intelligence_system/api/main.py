@@ -78,6 +78,9 @@ def _row_to_feature(row: dict) -> AnomalyFeature:
             return None
         return cast(v) if cast else v
 
+    if 'lat' not in row or 'lon' not in row:
+        raise HTTPException(status_code=500, detail='Anomaly file missing lat/lon columns')
+
     return AnomalyFeature(
         cell_id=str(row.get('cell_id', '')),
         lat=float(row['lat']),
