@@ -41,22 +41,37 @@ OUTPUT_FILE  = os.path.join(OUTPUT_DIR, 'unified_features_enriched.csv')
 
 
 def generate_synthetic_data(n_points: int = 500) -> pd.DataFrame:
-    """Generate synthetic geospatial point data for demonstration purposes.
+    """Generate synthetic Puerto Rico geospatial point data for demonstration.
+
+    Coordinates are constrained to the PR + EEZ bounding box so that the
+    infrastructure overlay, hydrology, and clustering steps produce meaningful
+    PR-specific outputs even when satellite fetchers are unavailable.
 
     Called only when both satellite fetchers AND local file scan yield nothing.
     """
     logger.info(f"Generating {n_points} synthetic demonstration points")
     rng = np.random.RandomState(42)
 
+    # Puerto Rico + surrounding EEZ bounding box
+    lat_min, lat_max = 17.8,  18.6
+    lon_min, lon_max = -67.5, -65.0
+
     timestamps = pd.date_range('2024-01-01', periods=n_points, freq='1h')
 
+    # Synthetic elevation: PR terrain peaks ~1338 m (Cerro de Punta)
+    # Use a bimodal mix: coastal lowlands + interior highlands
+    elev_coastal  = rng.uniform(0.0, 80.0, n_points // 2)
+    elev_interior = rng.uniform(200.0, 1000.0, n_points - n_points // 2)
+    raster_value  = np.concatenate([elev_coastal, elev_interior])
+    rng.shuffle(raster_value)
+
     df = pd.DataFrame({
-        'lat':           rng.uniform(-60.0,  60.0, n_points),
-        'lon':           rng.uniform(-170.0, 170.0, n_points),
+        'lat':           rng.uniform(lat_min, lat_max, n_points),
+        'lon':           rng.uniform(lon_min, lon_max, n_points),
         'value':         rng.normal(0.0, 1.0, n_points),
         'intensity':     rng.uniform(0.0, 100.0, n_points),
         'timestamp':     timestamps.strftime('%Y-%m-%d %H:%M:%S'),
-        'raster_value':  rng.uniform(-200.0, 3000.0, n_points),
+        'raster_value':  raster_value,
         'source_file':   'synthetic_demo',
         'source_format': 'synthetic',
     })
