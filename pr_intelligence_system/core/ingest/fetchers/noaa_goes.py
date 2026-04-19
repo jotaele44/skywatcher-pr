@@ -21,7 +21,7 @@ import os
 import logging
 import numpy as np
 import pandas as pd
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from config.fetcher_config import DEFAULT_AOI, FETCHER_CACHE_ROOT
 from core.ingest.fetchers.base import empty_fetcher_df, validate_fetcher_output
@@ -58,20 +58,8 @@ def _goes_fixedgrid_to_latlon(
 
     Implements the exact reprojection formula from GOES-R Series PUG Vol.3 §4.2.8.
     Pixels outside the Earth disk are returned as NaN.
-
-    Parameters
-    ----------
-    x, y       : scan angle arrays in radians (E-W and N-S respectively)
-    sat_height_m : satellite height above Earth centre (metres)
-    sat_lon_deg  : sub-satellite longitude (degrees)
-    r_eq         : WGS-84 equatorial radius (metres)
-    r_pol        : WGS-84 polar radius (metres)
-
-    Returns
-    -------
-    lat_deg, lon_deg : arrays of geographic coordinates (degrees); NaN = off-disk
     """
-    H     = sat_height_m + r_eq   # distance from Earth centre to satellite
+    H     = sat_height_m + r_eq
     lon_0 = np.radians(sat_lon_deg)
 
     a_val = (
@@ -99,7 +87,6 @@ def _goes_fixedgrid_to_latlon(
     lat_deg = np.degrees(lat_rad)
     lon_deg = np.degrees(lon_rad)
 
-    # Mask off-disk pixels
     lat_deg[~valid] = np.nan
     lon_deg[~valid] = np.nan
 
@@ -109,9 +96,7 @@ def _goes_fixedgrid_to_latlon(
 def _rad_to_brightness_temp(rad: np.ndarray, fk1: float, fk2: float, bc1: float, bc2: float) -> np.ndarray:
     """Convert ABI radiance to brightness temperature (Kelvin).
 
-    Formula from GOES-R PUG: T = (fk2 / log(fk1/L + 1) - bc1) / bc2
-    where L = radiance, fk1/fk2 = Planck function coefficients,
-    bc1/bc2 = bias correction coefficients.
+    Formula: T = (fk2 / log(fk1/L + 1) - bc1) / bc2
     """
     with np.errstate(divide='ignore', invalid='ignore'):
         T = (fk2 / np.log(fk1 / rad + 1.0) - bc1) / bc2
@@ -119,33 +104,42 @@ def _rad_to_brightness_temp(rad: np.ndarray, fk1: float, fk2: float, bc1: float,
     return T
 
 
-def _list_s3_files(s3_client, bucket: str, product: str, band: int,
-                   datetime_utc: str = None) -> list:
-    """List matching ABI .nc files in the S3 bucket."""
-    now = datetime.now(timezone.utc)
-    year     = now.strftime('%Y')
-    day_of_year = now.strftime('%j')
-    hour     = now.strftime('%H')
+def _list_s3_files_for_hour(s3_client, bucket: str, product: str, band: int,
+                             dt: datetime) -> list:
+    """List .nc files for a specific product/band/hour in the S3 bucket."""
+    year        = dt.strftime('%Y')
+    day_of_year = dt.strftime('%j')
+    hour        = dt.strftime('%H')
+    band_str    = f'C{band:02d}'
 
-    if datetime_utc is not None:
-        try:
-            dt = datetime.strptime(datetime_utc, '%Y%m%d_%H%M')
-            year        = dt.strftime('%Y')
-            day_of_year = dt.strftime('%j')
-            hour        = dt.strftime('%H')
-        except ValueError:
-            pass
-
-    band_str = f'C{band:02d}'
-    prefix   = f'{product}/{year}/{day_of_year}/{hour}/OR_{product}-M6{band_str}_G16_'
-
-    logger.info(f"NOAA GOES: listing s3://{bucket}/{prefix}")
+    # Use directory-level prefix without OR_ fragment so we enumerate all files
+    prefix = f'{product}/{year}/{day_of_year}/{hour}/'
+    logger.debug(f"NOAA GOES: listing s3://{bucket}/{prefix}")
     try:
-        resp = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix, MaxKeys=20)
-        return [obj['Key'] for obj in resp.get('Contents', []) if obj['Key'].endswith('.nc')]
+        resp = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix, MaxKeys=50)
+        keys = [
+            obj['Key'] for obj in resp.get('Contents', [])
+            if obj['Key'].endswith('.nc') and band_str in obj['Key']
+        ]
+        return keys
     except Exception as exc:
-        logger.warning(f"NOAA GOES S3 listing failed: {exc}")
+        logger.debug(f"NOAA GOES S3 listing failed for {prefix}: {exc}")
         return []
+
+
+def _find_recent_files(s3_client, bucket: str, product: str, band: int,
+                       start_dt: datetime, max_lookback_hours: int = 24) -> list:
+    """Search backwards from start_dt until files are found (up to max_lookback_hours)."""
+    for hours_back in range(0, max_lookback_hours + 1):
+        dt = start_dt - timedelta(hours=hours_back)
+        keys = _list_s3_files_for_hour(s3_client, bucket, product, band, dt)
+        if keys:
+            logger.info(
+                f"NOAA GOES: found {len(keys)} file(s) at "
+                f"{dt.strftime('%Y-%j-%H')} ({hours_back}h back)"
+            )
+            return keys
+    return []
 
 
 def fetch_noaa_goes(
@@ -159,10 +153,8 @@ def fetch_noaa_goes(
 ) -> pd.DataFrame:
     """Fetch NOAA GOES ABI imagery from AWS S3 (no credentials required).
 
-    The fixed-grid ABI coordinates are reprojected to geographic lat/lon
-    using the GOES-R PUG §4.2.8 formula.  Radiance values are converted to
-    brightness temperature (K) using per-scan calibration coefficients from
-    the netCDF4 metadata.
+    Searches backwards up to 24 hours from the requested time so the fetcher
+    succeeds even if the current hour has no files yet.
 
     Returns DataFrame with: lat, lon, raster_value (brightness temp K),
     source_file, source_format='noaa_goes', band, scan_start_time.
@@ -174,15 +166,27 @@ def fetch_noaa_goes(
         from botocore import UNSIGNED
         from botocore.config import Config
 
-        bucket = S3_BUCKETS.get(satellite, S3_BUCKETS['goes16'])
+        bucket  = S3_BUCKETS.get(satellite, S3_BUCKETS['goes16'])
         sat_lon = SAT_LON.get(satellite, -75.0)
 
         s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
         os.makedirs(output_dir, exist_ok=True)
 
-        keys = _list_s3_files(s3, bucket, product, band, datetime_utc)
+        # Resolve start datetime
+        if datetime_utc is not None:
+            try:
+                start_dt = datetime.strptime(datetime_utc, '%Y%m%d_%H%M').replace(tzinfo=timezone.utc)
+            except ValueError:
+                start_dt = datetime.now(timezone.utc)
+        else:
+            start_dt = datetime.now(timezone.utc)
+
+        keys = _find_recent_files(s3, bucket, product, band, start_dt)
         if not keys:
-            logger.warning("NOAA GOES: no files found – returning empty DataFrame")
+            logger.warning(
+                f"NOAA GOES: no files found within 24h of "
+                f"{start_dt.strftime('%Y-%m-%d %H:00 UTC')} — returning empty DataFrame"
+            )
             return empty_fetcher_df(['band', 'scan_start_time'])
 
         all_dfs = []
@@ -204,19 +208,16 @@ def fetch_noaa_goes(
             try:
                 ds = nc4.Dataset(local_path, 'r')
 
-                # Extract scan angles (radians)
                 x_angles = ds.variables['x'][:]
                 y_angles = ds.variables['y'][:]
                 xx, yy   = np.meshgrid(x_angles, y_angles)
 
-                # Radiance
                 rad_var = ds.variables['Rad']
                 rad     = rad_var[:].data.astype(float)
                 nodata  = getattr(rad_var, '_FillValue', None)
                 if nodata is not None:
                     rad[rad == nodata] = np.nan
 
-                # Calibration coefficients for brightness temperature
                 try:
                     fk1 = float(ds.variables['planck_fk1'][:])
                     fk2 = float(ds.variables['planck_fk2'][:])
@@ -224,27 +225,22 @@ def fetch_noaa_goes(
                     bc2 = float(ds.variables['planck_bc2'][:])
                     brightness_temp = _rad_to_brightness_temp(rad, fk1, fk2, bc1, bc2)
                 except Exception:
-                    # Fallback: use raw radiance if calibration vars not present
                     brightness_temp = rad
 
-                # Scan start time
                 try:
                     scan_start_time = str(ds.time_coverage_start)
                 except Exception:
                     scan_start_time = 'unknown'
 
-                # Satellite projection parameters
                 try:
-                    proj = ds.variables['goes_imager_projection']
+                    proj         = ds.variables['goes_imager_projection']
                     sat_height_m = float(proj.perspective_point_height)
-                    sat_lon_nc   = float(proj.longitude_of_projection_origin)
-                    sat_lon      = sat_lon_nc
+                    sat_lon      = float(proj.longitude_of_projection_origin)
                 except Exception:
                     sat_height_m = 35_786_023.0
 
                 ds.close()
 
-                # Subsample the full-disk grid
                 flat_x   = xx.ravel()
                 flat_y   = yy.ravel()
                 flat_rad = brightness_temp.ravel()
@@ -267,12 +263,11 @@ def fetch_noaa_goes(
                     sat_lon_deg=sat_lon,
                 )
 
-                valid2    = np.isfinite(lat_deg) & np.isfinite(lon_deg)
-                lat_deg   = lat_deg[valid2]
-                lon_deg   = lon_deg[valid2]
-                flat_rad  = flat_rad[valid2]
+                valid2   = np.isfinite(lat_deg) & np.isfinite(lon_deg)
+                lat_deg  = lat_deg[valid2]
+                lon_deg  = lon_deg[valid2]
+                flat_rad = flat_rad[valid2]
 
-                # AOI filter
                 min_lon, min_lat, max_lon, max_lat = aoi
                 aoi_mask = (
                     (lat_deg >= min_lat) & (lat_deg <= max_lat)
