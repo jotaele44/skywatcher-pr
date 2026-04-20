@@ -78,7 +78,7 @@ def fetch_sentinel2(
     cube_mean = cube.mean_time()
 
     # NDVI = (B08 - B04) / (B08 + B04)
-    ndvi = cube_mean.normalized_difference("B08", "B04")
+    ndvi = cube_mean.normalized_difference(band1="B08", band2="B04")
 
     job_title = f"pr_int_{aoi_id}_ndvi"
     logger.info("Submitting batch job: %s", job_title)
