@@ -47,9 +47,41 @@ from core.ingest.fetchers.base import empty_fetcher_df, validate_fetcher_output
 logger = logging.getLogger(__name__)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-MULTIBEAM_DATA_DIR = os.path.join(
-    os.path.dirname(FETCHER_CACHE_ROOT), 'multibeam'
-)
+_RAW_DIR = os.path.dirname(FETCHER_CACHE_ROOT)  # data/raw/
+
+_EXCLUDE_DIRS = {'fetcher_cache', 'multibeam'}
+
+
+def _discover_data_dir() -> str:
+    """Return the first data/raw/ subdirectory that looks like a multibeam mission folder.
+
+    A valid candidate contains either a products/ subdirectory (processed outputs)
+    or at least one *.mb* file (raw sonar lines).  Scans sibling directories of
+    fetcher_cache/ so the folder can have any name (e.g. 'atlantis', 'PD18PR04').
+    Falls back to data/raw/multibeam/ if nothing else matches.
+    """
+    fallback = os.path.join(_RAW_DIR, 'multibeam')
+    if not os.path.isdir(_RAW_DIR):
+        return fallback
+    try:
+        for entry in sorted(os.scandir(_RAW_DIR), key=lambda e: e.name):
+            if not entry.is_dir() or entry.name in _EXCLUDE_DIRS:
+                continue
+            # Candidate: has a products/ sub-dir
+            if os.path.isdir(os.path.join(entry.path, 'products')):
+                return entry.path
+            # Candidate: contains raw MB files directly
+            try:
+                if any('.mb' in f.lower() for f in os.listdir(entry.path)):
+                    return entry.path
+            except OSError:
+                continue
+    except OSError:
+        pass
+    return fallback
+
+
+MULTIBEAM_DATA_DIR = _discover_data_dir()
 SOUNDING_CACHE = os.path.join(FETCHER_CACHE_ROOT, 'multibeam', 'soundings_cache.csv')
 
 MAX_SOUNDINGS = 50_000  # subsample cap for pipeline tractability
