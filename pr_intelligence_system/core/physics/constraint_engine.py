@@ -8,16 +8,27 @@ logger = logging.getLogger(__name__)
 def compute_physics_score(df: pd.DataFrame) -> pd.DataFrame:
     """Compute a combined physics constraint score for every row.
 
-    Weights (hydrography-backbone model):
-        slope_norm       20 %  — terrain ruggedness
-        hydro_align      25 %  — hydrological flow alignment (TWI-based if available)
-        elev_score       15 %  — proximity to sea level
-        twi_score        25 %  — Topographic Wetness Index (real hydrology signal)
-        drainage_score   15 %  — upstream contributing area (flow accumulation)
+    Formula hierarchy (highest available wins):
 
-    When TWI / drainage columns are absent (first run or synthetic data) the
-    score falls back to the original three-component formula so the pipeline
-    always produces a valid output.
+    6-component (real bathymetry + TWI + drainage):
+        slope_norm       18 %
+        hydro_align      22 %
+        elev_score       12 %
+        twi_score        22 %
+        drainage_score   12 %
+        bathy_score      14 %   — shelf depth from NOAA multibeam
+
+    5-component (TWI + drainage, no bathymetry):
+        slope_norm       20 %
+        hydro_align      25 %
+        elev_score       15 %
+        twi_score        25 %
+        drainage_score   15 %
+
+    3-component legacy fallback (no TWI / drainage):
+        slope_norm       35 %
+        hydro_align      40 %
+        elev_score       25 %
 
     Final score ∈ [0, 1]; higher = stronger physical signature.
 
@@ -41,25 +52,45 @@ def compute_physics_score(df: pd.DataFrame) -> pd.DataFrame:
     elev_denom = float(abs_elev.max()) + 1.0
     elev_score = np.clip(1.0 - abs_elev / elev_denom, 0.0, 1.0)
 
-    has_twi      = 'twi'             in df.columns
-    has_drainage = 'drainage_index'  in df.columns
+    has_twi      = 'twi'              in df.columns
+    has_drainage = 'drainage_index'   in df.columns
+    has_bathy    = (
+        'bathymetry_proxy' in df.columns
+        and df['bathymetry_proxy'].std() > 0.5
+    )
 
     if has_twi and has_drainage:
-        twi_raw   = df['twi'].fillna(0.0).values.astype(float)
-        drain_raw = df['drainage_index'].fillna(0.0).values.astype(float)
-
-        twi_score     = np.clip(twi_raw / 15.0, 0.0, 1.0)
+        twi_raw        = df['twi'].fillna(0.0).values.astype(float)
+        drain_raw      = df['drainage_index'].fillna(0.0).values.astype(float)
+        twi_score      = np.clip(twi_raw / 15.0, 0.0, 1.0)
         drainage_score = np.clip(drain_raw, 0.0, 1.0)
 
-        physics_score = np.clip(
-            0.20 * slope_norm
-            + 0.25 * hydro
-            + 0.15 * elev_score
-            + 0.25 * twi_score
-            + 0.15 * drainage_score,
-            0.0, 1.0,
-        )
-        logger.info("physics_score: hydrography-backbone (5-component) formula")
+        if has_bathy:
+            # Shallow continental shelf (0–200 m) scores higher than deep trench;
+            # normalised against PR Trench maximum (~8 400 m).
+            bathy_raw   = df['bathymetry_proxy'].fillna(0.0).values.astype(float)
+            bathy_score = np.clip(1.0 - np.abs(bathy_raw) / 8400.0, 0.0, 1.0)
+
+            physics_score = np.clip(
+                0.18 * slope_norm
+                + 0.22 * hydro
+                + 0.12 * elev_score
+                + 0.22 * twi_score
+                + 0.12 * drainage_score
+                + 0.14 * bathy_score,
+                0.0, 1.0,
+            )
+            logger.info("physics_score: 6-component formula (real bathymetry)")
+        else:
+            physics_score = np.clip(
+                0.20 * slope_norm
+                + 0.25 * hydro
+                + 0.15 * elev_score
+                + 0.25 * twi_score
+                + 0.15 * drainage_score,
+                0.0, 1.0,
+            )
+            logger.info("physics_score: hydrography-backbone (5-component) formula")
     else:
         # Backward-compatible 3-component fallback
         physics_score = np.clip(
