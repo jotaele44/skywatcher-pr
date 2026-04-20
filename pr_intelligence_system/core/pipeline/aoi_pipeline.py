@@ -113,25 +113,84 @@ def _ingest(raw_dir: str) -> pd.DataFrame:
 
 
 def _run_physics(df: pd.DataFrame) -> pd.DataFrame:
-    """Apply terrain, slope, hydrology, and physics scoring."""
-    from core.physics.terrain_bathy_engine import apply_terrain_constraints
+    """
+    Apply terrain, slope, hydrology, and physics scoring.
+
+    If DEM rows are present (source_file contains 'dem_'), real elevation
+    is interpolated onto the analysis points via KNN and
+    apply_terrain_constraints() is skipped (which would overwrite with
+    synthetic values). Otherwise the full synthetic path runs unchanged.
+    """
     from core.physics.slope import compute_slope, classify_slope
     from core.physics.hydrology import compute_hydrology_alignment, compute_drainage_index
     from core.physics.constraint_engine import compute_physics_score
 
     try:
-        df = apply_terrain_constraints(df)
+        dem_mask = _dem_mask(df)
+
+        if dem_mask.any() and (~dem_mask).any():
+            # Real DEM path: interpolate elevation, drop DEM-only rows
+            df = _apply_dem_elevation(df, dem_mask)
+            logger.info("Using real DEM elevation for physics scoring.")
+        else:
+            # Synthetic fallback (no DEM data available)
+            from core.physics.terrain_bathy_engine import apply_terrain_constraints
+            df = df[~dem_mask].copy() if dem_mask.any() else df
+            df = apply_terrain_constraints(df)
+            logger.info("Using synthetic elevation proxy (no DEM data).")
+
         df = compute_slope(df)
         df = classify_slope(df)
         df = compute_hydrology_alignment(df)
         df = compute_drainage_index(df)
         df = compute_physics_score(df)
+
     except Exception as exc:
         logger.warning("Physics step failed (%s); filling defaults.", exc)
         for col, val in [("physics_score", 0.0), ("slope", 0.0), ("hydro_align", 0.0)]:
             if col not in df.columns:
                 df[col] = val
+
     return df
+
+
+def _dem_mask(df: pd.DataFrame) -> "pd.Series":
+    """Return boolean Series identifying DEM-sourced rows."""
+    if "source_file" not in df.columns:
+        return pd.Series(False, index=df.index)
+    return df["source_file"].astype(str).str.contains("dem_", case=False, na=False)
+
+
+def _apply_dem_elevation(df: pd.DataFrame, dem_mask: "pd.Series") -> pd.DataFrame:
+    """
+    KNN-interpolate real DEM elevation onto analysis (non-DEM) points.
+
+    Uses sklearn KNeighborsRegressor (k=3, distance-weighted) to assign
+    an elevation_proxy value to each analysis point from the nearest DEM
+    sample pixels. Also sets terrain_valid and bathymetry_proxy.
+
+    DEM rows are dropped before returning — they are reference data only.
+    """
+    from sklearn.neighbors import KNeighborsRegressor
+
+    dem_df = df[dem_mask]
+    analysis_df = df[~dem_mask].copy()
+
+    n_neighbors = min(3, len(dem_df))
+    knn = KNeighborsRegressor(n_neighbors=n_neighbors, weights="distance")
+    knn.fit(dem_df[["lat", "lon"]].values, dem_df["raster_value"].values)
+
+    elevations = knn.predict(analysis_df[["lat", "lon"]].values)
+    analysis_df["elevation_proxy"] = elevations
+    # Bathymetry proxy: negative elevation for below-sea-level points
+    analysis_df["bathymetry_proxy"] = np.where(elevations < 0, elevations, 0.0)
+    analysis_df["terrain_valid"] = (elevations >= -500) & (elevations <= 8849)
+
+    logger.info(
+        "DEM elevation applied: %.1f–%.1f m range across %d points.",
+        float(elevations.min()), float(elevations.max()), len(analysis_df),
+    )
+    return analysis_df
 
 
 def _run_attribution(df: pd.DataFrame) -> pd.DataFrame:

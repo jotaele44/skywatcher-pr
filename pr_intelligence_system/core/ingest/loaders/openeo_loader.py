@@ -12,6 +12,10 @@ DEFAULT_TEMPORAL_DAYS = 90
 SENTINEL2_BANDS = ["B04", "B08", "B11"]  # Red, NIR, SWIR
 MAX_CLOUD_COVER = 75  # percent
 
+DEM_COLLECTION = "COPERNICUS_30"     # Copernicus GLO-30 DEM (30m resolution)
+DEM_BAND = "DEM"
+DEM_TEMPORAL_EXTENT = ["2010-01-01", "2023-12-31"]  # static dataset; wide range
+
 
 def connect(endpoint: str = OPENEO_ENDPOINT):
     """Connect and authenticate to the openEO endpoint."""
@@ -60,10 +64,13 @@ def fetch_sentinel2(
     Process graph:
       SENTINEL2_L2A → filter cloud → mean over time → NDVI → GeoTIFF
 
+    Downloaded files are renamed with an 'ndvi_' prefix so aoi_pipeline
+    can distinguish them from DEM files in the same directory.
+
     Returns list of downloaded .tif file paths.
     """
     logger.info(
-        "Building Sentinel-2 process graph (bbox=%s, time=%s).", bbox, temporal_extent
+        "Building Sentinel-2 NDVI process graph (bbox=%s, time=%s).", bbox, temporal_extent
     )
 
     cube = connection.load_collection(
@@ -74,26 +81,72 @@ def fetch_sentinel2(
         max_cloud_cover=MAX_CLOUD_COVER,
     )
 
-    # Temporal mean to collapse the time dimension
     cube_mean = cube.mean_time()
-
-    # NDVI = (B08 - B04) / (B08 + B04)
     ndvi = cube_mean.normalized_difference(band1="B08", band2="B04")
 
     job_title = f"pr_int_{aoi_id}_ndvi"
     logger.info("Submitting batch job: %s", job_title)
 
-    job = ndvi.create_job(
-        out_format="GTiff",
-        title=job_title,
-    )
+    job = ndvi.create_job(out_format="GTiff", title=job_title)
     job.start_and_wait()
     logger.info("Batch job complete: %s", job.job_id)
 
-    results = job.get_results()
-    results.download_files(output_dir)
-    logger.info("Downloaded results to %s", output_dir)
+    job.get_results().download_files(output_dir)
+    return _prefix_new_tifs(output_dir, "ndvi_")
 
-    tif_paths = glob.glob(os.path.join(output_dir, "*.tif"))
-    logger.info("GeoTIFF files available: %d", len(tif_paths))
-    return tif_paths
+
+def fetch_dem(
+    connection,
+    bbox: dict,
+    output_dir: str,
+    aoi_id: str,
+) -> list:
+    """
+    Fetch Copernicus GLO-30 DEM for the AOI and download as GeoTIFF.
+
+    The DEM is a static dataset (no meaningful temporal dimension).
+    Downloaded files are renamed with a 'dem_' prefix.
+
+    Returns list of downloaded .tif file paths.
+    """
+    logger.info("Building Copernicus DEM process graph (bbox=%s).", bbox)
+
+    cube = connection.load_collection(
+        DEM_COLLECTION,
+        spatial_extent=bbox,
+        temporal_extent=DEM_TEMPORAL_EXTENT,
+        bands=[DEM_BAND],
+    )
+
+    # DEM is static; mean_time collapses any duplicate timestamps safely
+    result = cube.mean_time()
+
+    job_title = f"pr_int_{aoi_id}_dem"
+    logger.info("Submitting DEM batch job: %s", job_title)
+
+    job = result.create_job(out_format="GTiff", title=job_title)
+    job.start_and_wait()
+    logger.info("DEM batch job complete: %s", job.job_id)
+
+    job.get_results().download_files(output_dir)
+    return _prefix_new_tifs(output_dir, "dem_")
+
+
+def _prefix_new_tifs(output_dir: str, prefix: str) -> list:
+    """
+    Rename any untagged *.tif files in output_dir with the given prefix.
+    Files already starting with a known prefix ('ndvi_', 'dem_') are skipped.
+    Returns the final list of prefixed .tif paths.
+    """
+    known_prefixes = ("ndvi_", "dem_")
+    renamed = []
+    for path in glob.glob(os.path.join(output_dir, "*.tif")):
+        basename = os.path.basename(path)
+        if basename.startswith(known_prefixes):
+            renamed.append(path)
+            continue
+        new_path = os.path.join(output_dir, prefix + basename)
+        os.rename(path, new_path)
+        renamed.append(new_path)
+    logger.info("Tagged %d file(s) with prefix '%s'.", len(renamed), prefix)
+    return renamed

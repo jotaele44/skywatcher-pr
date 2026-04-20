@@ -1,3 +1,4 @@
+import glob
 import logging
 import os
 
@@ -13,17 +14,24 @@ def fetch_for_aoi(
     days_back: int = 90,
 ) -> list:
     """
-    Fetch satellite data for a given AOI via openEO and return GeoTIFF paths.
+    Fetch Sentinel-2 NDVI and Copernicus DEM for a given AOI via openEO.
 
-    If GeoTIFFs already exist in output_dir for this aoi_id, they are returned
-    immediately without re-fetching.
+    Both datasets are downloaded to output_dir with type-prefixed filenames:
+      ndvi_<filename>.tif  — Sentinel-2 NDVI (optical, 10m)
+      dem_<filename>.tif   — Copernicus GLO-30 DEM (terrain, 30m)
+
+    If files already exist for both types, they are returned immediately
+    without re-fetching (cache-aware).
+
+    DEM fetch is non-fatal: if it fails, only NDVI paths are returned and
+    aoi_pipeline will fall back to synthetic elevation.
 
     Parameters
     ----------
     aoi_gdf    : single-row GeoDataFrame of the AOI polygon (EPSG:4326)
-    aoi_id     : 8-char hex identifier (used for filenames and job title)
+    aoi_id     : 8-char hex identifier (used for filenames and job titles)
     output_dir : directory where GeoTIFFs are saved (created if absent)
-    days_back  : temporal window in days for satellite data search
+    days_back  : temporal window in days for Sentinel-2 search
 
     Returns
     -------
@@ -33,38 +41,65 @@ def fetch_for_aoi(
         build_bbox,
         build_temporal_extent,
         connect,
+        fetch_dem,
         fetch_sentinel2,
     )
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # Skip re-fetch if data already downloaded
-    import glob
-    existing = glob.glob(os.path.join(output_dir, "*.tif"))
-    if existing:
+    existing_ndvi = glob.glob(os.path.join(output_dir, "ndvi_*.tif"))
+    existing_dem = glob.glob(os.path.join(output_dir, "dem_*.tif"))
+
+    if existing_ndvi and existing_dem:
         logger.info(
-            "Satellite data already present for AOI %s (%d file(s)); skipping fetch.",
-            aoi_id, len(existing),
+            "All satellite data cached for AOI %s (%d NDVI, %d DEM); skipping fetch.",
+            aoi_id, len(existing_ndvi), len(existing_dem),
         )
-        return existing
+        return existing_ndvi + existing_dem
 
     try:
         connection = connect()
         bbox = build_bbox(aoi_gdf)
-        temporal_extent = build_temporal_extent(days_back)
-        tif_paths = fetch_sentinel2(connection, bbox, temporal_extent, output_dir, aoi_id)
-
-        if not tif_paths:
-            logger.warning(
-                "openEO returned no data for AOI %s "
-                "(possible causes: cloud cover, no imagery in temporal window).",
-                aoi_id,
-            )
-        return tif_paths
-
     except (ConnectionError, ImportError) as exc:
         logger.error("Satellite fetch failed (auth/connectivity): %s", exc)
         raise
-    except Exception as exc:
-        logger.error("Unexpected error during satellite fetch for AOI %s: %s", aoi_id, exc)
-        return []
+
+    all_paths = []
+
+    # --- Sentinel-2 NDVI ---
+    if existing_ndvi:
+        logger.info("NDVI already cached for AOI %s; skipping S2 fetch.", aoi_id)
+        all_paths.extend(existing_ndvi)
+    else:
+        try:
+            temporal_extent = build_temporal_extent(days_back)
+            ndvi_paths = fetch_sentinel2(connection, bbox, temporal_extent, output_dir, aoi_id)
+            if not ndvi_paths:
+                logger.warning(
+                    "Sentinel-2 returned no data for AOI %s "
+                    "(check cloud cover or temporal window).",
+                    aoi_id,
+                )
+            all_paths.extend(ndvi_paths)
+        except Exception as exc:
+            logger.error("Sentinel-2 fetch failed for AOI %s: %s", aoi_id, exc)
+
+    # --- Copernicus DEM (non-fatal) ---
+    if existing_dem:
+        logger.info("DEM already cached for AOI %s; skipping DEM fetch.", aoi_id)
+        all_paths.extend(existing_dem)
+    else:
+        try:
+            dem_paths = fetch_dem(connection, bbox, output_dir, aoi_id)
+            if dem_paths:
+                logger.info("DEM fetched: %d file(s).", len(dem_paths))
+                all_paths.extend(dem_paths)
+            else:
+                logger.warning("DEM returned no data for AOI %s; elevation will be synthetic.", aoi_id)
+        except Exception as exc:
+            logger.warning(
+                "DEM fetch failed for AOI %s (%s); elevation will be synthetic.",
+                aoi_id, exc,
+            )
+
+    return all_paths
