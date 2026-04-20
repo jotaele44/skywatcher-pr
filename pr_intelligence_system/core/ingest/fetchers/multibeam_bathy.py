@@ -56,7 +56,10 @@ def _find_mb_files(data_dir: str, max_files: int = 5) -> list:
     """Recursively walk data_dir and return up to max_files MB-System file paths."""
     found = []
     for root, dirs, files in os.walk(data_dir):
-        dirs[:] = sorted(d for d in dirs if d not in _EXCLUDE_DIRS and not d.startswith('.'))
+        # Skip hidden dirs only — do NOT exclude 'multibeam' here because that
+        # name legitimately appears as a subdirectory within cruise folders
+        # (e.g. atlantis/AT29-04/multibeam/data/version1/MB/em122/).
+        dirs[:] = sorted(d for d in dirs if not d.startswith('.'))
         for fname in sorted(files):
             if '.mb' in fname.lower() and not fname.startswith('.'):
                 found.append(os.path.join(root, fname))
@@ -89,7 +92,7 @@ def _discover_data_dir() -> str:
     return fallback
 
 
-MULTIBEAM_DATA_DIR = _discover_data_dir()
+MULTIBEAM_DATA_DIR = _discover_data_dir()  # best-effort at import time; re-resolved at call time
 SOUNDING_CACHE = os.path.join(FETCHER_CACHE_ROOT, 'multibeam', 'soundings_cache.csv')
 
 MAX_SOUNDINGS = 50_000  # subsample cap for pipeline tractability
@@ -322,7 +325,7 @@ def _date_from_filename(name: str) -> str:
 # ── Main fetcher ───────────────────────────────────────────────────────────────
 
 def fetch_multibeam_bathy(
-    data_dir: str = MULTIBEAM_DATA_DIR,
+    data_dir: str = None,
     aoi: tuple = DEFAULT_AOI,
     max_points: int = MAX_SOUNDINGS,
 ) -> pd.DataFrame:
@@ -333,6 +336,9 @@ def fetch_multibeam_bathy(
         source_format, acquisition_date
     """
     global _BATHY_CACHE
+
+    if data_dir is None:
+        data_dir = _discover_data_dir()
 
     empty = empty_fetcher_df(extra_cols=['acquisition_date'])
 
