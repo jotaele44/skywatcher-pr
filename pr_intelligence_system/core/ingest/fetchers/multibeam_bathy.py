@@ -52,13 +52,26 @@ _RAW_DIR = os.path.dirname(FETCHER_CACHE_ROOT)  # data/raw/
 _EXCLUDE_DIRS = {'fetcher_cache', 'multibeam'}
 
 
+def _find_mb_files(data_dir: str, max_files: int = 5) -> list:
+    """Recursively walk data_dir and return up to max_files MB-System file paths."""
+    found = []
+    for root, dirs, files in os.walk(data_dir):
+        dirs[:] = sorted(d for d in dirs if d not in _EXCLUDE_DIRS and not d.startswith('.'))
+        for fname in sorted(files):
+            if '.mb' in fname.lower() and not fname.startswith('.'):
+                found.append(os.path.join(root, fname))
+                if len(found) >= max_files:
+                    return found
+    return found
+
+
 def _discover_data_dir() -> str:
     """Return the first data/raw/ subdirectory that looks like a multibeam mission folder.
 
-    A valid candidate contains either a products/ subdirectory (processed outputs)
-    or at least one *.mb* file (raw sonar lines).  Scans sibling directories of
-    fetcher_cache/ so the folder can have any name (e.g. 'atlantis', 'PD18PR04').
-    Falls back to data/raw/multibeam/ if nothing else matches.
+    Accepts any folder name (e.g. 'atlantis', 'PD18PR04').  Checks for:
+      - a products/ child containing GeoTIFF/XYZ files, OR
+      - any *.mb* file anywhere within the directory tree.
+    Falls back to data/raw/multibeam/ if nothing matches.
     """
     fallback = os.path.join(_RAW_DIR, 'multibeam')
     if not os.path.isdir(_RAW_DIR):
@@ -67,15 +80,10 @@ def _discover_data_dir() -> str:
         for entry in sorted(os.scandir(_RAW_DIR), key=lambda e: e.name):
             if not entry.is_dir() or entry.name in _EXCLUDE_DIRS:
                 continue
-            # Candidate: has a products/ sub-dir
             if os.path.isdir(os.path.join(entry.path, 'products')):
                 return entry.path
-            # Candidate: contains raw MB files directly
-            try:
-                if any('.mb' in f.lower() for f in os.listdir(entry.path)):
-                    return entry.path
-            except OSError:
-                continue
+            if _find_mb_files(entry.path, max_files=1):
+                return entry.path
     except OSError:
         pass
     return fallback
@@ -326,17 +334,10 @@ def fetch_multibeam_bathy(
 
         # ── 4. Raw MB-System files via mblist ─────────────────────────────────
         if not frames and _MBLIST_OK:
-            mb_dir = os.path.join(data_dir, 'em124')
-            if not os.path.isdir(mb_dir):
-                mb_dir = data_dir  # flat layout fallback
+            mb_file_paths = _find_mb_files(data_dir, max_files=5)
 
-            mb_files = sorted([
-                f for f in os.listdir(mb_dir)
-                if '.mb' in f.lower()
-            ])
-
-            for fname in mb_files[:5]:  # limit to first 5 lines for speed
-                fpath = os.path.join(mb_dir, fname)
+            for fpath in mb_file_paths:
+                fname = os.path.basename(fpath)
                 lower = fname.lower()
                 work_path = fpath
 
