@@ -243,6 +243,9 @@ def classify_infrastructure_priority(df: pd.DataFrame) -> pd.DataFrame:
     karst = df.get('karst_zone',      pd.Series(np.zeros(len(df), dtype=bool))).fillna(False).values.astype(bool)
     flood = df.get('flood_risk',      pd.Series(np.zeros(len(df)))).fillna(0.0).values.astype(float)
 
+    bathy = df.get('bathymetry_proxy',
+                   pd.Series(np.zeros(len(df)))).fillna(0.0).values.astype(float)
+
     n             = len(df)
     infra_type    = np.full(n, 'multi_utility', dtype=object)
     priority_score = np.full(n, 0.50)
@@ -253,6 +256,15 @@ def classify_infrastructure_priority(df: pd.DataFrame) -> pd.DataFrame:
     stream_valley      = (twi  > 8.0)   & (slope < 0.05)
     high_flood         = flood > 0.70
     karst_zone         = karst
+    # Offshore: real bathymetry below −200 m marks continental slope / deep sea
+    deep_offshore      = bathy < -200.0
+
+    # Deep offshore first — shallower shelf (−200 to −2000 m) scores highest;
+    # PR Trench crossings (>−8000 m) score lowest but remain non-zero.
+    infra_type[deep_offshore]    = 'submarine_cable'
+    priority_score[deep_offshore] = np.clip(
+        0.85 - np.abs(bathy[deep_offshore]) / 8400.0, 0.4, 0.85
+    )
 
     infra_type[upland_ridge]  = 'electrical_fiber_conduit'
     priority_score[upland_ridge] = 0.65

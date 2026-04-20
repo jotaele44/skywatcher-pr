@@ -13,6 +13,16 @@ try:
 except Exception:
     _DEM_IMPORT_OK = False
 
+# Guard import of the multibeam bathymetry cache
+try:
+    from core.ingest.fetchers.multibeam_bathy import get_cached_bathy, SOUNDING_CACHE
+    _BATHY_IMPORT_OK = True
+except Exception:
+    _BATHY_IMPORT_OK = False
+    SOUNDING_CACHE = os.path.join(
+        'data', 'raw', 'fetcher_cache', 'multibeam', 'soundings_cache.csv'
+    )
+
 
 def compute_elevation_proxy(df: pd.DataFrame) -> pd.DataFrame:
     """Compute elevation proxy from lat/lon.
@@ -107,7 +117,13 @@ def compute_elevation_proxy(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_bathymetry_proxy(df: pd.DataFrame) -> pd.DataFrame:
-    """Compute a synthetic bathymetry proxy (negative depth values).
+    """Compute bathymetry proxy from lat/lon.
+
+    Priority:
+      1. Real NOAA multibeam data (if the fetcher populated the cache
+         during Step 1 ingestion) — vectorised nearest-neighbour lookup.
+      2. CSV sounding cache on disk (written by a previous pipeline run).
+      3. Synthetic sinusoidal proxy — fallback when no real data available.
 
     Adds: bathymetry_proxy (metres, negative = below sea level).
     """
@@ -116,10 +132,64 @@ def compute_bathymetry_proxy(df: pd.DataFrame) -> pd.DataFrame:
     lat = df['lat'].values.astype(float)
     lon = df['lon'].values.astype(float)
 
-    bathy_proxy = -(
-        np.abs(np.cos(np.radians(lat))) * 3000.0
-        + np.sin(np.radians(lon * 1.5)) * 500.0
-    )
+    # ── Attempt real multibeam lookup ─────────────────────────────────────────
+    bathy_df = None
+    if _BATHY_IMPORT_OK:
+        try:
+            bathy_df = get_cached_bathy()
+        except Exception as exc:
+            logger.debug(f"Bathy cache lookup failed: {exc}")
+
+    # Priority 2: load CSV sounding cache from disk
+    if bathy_df is None or len(bathy_df) == 0:
+        if os.path.exists(SOUNDING_CACHE):
+            try:
+                from core.ingest.loaders.raster_loader import load_raster  # noqa: F401
+                bathy_df = pd.read_csv(SOUNDING_CACHE)
+                if len(bathy_df) > 0:
+                    logger.info(
+                        f"bathymetry_proxy: loaded {len(bathy_df)} soundings "
+                        f"from disk cache"
+                    )
+                    if _BATHY_IMPORT_OK:
+                        try:
+                            import core.ingest.fetchers.multibeam_bathy as _mb
+                            _mb._BATHY_CACHE = bathy_df.copy()
+                        except Exception:
+                            pass
+            except Exception as exc:
+                logger.debug(f"Could not load bathy sounding cache: {exc}")
+                bathy_df = None
+
+    if bathy_df is not None and len(bathy_df) > 0:
+        bv = bathy_df['raster_value'].values.astype(float)
+        if bv.std() < 0.5:
+            logger.warning(
+                "bathymetry_proxy: sounding cache appears degenerate "
+                f"(std={bv.std():.4f}) — using synthetic fallback"
+            )
+            bathy_df = None
+
+    if bathy_df is not None and len(bathy_df) > 0:
+        b_lats = bathy_df['lat'].values.astype(float)
+        b_lons = bathy_df['lon'].values.astype(float)
+        b_vals = bathy_df['raster_value'].values.astype(float)
+
+        depths = np.empty(len(lat), dtype=float)
+        for i in range(len(lat)):
+            dists2 = (b_lats - lat[i]) ** 2 + (b_lons - lon[i]) ** 2
+            depths[i] = b_vals[int(np.argmin(dists2))]
+
+        bathy_proxy = depths
+        logger.info("bathymetry_proxy: using real NOAA multibeam data")
+
+    else:
+        # ── Synthetic fallback (original logic, unchanged) ────────────────────
+        bathy_proxy = -(
+            np.abs(np.cos(np.radians(lat))) * 3000.0
+            + np.sin(np.radians(lon * 1.5)) * 500.0
+        )
+        logger.info("bathymetry_proxy: using synthetic proxy (no multibeam cache)")
 
     df['bathymetry_proxy'] = bathy_proxy
     logger.info(
