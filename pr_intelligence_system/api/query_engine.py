@@ -17,17 +17,20 @@ def run_query_engine(
     project_root: str,
     output_csv: str = None,
     trigger_pipeline: bool = False,
+    fetch_satellite: bool = False,
 ) -> tuple:
     """
     Orchestrate AOI creation, memory check, query execution, and reporting.
 
     Parameters
     ----------
-    lat, lon       : WGS84 query coordinates
-    radius_km      : query radius in kilometres
-    project_root   : absolute path to pr_intelligence_system/
-    output_csv     : if provided, save ILAP rows (no geometry) to this path
-    trigger_pipeline : if True and master dataset is missing, run run_all.py
+    lat, lon          : WGS84 query coordinates
+    radius_km         : query radius in kilometres
+    project_root      : absolute path to pr_intelligence_system/
+    output_csv        : if provided, save ILAP rows (no geometry) to this path
+    trigger_pipeline  : if True and master dataset is missing, run run_all.py
+    fetch_satellite   : if True and AOI is new, fetch Sentinel-2 data via openEO
+                        and run the AOI-scoped pipeline before querying
 
     Returns
     -------
@@ -67,9 +70,14 @@ def run_query_engine(
         )
 
     else:  # "new"
-        ilap_gdf, summary = _run_fresh(
-            master_path, aoi_gdf, run_query, trigger_pipeline, project_root
-        )
+        if fetch_satellite:
+            ilap_gdf, summary = _run_with_satellite_fetch(
+                aoi_gdf, aoi_id, project_root, master_path, run_query, compute_summary
+            )
+        else:
+            ilap_gdf, summary = _run_fresh(
+                master_path, aoi_gdf, run_query, trigger_pipeline, project_root
+            )
 
     # 4. Save results CSV
     result_path = os.path.join(reports_dir, f"{aoi_id}_results.csv")
@@ -203,6 +211,81 @@ def _run_fresh(
         raise RuntimeError(
             f"{exc}\nSet trigger_pipeline=True or run the pipeline manually."
         ) from exc
+
+
+def _run_with_satellite_fetch(
+    aoi_gdf: gpd.GeoDataFrame,
+    aoi_id: str,
+    project_root: str,
+    master_path: str,
+    run_query,
+    compute_summary,
+) -> tuple:
+    """
+    Fetch Sentinel-2 data via openEO for the AOI, run the AOI-scoped pipeline,
+    then merge results with any existing master dataset data in the AOI.
+    """
+    from core.ingest.fetcher import fetch_for_aoi
+    from core.pipeline.aoi_pipeline import run_aoi_pipeline
+    from shapely.geometry import Point
+
+    sat_raw_dir = os.path.join(project_root, "data", "raw", f"satellite_{aoi_id}")
+    logger.info("Fetching satellite data for AOI %s...", aoi_id)
+
+    tif_paths = fetch_for_aoi(aoi_gdf, aoi_id, sat_raw_dir)
+
+    if not tif_paths:
+        logger.warning("No satellite data returned; falling back to master dataset query.")
+        try:
+            return run_query(master_path, aoi_gdf)
+        except FileNotFoundError:
+            empty_summary = {
+                "total_ilaps": 0, "high_confidence_count": 0, "hydro_linked_count": 0,
+                "corridor_ids": [], "corridor_count": 0,
+                "mean_confidence": 0.0, "mean_physics_score": 0.0, "mean_hydro_align": 0.0,
+            }
+            return gpd.GeoDataFrame(crs="EPSG:4326"), empty_summary
+
+    aoi_df = run_aoi_pipeline(sat_raw_dir, aoi_id)
+
+    if aoi_df.empty:
+        logger.warning("AOI pipeline produced no output for %s.", aoi_id)
+        empty_summary = {
+            "total_ilaps": 0, "high_confidence_count": 0, "hydro_linked_count": 0,
+            "corridor_ids": [], "corridor_count": 0,
+            "mean_confidence": 0.0, "mean_physics_score": 0.0, "mean_hydro_align": 0.0,
+        }
+        return gpd.GeoDataFrame(crs="EPSG:4326"), empty_summary
+
+    # Also pull in any existing master dataset points within AOI and merge
+    existing_frames = []
+    try:
+        existing_ilap_gdf, _ = run_query(master_path, aoi_gdf)
+        if not existing_ilap_gdf.empty:
+            existing_frames.append(
+                existing_ilap_gdf.drop(columns=["geometry"], errors="ignore")
+            )
+    except FileNotFoundError:
+        pass
+
+    all_frames = [aoi_df] + existing_frames
+    merged = pd.concat(all_frames, ignore_index=True)
+    if "cell_id" in merged.columns:
+        merged = merged.drop_duplicates(subset="cell_id", keep="last")
+
+    geoms = [Point(r.lon, r.lat) for r in merged.itertuples(index=False) if hasattr(r, "lat")]
+    ilap_gdf = gpd.GeoDataFrame(merged, geometry=geoms if geoms else None, crs="EPSG:4326")
+
+    # Filter to ILAPs only for summary
+    from core.query import filter_ilaps
+    ilap_gdf = filter_ilaps(ilap_gdf)
+    summary = compute_summary(ilap_gdf)
+
+    logger.info(
+        "Satellite fetch + AOI pipeline: %d ILAPs found for AOI %s.",
+        summary["total_ilaps"], aoi_id,
+    )
+    return ilap_gdf, summary
 
 
 def _trigger_pipeline(project_root: str) -> None:

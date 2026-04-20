@@ -2,11 +2,12 @@
 main_query.py — CLI entrypoint for the ILAP query engine.
 
 Usage:
-    python main_query.py <lat> <lon> <radius_km> [--output PATH] [--trigger-pipeline]
+    python main_query.py <lat> <lon> <radius_km> [--output PATH] [--trigger-pipeline] [--fetch-satellite]
 
 Example:
     python main_query.py 18.265 -66.700 5
     python main_query.py 18.265 -66.700 5 --output /tmp/results.csv
+    python main_query.py 18.265 -66.700 5 --fetch-satellite
 """
 
 import argparse
@@ -36,6 +37,13 @@ def parse_args() -> argparse.Namespace:
         help="Run the full pipeline if the master dataset is missing",
     )
     parser.add_argument(
+        "--fetch-satellite", action="store_true", default=False,
+        help=(
+            "Fetch fresh Sentinel-2 data via openEO for new AOIs and run "
+            "the AOI-scoped pipeline (requires Copernicus account + OIDC auth)"
+        ),
+    )
+    parser.add_argument(
         "--verbose", action="store_true", default=False,
         help="Enable DEBUG logging",
     )
@@ -60,6 +68,7 @@ def main() -> None:
             project_root=PROJECT_ROOT,
             output_csv=args.output,
             trigger_pipeline=args.trigger_pipeline,
+            fetch_satellite=args.fetch_satellite,
         )
     except Exception as exc:
         logging.getLogger(__name__).error("Query failed: %s", exc)

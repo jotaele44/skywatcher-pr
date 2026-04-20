@@ -7,3 +7,4 @@ rasterio
 scikit-learn
 fastapi
 uvicorn
+openeo
