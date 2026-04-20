@@ -225,6 +225,83 @@ def _load_mblist(mb_path: str, aoi: tuple, source_file: str) -> pd.DataFrame:
         df['source_file']      = source_file
         df['source_format']    = 'multibeam_bathy'
         df['acquisition_date'] = _date_from_filename(source_file)
+        return df[['lat', 'lon', 'raster_value', 'source_file',
+                   'source_format', 'acquisition_date']]
+
+    except Exception as exc:
+        logger.debug(f"mblist failed on {mb_path}: {exc}")
+        return pd.DataFrame()
+
+
+# ── Loader: Kongsberg .all via pyall (pure Python, no MB-System needed) ────────
+
+def _load_pyall_file(all_path: str) -> pd.DataFrame:
+    """Extract lat/lon/depth from a Kongsberg .all file using the pyall library.
+
+    Walks datagrams sequentially: tracks the last known position (P datagram)
+    and emits a sounding at that position for each depth ping (D/X datagram).
+    Returns a DataFrame with lat, lon, raster_value (negative metres).
+    """
+    import pyall  # pip install pyall
+
+    reader = pyall.ALLReader(all_path)
+    rows = []
+    cur_lat = cur_lon = None
+
+    while reader.moreData():
+        typechar, dg = reader.readDatagram()
+
+        if typechar == 'P':
+            dg.read()
+            cur_lat = getattr(dg, 'Latitude',  getattr(dg, 'latitude',  None))
+            cur_lon = getattr(dg, 'Longitude', getattr(dg, 'longitude', None))
+
+        elif typechar in ('D', 'X') and cur_lat is not None:
+            dg.read()
+            raw = (
+                getattr(dg, 'depth',  None)
+                or getattr(dg, 'depths', None)
+                or getattr(dg, 'z',     None)
+            )
+            if raw:
+                valid = [abs(v) for v in raw if v and not np.isnan(float(v))]
+                if valid:
+                    rows.append({
+                        'lat':          cur_lat,
+                        'lon':          cur_lon,
+                        'raster_value': -float(np.median(valid)),
+                    })
+
+    try:
+        reader.close()
+    except Exception:
+        pass
+
+    return pd.DataFrame(rows) if rows else pd.DataFrame()
+
+
+def _load_pyall(all_path: str, aoi: tuple, source_file: str) -> pd.DataFrame:
+    """Wrapper: gunzip if needed, call _load_pyall_file, apply AOI filter."""
+    try:
+        df = _load_pyall_file(all_path)
+        if df.empty:
+            return df
+        df = df[df['raster_value'] < 0]
+        df = _aoi_filter(df, aoi)
+        df['source_file']      = source_file
+        df['source_format']    = 'multibeam_bathy'
+        df['acquisition_date'] = _date_from_filename(source_file)
+        return df[['lat', 'lon', 'raster_value', 'source_file',
+                   'source_format', 'acquisition_date']]
+    except ImportError:
+        logger.warning("[multibeam_bathy] pyall not installed — run: pip install pyall")
+        return pd.DataFrame()
+    except Exception as exc:
+        logger.debug(f"pyall failed on {all_path}: {exc}")
+        return pd.DataFrame()
+        df['source_file']      = source_file
+        df['source_format']    = 'multibeam_bathy'
+        df['acquisition_date'] = _date_from_filename(source_file)
         return df
 
     except Exception as exc:
@@ -352,12 +429,34 @@ def fetch_multibeam_bathy(
                 if len(df) > 0:
                     frames.append(df)
 
-        elif not frames and not _MBLIST_OK:
-            logger.warning(
-                "[multibeam_bathy] mblist not found; install MB-System to process "
-                "raw *.mb121 files.  Alternatively, place the processed "
-                "PRT_01132019_final.tif.gz in data/raw/multibeam/products/."
-            )
+        # ── 5. pyall fallback (pure Python, no MB-System required) ──────────
+        if not frames and not _MBLIST_OK:
+            mb_file_paths = _find_mb_files(data_dir, max_files=5)
+            if mb_file_paths:
+                logger.info(
+                    f"[multibeam_bathy] mblist not found; trying pyall on "
+                    f"{len(mb_file_paths)} file(s) — install: pip install pyall"
+                )
+                for fpath in mb_file_paths:
+                    fname = os.path.basename(fpath)
+                    lower = fname.lower()
+                    work_path = fpath
+
+                    if lower.endswith('.gz'):
+                        suffix = '.' + lower[:-3].split('.')[-1]
+                        tmp = _gunzip_to_temp(fpath, suffix)
+                        tmp_files.append(tmp)
+                        work_path = tmp
+
+                    df = _load_pyall(work_path, aoi, fname)
+                    if len(df) > 0:
+                        frames.append(df)
+            else:
+                logger.warning(
+                    "[multibeam_bathy] no MB files found and mblist unavailable. "
+                    "Install pyall (pip install pyall) or MB-System (conda install "
+                    "-c conda-forge mbsystem) to process raw .all files."
+                )
 
     finally:
         for tmp in tmp_files:
