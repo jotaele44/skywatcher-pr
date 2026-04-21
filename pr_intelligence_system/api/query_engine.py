@@ -257,6 +257,10 @@ def _run_with_satellite_fetch(
         }
         return gpd.GeoDataFrame(crs="EPSG:4326"), empty_summary
 
+    # Persist AOI results back to the master dataset so future non-satellite
+    # queries on this area return real (not synthetic) data.
+    _append_to_master(aoi_df, master_path)
+
     # Also pull in any existing master dataset points within AOI and merge
     existing_frames = []
     try:
@@ -286,6 +290,26 @@ def _run_with_satellite_fetch(
         summary["total_ilaps"], aoi_id,
     )
     return ilap_gdf, summary
+
+
+def _append_to_master(aoi_df: pd.DataFrame, master_path: str) -> None:
+    """Append AOI pipeline rows to final_anomaly_ranked.csv, deduplicating on cell_id."""
+    rows = aoi_df.drop(columns=["geometry"], errors="ignore")
+    if rows.empty:
+        return
+    try:
+        os.makedirs(os.path.dirname(master_path), exist_ok=True)
+        if os.path.exists(master_path):
+            existing = pd.read_csv(master_path)
+            combined = pd.concat([existing, rows], ignore_index=True)
+            if "cell_id" in combined.columns:
+                combined = combined.drop_duplicates(subset="cell_id", keep="last")
+        else:
+            combined = rows
+        combined.to_csv(master_path, index=False)
+        logger.info("Master dataset updated: %d total rows.", len(combined))
+    except Exception as exc:
+        logger.warning("Could not update master dataset: %s", exc)
 
 
 def _trigger_pipeline(project_root: str) -> None:

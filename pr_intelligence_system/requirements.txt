@@ -5,6 +5,8 @@ networkx
 shapely
 rasterio
 scikit-learn
+pyproj
 fastapi
 uvicorn
 openeo
+pytest

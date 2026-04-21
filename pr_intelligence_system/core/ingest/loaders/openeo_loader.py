@@ -118,8 +118,11 @@ def fetch_dem(
         bands=[DEM_BAND],
     )
 
-    # DEM is static; mean_time collapses any duplicate timestamps safely
-    result = cube.mean_time()
+    # Only reduce the time dimension if the collection actually has one.
+    # COPERNICUS_30 is a static dataset — some backend versions expose a
+    # single timestamp, others expose none. Calling mean_time() on a
+    # timeless cube raises an error at job submission.
+    result = _reduce_time_if_present(connection, cube)
 
     job_title = f"pr_int_{aoi_id}_dem"
     logger.info("Submitting DEM batch job: %s", job_title)
@@ -130,6 +133,30 @@ def fetch_dem(
 
     job.get_results().download_files(output_dir)
     return _prefix_new_tifs(output_dir, "dem_")
+
+
+def _reduce_time_if_present(connection, cube):
+    """
+    Reduce the time dimension of a DataCube only if the collection has one.
+
+    Inspects collection metadata via describe_collection() to check for a
+    non-null temporal extent. If present, applies mean_time(); otherwise
+    returns the cube unchanged.
+    """
+    try:
+        desc = connection.describe_collection(DEM_COLLECTION)
+        intervals = desc.get("extent", {}).get("temporal", {}).get("interval", [])
+        has_time = bool(intervals and intervals[0] and any(v is not None for v in intervals[0]))
+    except Exception as exc:
+        logger.warning("Could not inspect DEM collection metadata (%s); assuming no time dim.", exc)
+        has_time = False
+
+    if has_time:
+        logger.info("DEM collection has temporal dimension; applying mean_time().")
+        return cube.mean_time()
+
+    logger.info("DEM collection has no temporal dimension; skipping time reduction.")
+    return cube
 
 
 def _prefix_new_tifs(output_dir: str, prefix: str) -> list:

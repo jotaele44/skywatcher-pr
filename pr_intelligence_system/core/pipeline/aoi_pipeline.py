@@ -253,9 +253,26 @@ def _run_clustering(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _compute_final_score(df: pd.DataFrame) -> pd.Series:
-    """Compute weighted final score, matching run_temporal_clustering.py formula."""
-    score = pd.Series(0.0, index=df.index)
+    """
+    Compute weighted final score, matching run_temporal_clustering.py exactly.
+
+    Differences from a naive weighted sum:
+    - persistence is normalized by max(persistence) before weighting
+    - weights are divided by total_weight (sum of weights for present columns),
+      so missing columns don't deflate scores
+    """
+    available = {}
     for col, weight in _FINAL_SCORE_WEIGHTS.items():
         if col in df.columns:
-            score += weight * pd.to_numeric(df[col], errors="coerce").fillna(0.0)
-    return np.clip(score, 0.0, 1.0)
+            vals = pd.to_numeric(df[col], errors="coerce").fillna(0.0).values
+            if col == "persistence":
+                p_max = float(vals.max())
+                vals = vals / p_max if p_max > 0.0 else vals
+            available[col] = (vals, weight)
+
+    if not available:
+        return pd.Series(0.0, index=df.index)
+
+    total_weight = sum(w for _, w in available.values())
+    score = sum((w / total_weight) * v for v, w in available.values())
+    return np.clip(pd.Series(score, index=df.index), 0.0, 1.0)
