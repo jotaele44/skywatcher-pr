@@ -35,6 +35,7 @@ import gzip
 import logging
 import os
 import shutil
+import struct
 import subprocess
 import tempfile
 
@@ -236,80 +237,115 @@ def _load_mblist(mb_path: str, aoi: tuple, source_file: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-# ── Loader: Kongsberg .all via pyall (pure Python, no MB-System needed) ────────
+# ── Loader: Kongsberg .all via native struct parser (no external deps) ─────────
 
-def _load_pyall_file(all_path: str) -> pd.DataFrame:
-    """Extract lat/lon/depth from a Kongsberg .all file using the pyall library.
+def _parse_all_binary(all_path: str, aoi: tuple, source_file: str) -> pd.DataFrame:
+    """Parse a Kongsberg .all binary file using Python struct only.
 
-    Walks datagrams sequentially: tracks the last known position (P datagram)
-    and emits a sounding at that position for each depth ping (D/X datagram).
-    Returns a DataFrame with lat, lon, raster_value (negative metres).
+    Datagram layout (all integers little-endian):
+      [4] length  [1] STX=0x02  [1] type  [2] model
+      [4] date YYYYMMDD  [4] time_ms  [2] counter  [2] serial  = 20-byte prefix
+      [data]  [1] ETX=0x03  [2] checksum
+
+    Position datagram (0x50), data at raw byte 20:
+      int32 lat_raw × 1e-7 → decimal degrees (positive = north)
+      int32 lon_raw × 1e-7 → decimal degrees (positive = east)
+
+    XYZ88 datagram (0x58), data at raw byte 20 (28-byte XYZ88 header then soundings):
+      +8  uint16 n_soundings
+      Soundings start at raw byte 48, 20 bytes each:
+        +0  float32 z_recp (depth in metres, positive downward)
     """
-    import pyall  # pip install pyall
+    POS_TYPE      = 0x50
+    XYZ_TYPE      = 0x58
+    SOUNDING_SIZE = 20
 
-    reader = pyall.ALLReader(all_path)
+    positions = []   # (time_ms, lat_deg, lon_deg)
+    depths    = []   # (time_ms, median_depth_m)
+
+    try:
+        with open(all_path, 'rb') as fh:
+            raw = fh.read()
+    except OSError as exc:
+        logger.debug(f"[_parse_all_binary] cannot open {all_path}: {exc}")
+        return pd.DataFrame()
+
+    n   = len(raw)
+    pos = 0
+
+    while pos < n - 20:
+        # Require STX at byte 4 of each datagram to stay in sync
+        if raw[pos + 4] != 0x02:
+            pos += 1
+            continue
+
+        try:
+            dg_len = struct.unpack_from('<I', raw, pos)[0]
+        except struct.error:
+            break
+
+        if dg_len < 19 or dg_len > 500_000:
+            pos += 1
+            continue
+
+        end = pos + 4 + dg_len
+        if end > n:
+            break
+
+        type_id = raw[pos + 5]
+        time_ms = struct.unpack_from('<I', raw, pos + 12)[0]
+
+        if type_id == POS_TYPE and end >= pos + 29:
+            lat_raw, lon_raw = struct.unpack_from('<ii', raw, pos + 20)
+            lat = lat_raw * 1e-7
+            lon = lon_raw * 1e-7
+            if -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
+                positions.append((time_ms, lat, lon))
+
+        elif type_id == XYZ_TYPE and end >= pos + 32:
+            n_soundings = struct.unpack_from('<H', raw, pos + 28)[0]
+            snd_end = pos + 48 + n_soundings * SOUNDING_SIZE
+            if n_soundings == 0 or snd_end > end:
+                pos = end
+                continue
+            zvals = []
+            for i in range(n_soundings):
+                z = struct.unpack_from('<f', raw, pos + 48 + i * SOUNDING_SIZE)[0]
+                if not np.isnan(z) and 0.1 < z < 12000.0:
+                    zvals.append(z)
+            if zvals:
+                depths.append((time_ms, float(np.median(zvals))))
+
+        pos = end
+
+    if not positions or not depths:
+        logger.debug(
+            f"[_parse_all_binary] {os.path.basename(all_path)}: "
+            f"{len(positions)} positions, {len(depths)} depth pings"
+        )
+        return pd.DataFrame()
+
+    pos_times = np.array([p[0] for p in positions], dtype=np.float64)
+    pos_lats  = np.array([p[1] for p in positions])
+    pos_lons  = np.array([p[2] for p in positions])
+
     rows = []
-    cur_lat = cur_lon = None
+    for t_ms, depth_m in depths:
+        idx = int(np.argmin(np.abs(pos_times - t_ms)))
+        rows.append({
+            'lat':          pos_lats[idx],
+            'lon':          pos_lons[idx],
+            'raster_value': -depth_m,
+        })
 
-    while reader.moreData():
-        typechar, dg = reader.readDatagram()
-
-        if typechar == 'P':
-            dg.read()
-            cur_lat = getattr(dg, 'Latitude',  getattr(dg, 'latitude',  None))
-            cur_lon = getattr(dg, 'Longitude', getattr(dg, 'longitude', None))
-
-        elif typechar in ('D', 'X') and cur_lat is not None:
-            dg.read()
-            raw = (
-                getattr(dg, 'depth',  None)
-                or getattr(dg, 'depths', None)
-                or getattr(dg, 'z',     None)
-            )
-            if raw:
-                valid = [abs(v) for v in raw if v and not np.isnan(float(v))]
-                if valid:
-                    rows.append({
-                        'lat':          cur_lat,
-                        'lon':          cur_lon,
-                        'raster_value': -float(np.median(valid)),
-                    })
-
-    try:
-        reader.close()
-    except Exception:
-        pass
-
-    return pd.DataFrame(rows) if rows else pd.DataFrame()
-
-
-def _load_pyall(all_path: str, aoi: tuple, source_file: str) -> pd.DataFrame:
-    """Wrapper: gunzip if needed, call _load_pyall_file, apply AOI filter."""
-    try:
-        df = _load_pyall_file(all_path)
-        if df.empty:
-            return df
-        df = df[df['raster_value'] < 0]
-        df = _aoi_filter(df, aoi)
-        df['source_file']      = source_file
-        df['source_format']    = 'multibeam_bathy'
-        df['acquisition_date'] = _date_from_filename(source_file)
-        return df[['lat', 'lon', 'raster_value', 'source_file',
-                   'source_format', 'acquisition_date']]
-    except ImportError:
-        logger.warning("[multibeam_bathy] pyall not installed — run: pip install pyall")
-        return pd.DataFrame()
-    except Exception as exc:
-        logger.debug(f"pyall failed on {all_path}: {exc}")
-        return pd.DataFrame()
-        df['source_file']      = source_file
-        df['source_format']    = 'multibeam_bathy'
-        df['acquisition_date'] = _date_from_filename(source_file)
-        return df
-
-    except Exception as exc:
-        logger.debug(f"mblist failed on {mb_path}: {exc}")
-        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    df = df[df['raster_value'] < 0]
+    df = _aoi_filter(df, aoi)
+    df['source_file']      = source_file
+    df['source_format']    = 'multibeam_bathy'
+    df['acquisition_date'] = _date_from_filename(source_file)
+    return df[['lat', 'lon', 'raster_value', 'source_file',
+               'source_format', 'acquisition_date']]
 
 
 def _date_from_filename(name: str) -> str:
@@ -435,13 +471,13 @@ def fetch_multibeam_bathy(
                 if len(df) > 0:
                     frames.append(df)
 
-        # ── 5. pyall fallback (pure Python, no MB-System required) ──────────
+        # ── 5. Native Kongsberg .all parser (struct, no external deps) ──────
         if not frames and not _MBLIST_OK:
             mb_file_paths = _find_mb_files(data_dir, max_files=5)
             if mb_file_paths:
                 logger.info(
-                    f"[multibeam_bathy] mblist not found; trying pyall on "
-                    f"{len(mb_file_paths)} file(s) — install: pip install pyall"
+                    f"[multibeam_bathy] parsing {len(mb_file_paths)} Kongsberg "
+                    f".all file(s) with native struct reader"
                 )
                 for fpath in mb_file_paths:
                     fname = os.path.basename(fpath)
@@ -454,14 +490,13 @@ def fetch_multibeam_bathy(
                         tmp_files.append(tmp)
                         work_path = tmp
 
-                    df = _load_pyall(work_path, aoi, fname)
+                    df = _parse_all_binary(work_path, aoi, fname)
                     if len(df) > 0:
                         frames.append(df)
             else:
                 logger.warning(
                     "[multibeam_bathy] no MB files found and mblist unavailable. "
-                    "Install pyall (pip install pyall) or MB-System (conda install "
-                    "-c conda-forge mbsystem) to process raw .all files."
+                    "Ensure data/raw/atlantis/ contains *.all.mb58.gz files."
                 )
 
     finally:
