@@ -14,3 +14,6 @@ sentinelsat>=1.3.0
 requests>=2.31.0
 netCDF4>=1.6.5
 s3transfer>=0.10.0
+# Visualization
+folium>=0.15.0
+branca>=0.7.0

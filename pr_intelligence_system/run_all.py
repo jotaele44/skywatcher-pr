@@ -100,6 +100,23 @@ def main() -> None:
             logger.error(f"\nPipeline halted after failure in: {step_name}")
             break
 
+    # ── Step 7: optional visualization (never blocks the pipeline) ───────────
+    viz_ok = False
+    all_core_done = len(results) == len(PIPELINE_STEPS) and all(s for _, s in results)
+    if all_core_done:
+        logger.info("")
+        logger.info("─" * 60)
+        logger.info("RUNNING  : Step 7: Visualization (optional)")
+        logger.info("─" * 60)
+        try:
+            sys.path.insert(0, project_root)
+            from scripts.run_visualize import run_visualize  # noqa: PLC0415
+            viz_ok = run_visualize()
+        except ImportError:
+            logger.info("Step 7 skipped — folium not installed (pip install folium branca)")
+        except Exception as exc:
+            logger.warning(f"Step 7 visualization failed (non-fatal): {exc}")
+
     total_time = time.time() - pipeline_start
 
     # ── Final summary ────────────────────────────────────────────────────────
@@ -109,6 +126,9 @@ def main() -> None:
     for step_name, success in results:
         tag = "[  OK  ]" if success else "[FAILED]"
         print(f"  {tag}  {step_name}")
+    if all_core_done:
+        viz_tag = "[  OK  ]" if viz_ok else "[ SKIP ]"
+        print(f"  {viz_tag}  Step 7: Visualization")
 
     all_success = all(s for _, s in results) and len(results) == len(PIPELINE_STEPS)
 
@@ -120,6 +140,8 @@ def main() -> None:
         print("    data/output/unified_features_enriched.csv")
         print("    data/output/final_anomaly_ranked.csv")
         print("    data/output/snapshots/snapshot_<timestamp>.csv")
+        if viz_ok:
+            print("    data/output/pr_intelligence_map.html")
     else:
         print("  STATUS  : PIPELINE FAILED – see log above for details")
 
