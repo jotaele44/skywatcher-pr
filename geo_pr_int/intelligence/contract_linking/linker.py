@@ -12,6 +12,7 @@ import pandas as pd
 
 from config import SETTINGS
 from utils.geo_helpers import metres_to_degrees_approx
+from ingestion.contracts.loader import DEFAULT_SOURCE_WEIGHT
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +78,11 @@ class ContractLinker:
         ])
 
         # Prepare contract columns
-        amounts = pd.to_numeric(contracts.get("obligated_amount", 0), errors="coerce").fillna(0.0).values
-        vendors = contracts.get("recipient_name_norm", pd.Series("", index=contracts.index)).fillna("").values
+        amounts  = pd.to_numeric(contracts.get("obligated_amount", 0), errors="coerce").fillna(0.0).values
+        vendors  = contracts.get("recipient_name_norm", pd.Series("", index=contracts.index)).fillna("").values
+        sg_wts   = pd.to_numeric(contracts.get("source_group_weight", DEFAULT_SOURCE_WEIGHT),
+                                 errors="coerce").fillna(DEFAULT_SOURCE_WEIGHT).values
+        src_grps = contracts.get("source_group", pd.Series("USASPENDING_FEDERAL", index=contracts.index)).fillna("").values
 
         def _keywords(idx_list: list[int]) -> str:
             kws: set = set()
@@ -90,8 +94,8 @@ class ContractLinker:
                     kws.update(mkw.split(","))
             return ",".join(sorted(kws))
 
-        matched_counts, total_amounts, nearest_ms, kw_strs, top_vendors, scores = (
-            [], [], [], [], [], []
+        matched_counts, total_amounts, nearest_ms, kw_strs, top_vendors, scores, top_sources = (
+            [], [], [], [], [], [], []
         )
 
         for i, coord in enumerate(cand_coords):
@@ -103,22 +107,28 @@ class ContractLinker:
                 kw_strs.append("")
                 top_vendors.append("")
                 scores.append(0.0)
+                top_sources.append("")
                 continue
 
             idx_arr = np.array(indices)
             local_amounts = amounts[idx_arr]
+            local_weights = sg_wts[idx_arr]
             total_amt = float(local_amounts.sum())
+
+            # Weight-adjusted total for scoring (COR3 dollars count more than SAM registry rows)
+            weighted_amt = float((local_amounts * local_weights).sum())
 
             # Nearest distance in approximate metres
             dists, _ = tree.query(coord, k=1)
             nearest = float(dists * (111_320.0 + 111_320.0 * np.cos(np.radians(18.2))) / 2.0)
 
-            # Top vendor by amount
-            best_vendor_idx = idx_arr[int(np.argmax(local_amounts))]
-            top_v = str(vendors[best_vendor_idx])
+            # Top vendor and source group by weighted amount
+            best_idx = idx_arr[int(np.argmax(local_amounts * local_weights))]
+            top_v  = str(vendors[best_idx])
+            top_sg = str(src_grps[best_idx])
 
-            # Score: sigmoid on log(total_M$)
-            score = float(np.clip(1.0 - np.exp(-total_amt / 5e6), 0.0, 1.0))
+            # Score: sigmoid on weighted obligation (normalised to $5M threshold)
+            score = float(np.clip(1.0 - np.exp(-weighted_amt / 5e6), 0.0, 1.0))
 
             matched_counts.append(len(indices))
             total_amounts.append(total_amt)
@@ -126,6 +136,7 @@ class ContractLinker:
             kw_strs.append(_keywords(indices))
             top_vendors.append(top_v)
             scores.append(score)
+            top_sources.append(top_sg)
 
         candidates["matched_contract_count"]  = matched_counts
         candidates["total_obligated_amount"]  = total_amounts
@@ -133,6 +144,7 @@ class ContractLinker:
         candidates["contract_keywords"]       = kw_strs
         candidates["top_vendor"]              = top_vendors
         candidates["contract_match_score"]    = scores
+        candidates["top_contract_source"]     = top_sources
 
         n_matched = int((np.array(matched_counts) > 0).sum())
         logger.info(

@@ -37,7 +37,7 @@ class PipelineResult:
 
 
 def _timed(name: str, fn, timings: dict, errors: list):
-    """Run fn(), record elapsed time, catch and log exceptions."""
+    """Run fn(), record elapsed time, catch and log exceptions. Returns None on failure."""
     t0 = time.time()
     try:
         result = fn()
@@ -49,6 +49,13 @@ def _timed(name: str, fn, timings: dict, errors: list):
         errors.append(f"{name}: {exc}")
         logger.error(f"Step '{name}' failed in {elapsed}s: {exc}")
         return None
+
+
+def _df(val, fallback: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Return val if it is a DataFrame, else fallback (or empty DataFrame)."""
+    if isinstance(val, pd.DataFrame):
+        return val
+    return fallback if fallback is not None else pd.DataFrame()
 
 
 def run_full_pipeline(
@@ -86,43 +93,43 @@ def run_full_pipeline(
 
     # ── Step 1: Load ILAP candidates ──────────────────────────────────────────
     from ingestion.satellite.fetchers import fetch_satellite_features
-    candidates = _timed(
+    candidates = _df(_timed(
         "1_satellite_ingestion",
         lambda: fetch_satellite_features(aoi=aoi, live=live_satellite),
         timings, errors,
-    ) or pd.DataFrame()
+    ))
 
     if candidates.empty:
         logger.warning("Step 1: No ILAP candidates loaded — pipeline will produce empty outputs")
 
     # ── Step 2: Load contracts ────────────────────────────────────────────────
     from ingestion.contracts.loader import load_contracts
-    contracts = _timed(
+    contracts = _df(_timed(
         "2_contract_ingestion",
         lambda: load_contracts(force_api=force_api),
         timings, errors,
-    ) or pd.DataFrame()
+    ))
 
     result.contracts_df = contracts
     logger.info(f"Step 2: {len(contracts)} contracts loaded")
 
     # ── Step 3: Load hydro features ───────────────────────────────────────────
     from ingestion.hydro.hydrography import load_hydro_features
-    hydro = _timed(
+    hydro = _df(_timed(
         "3_hydro_ingestion",
         lambda: load_hydro_features(aoi=aoi),
         timings, errors,
-    ) or pd.DataFrame()
+    ))
 
     logger.info(f"Step 3: {len(hydro)} hydro nodes loaded")
 
     # ── Step 4: Load OSM dead-ends ────────────────────────────────────────────
     from ingestion.osm.road_network import fetch_dead_ends
-    dead_ends = _timed(
+    dead_ends = _df(_timed(
         "4_osm_ingestion",
         lambda: fetch_dead_ends(aoi=aoi),
         timings, errors,
-    ) or pd.DataFrame()
+    ))
 
     logger.info(f"Step 4: {len(dead_ends)} OSM dead-end nodes loaded")
 
@@ -133,49 +140,49 @@ def run_full_pipeline(
 
     # ── Step 5: Normalise entities ────────────────────────────────────────────
     from processing.normalization.entity_normalizer import enrich_contracts_with_norms
-    contracts = _timed(
+    contracts = _df(_timed(
         "5_entity_normalisation",
         lambda: enrich_contracts_with_norms(contracts),
         timings, errors,
-    ) or contracts
+    ), contracts)
 
     # ── Step 6: Extract raster features ──────────────────────────────────────
     from processing.feature_extraction.raster_features import prepare_features
-    candidates = _timed(
+    candidates = _df(_timed(
         "6_feature_extraction",
         lambda: prepare_features(candidates),
         timings, errors,
-    ) or candidates
+    ), candidates)
 
     logger.info(f"Step 6: features extracted, {len(candidates)} candidates")
 
     # ── Step 7: Detect linear corridors ──────────────────────────────────────
     from processing.geometry_detection.linear_detector import run_geometry_detection
-    candidates = _timed(
+    candidates = _df(_timed(
         "7_geometry_detection",
         lambda: run_geometry_detection(candidates),
         timings, errors,
-    ) or candidates
+    ), candidates)
 
     n_corr = int(candidates.get("linear_corridor", pd.Series(False)).sum()) if "linear_corridor" in candidates.columns else 0
     logger.info(f"Step 7: {n_corr} linear corridor candidates identified")
 
     # ── Step 8: NDVI scoring ──────────────────────────────────────────────────
     from processing.ndvi_analysis.ndvi_detector import run_ndvi_detection
-    candidates = _timed(
+    candidates = _df(_timed(
         "8_ndvi_detection",
         lambda: run_ndvi_detection(candidates),
         timings, errors,
-    ) or candidates
+    ), candidates)
 
     # ── Step 9: Link contracts spatially ──────────────────────────────────────
     from intelligence.contract_linking.linker import ContractLinker
     linker = ContractLinker()
-    candidates = _timed(
+    candidates = _df(_timed(
         "9_contract_linking",
         lambda: linker.link(candidates, contracts),
         timings, errors,
-    ) or candidates
+    ), candidates)
 
     from intelligence.contract_linking.linker import summarise_contract_links
     link_summary = summarise_contract_links(candidates)
@@ -187,19 +194,19 @@ def run_full_pipeline(
     # ── Step 10: Hydro proximity ──────────────────────────────────────────────
     from intelligence.hydro_linking.hydro_linker import HydroLinker
     hlinker = HydroLinker()
-    candidates = _timed(
+    candidates = _df(_timed(
         "10_hydro_linking",
         lambda: hlinker.link(candidates, hydro),
         timings, errors,
-    ) or candidates
+    ), candidates)
 
     # ── Step 11: Compute unified scores ───────────────────────────────────────
     from intelligence.anomaly_scoring.scorer import rank_candidates, score_summary
-    candidates = _timed(
+    candidates = _df(_timed(
         "11_scoring",
         lambda: rank_candidates(candidates),
         timings, errors,
-    ) or candidates
+    ), candidates)
 
     result.summary = score_summary(candidates) if "unified_score" in candidates.columns else {}
     logger.info(
@@ -213,11 +220,12 @@ def run_full_pipeline(
     from intelligence.corridor_engine.corridor_builder import (
         build_corridors, corridors_to_dataframe, corridors_to_geojson,
     )
-    corridor_records = _timed(
+    _cr = _timed(
         "12_corridor_building",
         lambda: build_corridors(candidates),
         timings, errors,
-    ) or []
+    )
+    corridor_records = _cr if isinstance(_cr, list) else []
 
     corridors_df = corridors_to_dataframe(corridor_records)
     result.corridors_df = corridors_df

@@ -16,11 +16,12 @@ crs:
   analysis: "EPSG:32161"   # PR State Plane (metres)
 
 # Paths to sibling codebases (relative to geo_pr_int/ root)
+# Drop pr_all_awards_master.csv into data/raw/ to enable local contract ingestion.
 sources:
   pr_intelligence_system: "../pr_intelligence_system"
   contract_sweeper_output: "../Contract_Sweeper/data/staging/processed"
-  contract_master_csv: "../Contract_Sweeper/data/staging/processed/pr_contracts_master.csv"
-  unified_awards_csv: "../Contract_Sweeper/data/staging/processed/pr_all_awards_master.csv"
+  contract_master_csv: "data/raw/pr_contracts_master.csv"
+  unified_awards_csv: "data/raw/pr_all_awards_master.csv"
 
 # USASpending direct API (fallback when Contract_Sweeper output absent)
 usaspending:
@@ -47,9 +48,40 @@ usaspending:
     - aqueduct
     - drainage
 
-# OSM Overpass API
+# Contract source groups (from Contract_Sweeper unified output)
+# source_group_weight scales contract_match_score contribution per source.
+contract_sources:
+  OCE_PR:
+    weight: 0.80
+    description: "PR Office of Contract Education"
+  COR3_PR:
+    weight: 1.00
+    description: "FEMA/COR3 post-hurricane reconstruction"
+  CONTRALOR_PR:
+    weight: 0.90
+    description: "PR Controller / Comptroller"
+  OGPE_PR:
+    weight: 0.85
+    description: "PR Budget Office capital projects"
+  USASPENDING_FEDERAL:
+    weight: 0.75
+    description: "Federal awards via USASpending.gov"
+  FSRS_SUBAWARDS:
+    weight: 0.95
+    description: "Federal subawards — actual construction firms"
+  SAM_ENTITY_REGISTRY:
+    weight: 0.40
+    description: "SAM entity/contractor registry"
+  DCAA_CONTRACTOR_BASELINE:
+    weight: 0.50
+    description: "DoD contractor baseline"
+
+# OSM Overpass API (primary + fallback endpoints)
 osm:
-  overpass_url: "https://overpass-api.de/api/interpreter"
+  overpass_url: "https://overpass.kumi.systems/api/interpreter"
+  overpass_fallback_urls:
+    - "https://overpass-api.de/api/interpreter"
+    - "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   timeout_s: 60
   cache_ttl_hours: 24
 

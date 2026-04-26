@@ -1,18 +1,31 @@
 """
 Contract ingestion for GEO-PR-INT.
 
-Priority order:
-  1. Contract_Sweeper pr_contracts_master.csv (preferred — already normalized)
-  2. Contract_Sweeper pr_all_awards_master.csv (unified multi-dataset)
-  3. USASpending API live query (fallback when no local CSV exists)
+Source priority order:
+  1. CONTRACT_CSV_PATH env var (user override)
+  2. data/raw/pr_all_awards_master.csv (local drop location)
+  3. data/raw/pr_contracts_master.csv
+  4. ~/Documents/GitHub/Contract-Sweeper/data/staging/processed/ (Mac dev path)
+  5. Sibling Contract_Sweeper repo output (legacy path)
+  6. USASpending API live query (network fallback)
+
+Supported source_groups (from Contract_Sweeper unified output):
+  OCE_PR               Puerto Rico Office of Contract Education
+  COR3_PR              Central Office for Recovery, Reconstruction and Resiliency
+  CONTRALOR_PR         Puerto Rico Controller / Comptroller
+  OGPE_PR              Oficina de Gerencia y Presupuesto (Budget Office)
+  USASPENDING_FEDERAL  Federal awards via USASpending.gov
+  FSRS_SUBAWARDS       Federal Subaward Reporting System
+  SAM_ENTITY_REGISTRY  System for Award Management — entity/contractor registry
+  DCAA_CONTRACTOR_BASELINE  Defense Contract Audit Agency contractor baseline
 
 Output schema (all paths produce the same columns):
   award_id, recipient_name, recipient_name_norm, description,
   obligated_amount, award_date, fiscal_year,
   place_of_performance_city, place_of_performance_state,
   awarding_agency_name, naics_code, psc_code,
-  lat, lon, geocode_method,
-  matched_keywords (list)
+  lat, lon, geocode_method, matched_keywords,
+  source_group, source_group_weight
 """
 
 import logging
@@ -24,7 +37,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-from config import CONTRACT_MASTER_PATH, UNIFIED_AWARDS_PATH, SETTINGS
+from config import CONTRACT_MASTER_PATH, UNIFIED_AWARDS_PATH, SETTINGS, GEO_PR_INT_ROOT
 from utils.geo_helpers import PR_MUNICIPALITY_CENTROIDS, PR_CENTROID, geocode_place_name
 
 logger = logging.getLogger(__name__)
@@ -32,25 +45,56 @@ logger = logging.getLogger(__name__)
 USASPENDING_API = SETTINGS["usaspending"]["api_base"]
 KEYWORDS = SETTINGS["usaspending"]["keywords"]
 
-# Columns we need from Contract_Sweeper's normalized output
+# ── Source group registry ─────────────────────────────────────────────────────
+# Weight reflects relevance to infrastructure detection in PR:
+#   COR3 and CONTRALOR are highest (direct PR infra reconstruction contracts)
+#   Federal subawards are high (actual construction companies doing the work)
+#   Entity registry / auditor baseline are lower (reference data, not awards)
+SOURCE_GROUP_WEIGHTS: dict[str, float] = {
+    "COR3_PR":                  1.00,   # FEMA/COR3 — post-hurricane reconstruction
+    "CONTRALOR_PR":             0.90,   # PR Controller — municipal infrastructure
+    "OGPE_PR":                  0.85,   # PR Budget Office — capital projects
+    "OCE_PR":                   0.80,   # PR contracts — local government
+    "USASPENDING_FEDERAL":      0.75,   # Federal awards — broadest coverage
+    "FSRS_SUBAWARDS":           0.95,   # Subawards — actual construction firms
+    "SAM_ENTITY_REGISTRY":      0.40,   # Entity data — no award amounts
+    "DCAA_CONTRACTOR_BASELINE": 0.50,   # DoD baseline — partial PR relevance
+}
+DEFAULT_SOURCE_WEIGHT = 0.60  # for rows without a source_group column
+
+# ── Column mappings ───────────────────────────────────────────────────────────
 _CS_COLUMN_MAP = {
     # Contract_Sweeper canonical → our canonical
-    "contract_id":          "award_id",
-    "award_id":             "award_id",
-    "vendor_name":          "recipient_name",
-    "recipient_name":       "recipient_name",
-    "description":          "description",
-    "obligated_amount":     "obligated_amount",
-    "award_amount":         "obligated_amount",
-    "award_date":           "award_date",
-    "fiscal_year":          "fiscal_year",
-    "pop_city":             "place_of_performance_city",
+    "contract_id":               "award_id",
+    "award_id":                  "award_id",
+    "vendor_name":               "recipient_name",
+    "recipient_name":            "recipient_name",
+    "contractor_name":           "recipient_name",
+    "description":               "description",
+    "project_description":       "description",
+    "obligated_amount":          "obligated_amount",
+    "award_amount":              "obligated_amount",
+    "total_obligated_amount":    "obligated_amount",
+    "amount":                    "obligated_amount",
+    "award_date":                "award_date",
+    "start_date":                "award_date",
+    "contract_date":             "award_date",
+    "fiscal_year":               "fiscal_year",
+    "pop_city":                  "place_of_performance_city",
     "place_of_performance_city": "place_of_performance_city",
-    "pop_state":            "place_of_performance_state",
-    "awarding_agency":      "awarding_agency_name",
-    "awarding_agency_name": "awarding_agency_name",
-    "naics_code":           "naics_code",
-    "psc_code":             "psc_code",
+    "city":                      "place_of_performance_city",
+    "municipality":              "place_of_performance_city",
+    "pop_state":                 "place_of_performance_state",
+    "awarding_agency":           "awarding_agency_name",
+    "awarding_agency_name":      "awarding_agency_name",
+    "agency":                    "awarding_agency_name",
+    "naics_code":                "naics_code",
+    "naics":                     "naics_code",
+    "psc_code":                  "psc_code",
+    "psc":                       "psc_code",
+    "source_group":              "source_group",
+    "data_source":               "source_group",
+    "source":                    "source_group",
 }
 
 OUTPUT_COLS = [
@@ -59,8 +103,11 @@ OUTPUT_COLS = [
     "place_of_performance_city", "place_of_performance_state",
     "awarding_agency_name", "naics_code", "psc_code",
     "lat", "lon", "geocode_method", "matched_keywords",
+    "source_group", "source_group_weight",
 ]
 
+
+# ── Column normalisation ──────────────────────────────────────────────────────
 
 def _normalise_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Remap Contract_Sweeper columns to our canonical schema."""
@@ -72,8 +119,18 @@ def _normalise_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns=rename)
 
 
+def _assign_source_group_weights(df: pd.DataFrame) -> pd.DataFrame:
+    """Add source_group_weight based on the source_group column."""
+    df = df.copy()
+    if "source_group" not in df.columns:
+        df["source_group"] = "USASPENDING_FEDERAL"
+    df["source_group"] = df["source_group"].fillna("USASPENDING_FEDERAL").str.upper().str.strip()
+    df["source_group_weight"] = df["source_group"].map(SOURCE_GROUP_WEIGHTS).fillna(DEFAULT_SOURCE_WEIGHT)
+    return df
+
+
 def _geocode_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    """Add lat/lon to contracts using place-of-performance city lookup."""
+    """Add lat/lon using place-of-performance city lookup."""
     df = df.copy()
     lats, lons, methods = [], [], []
     pop_col = "place_of_performance_city" if "place_of_performance_city" in df.columns else None
@@ -97,19 +154,19 @@ def _geocode_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _match_keywords(df: pd.DataFrame) -> pd.DataFrame:
-    """Add matched_keywords column based on contract description."""
+    """Add matched_keywords list from contract description."""
     df = df.copy()
     if "description" not in df.columns:
         df["matched_keywords"] = [[] for _ in range(len(df))]
         return df
 
-    def _find_keywords(text):
+    def _find(text):
         if not isinstance(text, str):
             return []
         low = text.lower()
         return [kw for kw in KEYWORDS if kw.lower() in low]
 
-    df["matched_keywords"] = df["description"].apply(_find_keywords)
+    df["matched_keywords"] = df["description"].apply(_find)
     return df
 
 
@@ -118,7 +175,8 @@ def _normalise_names(df: pd.DataFrame) -> pd.DataFrame:
     import re
     _SUFFIXES = re.compile(
         r"\b(llc|inc|corp|corporation|company|co|ltd|lp|llp|associates|group"
-        r"|solutions|services|contractors|construction|consulting)\b\.?",
+        r"|solutions|services|contractors|construction|consulting|international"
+        r"|enterprises|technologies|systems|management|partners)\b\.?",
         re.IGNORECASE,
     )
     df = df.copy()
@@ -136,49 +194,80 @@ def _normalise_names(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _ensure_output_cols(df: pd.DataFrame) -> pd.DataFrame:
-    """Guarantee all OUTPUT_COLS exist (fill missing with sensible defaults)."""
+    """Guarantee all OUTPUT_COLS exist with sensible defaults."""
     df = df.copy()
     defaults = {
-        "award_id": "",
-        "recipient_name": "",
-        "recipient_name_norm": "",
-        "description": "",
-        "obligated_amount": 0.0,
-        "award_date": "",
-        "fiscal_year": 0,
-        "place_of_performance_city": "",
-        "place_of_performance_state": "PR",
-        "awarding_agency_name": "",
-        "naics_code": "",
-        "psc_code": "",
-        "lat": PR_CENTROID[0],
-        "lon": PR_CENTROID[1],
-        "geocode_method": "pr_centroid",
-        "matched_keywords": None,
+        "award_id":                    "",
+        "recipient_name":              "",
+        "recipient_name_norm":         "",
+        "description":                 "",
+        "obligated_amount":            0.0,
+        "award_date":                  "",
+        "fiscal_year":                 0,
+        "place_of_performance_city":   "",
+        "place_of_performance_state":  "PR",
+        "awarding_agency_name":        "",
+        "naics_code":                  "",
+        "psc_code":                    "",
+        "lat":                         PR_CENTROID[0],
+        "lon":                         PR_CENTROID[1],
+        "geocode_method":              "pr_centroid",
+        "matched_keywords":            None,
+        "source_group":                "USASPENDING_FEDERAL",
+        "source_group_weight":         DEFAULT_SOURCE_WEIGHT,
     }
     for col, default in defaults.items():
         if col not in df.columns:
             df[col] = default
-    if df["matched_keywords"].dtype == object:
-        df["matched_keywords"] = df["matched_keywords"].apply(
-            lambda v: v if isinstance(v, list) else []
-        )
+    df["matched_keywords"] = df["matched_keywords"].apply(
+        lambda v: v if isinstance(v, list) else []
+    )
+    df["obligated_amount"] = pd.to_numeric(df["obligated_amount"], errors="coerce").fillna(0.0)
     return df[OUTPUT_COLS]
+
+
+# ── CSV path resolution ───────────────────────────────────────────────────────
+
+def _candidate_paths() -> list[Path]:
+    """Return ordered list of CSV paths to try."""
+    paths: list[Path] = []
+
+    # 1. Explicit env var override
+    env_path = os.environ.get("CONTRACT_CSV_PATH", "")
+    if env_path:
+        paths.append(Path(env_path).expanduser())
+
+    # 2. Local data/raw drop location (primary for server deployments)
+    raw_dir = GEO_PR_INT_ROOT / "data" / "raw"
+    paths += [
+        raw_dir / "pr_all_awards_master.csv",
+        raw_dir / "pr_contracts_master.csv",
+    ]
+
+    # 3. Mac developer path (Contract-Sweeper repo on local machine)
+    mac_base = Path.home() / "Documents" / "GitHub" / "Contract-Sweeper" / "data" / "staging" / "processed"
+    paths += [
+        mac_base / "pr_all_awards_master.csv",
+        mac_base / "pr_contracts_master.csv",
+    ]
+
+    # 4. Settings-configured sibling repo paths
+    paths += [CONTRACT_MASTER_PATH, UNIFIED_AWARDS_PATH]
+
+    return paths
 
 
 # ── Path 1: Contract_Sweeper CSV ──────────────────────────────────────────────
 
 def load_from_contract_sweeper(path: Path | None = None) -> pd.DataFrame:
-    """Load contracts from Contract_Sweeper's normalized master CSV."""
-    candidates = [
-        path,
-        CONTRACT_MASTER_PATH,
-        UNIFIED_AWARDS_PATH,
-    ]
+    """Load contracts from Contract_Sweeper unified CSV (all 8 source groups)."""
+    candidates = ([Path(path)] if path else []) + _candidate_paths()
+
     for p in candidates:
         if p is None:
             continue
-        if not Path(p).exists():
+        p = Path(p)
+        if not p.exists():
             logger.debug(f"Contract CSV not found: {p}")
             continue
         try:
@@ -186,12 +275,17 @@ def load_from_contract_sweeper(path: Path | None = None) -> pd.DataFrame:
             logger.info(f"Loaded {len(df)} contract rows from {p}")
             df = _normalise_columns(df)
             df = _normalise_names(df)
+            df = _assign_source_group_weights(df)
             df = _geocode_dataframe(df)
             df = _match_keywords(df)
             df = _ensure_output_cols(df)
+
+            groups = df["source_group"].value_counts().to_dict()
+            kw_matches = (df["matched_keywords"].apply(len) > 0).sum()
             logger.info(
                 f"Contract ingestion (file): {len(df)} rows, "
-                f"{(df['matched_keywords'].apply(len) > 0).sum()} keyword matches"
+                f"{kw_matches} keyword matches, "
+                f"source groups: {groups}"
             )
             return df
         except Exception as exc:
@@ -201,6 +295,12 @@ def load_from_contract_sweeper(path: Path | None = None) -> pd.DataFrame:
 
 
 # ── Path 2: USASpending live API ──────────────────────────────────────────────
+
+_USA_HEADERS = {
+    "Content-Type": "application/json",
+    "User-Agent": "GEO-PR-INT/1.0 (geospatial research)",
+}
+
 
 def _usaspending_page(keyword: str, page: int, page_size: int) -> list[dict]:
     """Fetch one page of USASpending awards for a keyword, filtered to PR."""
@@ -227,7 +327,10 @@ def _usaspending_page(keyword: str, page: int, page_size: int) -> list[dict]:
         "order": "desc",
     }
     try:
-        resp = requests.post(url, json=payload, timeout=30)
+        resp = requests.post(url, json=payload, headers=_USA_HEADERS, timeout=30)
+        if resp.status_code == 403:
+            logger.warning("USASpending API returned 403 — rate-limited or blocked; skipping")
+            return []
         resp.raise_for_status()
         return resp.json().get("results", [])
     except Exception as exc:
@@ -248,6 +351,7 @@ def _usaspending_row_to_dict(row: dict) -> dict:
         "awarding_agency_name":        row.get("Awarding Agency Name", ""),
         "naics_code":                  str(row.get("NAICS Code", "") or ""),
         "psc_code":                    str(row.get("PSC Code", "") or ""),
+        "source_group":                "USASPENDING_FEDERAL",
     }
 
 
@@ -261,7 +365,7 @@ def load_from_usaspending_api(max_pages: int | None = None) -> pd.DataFrame:
     all_rows: list[dict] = []
     seen_ids: set = set()
 
-    for kw in KEYWORDS[:5]:   # top-5 keywords to keep call count reasonable
+    for kw in KEYWORDS[:5]:
         for page in range(1, max_pages + 1):
             rows = _usaspending_page(kw, page, page_size)
             if not rows:
@@ -273,7 +377,7 @@ def load_from_usaspending_api(max_pages: int | None = None) -> pd.DataFrame:
                     all_rows.append(d)
             if len(rows) < page_size:
                 break
-            time.sleep(0.2)   # polite rate-limiting
+            time.sleep(0.2)
 
     if not all_rows:
         logger.warning("USASpending API returned no rows")
@@ -281,6 +385,7 @@ def load_from_usaspending_api(max_pages: int | None = None) -> pd.DataFrame:
 
     df = pd.DataFrame(all_rows)
     df = _normalise_names(df)
+    df = _assign_source_group_weights(df)
     df = _geocode_dataframe(df)
     df = _match_keywords(df)
     df = _ensure_output_cols(df)
@@ -294,20 +399,36 @@ def load_from_usaspending_api(max_pages: int | None = None) -> pd.DataFrame:
 # ── Public entry point ────────────────────────────────────────────────────────
 
 def load_contracts(force_api: bool = False) -> pd.DataFrame:
-    """Load contracts, preferring local Contract_Sweeper CSV over live API.
+    """Load contracts from all available sources.
+
+    Priority: local CSV (all 8 source groups) → USASpending API fallback.
 
     Parameters
     ----------
-    force_api : if True, skip local files and query USASpending directly
+    force_api : skip local files and query USASpending directly
 
     Returns
     -------
-    DataFrame with OUTPUT_COLS columns.
+    DataFrame with OUTPUT_COLS including source_group and source_group_weight.
     """
     if not force_api:
         df = load_from_contract_sweeper()
         if len(df) > 0:
             return df
-        logger.info("No local contract files found — falling back to USASpending API")
+        logger.info("No local contract CSV found — falling back to USASpending API")
 
     return load_from_usaspending_api()
+
+
+def source_group_summary(df: pd.DataFrame) -> dict:
+    """Return row counts and total obligation by source group."""
+    if df.empty or "source_group" not in df.columns:
+        return {}
+    summary = {}
+    for sg, group in df.groupby("source_group"):
+        summary[sg] = {
+            "count":               len(group),
+            "total_obligated_m":   round(group["obligated_amount"].sum() / 1e6, 2),
+            "weight":              SOURCE_GROUP_WEIGHTS.get(sg, DEFAULT_SOURCE_WEIGHT),
+        }
+    return summary

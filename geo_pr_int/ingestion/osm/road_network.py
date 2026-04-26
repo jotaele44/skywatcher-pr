@@ -22,28 +22,32 @@ from config import SETTINGS, AOI, GEO_PR_INT_ROOT
 
 logger = logging.getLogger(__name__)
 
-OVERPASS_URL = SETTINGS["osm"]["overpass_url"]
 TIMEOUT_S = SETTINGS["osm"].get("timeout_s", 60)
 CACHE_FILE = GEO_PR_INT_ROOT / "data" / "cache" / "osm" / "pr_roads.json"
 DEAD_END_CACHE = GEO_PR_INT_ROOT / "data" / "cache" / "osm" / "pr_dead_ends.csv"
 
+_OVERPASS_URLS = [SETTINGS["osm"]["overpass_url"]] + SETTINGS["osm"].get("overpass_fallback_urls", [])
+_HEADERS = {"User-Agent": "GEO-PR-INT/1.0 (geospatial research; contact: research@example.com)"}
+
 
 def _overpass_query(query: str, timeout: int = TIMEOUT_S) -> dict:
-    """Execute an Overpass QL query and return parsed JSON."""
-    try:
-        resp = requests.post(
-            OVERPASS_URL,
-            data={"data": query},
-            timeout=timeout + 5,
-        )
-        resp.raise_for_status()
-        return resp.json()
-    except requests.exceptions.Timeout:
-        logger.warning(f"Overpass query timed out after {timeout}s")
-        return {}
-    except Exception as exc:
-        logger.warning(f"Overpass query failed: {exc}")
-        return {}
+    """Execute an Overpass QL query, trying each endpoint until one succeeds."""
+    for url in _OVERPASS_URLS:
+        try:
+            resp = requests.post(
+                url,
+                data={"data": query},
+                headers=_HEADERS,
+                timeout=timeout + 5,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except requests.exceptions.Timeout:
+            logger.warning(f"Overpass timed out ({url})")
+        except Exception as exc:
+            logger.debug(f"Overpass endpoint failed ({url}): {exc}")
+    logger.warning("All Overpass endpoints failed")
+    return {}
 
 
 def _build_dead_end_query(aoi: tuple) -> str:
