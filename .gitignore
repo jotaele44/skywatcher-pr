@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+
+# Distribution / packaging
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Virtual environments
+.env
+.venv
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Data / cache (generated at runtime)
+geo_pr_int/data/cache/
+geo_pr_int/outputs/
+pr_intelligence_system/data/cache/
+pr_intelligence_system/data/output/
+pr_intelligence_system/data/raw/fetcher_cache/
+
+# Logs
+*.log
+
+# Secrets
+.env.local
+secrets.yaml
