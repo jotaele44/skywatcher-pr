@@ -2,11 +2,12 @@
 Interactive HTML map builder for PR Intelligence System outputs.
 
 Generates a standalone Leaflet map (via Folium) from final_anomaly_ranked.csv.
-Three toggleable layers:
+Four toggleable layers:
 
   1. Top anomaly clusters  — CircleMarkers at cluster centroids, red = high score
   2. Anomaly heatmap       — density surface for all points, off by default
   3. Top 50 labeled        — rank numbers for the highest-scoring points
+  4. Infrastructure types  — all points coloured by infra_type, off by default
 """
 
 import logging
@@ -23,6 +24,17 @@ _CLASS_COLOUR = {
     'infrastructure': '#fc8d59',
     'natural':        '#91bfdb',
     'noise':          '#aaaaaa',
+}
+
+# Colour palette for infrastructure types (Layer 4)
+_INFRA_COLOUR = {
+    'submarine_cable':           '#1a1aff',
+    'gravity_sewer_water_main':  '#2ca02c',
+    'coastal_water_main':        '#17becf',
+    'directional_bore':          '#9467bd',
+    'elevated_electrical':       '#ff7f0e',
+    'electrical_fiber_conduit':  '#e377c2',
+    'multi_utility':             '#7f7f7f',
 }
 
 _PR_CENTER = [18.20, -66.50]
@@ -170,12 +182,61 @@ def _add_top50_layer(m, df: pd.DataFrame, colormap) -> None:
     fg.add_to(m)
 
 
+def _add_infra_layer(m, df: pd.DataFrame) -> None:
+    """Layer 4 — all points coloured by infra_type (off by default).
+
+    Skipped silently if the infra_type column is absent.
+    """
+    if 'infra_type' not in df.columns:
+        return
+
+    try:
+        import folium
+    except ImportError:
+        return
+
+    fg = folium.FeatureGroup(name='Infrastructure types', show=False)
+
+    for _, row in df.iterrows():
+        itype  = str(row.get('infra_type', 'multi_utility'))
+        color  = _INFRA_COLOUR.get(itype, '#7f7f7f')
+        lat    = float(row['lat'])
+        lon    = float(row['lon'])
+        pri    = float(_safe(row, 'infra_priority_score', 0.5))
+        cor    = str(row.get('infra_corridor', 'none'))
+        flood  = float(_safe(row, 'flood_risk', 0.0))
+        rcost  = float(_safe(row, 'routing_cost', 0.5))
+
+        popup_parts = [
+            f"<b>{itype.replace('_', ' ').title()}</b>",
+            f"Priority: {pri:.2f}",
+            f"Flood risk: {flood:.2f}",
+            f"Routing cost: {rcost:.2f}",
+        ]
+        if cor != 'none':
+            popup_parts.insert(1, f"Corridor: <i>{cor}</i>")
+
+        folium.CircleMarker(
+            location=[lat, lon],
+            radius=4,
+            color=color,
+            weight=0,
+            fill=True,
+            fill_color=color,
+            fill_opacity=0.65,
+            tooltip=f"{itype} (priority {pri:.2f})",
+            popup=folium.Popup('<br>'.join(popup_parts), max_width=220),
+        ).add_to(fg)
+
+    fg.add_to(m)
+
+
 def build_pr_map(df: pd.DataFrame, output_path: str) -> str | None:
     """Build an interactive Folium map from the pipeline output DataFrame.
 
     Parameters
     ----------
-    df          : final_anomaly_ranked DataFrame (42 standard columns)
+    df          : final_anomaly_ranked DataFrame
     output_path : where to write the .html file
 
     Returns
@@ -207,6 +268,7 @@ def build_pr_map(df: pd.DataFrame, output_path: str) -> str | None:
     _add_cluster_layer(m, df, colormap)
     _add_heatmap_layer(m, df)
     _add_top50_layer(m, df, colormap)
+    _add_infra_layer(m, df)
 
     colormap.add_to(m)
     folium.LayerControl(collapsed=False).add_to(m)

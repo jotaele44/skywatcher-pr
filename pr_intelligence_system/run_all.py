@@ -2,7 +2,7 @@
 """
 PR Intelligence System – Master Pipeline Runner
 ================================================
-Executes all six pipeline steps in strict order:
+Executes all seven pipeline steps in strict order:
 
     1. scripts/run_real_ingestion.py
     2. scripts/run_physics_constraints.py
@@ -10,6 +10,7 @@ Executes all six pipeline steps in strict order:
     4. scripts/run_anomaly_attribution.py
     5. scripts/run_snapshot.py
     6. scripts/run_temporal_clustering.py
+    7. scripts/run_visualize.py          (optional — skipped if folium absent)
 
 Usage:
     python run_all.py

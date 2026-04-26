@@ -9,7 +9,9 @@ into a final_score, enforces required output columns, and writes:
 
 Required output columns:
     lat, lon, cell_id, physics_score, slope, hydro_align,
-    classification, confidence, persistence, cluster, final_score
+    classification, confidence, persistence, cluster, final_score,
+    infra_type, infra_corridor, infra_priority_score,
+    infra_evidence_score, infra_status, flood_risk, routing_cost
 """
 
 import sys
@@ -43,20 +45,34 @@ REQUIRED_OUTPUT_COLUMNS = [
     'persistence',
     'cluster',
     'final_score',
+    'infra_type',
+    'infra_corridor',
+    'infra_priority_score',
+    'infra_evidence_score',
+    'infra_status',
+    'flood_risk',
+    'routing_cost',
 ]
 
 COLUMN_DEFAULTS = {
-    'lat':            0.0,
-    'lon':            0.0,
-    'cell_id':        'UNKNOWN',
-    'physics_score':  0.0,
-    'slope':          0.0,
-    'hydro_align':    0.0,
-    'classification': 'unknown',
-    'confidence':     0.0,
-    'persistence':    1,
-    'cluster':        -1,
-    'final_score':    0.0,
+    'lat':                  0.0,
+    'lon':                  0.0,
+    'cell_id':              'UNKNOWN',
+    'physics_score':        0.0,
+    'slope':                0.0,
+    'hydro_align':          0.0,
+    'classification':       'unknown',
+    'confidence':           0.0,
+    'persistence':          1,
+    'cluster':              -1,
+    'final_score':          0.0,
+    'infra_type':           'multi_utility',
+    'infra_corridor':       'none',
+    'infra_priority_score': 0.5,
+    'infra_evidence_score': 0.0,
+    'infra_status':         'proposed',
+    'flood_risk':           0.0,
+    'routing_cost':         0.5,
 }
 
 
@@ -78,6 +94,7 @@ def compute_final_score(df: pd.DataFrame) -> pd.DataFrame:
         'composite_score':      0.20,
         'persistence':          0.15,
         'spatial_anomaly_score': 0.10,
+        'infra_priority_score': 0.10,
     }
 
     available: dict = {}

@@ -1,0 +1,103 @@
+system:
+  name: "GEO-PR-INT"
+  version: "1.0.0"
+  log_level: "INFO"
+
+# Puerto Rico EEZ bounding box (WGS-84)
+aoi:
+  min_lon: -67.5
+  min_lat: 17.8
+  max_lon: -65.0
+  max_lat: 18.6
+  name: "Puerto Rico EEZ"
+
+crs:
+  storage: "EPSG:4326"
+  analysis: "EPSG:32161"   # PR State Plane (metres)
+
+# Paths to sibling codebases (relative to geo_pr_int/ root)
+sources:
+  pr_intelligence_system: "../pr_intelligence_system"
+  contract_sweeper_output: "../Contract_Sweeper/data/staging/processed"
+  contract_master_csv: "../Contract_Sweeper/data/staging/processed/pr_contracts_master.csv"
+  unified_awards_csv: "../Contract_Sweeper/data/staging/processed/pr_all_awards_master.csv"
+
+# USASpending direct API (fallback when Contract_Sweeper output absent)
+usaspending:
+  api_base: "https://api.usaspending.gov/api/v2"
+  state_code: "PR"
+  award_types: ["A", "B", "C", "D"]
+  max_pages: 20
+  page_size: 100
+  keywords:
+    - pump
+    - water
+    - sewer
+    - pipeline
+    - underground
+    - rehabilitation
+    - PRASA
+    - COR3
+    - conduit
+    - infrastructure
+    - fiber
+    - telecom
+    - electrical
+    - utility
+    - aqueduct
+    - drainage
+
+# OSM Overpass API
+osm:
+  overpass_url: "https://overpass-api.de/api/interpreter"
+  timeout_s: 60
+  cache_ttl_hours: 24
+
+# Hydrology settings
+hydro:
+  buffer_m: 500
+  cache_file: "data/cache/hydro/pr_hydro.csv"
+
+# ILAP detection thresholds
+detection:
+  dbscan_eps_m: 500           # DBSCAN radius in EPSG:32161 metres
+  dbscan_min_samples: 3
+  linearity_min_r2: 0.70      # minimum R² for a cluster to be a corridor
+  ndvi_anomaly_threshold: -0.15
+  terminal_min_area_m2: 400
+  sar_zscore_threshold: 2.0
+
+# Multi-layer scoring weights (must sum to 1.0)
+scoring:
+  geometry_weight: 0.30
+  ndvi_weight: 0.25
+  hydro_proximity_weight: 0.20
+  contract_match_weight: 0.25
+  max_contract_proximity_m: 2000   # search radius for contract matching
+  score_scale: 100                 # output scale (0–100)
+
+# PostGIS connection (optional — system works without it)
+postgis:
+  host: "localhost"
+  port: 5432
+  database: "geo_pr_int"
+  user: "postgres"
+  password: "postgres"
+  schema: "public"
+  enabled: false   # set true when PostGIS is available
+
+# Output paths (relative to geo_pr_int/ root)
+output:
+  geojson_dir: "outputs/geojson"
+  csv_dir: "outputs/csv"
+  cache_dir: "data/cache"
+
+# Satellite ingestion date window
+satellite:
+  date_range_days: 30   # rolling window ending today
+
+# Confidence boost applied when a contract keyword match is found
+contract_boost:
+  keyword_match: 0.10
+  spatial_match: 0.15
+  both_match: 0.20
