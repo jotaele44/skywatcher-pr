@@ -396,16 +396,59 @@ def load_from_usaspending_api(max_pages: int | None = None) -> pd.DataFrame:
     return df
 
 
+# ── Native source fetchers aggregator ────────────────────────────────────────
+
+def run_all_source_fetchers(use_cache: bool = True) -> pd.DataFrame:
+    """Run all 8 native source fetchers and merge results.
+
+    Each fetcher targets its own data portal and caches independently.
+    Results are concatenated and deduplicated by award_id.
+    """
+    from ingestion.contracts.sources import ALL_FETCHERS
+
+    frames: list[pd.DataFrame] = []
+    for sg, fetch_fn in ALL_FETCHERS.items():
+        try:
+            df = fetch_fn(use_cache=use_cache)
+            if not df.empty:
+                logger.info(f"Source fetcher {sg}: {len(df)} rows")
+                frames.append(df)
+            else:
+                logger.debug(f"Source fetcher {sg}: empty result")
+        except Exception as exc:
+            logger.warning(f"Source fetcher {sg} failed: {exc}")
+
+    if not frames:
+        return pd.DataFrame(columns=OUTPUT_COLS)
+
+    merged = pd.concat(frames, ignore_index=True)
+    merged = _ensure_output_cols(merged)
+    before = len(merged)
+    merged = merged.drop_duplicates(subset=["award_id"], keep="first")
+    if before > len(merged):
+        logger.debug(f"Deduplication removed {before - len(merged)} duplicate award_ids")
+
+    logger.info(
+        f"run_all_source_fetchers: {len(merged)} total rows from {len(frames)} sources, "
+        f"source groups: {merged['source_group'].value_counts().to_dict()}"
+    )
+    return merged
+
+
 # ── Public entry point ────────────────────────────────────────────────────────
 
-def load_contracts(force_api: bool = False) -> pd.DataFrame:
+def load_contracts(force_api: bool = False, use_native_fetchers: bool = True) -> pd.DataFrame:
     """Load contracts from all available sources.
 
-    Priority: local CSV (all 8 source groups) → USASpending API fallback.
+    Priority:
+      1. Local Contract_Sweeper CSV (all 8 source groups pre-merged)
+      2. Native source fetchers (each portal queried independently)
+      3. USASpending API live query (broadest fallback)
 
     Parameters
     ----------
     force_api : skip local files and query USASpending directly
+    use_native_fetchers : try all 8 source fetchers before falling back to API
 
     Returns
     -------
@@ -415,7 +458,14 @@ def load_contracts(force_api: bool = False) -> pd.DataFrame:
         df = load_from_contract_sweeper()
         if len(df) > 0:
             return df
-        logger.info("No local contract CSV found — falling back to USASpending API")
+
+        if use_native_fetchers:
+            logger.info("No local contract CSV — trying native source fetchers...")
+            df = run_all_source_fetchers()
+            if len(df) > 0:
+                return df
+
+        logger.info("Native fetchers returned no data — falling back to USASpending API")
 
     return load_from_usaspending_api()
 
