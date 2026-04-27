@@ -1,0 +1,157 @@
+"""
+CLI entry point for FlightRadar24 screenshot flight-purpose classifier.
+
+Usage:
+    python -m flight_analyzer.analyze \\
+        --input  /path/to/screenshots \\
+        --output results.csv \\
+        --openai-key sk-... \\
+        [--recursive] \\
+        [--verbose]
+
+Environment variable OPENAI_API_KEY is used as fallback if --openai-key is omitted.
+"""
+
+import argparse
+import os
+import sys
+from collections import Counter
+from pathlib import Path
+
+from .classifier import classify_flight
+from .ocr_extractor import extract_text
+from .output import build_row, open_csv, write_error_row
+
+_IMAGE_SUFFIXES = {'.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tiff', '.tif'}
+
+
+def _collect_images(input_dir: str, recursive: bool) -> list:
+    """Return sorted list of image paths under *input_dir*."""
+    root = Path(input_dir)
+    if not root.is_dir():
+        raise NotADirectoryError(f"Input path is not a directory: {input_dir}")
+
+    pattern = '**/*' if recursive else '*'
+    paths = sorted(
+        p for p in root.glob(pattern)
+        if p.is_file() and p.suffix.lower() in _IMAGE_SUFFIXES
+    )
+    return paths
+
+
+def _parse_args(argv=None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog='python -m flight_analyzer.analyze',
+        description='Classify flight purpose from FlightRadar24 screenshots.',
+    )
+    parser.add_argument(
+        '--input', '-i', required=True,
+        help='Directory containing screenshot images.',
+    )
+    parser.add_argument(
+        '--output', '-o', default='flight_analysis.csv',
+        help='Output CSV file path (default: flight_analysis.csv).',
+    )
+    parser.add_argument(
+        '--openai-key', default=None,
+        help='OpenAI API key. Falls back to OPENAI_API_KEY environment variable.',
+    )
+    parser.add_argument(
+        '--recursive', '-r', action='store_true',
+        help='Scan subdirectories recursively.',
+    )
+    parser.add_argument(
+        '--verbose', '-v', action='store_true',
+        help='Print per-file progress and results.',
+    )
+    return parser.parse_args(argv)
+
+
+def run(argv=None) -> int:
+    args = _parse_args(argv)
+
+    api_key = args.openai_key or os.environ.get('OPENAI_API_KEY', '')
+    if not api_key:
+        print('ERROR: OpenAI API key required. Use --openai-key or set OPENAI_API_KEY.',
+              file=sys.stderr)
+        return 1
+
+    try:
+        images = _collect_images(args.input, args.recursive)
+    except NotADirectoryError as exc:
+        print(f'ERROR: {exc}', file=sys.stderr)
+        return 1
+
+    if not images:
+        print(f'No image files found in: {args.input}', file=sys.stderr)
+        return 1
+
+    print(f'Found {len(images)} image(s). Writing results to: {args.output}')
+
+    label_counts: Counter = Counter()
+    error_count = 0
+
+    fh, writer = open_csv(args.output)
+
+    try:
+        for idx, img_path in enumerate(images, start=1):
+            filename = img_path.name
+            prefix = f'[{idx}/{len(images)}] {filename}'
+
+            # --- OCR step ---
+            try:
+                ocr_fields = extract_text(str(img_path))
+            except Exception as exc:
+                msg = f'OCR failed: {exc}'
+                print(f'{prefix}  ERROR  {msg}', file=sys.stderr)
+                write_error_row(writer, filename, msg)
+                error_count += 1
+                continue
+
+            # --- Classification step ---
+            try:
+                classification = classify_flight(str(img_path), ocr_fields, api_key)
+            except RuntimeError as exc:
+                msg = str(exc)
+                print(f'{prefix}  ERROR  {msg}', file=sys.stderr)
+                write_error_row(writer, filename, msg)
+                error_count += 1
+                continue
+
+            row = build_row(filename, ocr_fields, classification)
+            writer.writerow(row)
+
+            label = classification['purpose_label']
+            conf = classification['confidence']
+            label_counts[label] += 1
+
+            if args.verbose:
+                print(f'{prefix}  {label}  (conf={conf:.2f})  '
+                      f'route={classification["route_shape"]}')
+            else:
+                # Always show minimal progress
+                print(f'{prefix}  →  {label}')
+
+    finally:
+        fh.close()
+
+    # Summary
+    total = len(images)
+    processed = total - error_count
+    print(f'\n--- Summary ---')
+    print(f'Processed : {processed}/{total}  ({error_count} error(s))')
+    print(f'Output    : {args.output}')
+    print()
+    for label, count in sorted(label_counts.items(), key=lambda x: -x[1]):
+        bar = '#' * count
+        print(f'  {label:<30s}  {count:>3d}  {bar}')
+
+    return 0 if error_count < total else 1
+
+
+def main():
+    sys.exit(run())
+
+
+if __name__ == '__main__':
+    main()
