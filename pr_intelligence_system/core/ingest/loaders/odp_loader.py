@@ -121,13 +121,36 @@ def submit_card_bs_order(product_name: str, token: str, order_label: str) -> str
     return str(order_id)
 
 
-def poll_order(order_id: str, token: str) -> str:
+TOKEN_REFRESH_INTERVAL = 480  # refresh token every 8 min (expires ~10 min)
+
+
+def poll_order(
+    order_id: str,
+    token: str,
+    username: str = None,
+    password: str = None,
+) -> str:
     """
     Poll until order is 'completed' or 'failed'. Returns 'completed'.
     Raises RuntimeError on failure or timeout.
+
+    If username and password are provided, the token is refreshed every
+    TOKEN_REFRESH_INTERVAL seconds to handle long-running CARD-BS jobs
+    that outlast the ~10-minute Keycloak token expiry.
     """
     deadline = time.time() + POLL_TIMEOUT
+    last_refresh = time.time()
+
     while time.time() < deadline:
+        # Refresh token before it expires if credentials are available
+        if username and password and (time.time() - last_refresh) > TOKEN_REFRESH_INTERVAL:
+            try:
+                token = get_token(username, password)
+                last_refresh = time.time()
+                logger.debug("ODP token refreshed for order %s.", order_id)
+            except Exception as exc:
+                logger.warning("Token refresh failed (%s); continuing with existing token.", exc)
+
         resp = requests.get(
             f"{ODP_ENDPOINT}/ProductionOrders({order_id})",
             headers=_auth_headers(token),
@@ -219,7 +242,7 @@ def fetch_sar(
         order_label = f"pr_int_{aoi_id}_sar_{i}"
         try:
             order_id = submit_card_bs_order(product_name, token, order_label)
-            poll_order(order_id, token)
+            poll_order(order_id, token, username=username, password=password)
             tif_paths = download_order_result(order_id, token, output_dir)
             all_tif_paths.extend(tif_paths)
         except Exception as exc:

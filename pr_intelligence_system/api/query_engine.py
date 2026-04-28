@@ -97,10 +97,7 @@ def run_query_engine(
     # 5. Save results CSV
     result_path = os.path.join(reports_dir, f"{aoi_id}_results.csv")
     os.makedirs(reports_dir, exist_ok=True)
-    if not ilap_gdf.empty:
-        ilap_gdf.drop(columns=["geometry"], errors="ignore").to_csv(result_path, index=False)
-    else:
-        pd.DataFrame().to_csv(result_path, index=False)
+    ilap_gdf.drop(columns=["geometry"], errors="ignore").to_csv(result_path, index=False)
     logger.info("Results saved to %s", result_path)
 
     # 6. Save to spatial memory
@@ -147,7 +144,10 @@ def _load_from_cache(matching: gpd.GeoDataFrame, compute_summary) -> tuple:
 
     result_path = best.get("result_path", "")
     if result_path and os.path.exists(result_path):
-        df = pd.read_csv(result_path)
+        try:
+            df = pd.read_csv(result_path)
+        except pd.errors.EmptyDataError:
+            df = pd.DataFrame()
         from shapely.geometry import Point
         geoms = [Point(r.lon, r.lat) for r in df.itertuples(index=False) if hasattr(r, "lat")]
         ilap_gdf = gpd.GeoDataFrame(df, geometry=geoms if geoms else None, crs="EPSG:4326")
