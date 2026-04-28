@@ -11,6 +11,7 @@ venv/
 # Runtime-generated data outputs
 data/output/spatial_memory.gpkg
 data/output/reports/
+data/output/snapshots/
 data/raw/satellite_*/
 data/raw/bootstrap_*/
 
