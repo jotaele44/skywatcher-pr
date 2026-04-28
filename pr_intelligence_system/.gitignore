@@ -7,3 +7,9 @@ __pycache__/
 venv/
 *.env
 .DS_Store
+
+# Runtime-generated data outputs
+data/output/spatial_memory.gpkg
+data/output/reports/
+data/raw/satellite_*/
+data/raw/bootstrap_*/
