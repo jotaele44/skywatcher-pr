@@ -13,3 +13,11 @@ data/output/spatial_memory.gpkg
 data/output/reports/
 data/raw/satellite_*/
 data/raw/bootstrap_*/
+
+# Raw satellite imagery downloads (large binary files)
+data/raw/fetcher_cache/sentinel1/
+data/raw/fetcher_cache/sentinel2/
+data/raw/fetcher_cache/noaa_goes/
+data/raw/fetcher_cache/oisst/
+data/raw/fetcher_cache/landsat_c2/
+data/raw/fetcher_cache/chirps/

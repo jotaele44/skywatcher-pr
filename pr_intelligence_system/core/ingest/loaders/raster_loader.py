@@ -10,22 +10,29 @@ logger = logging.getLogger(__name__)
 MAX_RASTER_POINTS = 10000
 
 
-def load_raster(filepath: str, max_points: int = MAX_RASTER_POINTS) -> pd.DataFrame:
+def load_raster(
+    filepath: str,
+    max_points: int = MAX_RASTER_POINTS,
+    min_valid_value: float = None,
+) -> pd.DataFrame:
     """Load a raster file (GeoTIFF) and convert to point features DataFrame.
 
     Samples up to max_points valid pixels to keep memory bounded.
     Longitude is stored in 'lon', latitude in 'lat'.
+
+    min_valid_value: if set, only pixels strictly greater than this value are
+        kept (e.g. min_valid_value=0 to exclude ocean/nodata pixels in a DEM).
     """
     try:
         with rasterio.open(filepath) as src:
-            data = src.read(1)
+            raw = src.read(1, masked=True)   # masked array; nodata cells are masked
+            data = raw.filled(np.nan).astype(float)
             transform = src.transform
-            nodata = src.nodata
 
-            if nodata is not None:
-                valid_mask = data != nodata
-            else:
-                valid_mask = np.isfinite(data.astype(float))
+            valid_mask = np.isfinite(data)
+
+            if min_valid_value is not None:
+                valid_mask = valid_mask & (data > min_valid_value)
 
             rows, cols = np.where(valid_mask)
 
@@ -37,7 +44,7 @@ def load_raster(filepath: str, max_points: int = MAX_RASTER_POINTS) -> pd.DataFr
                 cols = cols[indices]
 
             xs, ys = rasterio.transform.xy(transform, rows, cols)
-            values = data[rows, cols]
+            values = data[rows, cols]   # already float with nodata → NaN (filtered above)
 
             df = pd.DataFrame({
                 'lat': np.array(ys),

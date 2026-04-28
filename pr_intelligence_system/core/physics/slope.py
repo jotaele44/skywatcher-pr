@@ -5,15 +5,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 METRES_PER_DEGREE = 111_000.0  # approximate
+MIN_HORIZONTAL_DIST_M = 1.0    # skip pairs closer than 1 m to avoid division by near-zero
 
 
 def compute_slope(df: pd.DataFrame, elevation_col: str = 'elevation_proxy') -> pd.DataFrame:
     """Compute slope (rise/run, dimensionless) from an elevation column.
 
     Uses first-order central finite differences along the sorted spatial
-    sequence (lat, lon).  Edge values use forward/backward differences.
+    sequence (lat, lon).  Slope is computed as |Δz| / horizontal_distance,
+    where horizontal_distance is the Euclidean distance between the two
+    bracketing points projected to metres.
 
-    Adds: slope.
+    Pairs whose bracketing horizontal distance is < MIN_HORIZONTAL_DIST_M
+    are assigned slope = 0 to avoid division-by-near-zero artefacts that
+    appear when many sorted points share the same latitude (e.g. regular
+    DEM grids).
+
+    Adds: slope (dimensionless, ≥ 0).
     """
     df = df.copy()
 
@@ -31,11 +39,15 @@ def compute_slope(df: pd.DataFrame, elevation_col: str = 'elevation_proxy') -> p
     slope_values = np.zeros(n, dtype=float)
 
     for i in range(1, n - 1):
-        dlat = (lat[i + 1] - lat[i - 1]) * METRES_PER_DEGREE + 1e-10
-        dlon = (lon[i + 1] - lon[i - 1]) * METRES_PER_DEGREE * np.cos(np.radians(lat[i])) + 1e-10
-        dz_dlat = (elevation[i + 1] - elevation[i - 1]) / (2.0 * dlat)
-        dz_dlon = (elevation[i + 1] - elevation[i - 1]) / (2.0 * dlon)
-        slope_values[i] = np.sqrt(dz_dlat ** 2 + dz_dlon ** 2)
+        dz      = elevation[i + 1] - elevation[i - 1]
+        dlat_m  = (lat[i + 1] - lat[i - 1]) * METRES_PER_DEGREE
+        dlon_m  = (lon[i + 1] - lon[i - 1]) * METRES_PER_DEGREE * np.cos(np.radians(lat[i]))
+        horiz_m = np.sqrt(dlat_m ** 2 + dlon_m ** 2)
+
+        if horiz_m >= MIN_HORIZONTAL_DIST_M:
+            slope_values[i] = abs(dz) / horiz_m
+        else:
+            slope_values[i] = 0.0
 
     if n >= 2:
         slope_values[0]     = slope_values[1]
