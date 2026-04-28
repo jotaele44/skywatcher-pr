@@ -157,10 +157,12 @@ def _parse_fields(raw: str) -> dict:
             fields['aircraft_type'] = ac
 
     # Callsign detection (check known prefix lists)
+    # Group prefixes inside (?:...) so \w* applies to the whole match, not just the last alt.
+    _all_cs_prefixes = '|'.join(
+        _MEDEVAC_CALLSIGN_PREFIXES + _SAR_CALLSIGN_PREFIXES + _MILITARY_CALLSIGN_PREFIXES
+    )
     cs_match = re.search(
-        r'\b(' + '|'.join(_MEDEVAC_CALLSIGN_PREFIXES +
-                           _SAR_CALLSIGN_PREFIXES +
-                           _MILITARY_CALLSIGN_PREFIXES) + r'\w*)\b',
+        r'\b((?:' + _all_cs_prefixes + r')\w*)\b',
         raw, re.IGNORECASE)
     if cs_match:
         fields['callsign'] = cs_match.group(1).upper()

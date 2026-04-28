@@ -8,10 +8,14 @@ Returns purpose label, confidence, route shape, and reasoning.
 import base64
 import json
 import re
+import time
 from io import BytesIO
 from pathlib import Path
 
 from PIL import Image
+
+_MAX_RETRIES = 3
+_RETRY_BASE_DELAY = 2  # seconds; doubled each attempt (2 → 4 → 8)
 
 PURPOSE_LABELS = {
     'commercial_airline',
@@ -175,19 +179,35 @@ def classify_flight(image_path: str, ocr_fields: dict, api_key: str) -> dict:
         },
     ]
 
-    try:
-        response = client.chat.completions.create(
-            model='gpt-4o',
-            messages=[
-                {'role': 'system', 'content': _SYSTEM_PROMPT},
-                {'role': 'user', 'content': user_content},
-            ],
-            max_tokens=256,
-            temperature=0.1,
-            response_format={'type': 'json_object'},
-        )
-        content = response.choices[0].message.content or ''
-    except openai.OpenAIError as exc:
-        raise RuntimeError(f'OpenAI API error: {exc}') from exc
+    last_exc: Exception = Exception('no attempts made')
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            response = client.chat.completions.create(
+                model='gpt-4o',
+                messages=[
+                    {'role': 'system', 'content': _SYSTEM_PROMPT},
+                    {'role': 'user', 'content': user_content},
+                ],
+                max_tokens=256,
+                temperature=0.1,
+                response_format={'type': 'json_object'},
+            )
+            return _parse_response(response.choices[0].message.content or '')
+        except openai.RateLimitError as exc:
+            # 429: back off and retry
+            last_exc = exc
+        except openai.APIStatusError as exc:
+            if exc.status_code >= 500:
+                # Transient server error: back off and retry
+                last_exc = exc
+            else:
+                raise RuntimeError(f'OpenAI API error: {exc}') from exc
+        except openai.OpenAIError as exc:
+            raise RuntimeError(f'OpenAI API error: {exc}') from exc
 
-    return _parse_response(content)
+        if attempt < _MAX_RETRIES:
+            time.sleep(_RETRY_BASE_DELAY * (2 ** attempt))
+
+    raise RuntimeError(
+        f'OpenAI API error after {_MAX_RETRIES} retries: {last_exc}'
+    ) from last_exc
