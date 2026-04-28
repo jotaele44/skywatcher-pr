@@ -7,9 +7,13 @@ Usage:
         --output results.csv \\
         --openai-key sk-... \\
         [--recursive] \\
+        [--flagged-only] \\
         [--verbose]
 
 Environment variable OPENAI_API_KEY is used as fallback if --openai-key is omitted.
+
+--flagged-only writes a second CSV (stem.flagged.csv) containing only rows where
+purpose_label is surveillance_recon, military_law_enforcement, or search_rescue.
 """
 
 import argparse
@@ -23,6 +27,9 @@ from .ocr_extractor import extract_text
 from .output import build_row, open_csv, write_error_row
 
 _IMAGE_SUFFIXES = {'.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tiff', '.tif'}
+
+_FLAGGED_LABELS = {'surveillance_recon', 'military_law_enforcement', 'search_rescue'}
+_EASYOCR_CACHE = Path.home() / '.EasyOCR' / 'model'
 
 
 def _collect_images(input_dir: str, recursive: bool) -> list:
@@ -61,6 +68,13 @@ def _parse_args(argv=None) -> argparse.Namespace:
         help='Scan subdirectories recursively.',
     )
     parser.add_argument(
+        '--flagged-only', '-f', action='store_true',
+        help=(
+            'Also write a <output>.flagged.csv containing only surveillance_recon, '
+            'military_law_enforcement, and search_rescue rows.'
+        ),
+    )
+    parser.add_argument(
         '--verbose', '-v', action='store_true',
         help='Print per-file progress and results.',
     )
@@ -86,9 +100,22 @@ def run(argv=None) -> int:
         print(f'No image files found in: {args.input}', file=sys.stderr)
         return 1
 
+    if not _EASYOCR_CACHE.exists():
+        print('Note: EasyOCR model weights (~1.5 GB) will be downloaded on first run.')
+
     print(f'Found {len(images)} image(s). Writing results to: {args.output}')
 
+    # Optionally open a second CSV for flagged rows only
+    flagged_path = None
+    flagged_fh = flagged_writer = None
+    if args.flagged_only:
+        p = Path(args.output)
+        flagged_path = str(p.with_name(p.stem + '.flagged' + p.suffix))
+        flagged_fh, flagged_writer = open_csv(flagged_path)
+        print(f'Flagged-only output : {flagged_path}')
+
     label_counts: Counter = Counter()
+    flagged_count = 0
     error_count = 0
 
     fh, writer = open_csv(args.output)
@@ -125,15 +152,21 @@ def run(argv=None) -> int:
             conf = classification['confidence']
             label_counts[label] += 1
 
+            if label in _FLAGGED_LABELS and flagged_writer is not None:
+                flagged_writer.writerow(row)
+                flagged_count += 1
+
             if args.verbose:
+                flag_marker = '  [FLAGGED]' if label in _FLAGGED_LABELS else ''
                 print(f'{prefix}  {label}  (conf={conf:.2f})  '
-                      f'route={classification["route_shape"]}')
+                      f'route={classification["route_shape"]}{flag_marker}')
             else:
-                # Always show minimal progress
                 print(f'{prefix}  →  {label}')
 
     finally:
         fh.close()
+        if flagged_fh:
+            flagged_fh.close()
 
     # Summary
     total = len(images)
@@ -141,10 +174,13 @@ def run(argv=None) -> int:
     print(f'\n--- Summary ---')
     print(f'Processed : {processed}/{total}  ({error_count} error(s))')
     print(f'Output    : {args.output}')
+    if flagged_path:
+        print(f'Flagged   : {flagged_count} row(s) → {flagged_path}')
     print()
     for label, count in sorted(label_counts.items(), key=lambda x: -x[1]):
+        flag = ' *' if label in _FLAGGED_LABELS else ''
         bar = '#' * count
-        print(f'  {label:<30s}  {count:>3d}  {bar}')
+        print(f'  {label:<30s}  {count:>3d}  {bar}{flag}')
 
     return 0 if error_count < total else 1
 
