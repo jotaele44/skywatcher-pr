@@ -18,6 +18,10 @@ def run_query_engine(
     output_csv: str = None,
     trigger_pipeline: bool = False,
     fetch_satellite: bool = False,
+    fetch_sar: bool = False,
+    aspects: list = None,
+    publish_felt: bool = False,
+    felt_api_key: str = None,
 ) -> tuple:
     """
     Orchestrate AOI creation, memory check, query execution, and reporting.
@@ -29,19 +33,23 @@ def run_query_engine(
     project_root      : absolute path to pr_intelligence_system/
     output_csv        : if provided, save ILAP rows (no geometry) to this path
     trigger_pipeline  : if True and master dataset is missing, run run_all.py
-    fetch_satellite   : if True and AOI is new, fetch Sentinel-2 data via openEO
-                        and run the AOI-scoped pipeline before querying
+    fetch_satellite   : if True and AOI is new, fetch Sentinel-2 + DEM via openEO
+    fetch_sar         : if True, also fetch Sentinel-1 CARD-BS via ODP (implies fetch_satellite)
+    aspects           : optional list of aspect names to filter ILAPs post-query
+    publish_felt      : if True, publish ILAP results to a new Felt map
+    felt_api_key      : Felt API key (falls back to FELT_API_KEY env var)
 
     Returns
     -------
     (ilap_gdf, summary, report_text)
     """
-    # Resolve paths
+    if fetch_sar:
+        fetch_satellite = True
+
     master_path = os.path.join(project_root, "data", "output", "final_anomaly_ranked.csv")
     memory_path = os.path.join(project_root, "data", "output", "spatial_memory.gpkg")
     reports_dir = os.path.join(project_root, "data", "output", "reports")
 
-    # Deferred imports (keep module-level imports minimal)
     from core.aoi import create_aoi
     from core.memory import check_coverage, generate_aoi_id, load_memory, save_to_memory
     from core.query import compute_summary, filter_ilaps, load_master_dataset, run_query, spatial_filter
@@ -72,34 +80,55 @@ def run_query_engine(
     else:  # "new"
         if fetch_satellite:
             ilap_gdf, summary = _run_with_satellite_fetch(
-                aoi_gdf, aoi_id, project_root, master_path, run_query, compute_summary
+                aoi_gdf, aoi_id, project_root, master_path,
+                run_query, compute_summary, include_sar=fetch_sar,
             )
         else:
             ilap_gdf, summary = _run_fresh(
                 master_path, aoi_gdf, run_query, trigger_pipeline, project_root
             )
 
-    # 4. Save results CSV
+    # 4. Apply aspect filters (post-branch, before report)
+    if aspects:
+        from core.location import apply_aspects
+        ilap_gdf = apply_aspects(ilap_gdf, aspects)
+        summary = compute_summary(ilap_gdf)
+
+    # 5. Save results CSV
     result_path = os.path.join(reports_dir, f"{aoi_id}_results.csv")
     os.makedirs(reports_dir, exist_ok=True)
     if not ilap_gdf.empty:
-        export = ilap_gdf.drop(columns=["geometry"], errors="ignore")
-        export.to_csv(result_path, index=False)
+        ilap_gdf.drop(columns=["geometry"], errors="ignore").to_csv(result_path, index=False)
     else:
         pd.DataFrame().to_csv(result_path, index=False)
     logger.info("Results saved to %s", result_path)
 
-    # 5. Save to spatial memory
+    # 6. Save to spatial memory
     save_to_memory(memory_path, aoi_id, aoi_gdf, summary, result_path, status=save_status)
 
-    # 6. Generate report
+    # 7. Build and save report
     report_text = build_report(lat, lon, radius_km, summary, ilap_gdf, aoi_id=aoi_id)
     save_report(report_text, reports_dir, aoi_id)
 
-    # 7. Optional user-specified output CSV
+    # 8. Optionally publish to Felt
+    if publish_felt:
+        key = felt_api_key or os.environ.get("FELT_API_KEY", "")
+        if not key:
+            logger.warning("--publish-felt set but FELT_API_KEY not found; skipping.")
+        elif ilap_gdf.empty:
+            logger.warning("No ILAPs to publish; skipping Felt upload.")
+        else:
+            try:
+                from core.export.felt_publisher import publish_ilaps
+                map_url = publish_ilaps(ilap_gdf, lat, lon, aoi_id, key)
+                report_text += f"\nFelt Map: {map_url}"
+                logger.info("Felt map published: %s", map_url)
+            except Exception as exc:
+                logger.warning("Felt publish failed: %s", exc)
+
+    # 9. Optional user-specified output CSV
     if output_csv:
-        export = ilap_gdf.drop(columns=["geometry"], errors="ignore")
-        export.to_csv(output_csv, index=False)
+        ilap_gdf.drop(columns=["geometry"], errors="ignore").to_csv(output_csv, index=False)
         logger.info("User output CSV saved to %s", output_csv)
 
     return ilap_gdf, summary, report_text
@@ -111,7 +140,6 @@ def run_query_engine(
 
 def _load_from_cache(matching: gpd.GeoDataFrame, compute_summary) -> tuple:
     """Return ILAP results from the best cached record (most recent)."""
-    # Sort by timestamp descending if available
     if "timestamp" in matching.columns:
         best = matching.sort_values("timestamp", ascending=False).iloc[0]
     else:
@@ -121,7 +149,6 @@ def _load_from_cache(matching: gpd.GeoDataFrame, compute_summary) -> tuple:
     if result_path and os.path.exists(result_path):
         df = pd.read_csv(result_path)
         from shapely.geometry import Point
-        import geopandas as gpd
         geoms = [Point(r.lon, r.lat) for r in df.itertuples(index=False) if hasattr(r, "lat")]
         ilap_gdf = gpd.GeoDataFrame(df, geometry=geoms if geoms else None, crs="EPSG:4326")
         summary = compute_summary(ilap_gdf)
@@ -129,11 +156,7 @@ def _load_from_cache(matching: gpd.GeoDataFrame, compute_summary) -> tuple:
         return ilap_gdf, summary
 
     logger.warning("Cached result_path not found; treating as new query.")
-    return gpd.GeoDataFrame(crs="EPSG:4326"), {
-        "total_ilaps": 0, "high_confidence_count": 0, "hydro_linked_count": 0,
-        "corridor_ids": [], "corridor_count": 0,
-        "mean_confidence": 0.0, "mean_physics_score": 0.0, "mean_hydro_align": 0.0,
-    }
+    return gpd.GeoDataFrame(crs="EPSG:4326"), _empty_summary()
 
 
 def _merge_partial(
@@ -144,15 +167,10 @@ def _merge_partial(
     compute_summary,
 ) -> tuple:
     """Merge cached ILAPs with fresh query on uncovered portion."""
-    from shapely.ops import unary_union
-    import geopandas as gpd
-    import pandas as pd
-
     query_polygon = aoi_gdf.geometry.iloc[0]
     stored_union = unary_union(matching.geometry)
     uncovered = query_polygon.difference(stored_union)
 
-    # Load cached rows
     cached_frames = []
     for _, row in matching.iterrows():
         rpath = row.get("result_path", "")
@@ -160,9 +178,7 @@ def _merge_partial(
             cached_frames.append(pd.read_csv(rpath))
 
     if not uncovered.is_empty:
-        uncovered_aoi = gpd.GeoDataFrame(
-            {"geometry": [uncovered]}, crs="EPSG:4326"
-        )
+        uncovered_aoi = gpd.GeoDataFrame({"geometry": [uncovered]}, crs="EPSG:4326")
         try:
             new_ilap_gdf, _ = run_query(master_path, uncovered_aoi)
         except FileNotFoundError:
@@ -171,7 +187,6 @@ def _merge_partial(
     else:
         new_ilap_gdf = gpd.GeoDataFrame(crs="EPSG:4326")
 
-    # Merge
     all_frames = cached_frames + (
         [new_ilap_gdf.drop(columns=["geometry"], errors="ignore")] if not new_ilap_gdf.empty else []
     )
@@ -220,55 +235,42 @@ def _run_with_satellite_fetch(
     master_path: str,
     run_query,
     compute_summary,
+    include_sar: bool = False,
 ) -> tuple:
     """
-    Fetch Sentinel-2 data via openEO for the AOI, run the AOI-scoped pipeline,
-    then merge results with any existing master dataset data in the AOI.
+    Fetch Sentinel-2 (+ optionally SAR) for the AOI, run the AOI pipeline,
+    persist results to master dataset, and return ILAPs + summary.
     """
     from core.ingest.fetcher import fetch_for_aoi
     from core.pipeline.aoi_pipeline import run_aoi_pipeline
     from shapely.geometry import Point
 
     sat_raw_dir = os.path.join(project_root, "data", "raw", f"satellite_{aoi_id}")
-    logger.info("Fetching satellite data for AOI %s...", aoi_id)
+    logger.info("Fetching satellite data for AOI %s (SAR=%s)...", aoi_id, include_sar)
 
-    tif_paths = fetch_for_aoi(aoi_gdf, aoi_id, sat_raw_dir)
+    tif_paths = fetch_for_aoi(aoi_gdf, aoi_id, sat_raw_dir, include_sar=include_sar)
 
     if not tif_paths:
         logger.warning("No satellite data returned; falling back to master dataset query.")
         try:
             return run_query(master_path, aoi_gdf)
         except FileNotFoundError:
-            empty_summary = {
-                "total_ilaps": 0, "high_confidence_count": 0, "hydro_linked_count": 0,
-                "corridor_ids": [], "corridor_count": 0,
-                "mean_confidence": 0.0, "mean_physics_score": 0.0, "mean_hydro_align": 0.0,
-            }
-            return gpd.GeoDataFrame(crs="EPSG:4326"), empty_summary
+            return gpd.GeoDataFrame(crs="EPSG:4326"), _empty_summary()
 
     aoi_df = run_aoi_pipeline(sat_raw_dir, aoi_id)
 
     if aoi_df.empty:
         logger.warning("AOI pipeline produced no output for %s.", aoi_id)
-        empty_summary = {
-            "total_ilaps": 0, "high_confidence_count": 0, "hydro_linked_count": 0,
-            "corridor_ids": [], "corridor_count": 0,
-            "mean_confidence": 0.0, "mean_physics_score": 0.0, "mean_hydro_align": 0.0,
-        }
-        return gpd.GeoDataFrame(crs="EPSG:4326"), empty_summary
+        return gpd.GeoDataFrame(crs="EPSG:4326"), _empty_summary()
 
-    # Persist AOI results back to the master dataset so future non-satellite
-    # queries on this area return real (not synthetic) data.
     _append_to_master(aoi_df, master_path)
 
-    # Also pull in any existing master dataset points within AOI and merge
+    # Merge with any pre-existing master dataset points in the AOI
     existing_frames = []
     try:
         existing_ilap_gdf, _ = run_query(master_path, aoi_gdf)
         if not existing_ilap_gdf.empty:
-            existing_frames.append(
-                existing_ilap_gdf.drop(columns=["geometry"], errors="ignore")
-            )
+            existing_frames.append(existing_ilap_gdf.drop(columns=["geometry"], errors="ignore"))
     except FileNotFoundError:
         pass
 
@@ -280,14 +282,12 @@ def _run_with_satellite_fetch(
     geoms = [Point(r.lon, r.lat) for r in merged.itertuples(index=False) if hasattr(r, "lat")]
     ilap_gdf = gpd.GeoDataFrame(merged, geometry=geoms if geoms else None, crs="EPSG:4326")
 
-    # Filter to ILAPs only for summary
     from core.query import filter_ilaps
     ilap_gdf = filter_ilaps(ilap_gdf)
     summary = compute_summary(ilap_gdf)
 
     logger.info(
-        "Satellite fetch + AOI pipeline: %d ILAPs found for AOI %s.",
-        summary["total_ilaps"], aoi_id,
+        "Satellite fetch + AOI pipeline: %d ILAPs for AOI %s.", summary["total_ilaps"], aoi_id
     )
     return ilap_gdf, summary
 
@@ -325,3 +325,11 @@ def _trigger_pipeline(project_root: str) -> None:
             f"Pipeline failed (exit {result.returncode}):\n{result.stderr}"
         )
     logger.info("Pipeline completed successfully.")
+
+
+def _empty_summary() -> dict:
+    return {
+        "total_ilaps": 0, "high_confidence_count": 0, "hydro_linked_count": 0,
+        "corridor_ids": [], "corridor_count": 0,
+        "mean_confidence": 0.0, "mean_physics_score": 0.0, "mean_hydro_align": 0.0,
+    }

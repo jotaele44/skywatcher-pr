@@ -68,7 +68,57 @@ def main() -> None:
     except Exception as exc:
         print(f"  WARNING: Could not list collections: {exc}")
 
-    print("\nSetup complete. You can now use --fetch-satellite in main_query.py.")
+    print("\nopenEO setup complete. You can now use --fetch-satellite in main_query.py.")
+
+    # -----------------------------------------------------------------------
+    # Section 2: ODP / Sentinel-1 SAR credentials
+    # -----------------------------------------------------------------------
+    print("\n" + "=" * 42)
+    print("ODP / Sentinel-1 SAR Setup (for --fetch-sar)")
+    print("=" * 42)
+    print(
+        "\nSentinel-1 CARD-BS backscatter data is fetched via the Copernicus ODP REST API\n"
+        "using the same Copernicus account credentials (username + password).\n"
+        "Unlike openEO, ODP uses a password token — no browser popup needed.\n"
+    )
+    print("Set these environment variables before running --fetch-sar:")
+    print("  export CDSE_USER='your-copernicus-email'")
+    print("  export CDSE_PASSWORD='your-copernicus-password'")
+
+    # Verify token acquisition if credentials are available
+    import os
+    cdse_user = os.environ.get("CDSE_USER", "")
+    cdse_pass = os.environ.get("CDSE_PASSWORD", "")
+    if cdse_user and cdse_pass:
+        print("\nCDSE_USER / CDSE_PASSWORD found — verifying ODP token...")
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from core.ingest.loaders.odp_loader import get_token
+            token = get_token(cdse_user, cdse_pass)
+            print("  ODP token acquired successfully.")
+        except Exception as exc:
+            print(f"  WARNING: ODP token acquisition failed: {exc}")
+    else:
+        print("\n  (CDSE_USER / CDSE_PASSWORD not set — skipping ODP token test)")
+
+    # -----------------------------------------------------------------------
+    # Section 3: Felt API key
+    # -----------------------------------------------------------------------
+    print("\n" + "=" * 42)
+    print("Felt Map Publishing Setup (for --publish-felt)")
+    print("=" * 42)
+    print(
+        "\nTo publish ILAP results to an interactive Felt web map, set:\n"
+        "  export FELT_API_KEY='felt_pat_...'\n"
+        "\nGenerate a key at: https://felt.com/account/api-keys"
+    )
+    felt_key = os.environ.get("FELT_API_KEY", "")
+    if felt_key:
+        print(f"\n  FELT_API_KEY found ({felt_key[:12]}...).")
+    else:
+        print("\n  (FELT_API_KEY not set)")
+
+    print("\nAll setup complete.")
 
 
 if __name__ == "__main__":
