@@ -72,7 +72,15 @@ KEY CLASSIFICATION SIGNALS:
 - Registered freight carriers (FedEx, UPS, DHL, Kalitta, Atlas) → cargo_freight
 - Circuit patterns at same airport → training
 
-IMPORTANT: Base your classification on ALL available signals: aircraft type, callsign, operator, squawk, route shape, and flight number format. Prefer the most specific label that fits.
+PUERTO RICO / CARIBBEAN REGIONAL CONTEXT — these entities are common in PR airspace:
+- CBP Air and Marine Operations (AMO), NAS Aguadilla (BQN): DHC-8, P-3 Orion, AS350/EC120 helicopters. Callsigns OMAHA, DOMAIN, SENTRY. Maritime surveillance in the Mona Passage (drug/migration interdiction). Orbit patterns over water → surveillance_recon or military_law_enforcement.
+- US Coast Guard Air Station Borinquen / Sector San Juan: HC-144A Ocean Sentry, MH-60T Jayhawk. Callsigns RESCUE xx, COAST GUARD xx. SAR and maritime law enforcement → search_rescue or military_law_enforcement. Squawk range 4400–4477.
+- 156th Airlift Wing, Puerto Rico Air National Guard (Muñiz ANGB / TJIG): C-130H Hercules. Callsigns COQUI, PRESTO. Squawk 1000 (military IFR) → military_law_enforcement.
+- Puerto Rico Police Department (PRPD) Aviation Bureau: Bell 407, Bell 412. Low-altitude patrols over populated areas → military_law_enforcement.
+- FEMA / DHS aircraft during disaster response: various types → military_law_enforcement.
+- DEA Caribbean Division aircraft: often no callsign, orbit patterns over Mona Passage or coastline → surveillance_recon.
+
+IMPORTANT: Base your classification on ALL available signals: aircraft type, callsign, operator, squawk, route shape, heading changes, and flight number format. Prefer the most specific label that fits.
 
 Respond with ONLY valid JSON, no markdown, no extra text:
 {"purpose_label": "<label>", "confidence": <0.0 to 1.0>, "route_shape": "<shape>", "reasoning": "<1-2 sentence explanation>"}"""

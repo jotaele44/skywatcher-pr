@@ -137,7 +137,27 @@ class TestParseSquawk:
 
 
 class TestParseAirports:
-    def test_two_icao_codes(self):
+    def test_arrow_pattern_priority(self):
+        f = _parse_fields('KJFK → KLAX FL350 450kts')
+        assert f['origin'] == 'KJFK'
+        assert f['destination'] == 'KLAX'
+
+    def test_arrow_with_dash(self):
+        f = _parse_fields('TJBQ - TJSJ 5000ft 180kts')
+        assert f['origin'] == 'TJBQ'
+        assert f['destination'] == 'TJSJ'
+
+    def test_from_to_labels(self):
+        f = _parse_fields('From: KMIA  To: TJSJ altitude 35000ft')
+        assert f['origin'] == 'KMIA'
+        assert f['destination'] == 'TJSJ'
+
+    def test_aircraft_type_not_mistaken_for_airport(self):
+        f = _parse_fields('B738 FL350 450kts')
+        assert f['origin'] != 'B738'
+        assert f['destination'] != 'B738'
+
+    def test_fallback_two_icao_codes(self):
         f = _parse_fields('KJFK KLAX FL350 450kts')
         assert f['origin'] == 'KJFK'
         assert f['destination'] == 'KLAX'
@@ -146,6 +166,34 @@ class TestParseAirports:
         f = _parse_fields('EGLL FL200 350kts')
         assert f['origin'] == 'EGLL'
         assert f['destination'] == ''
+
+
+class TestParseHeading:
+    def test_heading_keyword(self):
+        f = _parse_fields('heading 270 FL350')
+        assert '270' in f['heading_deg']
+
+    def test_hdg_abbreviation(self):
+        f = _parse_fields('HDG: 090 speed 450kts')
+        assert '090' in f['heading_deg']
+
+    def test_no_heading(self):
+        f = _parse_fields('FL350 450kts KJFK KLAX')
+        assert f['heading_deg'] == ''
+
+
+class TestParseUtcTime:
+    def test_hh_mm_utc(self):
+        f = _parse_fields('14:32 UTC altitude FL350')
+        assert '14:32' in f['utc_time']
+
+    def test_hh_mm_ss(self):
+        f = _parse_fields('time 09:15:30 FL200')
+        assert '09:15:30' in f['utc_time']
+
+    def test_no_time(self):
+        f = _parse_fields('FL350 450kts KJFK KLAX B738')
+        assert f['utc_time'] == ''
 
 
 # ---------------------------------------------------------------------------

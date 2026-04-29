@@ -14,6 +14,8 @@ CSV_COLUMNS = [
     'destination',
     'altitude_ft',
     'speed_kts',
+    'heading_deg',
+    'utc_time',
     'squawk',
     'operator',
     'route_shape',

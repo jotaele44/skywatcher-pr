@@ -8,23 +8,34 @@ Usage:
         --openai-key sk-... \\
         [--recursive] \\
         [--flagged-only] \\
+        [--resume] \\
+        [--workers N] \\
+        [--dry-run] \\
         [--verbose]
 
 Environment variable OPENAI_API_KEY is used as fallback if --openai-key is omitted.
 
---flagged-only writes a second CSV (stem.flagged.csv) containing only rows where
-purpose_label is surveillance_recon, military_law_enforcement, or search_rescue.
+--flagged-only  Writes a second CSV (stem.flagged.csv) containing only rows where
+                purpose_label is surveillance_recon, military_law_enforcement, or
+                search_rescue.
+--resume        Skip images whose filename already appears in the output CSV.
+--workers N     Process N images concurrently (default 1 = sequential).
+--dry-run       Run OCR only; skip the GPT-4o API call. Writes OCR fields to CSV
+                with classification columns left blank.
 """
 
 import argparse
+import csv
 import os
 import sys
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from .classifier import classify_flight
+from .fallback_classifier import classify_fallback
 from .ocr_extractor import extract_text
-from .output import build_row, open_csv, write_error_row
+from .output import CSV_COLUMNS, build_row, open_csv, write_error_row
 
 _IMAGE_SUFFIXES = {'.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tiff', '.tif'}
 
@@ -75,17 +86,69 @@ def _parse_args(argv=None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        '--resume', action='store_true',
+        help='Skip images whose filename already appears in the output CSV.',
+    )
+    parser.add_argument(
+        '--workers', '-w', type=int, default=1, metavar='N',
+        help='Number of concurrent worker threads (default: 1).',
+    )
+    parser.add_argument(
+        '--dry-run', action='store_true',
+        help='Run OCR only; skip GPT-4o call. Classification columns will be blank.',
+    )
+    parser.add_argument(
         '--verbose', '-v', action='store_true',
         help='Print per-file progress and results.',
     )
     return parser.parse_args(argv)
 
 
+def _load_already_processed(output_path: str) -> set:
+    """Return set of filenames already present in an existing output CSV."""
+    p = Path(output_path)
+    if not p.exists():
+        return set()
+    try:
+        with open(p, newline='', encoding='utf-8') as f:
+            return {row['filename'] for row in csv.DictReader(f) if row.get('filename')}
+    except Exception:
+        return set()
+
+
+def _process_one(img_path: Path, api_key: str, dry_run: bool) -> tuple:
+    """
+    Process a single image: OCR then (optionally) classify.
+    Returns (filename, row_dict | None, error_msg | None).
+    """
+    filename = img_path.name
+    try:
+        ocr_fields = extract_text(str(img_path))
+    except Exception as exc:
+        return filename, None, f'OCR failed: {exc}'
+
+    if dry_run:
+        row = build_row(filename, ocr_fields, {})
+        return filename, row, None
+
+    try:
+        classification = classify_flight(str(img_path), ocr_fields, api_key)
+    except RuntimeError as exc:
+        # API unavailable after retries — fall back to rule-based classification
+        classification = classify_fallback(ocr_fields)
+        classification['reasoning'] = (
+            f'[API error: {exc}] ' + classification.get('reasoning', '')
+        )
+
+    row = build_row(filename, ocr_fields, classification)
+    return filename, row, None
+
+
 def run(argv=None) -> int:
     args = _parse_args(argv)
 
     api_key = args.openai_key or os.environ.get('OPENAI_API_KEY', '')
-    if not api_key:
+    if not api_key and not args.dry_run:
         print('ERROR: OpenAI API key required. Use --openai-key or set OPENAI_API_KEY.',
               file=sys.stderr)
         return 1
@@ -100,12 +163,26 @@ def run(argv=None) -> int:
         print(f'No image files found in: {args.input}', file=sys.stderr)
         return 1
 
+    # --resume: skip already-processed files
+    skipped = 0
+    if args.resume:
+        already_done = _load_already_processed(args.output)
+        if already_done:
+            before = len(images)
+            images = [p for p in images if p.name not in already_done]
+            skipped = before - len(images)
+            print(f'Resume: skipping {skipped} already-processed file(s).')
+        if not images:
+            print('All images already processed. Nothing to do.')
+            return 0
+
     if not _EASYOCR_CACHE.exists():
         print('Note: EasyOCR model weights (~1.5 GB) will be downloaded on first run.')
 
-    print(f'Found {len(images)} image(s). Writing results to: {args.output}')
+    mode = 'dry-run (OCR only)' if args.dry_run else f'workers={args.workers}'
+    print(f'Found {len(images)} image(s)  [{mode}]. Writing results to: {args.output}')
 
-    # Optionally open a second CSV for flagged rows only
+    # Optionally open a second CSV for flagged rows
     flagged_path = None
     flagged_fh = flagged_writer = None
     if args.flagged_only:
@@ -117,62 +194,86 @@ def run(argv=None) -> int:
     label_counts: Counter = Counter()
     flagged_count = 0
     error_count = 0
+    total = len(images)
 
-    fh, writer = open_csv(args.output)
+    # Open output CSV in append mode when resuming, write mode otherwise
+    open_mode = 'a' if (args.resume and Path(args.output).exists()) else 'w'
+    if open_mode == 'a':
+        fh = open(args.output, 'a', newline='', encoding='utf-8')
+        writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS, extrasaction='ignore')
+    else:
+        fh, writer = open_csv(args.output)
 
     try:
-        for idx, img_path in enumerate(images, start=1):
-            filename = img_path.name
-            prefix = f'[{idx}/{len(images)}] {filename}'
+        if args.workers > 1:
+            futures = {}
+            with ThreadPoolExecutor(max_workers=args.workers) as executor:
+                for img_path in images:
+                    fut = executor.submit(_process_one, img_path, api_key, args.dry_run)
+                    futures[fut] = img_path
 
-            # --- OCR step ---
-            try:
-                ocr_fields = extract_text(str(img_path))
-            except Exception as exc:
-                msg = f'OCR failed: {exc}'
-                print(f'{prefix}  ERROR  {msg}', file=sys.stderr)
-                write_error_row(writer, filename, msg)
-                error_count += 1
-                continue
+            # Collect in completion order
+            results = []
+            done_count = 0
+            for fut in as_completed(futures):
+                done_count += 1
+                filename, row, err = fut.result()
+                results.append((filename, row, err))
+                print(f'[{done_count}/{total}] {filename}  → '
+                      f'{"ERROR" if err else row.get("purpose_label", "ocr-only")}')
 
-            # --- Classification step ---
-            try:
-                classification = classify_flight(str(img_path), ocr_fields, api_key)
-            except RuntimeError as exc:
-                msg = str(exc)
-                print(f'{prefix}  ERROR  {msg}', file=sys.stderr)
-                write_error_row(writer, filename, msg)
-                error_count += 1
-                continue
+            # Write in original image order for deterministic output
+            name_to_result = {fn: (r, e) for fn, r, e in results}
+            for img_path in images:
+                fn = img_path.name
+                row, err = name_to_result[fn]
+                if err:
+                    write_error_row(writer, fn, err)
+                    error_count += 1
+                else:
+                    writer.writerow(row)
+                    label = row.get('purpose_label', '')
+                    if label:
+                        label_counts[label] += 1
+                    if label in _FLAGGED_LABELS and flagged_writer:
+                        flagged_writer.writerow(row)
+                        flagged_count += 1
+        else:
+            for idx, img_path in enumerate(images, start=1):
+                filename, row, err = _process_one(img_path, api_key, args.dry_run)
+                prefix = f'[{idx}/{total}] {filename}'
 
-            row = build_row(filename, ocr_fields, classification)
-            writer.writerow(row)
+                if err:
+                    print(f'{prefix}  ERROR  {err}', file=sys.stderr)
+                    write_error_row(writer, filename, err)
+                    error_count += 1
+                    continue
 
-            label = classification['purpose_label']
-            conf = classification['confidence']
-            label_counts[label] += 1
+                writer.writerow(row)
+                label = row.get('purpose_label', '')
+                if label:
+                    label_counts[label] += 1
 
-            if label in _FLAGGED_LABELS and flagged_writer is not None:
-                flagged_writer.writerow(row)
-                flagged_count += 1
+                if label in _FLAGGED_LABELS and flagged_writer is not None:
+                    flagged_writer.writerow(row)
+                    flagged_count += 1
 
-            if args.verbose:
-                flag_marker = '  [FLAGGED]' if label in _FLAGGED_LABELS else ''
-                print(f'{prefix}  {label}  (conf={conf:.2f})  '
-                      f'route={classification["route_shape"]}{flag_marker}')
-            else:
-                print(f'{prefix}  →  {label}')
-
+                if args.verbose:
+                    flag_marker = '  [FLAGGED]' if label in _FLAGGED_LABELS else ''
+                    conf = row.get('confidence', '')
+                    shape = row.get('route_shape', '')
+                    print(f'{prefix}  {label}  (conf={conf})  route={shape}{flag_marker}')
+                else:
+                    print(f'{prefix}  →  {label or "ocr-only"}')
     finally:
         fh.close()
         if flagged_fh:
             flagged_fh.close()
 
-    # Summary
-    total = len(images)
     processed = total - error_count
     print(f'\n--- Summary ---')
-    print(f'Processed : {processed}/{total}  ({error_count} error(s))')
+    print(f'Processed : {processed}/{total}  ({error_count} error(s))'
+          + (f'  skipped {skipped}' if skipped else ''))
     print(f'Output    : {args.output}')
     if flagged_path:
         print(f'Flagged   : {flagged_count} row(s) → {flagged_path}')
