@@ -8,6 +8,13 @@ venv/
 *.env
 .DS_Store
 
+# Runtime-generated data outputs
+data/output/spatial_memory.gpkg
+data/output/reports/
+data/output/snapshots/
+data/raw/satellite_*/
+data/raw/bootstrap_*/
+
 # Raw satellite imagery downloads (large binary files)
 data/raw/fetcher_cache/sentinel1/
 data/raw/fetcher_cache/sentinel2/

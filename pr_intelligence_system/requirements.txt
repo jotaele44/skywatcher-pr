@@ -5,12 +5,16 @@ networkx
 shapely
 rasterio
 scikit-learn
+pyproj
 fastapi
 uvicorn
+openeo
+pytest
+geopy
+requests>=2.31.0
 # Satellite data fetchers
 boto3>=1.34.0
 botocore>=1.34.0
 sentinelsat>=1.3.0
-requests>=2.31.0
 netCDF4>=1.6.5
 s3transfer>=0.10.0
