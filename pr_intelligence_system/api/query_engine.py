@@ -257,7 +257,11 @@ def _run_with_satellite_fetch(
         except FileNotFoundError:
             return gpd.GeoDataFrame(crs="EPSG:4326"), _empty_summary()
 
-    aoi_df = run_aoi_pipeline(sat_raw_dir, aoi_id)
+    # Compute bbox for LiDAR streaming (WGS84, from AOI polygon bounds)
+    minx, miny, maxx, maxy = aoi_gdf.total_bounds
+    aoi_bbox = {"west": minx, "south": miny, "east": maxx, "north": maxy}
+
+    aoi_df = run_aoi_pipeline(sat_raw_dir, aoi_id, aoi_bbox=aoi_bbox)
 
     if aoi_df.empty:
         logger.warning("AOI pipeline produced no output for %s.", aoi_id)

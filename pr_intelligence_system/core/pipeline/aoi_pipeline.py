@@ -27,7 +27,7 @@ _OUTPUT_COLUMNS = [
 ]
 
 
-def run_aoi_pipeline(raw_dir: str, aoi_id: str) -> pd.DataFrame:
+def run_aoi_pipeline(raw_dir: str, aoi_id: str, aoi_bbox: dict = None) -> pd.DataFrame:
     """
     Ingest GeoTIFFs from raw_dir and run the full physics + attribution pipeline
     scoped to those files only.
@@ -37,14 +37,22 @@ def run_aoi_pipeline(raw_dir: str, aoi_id: str) -> pd.DataFrame:
 
     Parameters
     ----------
-    raw_dir : absolute path containing downloaded GeoTIFF files
-    aoi_id  : 8-char hex identifier (used for logging)
+    raw_dir  : absolute path containing downloaded GeoTIFF files
+    aoi_id   : 8-char hex identifier (used for logging)
+    aoi_bbox : optional {"west", "south", "east", "north"} dict; when provided,
+               streams LiDAR COPC tiles for the AOI before ingesting rasters.
+               LiDAR DEMs are written to raw_dir/lidar_dem/ and auto-detected
+               by scan_directory. Silently skipped if URL list is unavailable.
 
     Returns
     -------
     pd.DataFrame compatible with final_anomaly_ranked.csv schema.
     Returns empty DataFrame with correct columns if raw_dir has no usable files.
     """
+    # --- Step 0: LiDAR streaming (non-fatal; skipped if PDAL/URL list absent) ---
+    if aoi_bbox is not None:
+        _stream_lidar_to_dir(aoi_bbox, os.path.join(raw_dir, "lidar_dem"))
+
     # --- Step 1: Ingest ---
     df = _ingest(raw_dir)
     if df.empty:
@@ -276,3 +284,20 @@ def _compute_final_score(df: pd.DataFrame) -> pd.Series:
     total_weight = sum(w for _, w in available.values())
     score = sum((w / total_weight) * v for v, w in available.values())
     return np.clip(pd.Series(score, index=df.index), 0.0, 1.0)
+
+
+def _stream_lidar_to_dir(aoi_bbox: dict, lidar_dir: str) -> None:
+    """
+    Stream LiDAR COPC tiles for aoi_bbox into lidar_dir.
+
+    Files are named lidar_dem_N.tif so _dem_mask() identifies them as DEM
+    reference rows and _apply_dem_elevation() uses them for KNN interpolation.
+    Completely non-fatal: any failure is logged and silently skipped.
+    """
+    try:
+        from core.ingest.lidar_stream import stream_lidar
+        results = stream_lidar(aoi_bbox, lidar_dir)
+        if results["dem"]:
+            logger.info("LiDAR: %d DEM tile(s) streamed into pipeline.", len(results["dem"]))
+    except Exception as exc:
+        logger.warning("LiDAR streaming skipped (%s).", exc)
