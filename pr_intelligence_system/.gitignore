@@ -23,9 +23,17 @@ data/raw/fetcher_cache/oisst/
 data/raw/fetcher_cache/landsat_c2/
 data/raw/fetcher_cache/chirps/
 
+# API keys — never commit
+../*.rtf
+*API_KEY*
+*_API_KEY*
+
 # LiDAR — local COPC tiles (stream from NOAA S3 via lidar_stream.py instead)
 data/raw/LiDAR/**/*.copc.laz
 data/raw/LiDAR/**/*.laz
+*.copc.laz
+*.las
+subset.las
 
 # Wave data — large NetCDF files
 data/raw/PRI - Wave Data/**/*.nc
