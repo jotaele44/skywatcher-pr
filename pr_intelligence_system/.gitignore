@@ -22,3 +22,35 @@ data/raw/fetcher_cache/noaa_goes/
 data/raw/fetcher_cache/oisst/
 data/raw/fetcher_cache/landsat_c2/
 data/raw/fetcher_cache/chirps/
+
+# LiDAR — local COPC tiles (stream from NOAA S3 via lidar_stream.py instead)
+data/raw/LiDAR/**/*.copc.laz
+data/raw/LiDAR/**/*.laz
+
+# Wave data — large NetCDF files
+data/raw/PRI - Wave Data/**/*.nc
+
+# Oversized vector/tabular files (>90 MB — keep locally, run pipeline on Mac)
+data/raw/PRVI_geopackage_wetlands.gpkg
+data/raw/GMRT/gmrt_swath_polygons/gmrt_swath_polygons.shp
+data/raw/tl_2025_us_county/tl_2025_us_county.shp
+data/raw/ICIS Facilities & Permits/ICIS_FACILITIES.csv
+data/raw/ICIS Facilities & Permits/ICIS_PERMITS.csv
+data/raw/SDWA/SDWA_SITE_VISITS.csv
+data/raw/SDWA/SDWA_PUB_WATER_SYSTEMS.csv
+data/raw/SDWA/SDWA_LCR_SAMPLES.csv
+data/raw/SDWA/SDWA_FACILITIES.csv
+data/raw/SDWA/SDWA_VIOLATIONS_ENFORCEMENT.csv
+data/raw/NPDES/Archive 2.zip
+data/raw/NPDES/NPDES_DATA_GROUPS.csv
+data/raw/NPDES/NPDES_INFORMAL_ENFORCEMENT_ACTIONS.csv
+data/raw/NPDES/NPDES_INSPECTIONS.csv
+data/raw/NPDES/NPDES_ATTAINS_AU_SUMMARIES.csv
+data/raw/NPDES/NPDES_VIOLATION_ENFORCEMENTS.csv
+data/raw/NPDES/npdes_outfalls_layer.csv
+data/raw/NPDES/NPDES_QNCR_HISTORY.csv
+data/raw/NPDES/PR_NPDES_EFF_VIOLATIONS.csv
+data/raw/NPDES/NPDES_CATCHMENTS.csv
+data/raw/NHD/NHDPlusCI.zip
+data/raw/NHD/NHDPlusCI 2.zip
+data/raw/NHD/NHDPlusNationalData.zip
