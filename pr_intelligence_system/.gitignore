@@ -27,6 +27,7 @@ data/raw/fetcher_cache/chirps/
 ../*.rtf
 *API_KEY*
 *_API_KEY*
+config/settings.json
 
 # LiDAR — local COPC tiles (stream from NOAA S3 via lidar_stream.py instead)
 data/raw/LiDAR/**/*.copc.laz
