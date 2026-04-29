@@ -156,7 +156,7 @@ def _load_from_cache(matching: gpd.GeoDataFrame, compute_summary) -> tuple:
         return ilap_gdf, summary
 
     logger.warning("Cached result_path not found; treating as new query.")
-    return gpd.GeoDataFrame(crs="EPSG:4326"), _empty_summary()
+    return _empty_gdf(), _empty_summary()
 
 
 def _merge_partial(
@@ -175,7 +175,10 @@ def _merge_partial(
     for _, row in matching.iterrows():
         rpath = row.get("result_path", "")
         if rpath and os.path.exists(rpath):
-            cached_frames.append(pd.read_csv(rpath))
+            try:
+                cached_frames.append(pd.read_csv(rpath))
+            except pd.errors.EmptyDataError:
+                pass
 
     if not uncovered.is_empty:
         uncovered_aoi = gpd.GeoDataFrame({"geometry": [uncovered]}, crs="EPSG:4326")
@@ -183,9 +186,9 @@ def _merge_partial(
             new_ilap_gdf, _ = run_query(master_path, uncovered_aoi)
         except FileNotFoundError:
             logger.warning("Master dataset unavailable for partial fill.")
-            new_ilap_gdf = gpd.GeoDataFrame(crs="EPSG:4326")
+            new_ilap_gdf = _empty_gdf()
     else:
-        new_ilap_gdf = gpd.GeoDataFrame(crs="EPSG:4326")
+        new_ilap_gdf = _empty_gdf()
 
     all_frames = cached_frames + (
         [new_ilap_gdf.drop(columns=["geometry"], errors="ignore")] if not new_ilap_gdf.empty else []
@@ -198,7 +201,7 @@ def _merge_partial(
         geoms = [Point(r.lon, r.lat) for r in merged_df.itertuples(index=False) if hasattr(r, "lat")]
         ilap_gdf = gpd.GeoDataFrame(merged_df, geometry=geoms if geoms else None, crs="EPSG:4326")
     else:
-        ilap_gdf = gpd.GeoDataFrame(crs="EPSG:4326")
+        ilap_gdf = _empty_gdf()
 
     summary = compute_summary(ilap_gdf)
     logger.info("Partial merge: %d ILAPs total.", summary["total_ilaps"])
@@ -255,7 +258,7 @@ def _run_with_satellite_fetch(
         try:
             return run_query(master_path, aoi_gdf)
         except FileNotFoundError:
-            return gpd.GeoDataFrame(crs="EPSG:4326"), _empty_summary()
+            return _empty_gdf(), _empty_summary()
 
     # Compute bbox for LiDAR streaming (WGS84, from AOI polygon bounds)
     minx, miny, maxx, maxy = aoi_gdf.total_bounds
@@ -265,7 +268,7 @@ def _run_with_satellite_fetch(
 
     if aoi_df.empty:
         logger.warning("AOI pipeline produced no output for %s.", aoi_id)
-        return gpd.GeoDataFrame(crs="EPSG:4326"), _empty_summary()
+        return _empty_gdf(), _empty_summary()
 
     _append_to_master(aoi_df, master_path)
 
@@ -337,3 +340,7 @@ def _empty_summary() -> dict:
         "corridor_ids": [], "corridor_count": 0,
         "mean_confidence": 0.0, "mean_physics_score": 0.0, "mean_hydro_align": 0.0,
     }
+
+
+def _empty_gdf() -> gpd.GeoDataFrame:
+    return gpd.GeoDataFrame({"geometry": gpd.GeoSeries(dtype="geometry")}, crs="EPSG:4326")
