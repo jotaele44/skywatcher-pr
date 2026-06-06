@@ -1,0 +1,20 @@
+[
+  {
+    "lineage_id": "lin-syn-0001",
+    "observation_id": "syn-air-0001",
+    "source_id": "src-syn-0001",
+    "pipeline_stage": "synthetic_fixture_generation",
+    "extraction_method": "manual_fixture",
+    "coordinate_method": "synthetic_wgs84_point",
+    "notes": "Synthetic fixture for validator development only."
+  },
+  {
+    "lineage_id": "lin-syn-0002",
+    "observation_id": "syn-air-0002",
+    "source_id": "src-syn-0002",
+    "pipeline_stage": "synthetic_fixture_generation",
+    "extraction_method": "manual_fixture",
+    "coordinate_method": "synthetic_wgs84_point",
+    "notes": "Synthetic fixture for validator development only."
+  }
+]

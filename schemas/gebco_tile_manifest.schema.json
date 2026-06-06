@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "gebco_tile_manifest",
+  "type": "object",
+  "required": ["tile_id", "cached_at"],
+  "properties": {
+    "tile_id":      {"type": "string", "minLength": 1},
+    "cached_at":    {"type": "string", "minLength": 1},
+    "lat_min":      {"type": ["number", "null"]},
+    "lat_max":      {"type": ["number", "null"]},
+    "lon_min":      {"type": ["number", "null"]},
+    "lon_max":      {"type": ["number", "null"]},
+    "resolution_m": {"type": ["number", "null"]},
+    "file_path":    {"type": ["string", "null"]}
+  },
+  "additionalProperties": true
+}

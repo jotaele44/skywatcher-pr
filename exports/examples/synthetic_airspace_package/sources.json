@@ -1,0 +1,18 @@
+[
+  {
+    "source_id": "src-syn-0001",
+    "source_type": "screenshot",
+    "source_path": "synthetic/fr24_san_juan_0001.png",
+    "sha256": "synthetic-sha256-placeholder-0001",
+    "retrieved_at": "2026-05-20T00:00:00Z",
+    "provenance_status": "synthetic_fixture"
+  },
+  {
+    "source_id": "src-syn-0002",
+    "source_type": "screenshot",
+    "source_path": "synthetic/fr24_aguadilla_0002.png",
+    "sha256": "synthetic-sha256-placeholder-0002",
+    "retrieved_at": "2026-05-20T00:00:00Z",
+    "provenance_status": "synthetic_fixture"
+  }
+]

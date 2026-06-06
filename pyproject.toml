@@ -1,0 +1,7 @@
+# skywatcher-pr is a flat-layout airspace producer (modules at repo root,
+# importing each other as top-level names). It is run as an application, not
+# installed as a package, so there is no build-system here — pytest discovers
+# the root modules via pythonpath.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

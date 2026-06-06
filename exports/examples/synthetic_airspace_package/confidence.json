@@ -1,0 +1,24 @@
+[
+  {
+    "observation_id": "syn-air-0001",
+    "overall_confidence": 0.82,
+    "field_confidence": {
+      "event_datetime": 0.95,
+      "lat": 0.80,
+      "lon": 0.80,
+      "municipality": 0.75,
+      "signal_type": 0.90
+    }
+  },
+  {
+    "observation_id": "syn-air-0002",
+    "overall_confidence": 0.78,
+    "field_confidence": {
+      "event_datetime": 0.95,
+      "lat": 0.76,
+      "lon": 0.76,
+      "municipality": 0.72,
+      "signal_type": 0.90
+    }
+  }
+]

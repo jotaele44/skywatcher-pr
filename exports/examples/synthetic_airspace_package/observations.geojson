@@ -1,0 +1,55 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-66.0012, 18.4394]},
+      "properties": {
+        "observation_id": "syn-air-0001",
+        "event_datetime": "2026-05-20T10:00:00Z",
+        "location_name": "Synthetic San Juan airspace point",
+        "municipality": "San Juan",
+        "lat": 18.4394,
+        "lon": -66.0012,
+        "altitude_ft": 2500,
+        "bearing": 90,
+        "duration_seconds": 180,
+        "signal_type": "FR24_SCREENSHOT",
+        "description_summary": "Synthetic screenshot-derived airspace observation for validator testing.",
+        "source_id": "src-syn-0001",
+        "source_type": "screenshot",
+        "evidence_tier": "T2",
+        "confidence": 0.82,
+        "geometry_status": "approximate",
+        "temporal_status": "exact",
+        "lineage_id": "lin-syn-0001",
+        "synthetic": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-67.1299, 18.4949]},
+      "properties": {
+        "observation_id": "syn-air-0002",
+        "event_datetime": "2026-05-20T10:15:00Z",
+        "location_name": "Synthetic Aguadilla airspace point",
+        "municipality": "Aguadilla",
+        "lat": 18.4949,
+        "lon": -67.1299,
+        "altitude_ft": 3200,
+        "bearing": 245,
+        "duration_seconds": 240,
+        "signal_type": "FR24_SCREENSHOT",
+        "description_summary": "Synthetic second observation for package-level validation.",
+        "source_id": "src-syn-0002",
+        "source_type": "screenshot",
+        "evidence_tier": "T2",
+        "confidence": 0.78,
+        "geometry_status": "approximate",
+        "temporal_status": "exact",
+        "lineage_id": "lin-syn-0002",
+        "synthetic": true
+      }
+    }
+  ]
+}

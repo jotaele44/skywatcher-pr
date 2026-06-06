@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://priis.local/schemas/airspace_export_manifest.schema.json",
+  "title": "PRIIS Airspace Export Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "producer",
+    "package_id",
+    "created_at",
+    "mode",
+    "files",
+    "record_counts"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "minLength": 1},
+    "producer": {"type": "string", "const": "Puerto-Rico-Airspace-Intelligence-Tool"},
+    "package_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "mode": {"type": "string", "enum": ["test", "production"]},
+    "description": {"type": ["string", "null"]},
+    "files": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observations_geojson", "observations_csv", "sources", "lineage", "confidence"],
+      "properties": {
+        "observations_geojson": {"type": "string"},
+        "observations_csv": {"type": "string"},
+        "sources": {"type": "string"},
+        "lineage": {"type": "string"},
+        "confidence": {"type": "string"}
+      }
+    },
+    "record_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observations", "sources", "lineage", "confidence"],
+      "properties": {
+        "observations": {"type": "integer", "minimum": 0},
+        "sources": {"type": "integer", "minimum": 0},
+        "lineage": {"type": "integer", "minimum": 0},
+        "confidence": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

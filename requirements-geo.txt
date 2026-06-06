@@ -1,0 +1,6 @@
+# Optional GEBCO bathymetry/terrain layer (gebco/). Heavy geospatial stack;
+# not required for the core airspace engine or the federation export contract.
+numpy>=1.24
+scipy>=1.10
+xarray>=2023.1
+netCDF4>=1.6

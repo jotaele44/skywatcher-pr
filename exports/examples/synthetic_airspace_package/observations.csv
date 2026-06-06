@@ -1,0 +1,3 @@
+observation_id,event_datetime,location_name,municipality,lat,lon,altitude_ft,bearing,duration_seconds,signal_type,description_summary,source_id,source_type,evidence_tier,confidence,geometry_status,temporal_status,lineage_id,synthetic
+syn-air-0001,2026-05-20T10:00:00Z,Synthetic San Juan airspace point,San Juan,18.4394,-66.0012,2500,90,180,FR24_SCREENSHOT,Synthetic screenshot-derived airspace observation for validator testing.,src-syn-0001,screenshot,T2,0.82,approximate,exact,lin-syn-0001,true
+syn-air-0002,2026-05-20T10:15:00Z,Synthetic Aguadilla airspace point,Aguadilla,18.4949,-67.1299,3200,245,240,FR24_SCREENSHOT,Synthetic second observation for package-level validation.,src-syn-0002,screenshot,T2,0.78,approximate,exact,lin-syn-0002,true
