@@ -25,20 +25,22 @@
   "hub_callable_commands": {
     "setup": "python -m pip install -r requirements-dev.txt",
     "validate_export": "python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test",
-    "test_suite": "python -m pytest -q"
+    "test_suite": "python -m pytest -q",
+    "export_canonical": "python3 scripts/federation_export.py --mode test"
   },
   "canonical_outputs": {
     "airspace_observation_schema": "schemas/airspace_observation.schema.json",
     "airspace_export_manifest_schema": "schemas/airspace_export_manifest.schema.json",
     "synthetic_example_package": "exports/examples/synthetic_airspace_package",
-    "export_target_contract": "docs/AIRSPACE_PRODUCER_EXPORT_TARGET.md"
+    "export_target_contract": "docs/AIRSPACE_PRODUCER_EXPORT_TARGET.md",
+    "canonical_export_dir": "exports/federation"
   },
   "federation_readiness_gate": {
     "ready_for_hub_discovery": true,
     "ready_for_hub_live_execution": false,
     "blocking_conditions": [
-      "no live observation export yet — only the synthetic_airspace_package example is present",
-      "airspace observations use the airspace_observation schema; mapping to the Hub JSONL stream contract (sources/entities/relationships) is a federation follow-up",
+      "no live observation export yet \u2014 only the synthetic_airspace_package example is present",
+      "canonical export adapter (scripts/federation_export.py) projects observations->entities/sources/relationships; production blocked until non-synthetic observations load",
       "GEBCO terrain layer + RAG/earthgpt + satellite ingest + mission/operational intelligence remain in the spiderweb archive branch and are not yet ported",
       "ILAP intake requires FlightRadar24 inputs supplied locally"
     ]

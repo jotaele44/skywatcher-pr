@@ -17,3 +17,6 @@ venv/
 *.db
 outputs/
 tile_cache/
+
+# generated canonical export (scripts/federation_export.py)
+exports/federation/
