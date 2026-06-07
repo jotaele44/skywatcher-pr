@@ -20,13 +20,15 @@
     "optional_terrain_layer": "gebco/ (requires requirements-geo.txt: numpy/scipy/xarray/netCDF4)",
     "export_contract": "scripts/validate_airspace_export.py + schemas/airspace_observation.schema.json + schemas/airspace_export_manifest.schema.json",
     "primary_inputs": "FlightRadar24 screenshots/tracks (ILAP), aircraft registry, GEBCO bathymetry (optional)",
-    "provenance": "Airspace engine extracted from spiderweb-pr branch claude/pr-airspace-intelligence-v7Mbh; export contract salvaged from Puerto-Rico-Airspace-Intelligence-Tool PR #1."
+    "provenance": "Airspace engine extracted from spiderweb-pr branch claude/pr-airspace-intelligence-v7Mbh; export contract salvaged from Puerto-Rico-Airspace-Intelligence-Tool PR #1.",
+    "airport_registry": "data/reference/pr_airports.jsonl (19 real PR airports, FAA NASR + Airport_Master_PR_seed)"
   },
   "hub_callable_commands": {
     "setup": "python -m pip install -r requirements-dev.txt",
     "validate_export": "python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test",
     "test_suite": "python -m pytest -q",
-    "export_canonical": "python3 scripts/federation_export.py --mode test"
+    "export_canonical": "python3 scripts/federation_export.py --mode test",
+    "ingest_airports": "python3 scripts/ingest_airports.py"
   },
   "canonical_outputs": {
     "airspace_observation_schema": "schemas/airspace_observation.schema.json",
