@@ -118,6 +118,20 @@ def build_streams(observations: List[Dict[str, Any]], sources: List[Dict[str, An
             "extracted_at": now,
         }
 
+        # Z2: carry the observation's WGS84 point onto the canonical entity so
+        # the federation query-hub's correlate_spatial can join it cross-producer.
+        # Coords arrive as CSV strings (like confidence on line above), so coerce.
+        try:
+            lat = float(obs.get("lat"))
+            lon = float(obs.get("lon"))
+        except (TypeError, ValueError):
+            lat = lon = None
+        if lat is not None and -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
+            loc: Dict[str, Any] = {"lat": round(lat, 6), "lon": round(lon, 6)}
+            if obs.get("municipality"):
+                loc["municipality"] = obs["municipality"]
+            entities[ent_id]["location"] = loc
+
         # detected_by (observation -> source entity)
         tgt = src_entity_id.get(raw_sid) or _fid("ent", "source", raw_sid)
         rid = _fid("rel", ent_id, "detected_by", tgt)
