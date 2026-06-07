@@ -33,3 +33,16 @@ def test_verified_source_not_synthetic():
     s = build_streams(OBS, SRC, "t")
     assert all(not r["synthetic"] for r in s["entities"])
     assert all(not r["synthetic"] for r in s["sources"])
+
+
+def test_observation_carries_location():
+    # Z2: lat/lon (CSV strings) are coerced onto the canonical entity location.
+    s = build_streams(OBS, SRC, "t")
+    obs_ent = next(e for e in s["entities"] if e["entity_type"] == "airspace_observation")
+    assert obs_ent["location"] == {"lat": 18.4, "lon": -66.0, "municipality": "San Juan"}
+    # source/municipality entities carry no point location
+    assert all(
+        "location" not in e
+        for e in s["entities"]
+        if e["entity_type"] != "airspace_observation"
+    )
