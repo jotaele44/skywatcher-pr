@@ -185,5 +185,5 @@ def test_sha256_file_hashes_local_file(tmp_path):
     image_path.write_bytes(b"fr24 screenshot bytes")
 
     assert sha256_file(image_path) == (
-        "0e0b8e8d7941a68d8ca7d43167dc1bd8119838a8eba64e95a1c16f603fbf874d"
+        "6f3244c600b4b9ca746da0c1e135a3e9224c3730db074f493fb4cf46194aa52f"
     )
