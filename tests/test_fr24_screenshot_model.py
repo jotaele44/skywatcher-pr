@@ -35,6 +35,8 @@ def test_screenshot_record_accepts_minimum_valid_payload():
     assert record.review_status == ReviewStatus.PENDING
     assert record.evidence_tier == EvidenceTier.T2
     assert record.lineage_id == deterministic_lineage_id("fr24shot_test_001")
+    assert record.parent_lineage_id is None
+    assert record.child_lineage_ids == ()
     assert record.is_ready_for_parameter_extraction is True
 
 
@@ -50,6 +52,8 @@ def test_screenshot_record_serializes_to_json_compatible_dict():
         coordinate_confidence=0.6,
         estimated_error_m=120.0,
         review_status="needs_review",
+        parent_lineage_id="lineage_parent_001",
+        child_lineage_ids=["lineage_child_001", "lineage_child_002"],
         metadata={"note": "fixture"},
     )
 
@@ -59,6 +63,8 @@ def test_screenshot_record_serializes_to_json_compatible_dict():
     assert payload["geometry_status"] == "approximate"
     assert payload["coordinate_method"] == "manual"
     assert payload["review_status"] == "needs_review"
+    assert payload["parent_lineage_id"] == "lineage_parent_001"
+    assert payload["child_lineage_ids"] == ["lineage_child_001", "lineage_child_002"]
     assert payload["metadata"] == {"note": "fixture"}
     assert FR24ScreenshotRecord.from_dict(payload) == record
 
@@ -170,6 +176,45 @@ def test_rejected_or_invalid_records_are_not_ready_for_parameter_extraction():
 
     assert rejected.is_ready_for_parameter_extraction is False
     assert invalid_temporal.is_ready_for_parameter_extraction is False
+
+
+def test_lineage_parent_and_children_cannot_self_reference():
+    lineage_id = "lineage_custom_001"
+    with pytest.raises(ScreenshotModelError, match="parent_lineage_id cannot equal"):
+        FR24ScreenshotRecord(
+            screenshot_id="fr24shot_test_014",
+            image_path="screenshots/example.jpeg",
+            image_sha256=VALID_SHA,
+            lineage_id=lineage_id,
+            parent_lineage_id=lineage_id,
+        )
+
+    with pytest.raises(ScreenshotModelError, match="child_lineage_ids cannot contain"):
+        FR24ScreenshotRecord(
+            screenshot_id="fr24shot_test_015",
+            image_path="screenshots/example.jpeg",
+            image_sha256=VALID_SHA,
+            lineage_id=lineage_id,
+            child_lineage_ids=[lineage_id],
+        )
+
+
+def test_child_lineage_ids_must_be_sequence_of_non_empty_strings():
+    with pytest.raises(ScreenshotModelError, match="sequence of strings"):
+        FR24ScreenshotRecord(
+            screenshot_id="fr24shot_test_016",
+            image_path="screenshots/example.jpeg",
+            image_sha256=VALID_SHA,
+            child_lineage_ids="lineage_child_001",
+        )
+
+    with pytest.raises(ScreenshotModelError, match="non-empty strings"):
+        FR24ScreenshotRecord(
+            screenshot_id="fr24shot_test_017",
+            image_path="screenshots/example.jpeg",
+            image_sha256=VALID_SHA,
+            child_lineage_ids=[""],
+        )
 
 
 def test_deterministic_ids_use_hash_and_platform():
