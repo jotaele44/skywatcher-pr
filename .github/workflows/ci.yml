@@ -2,7 +2,7 @@ name: Skywatcher CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, codex/fr24-visual-parameter-registry-v1]
   pull_request:
 
 jobs:
@@ -19,6 +19,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dev deps
         run: python -m pip install -r requirements-dev.txt
+      - name: Audit FR24 repo-finalization operations
+        run: python scripts/audit_fr24_repo_finalization.py
       - name: Validate airspace export contract (test mode passes, production rejects synthetic)
         run: |
           python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
