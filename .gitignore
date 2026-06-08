@@ -26,4 +26,5 @@ exports/federation/
 # migration transition (skywatcher owns the FR24 pipeline; data is not committed).
 data/FR24_baseline
 data/_manifests/
+data/.migration_trash/
 flight_database.db
