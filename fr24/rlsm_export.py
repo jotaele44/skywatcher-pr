@@ -31,17 +31,6 @@ def _write_csv(path: Path, fields: list[str], rows):
             w.writerow(["" if v is None else v for v in r])
 
 
-def _write_jsonl(path: Path, fields: list[str], rows) -> int:
-    """Write rows as flat JSON-lines (one object per line). Returns the count."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    n = 0
-    with path.open("w") as f:
-        for r in rows:
-            f.write(json.dumps(dict(zip(fields, r)), sort_keys=True) + "\n")
-            n += 1
-    return n
-
-
 def export_all() -> dict:
     conn = sqlite3.connect(DB)
     written = {}
@@ -81,20 +70,6 @@ def export_all() -> dict:
     jsonl = OUTS / "ocr_raw_by_zone.jsonl"
     written["ocr_raw_by_zone.jsonl"] = "append-only by runner; lines=" + str(
         sum(1 for _ in jsonl.open()) if jsonl.exists() else 0)
-
-    # ocr_failures.jsonl — flat JSONL of every screenshot with ocr_status='failed'
-    # so operators can triage OCR failures without a SQL client (T8-70).
-    failure_fields = ["screenshot_id", "sha256", "filename", "rel_path",
-                      "month_bucket", "filename_ts", "ext", "size_bytes",
-                      "ingest_status", "ocr_status", "ingested_at"]
-    n_failures = _write_jsonl(
-        OUTS / "ocr_failures.jsonl", failure_fields,
-        conn.execute(f"""
-            SELECT {', '.join(failure_fields)}
-            FROM screenshots WHERE ocr_status='failed'
-            ORDER BY screenshot_id
-        """))
-    written["ocr_failures.jsonl"] = f"ok; lines={n_failures}"
 
     # ocr_normalized_labels.csv — flattened normalized labels with provenance
     _write_csv(OUTS / "ocr_normalized_labels.csv",

@@ -57,7 +57,7 @@ Registrations are matched case/space/dash-insensitively (`N-5854 z` == `N5854Z`)
 
 ## 3. Registration watchlist alerts
 
-Edit `configs/registration_watchlist.yaml`:
+Edit `config/registration_watchlist.yaml`:
 
 ```yaml
 registrations:

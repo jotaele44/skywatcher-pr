@@ -53,30 +53,6 @@ def build(conn: sqlite3.Connection) -> str:
         GROUP BY month_bucket ORDER BY month_bucket
     """)
 
-    # ── Per-zone / per-engine OCR drift (T8-71) ─────────────────────────────────
-    # ocr_observations.ocr_status is 'ok'|'empty'|'failed'; a zone or engine with
-    # an outsized empty/failed share or a low mean confidence is drifting and
-    # worth a targeted re-run.
-    per_zone = _q(conn, """
-        SELECT zone,
-               COUNT(*) AS n,
-               SUM(CASE WHEN ocr_status='ok'     THEN 1 ELSE 0 END) AS n_ok,
-               SUM(CASE WHEN ocr_status='empty'  THEN 1 ELSE 0 END) AS n_empty,
-               SUM(CASE WHEN ocr_status='failed' THEN 1 ELSE 0 END) AS n_failed,
-               ROUND(AVG(COALESCE(confidence_mean, 0)), 1)          AS avg_conf
-        FROM ocr_observations
-        GROUP BY zone ORDER BY zone
-    """)
-    per_engine = _q(conn, """
-        SELECT engine,
-               COUNT(*) AS n,
-               SUM(CASE WHEN ocr_status='ok'     THEN 1 ELSE 0 END) AS n_ok,
-               SUM(CASE WHEN ocr_status='failed' THEN 1 ELSE 0 END) AS n_failed,
-               ROUND(AVG(COALESCE(confidence_mean, 0)), 1)          AS avg_conf
-        FROM ocr_observations
-        GROUP BY engine ORDER BY engine
-    """)
-
     # ── Derived ────────────────────────────────────────────────────────────────
     n_labeled    = _q(conn, "SELECT COUNT(*) FROM labeled_pois")[0][0]
     n_unlabeled  = _q(conn, "SELECT COUNT(*) FROM unlabeled_poi_candidates")[0][0]
@@ -136,26 +112,6 @@ def build(conn: sqlite3.Connection) -> str:
         for bucket, t, ok_m, pend_m in per_month:
             pct = (ok_m / t * 100) if t else 0.0
             ln(f"| `{bucket}` | {t} | {ok_m} | {pend_m} | {pct:.1f}% |")
-        ln()
-
-    if per_zone:
-        ln("### Per-zone OCR coverage / drift")
-        ln()
-        ln("| zone | obs | ok | empty | failed | %ok | avg_conf |")
-        ln("|---|---|---|---|---|---|---|")
-        for zone, n, n_ok, n_empty, n_failed, avg_conf in per_zone:
-            pct = (n_ok / n * 100) if n else 0.0
-            ln(f"| {zone} | {n} | {n_ok} | {n_empty} | {n_failed} | {pct:.1f}% | {avg_conf} |")
-        ln()
-
-    if per_engine:
-        ln("### Per-engine OCR coverage / drift")
-        ln()
-        ln("| engine | obs | ok | failed | %ok | avg_conf |")
-        ln("|---|---|---|---|---|---|")
-        for engine, n, n_ok, n_failed, avg_conf in per_engine:
-            pct = (n_ok / n * 100) if n else 0.0
-            ln(f"| {engine} | {n} | {n_ok} | {n_failed} | {pct:.1f}% | {avg_conf} |")
         ln()
 
     ln("## Derived extractions")

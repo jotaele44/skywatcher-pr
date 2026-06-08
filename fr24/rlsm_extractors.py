@@ -127,7 +127,6 @@ def extract_aircraft(conn: sqlite3.Connection, run_id: int, limit: int = 0) -> d
     rows = conn.execute(sql).fetchall()
 
     n_emitted = 0
-    batch = []
     for (sid,) in rows:
         # Pull OCR text from aircraft_card + top_bar + map_center (registration can appear
         # in "Recent NXXXXX flights" map-overlay text when the user taps an aircraft history).
@@ -166,20 +165,18 @@ def extract_aircraft(conn: sqlite3.Connection, run_id: int, limit: int = 0) -> d
             identity_status = "unknown"
             confidence = min(0.4, avg_conf / 100)
 
-        batch.append((sid, run_id, reg, call, atype, alt, speed, hdg, op,
-                      identity_status, confidence, source_zone,
-                      combined[:200], _iso_now()))
-        n_emitted += 1
-
-    if batch:
-        conn.executemany(
+        conn.execute(
             """INSERT INTO aircraft_observations
                (screenshot_id, run_id, registration, callsign, aircraft_type,
                 altitude_ft, speed_kt, heading_deg, operator_text,
                 identity_status, confidence, source_zone, raw_excerpt, observed_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            batch,
+            (sid, run_id, reg, call, atype, alt, speed, hdg, op,
+             identity_status, confidence, source_zone,
+             combined[:200], _iso_now()),
         )
+        n_emitted += 1
+
     conn.commit()
     return {"kind": "aircraft", "emitted": n_emitted, "targets": len(rows)}
 
@@ -350,7 +347,6 @@ def extract_labeled_pois(conn: sqlite3.Connection, run_id: int,
     rows = conn.execute(sql).fetchall()
 
     n_emitted = 0
-    batch = []
     for (sid,) in rows:
         # Only use ONE of label_layer/map_center per screenshot to avoid double-emit.
         # label_layer takes priority because its OCR config targets sparse text.
@@ -385,20 +381,18 @@ def extract_labeled_pois(conn: sqlite3.Connection, run_id: int,
             if avg_conf > 70 and vocab_entry:
                 confidence = min(0.95, confidence + 0.15)
 
-            batch.append((sid, run_id, raw_label, _normalize_label(raw_label),
-                          None, None, None, None, None, None,
-                          poi_type, confidence, "unreviewed", _iso_now()))
+            conn.execute(
+                """INSERT INTO labeled_pois
+                   (screenshot_id, run_id, raw_label, normalized_label,
+                    bbox_x, bbox_y, bbox_w, bbox_h, centroid_x, centroid_y,
+                    poi_type_guess, confidence, review_status, observed_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (sid, run_id, raw_label, _normalize_label(raw_label),
+                 None, None, None, None, None, None,
+                 poi_type, confidence, "unreviewed", _iso_now()),
+            )
             n_emitted += 1
 
-    if batch:
-        conn.executemany(
-            """INSERT INTO labeled_pois
-               (screenshot_id, run_id, raw_label, normalized_label,
-                bbox_x, bbox_y, bbox_w, bbox_h, centroid_x, centroid_y,
-                poi_type_guess, confidence, review_status, observed_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            batch,
-        )
     conn.commit()
     return {"kind": "labeled_poi", "emitted": n_emitted, "targets": len(rows)}
 
