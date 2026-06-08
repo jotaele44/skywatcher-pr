@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 import hashlib
 
 
@@ -121,6 +121,14 @@ def _normalize_datetime(value: datetime | str | None, field_name: str) -> str | 
     raise ScreenshotModelError(f"{field_name} must be datetime, str, or None")
 
 
+def _normalize_child_lineage_ids(value: Sequence[str] | None) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        raise ScreenshotModelError("child_lineage_ids must be a sequence of strings")
+    return tuple(value)
+
+
 def sha256_file(path: str | Path) -> str:
     """Return SHA-256 hex digest for a local screenshot file."""
 
@@ -167,6 +175,8 @@ class FR24ScreenshotRecord:
     estimated_error_m: float | None = None
     review_status: ReviewStatus = ReviewStatus.PENDING
     lineage_id: str | None = None
+    parent_lineage_id: str | None = None
+    child_lineage_ids: Sequence[str] = field(default_factory=tuple)
     evidence_tier: EvidenceTier = EvidenceTier.T2
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
@@ -213,6 +223,11 @@ class FR24ScreenshotRecord:
         )
         if self.lineage_id is None:
             object.__setattr__(self, "lineage_id", deterministic_lineage_id(self.screenshot_id))
+        object.__setattr__(
+            self,
+            "child_lineage_ids",
+            _normalize_child_lineage_ids(self.child_lineage_ids),
+        )
         self.validate()
 
     def validate(self) -> None:
@@ -237,6 +252,16 @@ class FR24ScreenshotRecord:
             )
         if self.temporal_status == TemporalStatus.EXACT and self.capture_datetime_utc is None:
             raise ScreenshotModelError("exact temporal_status requires capture_datetime_utc")
+        if self.parent_lineage_id is not None:
+            if not isinstance(self.parent_lineage_id, str) or not self.parent_lineage_id:
+                raise ScreenshotModelError("parent_lineage_id must be a non-empty string")
+            if self.parent_lineage_id == self.lineage_id:
+                raise ScreenshotModelError("parent_lineage_id cannot equal lineage_id")
+        for child_id in self.child_lineage_ids:
+            if not isinstance(child_id, str) or not child_id:
+                raise ScreenshotModelError("child_lineage_ids must contain non-empty strings")
+            if child_id == self.lineage_id:
+                raise ScreenshotModelError("child_lineage_ids cannot contain lineage_id")
 
     @property
     def is_ready_for_parameter_extraction(self) -> bool:
@@ -266,6 +291,8 @@ class FR24ScreenshotRecord:
             "estimated_error_m": self.estimated_error_m,
             "review_status": self.review_status.value,
             "lineage_id": self.lineage_id,
+            "parent_lineage_id": self.parent_lineage_id,
+            "child_lineage_ids": list(self.child_lineage_ids),
             "evidence_tier": self.evidence_tier.value,
             "metadata": dict(self.metadata),
         }
