@@ -22,8 +22,8 @@ tile_cache/
 exports/federation/
 
 # FR24 ingest data — large baseline corpus + run manifests.
-# These live in spiderweb-pr and are wired in via relative symlinks during the
-# migration transition (skywatcher owns the FR24 pipeline; data is not committed).
+# Owned by skywatcher (relocated here from spiderweb-pr); large + machine-local,
+# so tracked out of git.
 data/FR24_baseline
 data/_manifests/
 data/.migration_trash/
