@@ -1,0 +1,195 @@
+{
+  "manifest_id": "fr24_pre_contract_parameter_universe",
+  "manifest_version": "1.0.0",
+  "active_branch": "codex/fr24-visual-parameter-registry-v1",
+  "purpose": "Lock support families, tile-analysis parameters, and seam-anomaly controls before enforcing parameter contracts.",
+  "support_families": [
+    {
+      "family": "parameter_origin",
+      "parameters": [
+        "parameter_origin",
+        "parameter_origin_note",
+        "parameter_requested_by",
+        "parameter_added_from_vector",
+        "parameter_rationale",
+        "parameter_dependency_ids",
+        "parameter_blocks_operation_ids",
+        "parameter_unlocks_operation_ids"
+      ]
+    },
+    {
+      "family": "feature_presence_absence",
+      "parameters": [
+        "feature_presence_state",
+        "feature_absence_confidence",
+        "feature_unobservable_reason",
+        "feature_obscured_flag",
+        "negative_evidence_flag",
+        "negative_evidence_note",
+        "absence_is_meaningful_flag"
+      ]
+    },
+    {
+      "family": "spatial_index_dedup",
+      "parameters": [
+        "grid_id",
+        "grid_scheme",
+        "grid_resolution_m",
+        "tile_id",
+        "tile_zoom",
+        "tile_x",
+        "tile_y",
+        "cell_centroid_lat",
+        "cell_centroid_lon",
+        "spatial_index_confidence",
+        "dedup_key",
+        "dedup_method",
+        "duplicate_candidate_flag",
+        "duplicate_group_id",
+        "duplicate_confidence",
+        "same_image_hash_count",
+        "same_screenshot_id_count",
+        "same_timestamp_group_count",
+        "same_flight_segment_group_id",
+        "dedup_review_status"
+      ]
+    },
+    {
+      "family": "review_triage",
+      "parameters": [
+        "review_priority_score",
+        "review_priority_class",
+        "review_queue",
+        "review_assignee",
+        "review_due_status",
+        "review_reason_codes",
+        "review_blocker_flag",
+        "review_blocker_reason"
+      ]
+    },
+    {
+      "family": "interpretation_guardrails",
+      "parameters": [
+        "interpretation_level",
+        "interpretation_guardrail_note",
+        "claim_strength_class",
+        "proof_status",
+        "speculation_flag",
+        "field_verification_required",
+        "restricted_access_inference_blocked",
+        "ownership_inference_blocked",
+        "function_inference_blocked"
+      ]
+    },
+    {
+      "family": "environmental_context",
+      "parameters": [
+        "season_context",
+        "rainfall_context_available",
+        "recent_rainfall_flag",
+        "drought_context_flag",
+        "dry_season_flag",
+        "wet_season_flag",
+        "vegetation_density_class",
+        "canopy_obstruction_score",
+        "shadow_length_context",
+        "sun_angle_issue_flag"
+      ]
+    },
+    {
+      "family": "visual_artifact_control",
+      "parameters": [
+        "ui_overlay_obstruction_flag",
+        "ui_overlay_obstruction_pct",
+        "compression_artifact_flag",
+        "blur_flag",
+        "motion_blur_flag",
+        "annotation_present_flag",
+        "user_annotation_present_flag",
+        "map_label_conflict_flag",
+        "basemap_stitching_artifact_flag",
+        "tile_loading_artifact_flag",
+        "visual_artifact_review_status"
+      ]
+    },
+    {
+      "family": "scoring_model_metadata",
+      "parameters": [
+        "scoring_model_id",
+        "scoring_model_version",
+        "score_inputs",
+        "score_weights",
+        "score_thresholds",
+        "score_normalization_method",
+        "score_penalty_fields",
+        "score_review_threshold",
+        "score_auto_accept_threshold",
+        "score_reject_threshold"
+      ]
+    }
+  ],
+  "tile_analysis_parameter_stack": {
+    "family": "tile_analysis",
+    "purpose": "Track map tile provenance, visual continuity, and tile-level quality for screenshot georeferencing and artifact suppression.",
+    "parameters": [
+      "tile_id",
+      "tile_provider",
+      "tile_source_url_hash",
+      "tile_zoom",
+      "tile_x",
+      "tile_y",
+      "tile_bounds_wgs84",
+      "tile_capture_status",
+      "tile_load_status",
+      "tile_resolution_px",
+      "tile_pixel_density_estimate",
+      "tile_timestamp_source",
+      "tile_age_class",
+      "tile_match_confidence",
+      "tile_neighbor_count",
+      "tile_neighbor_ids",
+      "tile_edge_north_id",
+      "tile_edge_south_id",
+      "tile_edge_east_id",
+      "tile_edge_west_id",
+      "tile_visual_quality_score",
+      "tile_artifact_flag",
+      "tile_artifact_type",
+      "tile_review_status"
+    ]
+  },
+  "seam_anomaly_detection_parameters": {
+    "family": "seam_anomaly_detection",
+    "purpose": "Detect and score basemap seams, stitching artifacts, tile loading failures, and map discontinuities without treating them as ground features.",
+    "parameters": [
+      "seam_visible_flag",
+      "seam_type",
+      "seam_orientation",
+      "seam_line_screen_x1",
+      "seam_line_screen_y1",
+      "seam_line_screen_x2",
+      "seam_line_screen_y2",
+      "seam_width_px",
+      "seam_length_px",
+      "seam_offset_px",
+      "seam_color_discontinuity_score",
+      "seam_texture_discontinuity_score",
+      "seam_label_cutoff_flag",
+      "seam_road_discontinuity_flag",
+      "seam_hydro_discontinuity_flag",
+      "seam_building_discontinuity_flag",
+      "seam_vegetation_discontinuity_flag",
+      "duplicated_feature_across_seam_flag",
+      "missing_feature_gap_flag",
+      "tile_boundary_overlap_flag",
+      "tile_loading_artifact_flag",
+      "basemap_stitching_artifact_flag",
+      "seam_false_positive_risk",
+      "seam_anomaly_score",
+      "seam_anomaly_class",
+      "seam_review_status",
+      "seam_interpretation_note"
+    ],
+    "interpretation_rule": "Seam parameters identify map/tile artifacts only. They must not be interpreted as physical ground features without independent confirmation."
+  }
+}
