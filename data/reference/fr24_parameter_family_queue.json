@@ -1,6 +1,6 @@
 {
   "queue_id": "fr24_parameter_family_queue",
-  "queue_version": "1.1.0",
+  "queue_version": "1.2.0",
   "active_branch": "codex/fr24-visual-parameter-registry-v1",
   "queued_families": [
     {
@@ -57,6 +57,80 @@
       "definition": "Queue SHAG/TAP as a controlled ILAP Target Location Type subfamily for visual candidate access-control microclusters. SHAG means Small House And Gate; TAP means Target Access Point.",
       "interpretation_rule": "Visual candidate only. SHAG/TAP labels identify observable access-control pattern components and do not prove function or restricted access.",
       "implementation_rule": "Map to the POI recurrence queue and implement later through fr24_poi_recurrence.py and fr24_infrastructure_context.py after registry contracts, enum registry, QC, and export sidecar controls exist."
+    },
+    {
+      "family_group": "SMALL_WATERBODY_LOCATOR",
+      "status": "queued",
+      "parent_family_group": "POI_RECURRENCE_PARAMETER_FAMILY",
+      "target_operations": [13, 14, 20, 22, 28, 30, 31, 32],
+      "modules": [
+        "fr24_ground_context.py",
+        "fr24_infrastructure_context.py",
+        "fr24_poi_recurrence.py"
+      ],
+      "export_targets": [
+        "small_waterbody_locator.jsonl",
+        "waterbody_recurrence.jsonl",
+        "poi_layer_recurrence.jsonl"
+      ],
+      "registry_families": [
+        "small_waterbody_identity",
+        "small_waterbody_match",
+        "small_waterbody_recurrence",
+        "water_infrastructure_signature",
+        "well_irrigation_signature"
+      ],
+      "enum_additions": {
+        "small_waterbody_type": [
+          "small_pond",
+          "farm_pond",
+          "stock_pond",
+          "irrigation_pond",
+          "irrigation_reservoir",
+          "small_reservoir",
+          "well",
+          "wellhead",
+          "cistern_or_tank",
+          "golf_pond",
+          "retention_basin",
+          "drainage_basin",
+          "quarry_pond",
+          "small_lagoon",
+          "unknown_water_feature"
+        ],
+        "waterbody_context": [
+          "agricultural",
+          "residential",
+          "industrial",
+          "utility",
+          "golf_course",
+          "pasture",
+          "quarry",
+          "roadside",
+          "forested_edge",
+          "unknown"
+        ]
+      },
+      "component_flags": [
+        "pond_present",
+        "well_present",
+        "wellhead_present",
+        "irrigation_pond_present",
+        "irrigation_reservoir_present",
+        "small_reservoir_present",
+        "golf_pond_present",
+        "retention_basin_present",
+        "drainage_basin_present",
+        "lined_pond_present",
+        "farm_or_stock_pond_present",
+        "pump_house_or_wellhead_present",
+        "embankment_or_small_dam_present",
+        "access_road_to_water_present",
+        "water_control_structure_present"
+      ],
+      "definition": "Queue a small body of water locator for ponds, wells, irrigation reservoirs, retention basins, small lagoons, and related water-infrastructure features visible in FR24/satellite-style screenshots.",
+      "interpretation_rule": "Visual locator only. Waterbody/well labels identify observable water or water-infrastructure features and do not prove hidden function, ownership, or restricted use.",
+      "implementation_rule": "Map to the POI recurrence queue and implement later through fr24_ground_context.py, fr24_infrastructure_context.py, and fr24_poi_recurrence.py after registry contracts, enum registry, QC, and export sidecar controls exist."
     }
   ]
 }
