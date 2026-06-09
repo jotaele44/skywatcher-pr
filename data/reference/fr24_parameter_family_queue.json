@@ -1,6 +1,6 @@
 {
   "queue_id": "fr24_parameter_family_queue",
-  "queue_version": "1.2.0",
+  "queue_version": "1.3.0",
   "active_branch": "codex/fr24-visual-parameter-registry-v1",
   "queued_families": [
     {
@@ -78,7 +78,8 @@
         "small_waterbody_match",
         "small_waterbody_recurrence",
         "water_infrastructure_signature",
-        "well_irrigation_signature"
+        "well_irrigation_signature",
+        "pool_signature"
       ],
       "enum_additions": {
         "small_waterbody_type": [
@@ -96,11 +97,23 @@
           "drainage_basin",
           "quarry_pond",
           "small_lagoon",
+          "swimming_pool",
+          "residential_pool",
+          "commercial_pool",
+          "hotel_or_resort_pool",
+          "public_pool",
+          "school_or_institutional_pool",
+          "abandoned_or_empty_pool",
+          "unknown_pool",
           "unknown_water_feature"
         ],
         "waterbody_context": [
           "agricultural",
           "residential",
+          "commercial",
+          "hotel_resort",
+          "public_recreation",
+          "school_or_institutional",
           "industrial",
           "utility",
           "golf_course",
@@ -123,13 +136,19 @@
         "drainage_basin_present",
         "lined_pond_present",
         "farm_or_stock_pond_present",
+        "pool_present",
+        "swimming_pool_present",
+        "rectangular_pool_shape_flag",
+        "pool_deck_or_patio_present",
+        "pool_inside_fenced_yard_flag",
+        "abandoned_or_empty_pool_flag",
         "pump_house_or_wellhead_present",
         "embankment_or_small_dam_present",
         "access_road_to_water_present",
         "water_control_structure_present"
       ],
-      "definition": "Queue a small body of water locator for ponds, wells, irrigation reservoirs, retention basins, small lagoons, and related water-infrastructure features visible in FR24/satellite-style screenshots.",
-      "interpretation_rule": "Visual locator only. Waterbody/well labels identify observable water or water-infrastructure features and do not prove hidden function, ownership, or restricted use.",
+      "definition": "Queue a small body of water locator for ponds, wells, irrigation reservoirs, retention basins, small lagoons, pools, and related water-infrastructure features visible in FR24/satellite-style screenshots.",
+      "interpretation_rule": "Visual locator only. Waterbody, well, and pool labels identify observable water or water-infrastructure features and do not prove hidden function, ownership, or restricted use.",
       "implementation_rule": "Map to the POI recurrence queue and implement later through fr24_ground_context.py, fr24_infrastructure_context.py, and fr24_poi_recurrence.py after registry contracts, enum registry, QC, and export sidecar controls exist."
     }
   ]
