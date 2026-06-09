@@ -45,7 +45,7 @@
       "code": "03_SCREENSHOT_PROVENANCE",
       "description": "Add hash, lineage, source platform, timestamp/geometry status.",
       "stage": "foundation_before_parameters",
-      "status": "in_progress",
+      "status": "complete",
       "required": true
     },
     {
@@ -53,7 +53,7 @@
       "code": "04_SCREENSHOT_PRIVACY_REDACTION_POLICY",
       "description": "Define screenshot privacy/redaction policy before fixtures.",
       "stage": "foundation_before_parameters",
-      "status": "planned",
+      "status": "in_progress",
       "required": true
     },
     {
