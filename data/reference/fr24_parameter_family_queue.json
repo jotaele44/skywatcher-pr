@@ -1,6 +1,6 @@
 {
   "queue_id": "fr24_parameter_family_queue",
-  "queue_version": "1.3.0",
+  "queue_version": "1.4.0",
   "active_branch": "codex/fr24-visual-parameter-registry-v1",
   "queued_families": [
     {
@@ -150,6 +150,180 @@
       "definition": "Queue a small body of water locator for ponds, wells, irrigation reservoirs, retention basins, small lagoons, pools, and related water-infrastructure features visible in FR24/satellite-style screenshots.",
       "interpretation_rule": "Visual locator only. Waterbody, well, and pool labels identify observable water or water-infrastructure features and do not prove hidden function, ownership, or restricted use.",
       "implementation_rule": "Map to the POI recurrence queue and implement later through fr24_ground_context.py, fr24_infrastructure_context.py, and fr24_poi_recurrence.py after registry contracts, enum registry, QC, and export sidecar controls exist."
+    },
+    {
+      "family_group": "VEHICLE_CLUSTER_ANOMALY",
+      "status": "queued",
+      "parent_family_group": "POI_RECURRENCE_PARAMETER_FAMILY",
+      "target_operations": [13, 14, 20, 22, 28, 30, 31, 32],
+      "modules": [
+        "fr24_ground_context.py",
+        "fr24_infrastructure_context.py",
+        "fr24_poi_recurrence.py"
+      ],
+      "export_targets": [
+        "ground_poi_locator.jsonl",
+        "vehicle_cluster_recurrence.jsonl",
+        "poi_layer_recurrence.jsonl"
+      ],
+      "registry_families": [
+        "vehicle_cluster_identity",
+        "vehicle_cluster_match",
+        "vehicle_cluster_recurrence",
+        "vehicle_cluster_signature",
+        "vehicle_cluster_false_positive_control"
+      ],
+      "enum_additions": {
+        "vehicle_cluster_type": [
+          "unexplained_vehicle_cluster",
+          "residential_vehicle_cluster",
+          "worksite_vehicle_cluster",
+          "warehouse_vehicle_cluster",
+          "roadside_vehicle_cluster",
+          "field_edge_vehicle_cluster",
+          "unknown_vehicle_cluster"
+        ],
+        "vehicle_cluster_exclusion_type": [
+          "junkyard_or_junkers",
+          "known_parking_lot",
+          "auto_dealer_or_repair_yard",
+          "event_or_school_parking",
+          "construction_staging_obvious",
+          "residential_driveway_obvious",
+          "none"
+        ]
+      },
+      "component_flags": [
+        "vehicle_cluster_present",
+        "vehicle_count_estimate",
+        "vehicle_density_high_flag",
+        "cars_huddled_together_flag",
+        "obvious_parking_context_absent_flag",
+        "junkers_exclusion_flag",
+        "junkyard_context_flag",
+        "known_parking_lot_context_flag",
+        "worksite_or_event_context_flag",
+        "access_road_to_vehicle_cluster_present",
+        "vehicle_cluster_review_required_flag"
+      ],
+      "definition": "Queue visual parameters for clusters of many cars/vehicles huddled together without an obvious reason, explicitly excluding junkers/junkyards and obvious parking contexts.",
+      "interpretation_rule": "Visual candidate only. Vehicle clustering identifies an observable arrangement and does not prove activity type, ownership, or wrongdoing.",
+      "implementation_rule": "Implement later through ground context, infrastructure context, and POI recurrence after enum registry, QC scoring, and false-positive controls are available."
+    },
+    {
+      "family_group": "LAND_CLEARING_SIGNATURE",
+      "status": "queued",
+      "parent_family_group": "POI_RECURRENCE_PARAMETER_FAMILY",
+      "target_operations": [13, 14, 20, 22, 28, 30, 31, 32],
+      "modules": [
+        "fr24_ground_context.py",
+        "fr24_infrastructure_context.py",
+        "fr24_poi_recurrence.py"
+      ],
+      "export_targets": [
+        "ground_poi_locator.jsonl",
+        "land_clearing_recurrence.jsonl",
+        "poi_layer_recurrence.jsonl"
+      ],
+      "registry_families": [
+        "land_clearing_identity",
+        "land_clearing_match",
+        "land_clearing_recurrence",
+        "land_clearing_signature",
+        "land_clearing_false_positive_control"
+      ],
+      "enum_additions": {
+        "land_clearing_size_class": [
+          "small",
+          "medium",
+          "large",
+          "very_large",
+          "unknown"
+        ],
+        "land_clearing_type": [
+          "bare_soil_clearing",
+          "graded_pad",
+          "scraped_hillside",
+          "quarry_or_borrow_area",
+          "construction_pad",
+          "agricultural_field_clearance",
+          "roadside_clearing",
+          "forest_edge_clearing",
+          "unknown_clearing"
+        ]
+      },
+      "component_flags": [
+        "land_clearing_present",
+        "medium_land_clearing_flag",
+        "large_land_clearing_flag",
+        "vegetation_absent_flag",
+        "bare_soil_visible_flag",
+        "graded_surface_visible_flag",
+        "cut_fill_pattern_visible_flag",
+        "erosion_or_runoff_trace_visible_flag",
+        "access_road_to_clearing_present",
+        "clearing_edge_sharpness_score",
+        "recent_disturbance_candidate_flag",
+        "land_clearing_review_required_flag"
+      ],
+      "definition": "Queue visual parameters for medium-sized and large land clearings with little or no vegetation.",
+      "interpretation_rule": "Visual candidate only. A clearing identifies observable land-cover absence/disturbance and does not prove construction purpose or hidden function.",
+      "implementation_rule": "Implement later through ground context and POI recurrence after size thresholds, tile resolution, seasonal context, and false-positive controls are defined."
+    },
+    {
+      "family_group": "UNLABELED_WAREHOUSE_POI",
+      "status": "queued",
+      "parent_family_group": "POI_RECURRENCE_PARAMETER_FAMILY",
+      "target_operations": [13, 14, 20, 22, 28, 30, 31, 32],
+      "modules": [
+        "fr24_ground_context.py",
+        "fr24_infrastructure_context.py",
+        "fr24_poi_recurrence.py"
+      ],
+      "export_targets": [
+        "ground_poi_locator.jsonl",
+        "warehouse_poi_recurrence.jsonl",
+        "poi_layer_recurrence.jsonl"
+      ],
+      "registry_families": [
+        "warehouse_poi_identity",
+        "warehouse_poi_match",
+        "warehouse_poi_recurrence",
+        "unlabeled_warehouse_signature",
+        "warehouse_false_positive_control"
+      ],
+      "enum_additions": {
+        "warehouse_poi_type": [
+          "unlabeled_warehouse",
+          "industrial_shed",
+          "large_roof_structure",
+          "logistics_or_storage_building",
+          "agricultural_warehouse",
+          "unknown_warehouse_like_structure"
+        ],
+        "warehouse_label_status": [
+          "unlabeled",
+          "label_obscured",
+          "partial_label",
+          "labeled",
+          "unknown"
+        ]
+      },
+      "component_flags": [
+        "warehouse_like_structure_present",
+        "unlabeled_warehouse_flag",
+        "large_roof_footprint_flag",
+        "rectangular_roof_geometry_flag",
+        "loading_bay_or_service_area_present",
+        "large_paved_apron_present",
+        "truck_or_vehicle_access_present",
+        "industrial_context_present",
+        "map_label_absent_flag",
+        "warehouse_review_required_flag"
+      ],
+      "definition": "Queue visual parameters for unlabeled warehouse-type POIs, including large roofed industrial/storage/logistics-like structures without an obvious map label.",
+      "interpretation_rule": "Visual candidate only. Unlabeled warehouse-like POIs identify observable structure morphology and label absence, not ownership, use, or restricted function.",
+      "implementation_rule": "Implement later through ground context, infrastructure context, and POI recurrence after label-status, size, QC, and false-positive controls are defined."
     }
   ]
 }
