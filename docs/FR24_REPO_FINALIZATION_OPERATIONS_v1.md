@@ -53,8 +53,8 @@ Rejected architectures:
 | 01 | `01_ARCHITECTURE_DECISION_DOC` — Record hybrid architecture: registry + contracts + family modules + audit. | foundation_before_parameters | yes | complete |
 | 02 | `02_SCREENSHOT_MODEL` — Create canonical screenshot record and typed fields. | foundation_before_parameters | yes | complete |
 | 03 | `03_SCREENSHOT_PROVENANCE` — Add hash, lineage, source platform, timestamp/geometry status. | foundation_before_parameters | yes | complete |
-| 04 | `04_SCREENSHOT_PRIVACY_REDACTION_POLICY` — Define screenshot privacy/redaction policy before fixtures. | foundation_before_parameters | yes | in_progress |
-| 05 | `05_PARAMETER_CONTRACT_LAYER` — Implement required contract fields for every visual parameter. | foundation_before_parameters | yes | planned |
+| 04 | `04_SCREENSHOT_PRIVACY_REDACTION_POLICY` — Define screenshot privacy/redaction policy before fixtures. | foundation_before_parameters | yes | complete |
+| 05 | `05_PARAMETER_CONTRACT_LAYER` — Implement required contract fields for every visual parameter. | foundation_before_parameters | yes | in_progress |
 | 06 | `06_ALLOWED_ENUM_REGISTRY` — Define allowed families, source methods, statuses, export targets. | foundation_before_parameters | yes | planned |
 | 07 | `07_CONFIG_DEFAULTS_LAYER` — Move thresholds/defaults to data/reference config. | foundation_before_parameters | yes | planned |
 | 08 | `08_VISUAL_QC_ENGINE` — Implement shared confidence, penalty, and review logic. | foundation_before_parameters | yes | planned |
