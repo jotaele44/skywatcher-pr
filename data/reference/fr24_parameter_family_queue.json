@@ -1,0 +1,28 @@
+{
+  "queue_id": "fr24_parameter_family_queue",
+  "queue_version": "1.0.0",
+  "active_branch": "codex/fr24-visual-parameter-registry-v1",
+  "queued_families": [
+    {
+      "family_group": "POI_RECURRENCE_PARAMETER_FAMILY",
+      "status": "queued",
+      "target_operations": [13, 14, 20, 22, 30, 31, 32],
+      "module": "fr24_poi_recurrence.py",
+      "export_targets": [
+        "poi_recurrence.jsonl",
+        "poi_layer_recurrence.jsonl"
+      ],
+      "registry_families": [
+        "poi_identity",
+        "poi_match",
+        "poi_recurrence",
+        "poi_layer_identity",
+        "poi_layer_match",
+        "poi_layer_recurrence",
+        "ilap_layer_convergence"
+      ],
+      "definition": "Identify and list recurrence of each unique POI and each POI layer, including single unique locations and grouped locations from one or more ILAP layers.",
+      "implementation_rule": "Do not implement as a visual detector. Implement as an aggregation and recurrence module after registry, export mapping, and infrastructure context are established."
+    }
+  ]
+}
