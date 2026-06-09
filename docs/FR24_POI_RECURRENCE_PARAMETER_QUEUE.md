@@ -9,9 +9,10 @@ This queue file records the next parameter families requested for the FR24 visua
 ```text
 POI_RECURRENCE_PARAMETER_FAMILY
 ILAP_TLT_SHAG_TAP
+SMALL_WATERBODY_LOCATOR
 ```
 
-These queue items must be added during the parameter-registry and infrastructure-context phases, not during screenshot privacy/provenance setup.
+These queue items must be added during the parameter-registry, ground-context, and infrastructure-context phases, not during screenshot privacy/provenance setup.
 
 ## POI Recurrence Purpose
 
@@ -20,7 +21,7 @@ Identify and list recurrence for:
 1. each single unique POI; and
 2. each POI layer, meaning a group of locations from one or more ILAP layers.
 
-A POI can be a single unique location. A POI layer can be a grouped set of locations from hydro, utility, transport, industrial, MBIL, palm, terrain, or other ILAP-related layers.
+A POI can be a single unique location. A POI layer can be a grouped set of locations from hydro, utility, transport, industrial, MBIL, palm, terrain, waterbody, or other ILAP-related layers.
 
 This is a recurrence and aggregation family. It is not a visual-object detector and should not be implemented inside `palm_tree_detection.py`.
 
@@ -75,15 +76,98 @@ The queued registry families are:
 ilap_tlt_recurrence.jsonl
 ```
 
+## Small Waterbody Locator Subfamily
+
+`SMALL_WATERBODY_LOCATOR` is queued as a controlled POI and ground-context subfamily.
+
+It covers small water and water-infrastructure features such as:
+
+```text
+small ponds
+farm ponds
+stock ponds
+irrigation ponds
+irrigation reservoirs
+small reservoirs
+wells
+wellheads
+cisterns/tanks
+golf ponds
+retention basins
+drainage basins
+quarry ponds
+small lagoons
+unknown small water features
+```
+
+### Small Waterbody Registry Families
+
+| Family | Purpose |
+|---|---|
+| `small_waterbody_identity` | stable identity for waterbody/well POIs |
+| `small_waterbody_match` | per-observation match between screenshot/flight and waterbody feature |
+| `small_waterbody_recurrence` | aggregate recurrence for repeated waterbody/well proximity |
+| `water_infrastructure_signature` | component flags for pond/reservoir/basin/control structures |
+| `well_irrigation_signature` | component flags for wells, wellheads, pump houses, and irrigation support features |
+
+### Small Waterbody Type Enum
+
+| Enum | Meaning |
+|---|---|
+| `small_pond` | generic small pond |
+| `farm_pond` | agricultural pond |
+| `stock_pond` | livestock/pasture pond |
+| `irrigation_pond` | pond used or visually consistent with irrigation context |
+| `irrigation_reservoir` | small reservoir in irrigation/agricultural context |
+| `small_reservoir` | small impoundment/reservoir |
+| `well` | well feature |
+| `wellhead` | visible wellhead or well-like surface node |
+| `cistern_or_tank` | cistern/tank water-storage feature |
+| `golf_pond` | pond in golf-course context |
+| `retention_basin` | stormwater retention basin |
+| `drainage_basin` | drainage/detention basin |
+| `quarry_pond` | water-filled quarry/cut feature |
+| `small_lagoon` | small lagoon/wetland pool |
+| `unknown_water_feature` | visible water feature requiring review |
+
+### Small Waterbody Component Flags
+
+| Flag | Meaning |
+|---|---|
+| `pond_present` | small pond visible |
+| `well_present` | well feature visible or recorded |
+| `wellhead_present` | wellhead-like node visible |
+| `irrigation_pond_present` | irrigation pond visible |
+| `irrigation_reservoir_present` | irrigation reservoir visible |
+| `small_reservoir_present` | small reservoir visible |
+| `golf_pond_present` | golf pond visible |
+| `retention_basin_present` | retention basin visible |
+| `drainage_basin_present` | drainage/detention basin visible |
+| `lined_pond_present` | visibly lined pond/basin edge |
+| `farm_or_stock_pond_present` | farm or livestock pond context visible |
+| `pump_house_or_wellhead_present` | pump house/wellhead support structure visible |
+| `embankment_or_small_dam_present` | small dam/embankment visible |
+| `access_road_to_water_present` | road/track leading to water feature |
+| `water_control_structure_present` | outlet, inlet, valve, spillway, or control structure visible |
+
+### Small Waterbody Planned Exports
+
+```text
+small_waterbody_locator.jsonl
+waterbody_recurrence.jsonl
+poi_layer_recurrence.jsonl
+```
+
 ## Target Operations
 
 | Operation | Queue action |
 |---:|---|
 | 13 | Add definitions to `fr24_visual_parameters.json` |
 | 14 | Add rows to `fr24_parameter_coverage_matrix.csv` |
-| 20 | Map registry parameters to `fr24_poi_recurrence.py` and TLT parameters to `fr24_infrastructure_context.py` |
+| 20 | Map registry parameters to `fr24_poi_recurrence.py`, `fr24_ground_context.py`, and `fr24_infrastructure_context.py` |
 | 22 | Map recurrence fields to recurrence sidecars |
-| 30 | Connect POI/layer/TLT recurrence to infrastructure-context logic |
+| 28 | Add waterbody/well feature logic to ground-context module |
+| 30 | Connect POI/layer/TLT/waterbody recurrence to infrastructure-context logic |
 | 31 | Emit recurrence-ready observation links from observation builder |
 | 32 | Aggregate recurrence across screenshot batches |
 
@@ -91,6 +175,7 @@ ilap_tlt_recurrence.jsonl
 
 ```text
 fr24_poi_recurrence.py
+fr24_ground_context.py
 fr24_infrastructure_context.py
 ```
 
@@ -100,6 +185,8 @@ fr24_infrastructure_context.py
 poi_recurrence.jsonl
 poi_layer_recurrence.jsonl
 ilap_tlt_recurrence.jsonl
+small_waterbody_locator.jsonl
+waterbody_recurrence.jsonl
 ```
 
 These exports should remain sidecars. The base observation row should only keep stable links and high-level confidence fields.
@@ -115,6 +202,10 @@ These exports should remain sidecars. The base observation row should only keep 
 | Broad layer over-matches | require member-level evidence count |
 | ILAP convergence overfit | require multiple independent layer types before applying boost |
 | Visual SHAG/TAP overinterpretation | store as candidate visual signature only and require review status |
+| Seasonal or dry waterbody misclassification | support dry/seasonal/unknown water-status fields |
+| Swimming pool confused with pond | require waterbody type, context, and review status |
+| Shadow/canopy confused with water | require visual confidence and contradiction fields |
+| Large mapped reservoir confused with small locator | store small_waterbody_type and geometry/radius fields |
 
 ## Implementation Rule
 
