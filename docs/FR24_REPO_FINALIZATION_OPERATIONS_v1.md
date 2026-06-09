@@ -52,8 +52,8 @@ Rejected architectures:
 | 00 | `00_BRANCH_LOCK` — Confirm active development branch and base commit for FR24 visual v1. | foundation_before_parameters | yes | complete |
 | 01 | `01_ARCHITECTURE_DECISION_DOC` — Record hybrid architecture: registry + contracts + family modules + audit. | foundation_before_parameters | yes | complete |
 | 02 | `02_SCREENSHOT_MODEL` — Create canonical screenshot record and typed fields. | foundation_before_parameters | yes | complete |
-| 03 | `03_SCREENSHOT_PROVENANCE` — Add hash, lineage, source platform, timestamp/geometry status. | foundation_before_parameters | yes | in_progress |
-| 04 | `04_SCREENSHOT_PRIVACY_REDACTION_POLICY` — Define screenshot privacy/redaction policy before fixtures. | foundation_before_parameters | yes | planned |
+| 03 | `03_SCREENSHOT_PROVENANCE` — Add hash, lineage, source platform, timestamp/geometry status. | foundation_before_parameters | yes | complete |
+| 04 | `04_SCREENSHOT_PRIVACY_REDACTION_POLICY` — Define screenshot privacy/redaction policy before fixtures. | foundation_before_parameters | yes | in_progress |
 | 05 | `05_PARAMETER_CONTRACT_LAYER` — Implement required contract fields for every visual parameter. | foundation_before_parameters | yes | planned |
 | 06 | `06_ALLOWED_ENUM_REGISTRY` — Define allowed families, source methods, statuses, export targets. | foundation_before_parameters | yes | planned |
 | 07 | `07_CONFIG_DEFAULTS_LAYER` — Move thresholds/defaults to data/reference config. | foundation_before_parameters | yes | planned |
