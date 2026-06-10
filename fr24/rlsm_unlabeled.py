@@ -47,6 +47,7 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from fr24.rlsm_zones import zones_for  # noqa: E402
+from pipeline.db_utils import configure_connection  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -210,8 +211,8 @@ def detect_for_screenshot(conn, sid: int, rel_path: str, run_id: int):
 
 def run(budget_sec: float, limit: int = 0):
     conn = sqlite3.connect(DB, timeout=30.0)
+    configure_connection(conn)
     conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA busy_timeout = 30000")  # wait up to 30s for the write lock (concurrency-safe)
     cur = conn.cursor()
     cur.execute("INSERT INTO processing_runs (run_kind, started_at, status, n_inputs, n_processed, n_failed) "
                 "VALUES ('unlabeled', ?, 'in_progress', 0, 0, 0)", (_iso_now(),))
@@ -271,10 +272,8 @@ def _worker_process_one(args: Tuple[int, str, int]) -> dict:
     sid, rel_path, run_id = args
     t0 = time.time()
     conn = sqlite3.connect(_worker_db_path, timeout=30.0)
+    configure_connection(conn)
     conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA journal_mode = WAL")
-    conn.execute("PRAGMA synchronous = NORMAL")
-    conn.execute("PRAGMA busy_timeout = 30000")
     try:
         res = detect_for_screenshot(conn, sid, rel_path, run_id)
         conn.commit()
@@ -380,7 +379,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--budget-sec", type=float, default=35.0)
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--workers", type=int, default=1,
+    ap.add_argument("--workers", type=int, default=4,
                     help="Worker processes for parallel detection (1 = serial run()).")
     args = ap.parse_args()
     if args.workers > 1:

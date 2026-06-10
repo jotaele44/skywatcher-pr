@@ -1,0 +1,89 @@
+version: rlsm_endpoint_recall_audit_v0_1
+purpose: Identify every observed or inferred takeoff and landing endpoint in flight records, then assess whether each location is already logged in the facility, airport, ramp, hangar, LZ, POI, or endpoint registries.
+
+endpoint_event_types:
+  TAKEOFF:
+    aliases: [takeoff, departure, origin, initial climb, track start]
+    expected_location_roles: [TAKEOFF_POINT_CANDIDATE, RAMP_CANDIDATE, AIRPORT, HANGAR_CANDIDATE, TRACK_ENDPOINT_UNRESOLVED]
+  LANDING:
+    aliases: [landing, arrival, destination, descent endpoint, track end]
+    expected_location_roles: [LANDING_POINT_CANDIDATE, RAMP_CANDIDATE, HELIPAD_CANDIDATE, AIRPORT, HANGAR_CANDIDATE, TRACK_ENDPOINT_UNRESOLVED]
+  TRACK_START:
+    aliases: [first visible point, first track point, screenshot route start]
+    expected_location_roles: [TAKEOFF_POINT_CANDIDATE, TRACK_ENDPOINT_UNRESOLVED]
+  TRACK_END:
+    aliases: [last visible point, last track point, screenshot route end]
+    expected_location_roles: [LANDING_POINT_CANDIDATE, TRACK_ENDPOINT_UNRESOLVED]
+
+visual_track_cues:
+  WHITE_TRACK_LINE:
+    meaning: White route/track line visible in screenshot imagery.
+    allowed_endpoint_inference: endpoint_candidate_only
+    rule: A white track line can support an endpoint candidate only at the first visible point, last visible point, discontinuity, or clear low-speed/altitude endpoint; it cannot confirm takeoff or landing by color alone.
+  NON_WHITE_TRACK_LINE:
+    meaning: Route/track line visible in another color.
+    allowed_endpoint_inference: endpoint_candidate_only
+    rule: Treat color as a visual extraction cue, not as confirmation of takeoff, landing, operator, or facility.
+  NO_TRACK_LINE:
+    meaning: No reliable track line visible.
+    allowed_endpoint_inference: insufficient_visual_trace
+    rule: Endpoint extraction requires OCR, coordinates, track points, or manual annotation.
+
+endpoint_match_statuses:
+  LOGGED_CONFIRMED:
+    meaning: Endpoint matches a known logged location with confirmed or registry-backed status.
+  LOGGED_CANDIDATE:
+    meaning: Endpoint matches an existing candidate location but still requires review.
+  NEAR_KNOWN_LOCATION:
+    meaning: Endpoint is within a configured distance of a known logged location but not directly resolved.
+  NEW_UNLOGGED_ENDPOINT:
+    meaning: Endpoint has no matching logged location and must be added to the endpoint registry.
+  AMBIGUOUS_MULTIPLE_MATCHES:
+    meaning: Endpoint is near more than one possible logged location and must be reviewed.
+  INSUFFICIENT_COORDINATES:
+    meaning: Endpoint cannot be audited because coordinates are missing or too uncertain.
+
+required_audit_fields:
+  - endpoint_event_id
+  - flight_id
+  - aircraft_id
+  - tail_raw
+  - event_type
+  - event_time_ast
+  - lat
+  - lon
+  - raw_location_label
+  - visual_track_color
+  - visual_track_cue
+  - normalized_location_id
+  - nearest_logged_location_id
+  - nearest_logged_location_distance_m
+  - endpoint_match_status
+  - visibility_class
+  - source_quality
+  - confidence_score
+  - review_required
+  - action_required
+
+matching_rules:
+  preserve_raw_endpoint_label: true
+  preserve_visual_track_color: true
+  preserve_first_and_last_track_points: true
+  audit_takeoff_and_landing_separately: true
+  do_not_assume_white_track_line_confirms_takeoff_or_landing: true
+  do_not_assume_track_start_equals_takeoff: true
+  do_not_assume_track_end_equals_landing: true
+  require_coordinates_for_spatial_match: true
+  route_unlogged_endpoints_to_review: true
+  create_project_location_id_for_new_unlogged_endpoint: true
+
+distance_thresholds_m:
+  exact_or_same_facility: 75
+  likely_same_airport_ramp_area: 250
+  near_known_location_review: 500
+  unresolved_beyond: 500
+
+outputs:
+  endpoint_audit_table: outputs/endpoint_recall_audit.csv
+  new_endpoint_review_queue: outputs/new_endpoint_review_queue.csv
+  updated_endpoint_registry_candidates: outputs/endpoint_registry_candidates.yaml

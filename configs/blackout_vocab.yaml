@@ -1,0 +1,17 @@
+version: rlsm_blackout_vocab_v0_1
+blackout_classes:
+  NONE:
+    aliases: [no gap, continuous track, normal trace]
+  TECHNICAL:
+    aliases: [receiver gap, coverage gap, app gap, satellite delay, FR24 delay]
+  UNKNOWN:
+    aliases: [track gap, ADS-B loss, signal loss, missing segment, fragment]
+  SUSPICIOUS_CONTEXTUAL:
+    aliases: [repeated gap, corridor gap, recurring shadow, LZ-adjacent gap, blackout cluster]
+  LANDING_CANDIDATE:
+    aliases: [descent into gap, final-before-gap, gap near pad, gap near ramp, gap near LZ]
+rules:
+  do_not_assume_intentional: true
+  require_recurrence_for_suspicious_contextual: true
+  preserve_raw_gap_text: true
+  route_uncertain_blackouts_to_review: true

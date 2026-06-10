@@ -1,0 +1,2930 @@
+version: 1
+generated_at: "2026-05-29T07:56:26Z"
+corridors:
+  -
+    canonical_id: "AASB-1"
+    name: "AASB-1"
+    flights_logged: 28
+    top_pois:
+      -
+        poi: "Loíza"
+        count: 11
+      -
+        poi: "Piñones"
+        count: 10
+      -
+        poi: "Sunset Coastal Loop"
+        count: 2
+      -
+        poi: "Condado"
+        count: 2
+      -
+        poi: "Sunset Coastal Strip"
+        count: 2
+      -
+        poi: "Loíza Coast"
+        count: 1
+      -
+        poi: "Río Grande"
+        count: 1
+      -
+        poi: "Loíza Return Loop"
+        count: 1
+      -
+        poi: "NE Coastal Partial"
+        count: 1
+      -
+        poi: "Coastal Return"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 26
+    top_mission_types:
+      -
+        mission: "Tourism"
+        count: 18
+      -
+        mission: "Coastal"
+        count: 7
+      -
+        mission: "Unknown"
+        count: 2
+      -
+        mission: "Coastal Transit"
+        count: 1
+    top_operators:
+      -
+        operator: "R66"
+        count: 24
+      -
+        operator: "Tourism R66"
+        count: 1
+      -
+        operator: "R66 Tourism"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "AASB-5"
+    name: "AASB-5"
+    flights_logged: 23
+    top_pois:
+      -
+        poi: "Juncos"
+        count: 9
+      -
+        poi: "PR-31"
+        count: 7
+      -
+        poi: "Gurabo"
+        count: 2
+      -
+        poi: "Sierra de Luquillo"
+        count: 2
+      -
+        poi: "Río Grande Hydro"
+        count: 1
+      -
+        poi: "Inland"
+        count: 1
+      -
+        poi: "Ridge Crossing"
+        count: 1
+      -
+        poi: "Río Grande"
+        count: 1
+      -
+        poi: "Gurabo Ridge"
+        count: 1
+      -
+        poi: "Inland PR-31 Cut"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N407PR"
+        count: 17
+    top_mission_types:
+      -
+        mission: "Inland"
+        count: 7
+      -
+        mission: "Shadow"
+        count: 4
+      -
+        mission: "Survey"
+        count: 3
+      -
+        mission: "Transit"
+        count: 3
+      -
+        mission: "Shadow-lite"
+        count: 2
+    top_operators:
+      -
+        operator: "Private"
+        count: 17
+      -
+        operator: "Shadow"
+        count: 5
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW Corridor"
+    name: "SW Corridor"
+    flights_logged: 22
+    top_pois:
+      -
+        poi: "Lajas"
+        count: 13
+      -
+        poi: "Cabo Rojo"
+        count: 12
+      -
+        poi: "Boquerón"
+        count: 8
+      -
+        poi: "Cabo Rojo Sector"
+        count: 2
+      -
+        poi: "Cabo Rojo Zone"
+        count: 2
+      -
+        poi: "Offshore"
+        count: 1
+      -
+        poi: "Guánica"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 22
+    top_mission_types:
+      -
+        mission: "Evening ISR"
+        count: 14
+      -
+        mission: "ISR Run"
+        count: 3
+      -
+        mission: "ISR Loop"
+        count: 2
+      -
+        mission: "Sunset ISR"
+        count: 1
+      -
+        mission: "Evening ISR Loop"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 22
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "AASB-7"
+    name: "AASB-7"
+    flights_logged: 13
+    top_pois:
+      -
+        poi: "PR-30"
+        count: 5
+      -
+        poi: "PR-52"
+        count: 4
+      -
+        poi: "PR-30 Backbone"
+        count: 2
+      -
+        poi: "PR-30 Utility Corridor"
+        count: 1
+      -
+        poi: "PR-30 Trunk Line"
+        count: 1
+      -
+        poi: "PR-30 Inland Piece"
+        count: 1
+      -
+        poi: "Inland ISR Drift #1"
+        count: 1
+      -
+        poi: "PR-30 Blackout Zone"
+        count: 1
+      -
+        poi: "Caguas"
+        count: 1
+      -
+        poi: "Metro"
+        count: 1
+    top_aircraft:
+      -
+        tail: "PREPA"
+        count: 8
+      -
+        tail: "N407PR"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Utility"
+        count: 8
+      -
+        mission: "Unknown"
+        count: 2
+      -
+        mission: "ISR-like"
+        count: 1
+      -
+        mission: "Shadow"
+        count: 1
+      -
+        mission: "Transit"
+        count: 1
+    top_operators:
+      -
+        operator: "Utility"
+        count: 7
+      -
+        operator: "PREPA"
+        count: 1
+      -
+        operator: "Shadow"
+        count: 1
+      -
+        operator: "Private"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "AASB-3"
+    name: "AASB-3"
+    flights_logged: 12
+    top_pois:
+      -
+        poi: "Metro Loop"
+        count: 4
+      -
+        poi: "Metro Fragment"
+        count: 3
+      -
+        poi: "East Metro Fragment"
+        count: 1
+      -
+        poi: "Metro Circuit"
+        count: 1
+      -
+        poi: "Metro Partial"
+        count: 1
+      -
+        poi: "Metro FR24 Fragment"
+        count: 1
+      -
+        poi: "Gurabo"
+        count: 1
+      -
+        poi: "N. Metro"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 5
+      -
+        tail: "N407PR"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Unknown"
+        count: 6
+      -
+        mission: "Metro"
+        count: 5
+      -
+        mission: "Transit"
+        count: 1
+    top_operators:
+      -
+        operator: "Robinson"
+        count: 3
+      -
+        operator: "R44"
+        count: 2
+      -
+        operator: "Private"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "AASB-4"
+    name: "AASB-4"
+    flights_logged: 12
+    top_pois:
+      -
+        poi: "Humacao"
+        count: 4
+      -
+        poi: "Palmas del Mar"
+        count: 2
+      -
+        poi: "North"
+        count: 2
+      -
+        poi: "Juncos Industrial Belt"
+        count: 1
+      -
+        poi: "Humacao Single Blip"
+        count: 1
+      -
+        poi: "Inland deviation toward Naguabo"
+        count: 1
+      -
+        poi: "Humacao / Punta Santiago Drift"
+        count: 1
+      -
+        poi: "Las Piedras Drift"
+        count: 1
+      -
+        poi: "PR-3"
+        count: 1
+      -
+        poi: "Naguabo Pass"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N13VL"
+        count: 5
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Transit"
+        count: 5
+      -
+        mission: "Unknown"
+        count: 2
+      -
+        mission: "Industrial"
+        count: 1
+      -
+        mission: "Pattern Break"
+        count: 1
+      -
+        mission: "Shadow-lite"
+        count: 1
+    top_operators:
+      -
+        operator: "Robinson"
+        count: 5
+      -
+        operator: "R66"
+        count: 1
+      -
+        operator: "Shadow"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "AASB-1/3"
+    name: "AASB-1/3"
+    flights_logged: 9
+    top_pois:
+      -
+        poi: "Condado"
+        count: 7
+      -
+        poi: "Piñones"
+        count: 6
+      -
+        poi: "Loíza"
+        count: 4
+      -
+        poi: "Carolina Loop"
+        count: 1
+      -
+        poi: "North Coast"
+        count: 1
+      -
+        poi: "Metro"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 9
+    top_mission_types:
+      -
+        mission: "Tourism"
+        count: 7
+      -
+        mission: "Loop"
+        count: 2
+    top_operators:
+      -
+        operator: "R66"
+        count: 9
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "North Utility"
+    name: "North Utility"
+    flights_logged: 6
+    top_pois:
+      -
+        poi: "SJU"
+        count: 6
+      -
+        poi: "ARE"
+        count: 6
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 6
+    top_mission_types:
+      -
+        mission: "Routine"
+        count: 4
+      -
+        mission: "Routine Run"
+        count: 2
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 6
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Laguna Cartagena"
+    name: "Laguna Cartagena"
+    flights_logged: 5
+    top_pois:
+      -
+        poi: "Lajas"
+        count: 4
+      -
+        poi: "Boquerón"
+        count: 4
+      -
+        poi: "Guánica"
+        count: 2
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 5
+    top_mission_types:
+      -
+        mission: "ISR Loop"
+        count: 2
+      -
+        mission: "ISR Coastal"
+        count: 1
+      -
+        mission: "ISR Coastal Run"
+        count: 1
+      -
+        mission: "ISR Run"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 5
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "North Grid"
+    name: "North Grid"
+    flights_logged: 5
+    top_pois:
+      -
+        poi: "SJU"
+        count: 5
+      -
+        poi: "ARE"
+        count: 4
+      -
+        poi: "Arecibo"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 5
+    top_mission_types:
+      -
+        mission: "Utility Patrol"
+        count: 1
+      -
+        mission: "Utility"
+        count: 1
+      -
+        mission: "Utility Survey"
+        count: 1
+      -
+        mission: "Powerline Run"
+        count: 1
+      -
+        mission: "Routine"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 5
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "North Corridor"
+    name: "North Corridor"
+    flights_logged: 4
+    top_pois:
+      -
+        poi: "SJU"
+        count: 4
+      -
+        poi: "ARE"
+        count: 4
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 4
+    top_mission_types:
+      -
+        mission: "Utility Grid Run"
+        count: 1
+      -
+        mission: "Utility / Grid"
+        count: 1
+      -
+        mission: "Utility"
+        count: 1
+      -
+        mission: "Utility Run"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 4
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Central Hydro"
+    name: "Central Hydro"
+    flights_logged: 4
+    top_pois:
+      -
+        poi: "Coamo"
+        count: 4
+      -
+        poi: "Aibonito"
+        count: 3
+      -
+        poi: "Cayey"
+        count: 1
+    top_aircraft:
+      -
+        tail: "BLUEBOY"
+        count: 4
+    top_mission_types:
+      -
+        mission: "Hydro Survey"
+        count: 2
+      -
+        mission: "Hydro Loop"
+        count: 1
+      -
+        mission: "Hydro Route"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 4
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Central ILAP"
+    name: "Central ILAP"
+    flights_logged: 4
+    top_pois:
+      -
+        poi: "Coamo"
+        count: 4
+      -
+        poi: "Cayey"
+        count: 4
+      -
+        poi: "Aibonito"
+        count: 3
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 2
+      -
+        tail: "BLUEBOY"
+        count: 2
+    top_mission_types:
+      -
+        mission: "Hydro Loop"
+        count: 2
+      -
+        mission: "Hydro Survey"
+        count: 1
+      -
+        mission: "Hydro Mapping"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 4
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Lajas Valley"
+    name: "Lajas Valley"
+    flights_logged: 3
+    top_pois:
+      -
+        poi: "Lajas"
+        count: 2
+      -
+        poi: "Boquerón"
+        count: 2
+      -
+        poi: "Guánica"
+        count: 1
+      -
+        poi: "Lajas Loop"
+        count: 1
+      -
+        poi: "Laguna Cartagena"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 3
+    top_mission_types:
+      -
+        mission: "ISR Coastal"
+        count: 2
+      -
+        mission: "ISR Recon"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 3
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Coamo Hydro"
+    name: "Coamo Hydro"
+    flights_logged: 3
+    top_pois:
+      -
+        poi: "Coamo"
+        count: 3
+      -
+        poi: "Aibonito"
+        count: 3
+      -
+        poi: "Salinas"
+        count: 2
+    top_aircraft:
+      -
+        tail: "BLUEBOY"
+        count: 2
+      -
+        tail: "N196DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Hydro Transit"
+        count: 2
+      -
+        mission: "Hydro Loop"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 3
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Metro"
+    name: "Metro"
+    flights_logged: 3
+    top_pois:
+      -
+        poi: "Bahía Urbana"
+        count: 2
+      -
+        poi: "Metro Untracked"
+        count: 1
+      -
+        poi: "San Juan"
+        count: 1
+      -
+        poi: "Condado Loop"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 2
+    top_mission_types:
+      -
+        mission: "Tourism"
+        count: 2
+      -
+        mission: "Unknown"
+        count: 1
+    top_operators:
+      -
+        operator: "Benítez Aviation R44"
+        count: 1
+      -
+        operator: "Benítez Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "AASB-5/3"
+    name: "AASB-5/3"
+    flights_logged: 3
+    top_pois:
+      -
+        poi: "PR-31"
+        count: 3
+      -
+        poi: "Metro"
+        count: 3
+      -
+        poi: "Juncos"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N407PR"
+        count: 3
+    top_mission_types:
+      -
+        mission: "Transit"
+        count: 2
+      -
+        mission: "Inland Transit"
+        count: 1
+    top_operators:
+      -
+        operator: "Private"
+        count: 3
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "AASB-4/5"
+    name: "AASB-4/5"
+    flights_logged: 3
+    top_pois:
+      -
+        poi: "Juncos / Humacao Drift"
+        count: 1
+      -
+        poi: "Humacao"
+        count: 1
+      -
+        poi: "Inland"
+        count: 1
+      -
+        poi: "Humacao Ridge"
+        count: 1
+      -
+        poi: "NW Drift"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N13VL"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Unknown"
+        count: 1
+      -
+        mission: "Shadow"
+        count: 1
+      -
+        mission: "Inland"
+        count: 1
+    top_operators:
+      -
+        operator: "Shadow"
+        count: 1
+      -
+        operator: "Robinson"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "South Coast Grid"
+    name: "South Coast Grid"
+    flights_logged: 2
+    top_pois:
+      -
+        poi: "Salinas"
+        count: 2
+      -
+        poi: "Guayama"
+        count: 2
+      -
+        poi: "Arroyo"
+        count: 2
+    top_aircraft: []
+    top_mission_types:
+      -
+        mission: "Utility Patrol"
+        count: 1
+      -
+        mission: "Utility Recon"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 2
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Laguna Cartagena Zone"
+    name: "Laguna Cartagena Zone"
+    flights_logged: 2
+    top_pois:
+      -
+        poi: "Lajas"
+        count: 2
+      -
+        poi: "Laguna Cartagena Loop"
+        count: 1
+      -
+        poi: "Guánica"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 2
+    top_mission_types:
+      -
+        mission: "ISR Pattern"
+        count: 1
+      -
+        mission: "ISR Coastal"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 2
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW Coast"
+    name: "SW Coast"
+    flights_logged: 2
+    top_pois:
+      -
+        poi: "Cabo Rojo"
+        count: 1
+      -
+        poi: "Guánica"
+        count: 1
+      -
+        poi: "Peñuelas"
+        count: 1
+      -
+        poi: "BQN"
+        count: 1
+      -
+        poi: "Cabo Rojo Bay"
+        count: 1
+    top_aircraft:
+      -
+        tail: "C6054"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Survey"
+        count: 1
+      -
+        mission: "SAR / Patrol"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+      -
+        operator: "USCG"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Central Hydro ILAP"
+    name: "Central Hydro ILAP"
+    flights_logged: 2
+    top_pois:
+      -
+        poi: "Coamo"
+        count: 2
+      -
+        poi: "Cayey"
+        count: 2
+      -
+        poi: "Aibonito"
+        count: 1
+      -
+        poi: "Salinas"
+        count: 1
+    top_aircraft:
+      -
+        tail: "BLUEBOY"
+        count: 2
+    top_mission_types:
+      -
+        mission: "Hydro Survey"
+        count: 1
+      -
+        mission: "Hydro Loop"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 2
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW ISR Belt"
+    name: "SW ISR Belt"
+    flights_logged: 2
+    top_pois:
+      -
+        poi: "Lajas"
+        count: 2
+      -
+        poi: "Boquerón"
+        count: 2
+      -
+        poi: "Guánica"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 2
+    top_mission_types:
+      -
+        mission: "ISR Loop"
+        count: 2
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 2
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "PR-3 Coast"
+    name: "PR-3 Coast"
+    flights_logged: 2
+    top_pois:
+      -
+        poi: "SIG"
+        count: 3
+      -
+        poi: "Ceiba"
+        count: 1
+      -
+        poi: "NRR"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N407PR"
+        count: 2
+    top_mission_types:
+      -
+        mission: "Ferry / Training"
+        count: 1
+      -
+        mission: "Return Transit"
+        count: 1
+    top_operators:
+      -
+        operator: "Private"
+        count: 2
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "📌"
+    name: "📌"
+    flights_logged: 2
+    top_pois:
+      -
+        poi: "Inland Partial Track"
+        count: 1
+      -
+        poi: "FR24 Fragment"
+        count: 1
+    top_aircraft: []
+    top_mission_types:
+      -
+        mission: "Unknown"
+        count: 2
+    top_operators: []
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "AASB-3/5"
+    name: "AASB-3/5"
+    flights_logged: 2
+    top_pois:
+      -
+        poi: "Juncos"
+        count: 1
+      -
+        poi: "Metro"
+        count: 1
+      -
+        poi: "East Metro Inland Notch"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N407PR"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Transit"
+        count: 1
+      -
+        mission: "Shadow"
+        count: 1
+    top_operators:
+      -
+        operator: "Private"
+        count: 1
+      -
+        operator: "Shadow"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Cayey Hydro Corridor"
+    name: "Cayey Hydro Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Coamo"
+        count: 1
+      -
+        poi: "Aibonito"
+        count: 1
+      -
+        poi: "Cayey"
+        count: 1
+    top_aircraft: []
+    top_mission_types:
+      -
+        mission: "Hydro / Grid Recon"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA (H125)"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Boquerón Wetlands (OSAP)"
+    name: "Boquerón Wetlands (OSAP)"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Guánica"
+        count: 1
+      -
+        poi: "Boquerón"
+        count: 1
+      -
+        poi: "Lajas"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Loop"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Metro Coastal"
+    name: "Metro Coastal"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Bahía Urbana"
+        count: 1
+      -
+        poi: "Toa Baja Loop"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Tour / Recon"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Río Loco / Yauco Hydro Axis"
+    name: "Río Loco / Yauco Hydro Axis"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Ponce"
+        count: 1
+      -
+        poi: "Yauco"
+        count: 1
+      -
+        poi: "Cabo Rojo"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Hydro Survey"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "East Coast Transit"
+    name: "East Coast Transit"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SIG ↔ NRR"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N407PR"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Inter-base Ferry"
+        count: 1
+    top_operators:
+      -
+        operator: "B407"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Añasco Headwaters"
+    name: "Añasco Headwaters"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Mayagüez"
+        count: 1
+      -
+        poi: "Las Marías"
+        count: 1
+      -
+        poi: "Añasco"
+        count: 1
+    top_aircraft: []
+    top_mission_types:
+      -
+        mission: "Utility Patrol"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Sabana Grande Hydro Belt"
+    name: "Sabana Grande Hydro Belt"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "San Germán"
+        count: 1
+      -
+        poi: "Sabana Grande"
+        count: 1
+      -
+        poi: "Guayanilla"
+        count: 1
+    top_aircraft: []
+    top_mission_types:
+      -
+        mission: "ISR Closure"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Lajas–Coamo Corridor"
+    name: "Lajas–Coamo Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Cabo Rojo"
+        count: 1
+      -
+        poi: "Lajas"
+        count: 1
+      -
+        poi: "Coamo"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Evening ISR Sweep"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Cambalache / Arecibo Hydro"
+    name: "Cambalache / Arecibo Hydro"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SJU"
+        count: 1
+      -
+        poi: "Arecibo"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Grid Transfer"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Interior Hydro Belt"
+    name: "Interior Hydro Belt"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Santa Isabel"
+        count: 1
+      -
+        poi: "Coamo"
+        count: 1
+      -
+        poi: "Villalba"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Survey"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "North Shore Corridor"
+    name: "North Shore Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Arecibo"
+        count: 1
+      -
+        poi: "Isabela Coast"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "PREPA Patrol"
+        count: 1
+    top_operators:
+      -
+        operator: "AS350"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Coamo Hydro ILAP"
+    name: "Coamo Hydro ILAP"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Coamo"
+        count: 1
+      -
+        poi: "Aibonito"
+        count: 1
+      -
+        poi: "Cayey"
+        count: 1
+      -
+        poi: "Salinas"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Hydro Survey"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Arecibo Reservoir Complex"
+    name: "Arecibo Reservoir Complex"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Arecibo"
+        count: 1
+      -
+        poi: "Utuado"
+        count: 1
+      -
+        poi: "Adjuntas"
+        count: 1
+    top_aircraft: []
+    top_mission_types:
+      -
+        mission: "Grid Survey"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Southeast Coast"
+    name: "Southeast Coast"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Patillas"
+        count: 1
+      -
+        poi: "Maunabo"
+        count: 1
+      -
+        poi: "Yabucoa"
+        count: 1
+    top_aircraft: []
+    top_mission_types:
+      -
+        mission: "ISR Coastal"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Central Grid"
+    name: "Central Grid"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Aibonito"
+        count: 1
+      -
+        poi: "Cayey"
+        count: 1
+      -
+        poi: "Caguas"
+        count: 1
+    top_aircraft: []
+    top_mission_types:
+      -
+        mission: "Utility Patrol"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Barceloneta–Arecibo"
+    name: "Barceloneta–Arecibo"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SJU"
+        count: 1
+      -
+        poi: "Arecibo"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Grid Line Run"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Cayey–Coamo Ridge"
+    name: "Cayey–Coamo Ridge"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Ponce"
+        count: 1
+      -
+        poi: "Coamo"
+        count: 1
+      -
+        poi: "Salinas"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Survey"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Southern Hydro"
+    name: "Southern Hydro"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Juana Díaz"
+        count: 1
+      -
+        poi: "Santa Isabel"
+        count: 1
+      -
+        poi: "Salinas"
+        count: 1
+    top_aircraft: []
+    top_mission_types:
+      -
+        mission: "ISR Patrol"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Hydro Survey"
+    name: "Hydro Survey"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Cayey"
+        count: 1
+      -
+        poi: "Coamo"
+        count: 1
+      -
+        poi: "Ponce"
+        count: 1
+    top_aircraft:
+      -
+        tail: "BLUEBOY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Central Corridor"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Metro Defense Sector"
+    name: "Metro Defense Sector"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Isla Grande"
+        count: 1
+      -
+        poi: "Fort Buchanan"
+        count: 1
+      -
+        poi: "SIG"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N429LE"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Law Enf. / Gov Transit"
+        count: 1
+    top_operators:
+      -
+        operator: "B429"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "North ILAP Grid"
+    name: "North ILAP Grid"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SJU"
+        count: 1
+      -
+        poi: "ARE"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Utility Run"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW ILAP Arc"
+    name: "SW ILAP Arc"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Boquerón"
+        count: 1
+      -
+        poi: "Lajas"
+        count: 1
+      -
+        poi: "Mayagüez"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Loop"
+        count: 1
+    top_operators:
+      -
+        operator: "AS350"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW ILAP Corridor"
+    name: "SW ILAP Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Boquerón"
+        count: 1
+      -
+        poi: "Lajas"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Pattern"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Coamo Hydro Axis"
+    name: "Coamo Hydro Axis"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Cayey"
+        count: 1
+      -
+        poi: "Coamo"
+        count: 1
+    top_aircraft:
+      -
+        tail: "BLUEBOY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Hydro Loop"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Cambalache Zone"
+    name: "Cambalache Zone"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SJU"
+        count: 1
+      -
+        poi: "ARE"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Grid Patrol"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Central Hydro Corridor"
+    name: "Central Hydro Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Coamo"
+        count: 1
+      -
+        poi: "Cayey"
+        count: 1
+    top_aircraft:
+      -
+        tail: "BLUEBOY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Hydro Survey"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW Evening Pattern"
+    name: "SW Evening Pattern"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Cabo Rojo Sector"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Closure"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "North Coast Patrol"
+    name: "North Coast Patrol"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "BQN"
+        count: 1
+      -
+        poi: "Isabela Bay"
+        count: 1
+      -
+        poi: "Arecibo"
+        count: 1
+    top_aircraft:
+      -
+        tail: "C6054"
+        count: 1
+    top_mission_types:
+      -
+        mission: "SAR Pattern"
+        count: 1
+    top_operators:
+      -
+        operator: "USCG"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW ILAP"
+    name: "SW ILAP"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Boquerón"
+        count: 1
+      -
+        poi: "Lajas"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Loop"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW Edge"
+    name: "SW Edge"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Cabo Rojo Loop"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Evening"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Sunset SW Corridor"
+    name: "Sunset SW Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Cabo Rojo"
+        count: 1
+      -
+        poi: "Lajas"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Closure"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Metro → South Escort"
+    name: "Metro → South Escort"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SIG"
+        count: 1
+      -
+        poi: "PSE"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N767PD"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Law Enf Flight"
+        count: 1
+    top_operators:
+      -
+        operator: "Police Ops"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW Patrol"
+    name: "SW Patrol"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Cabo Rojo"
+        count: 1
+      -
+        poi: "Yauco"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N767PD"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Police Recon"
+        count: 1
+    top_operators:
+      -
+        operator: "Police Ops"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Hydro Corridor Check"
+    name: "Hydro Corridor Check"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Cabo Rojo Urban"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N767PD"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Support"
+        count: 1
+    top_operators:
+      -
+        operator: "Police Ops"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Cross-Channel"
+    name: "Cross-Channel"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "PUJ"
+        count: 1
+      -
+        poi: "SIG"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Cargo Vector"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "South Landing"
+    name: "South Landing"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Ponce"
+        count: 1
+      -
+        poi: "PSE Ramp"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N767PD"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Escort Landing"
+        count: 1
+    top_operators:
+      -
+        operator: "Police Ops"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Static Position"
+    name: "Static Position"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SIG Ground"
+        count: 1
+    top_aircraft: []
+    top_mission_types:
+      -
+        mission: "Idle"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "West–East Comm."
+    name: "West–East Comm."
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Aguadilla"
+        count: 1
+      -
+        poi: "Isla Grande"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Transit"
+        count: 1
+    top_operators:
+      -
+        operator: "Private"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW Evening Corridor"
+    name: "SW Evening Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Cabo Rojo"
+        count: 1
+      -
+        poi: "Mayagüez"
+        count: 1
+      -
+        poi: "Boquerón"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Closure"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Arecibo / Cambalache"
+    name: "Arecibo / Cambalache"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SJU"
+        count: 1
+      -
+        poi: "ARE"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Grid Patrol"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Metro Ring"
+    name: "Metro Ring"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "San Juan"
+        count: 1
+      -
+        poi: "Bayamón"
+        count: 1
+      -
+        poi: "Dorado"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Tour Loop"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW Coastal"
+    name: "SW Coastal"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Guánica"
+        count: 1
+      -
+        poi: "Boquerón"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Loop"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Coast Corridor"
+    name: "Coast Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SIG"
+        count: 2
+      -
+        poi: "Ceiba"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N407PR"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Routine Loop"
+        count: 1
+    top_operators:
+      -
+        operator: "B407"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Coamo ILAP"
+    name: "Coamo ILAP"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Coamo"
+        count: 1
+      -
+        poi: "Cayey"
+        count: 1
+      -
+        poi: "Salinas"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Hydro Corridor"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Metro Coast"
+    name: "Metro Coast"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Bahía Urbana"
+        count: 1
+      -
+        poi: "Cataño"
+        count: 1
+      -
+        poi: "Toa Baja"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Tour + Visual ISR"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Central ILAP Corridor"
+    name: "Central ILAP Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Cayey"
+        count: 1
+      -
+        poi: "Coamo"
+        count: 1
+    top_aircraft:
+      -
+        tail: "BLUEBOY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Hydro Survey"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Metro North"
+    name: "Metro North"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SIG"
+        count: 2
+      -
+        poi: "Toa Alta"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Recon Pattern"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Cambalache / Arecibo"
+    name: "Cambalache / Arecibo"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SJU"
+        count: 1
+      -
+        poi: "ARE"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Grid Sweep"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "West Corridor / Mona"
+    name: "West Corridor / Mona"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "BQN"
+        count: 1
+      -
+        poi: "Isla de Mona"
+        count: 1
+    top_aircraft:
+      -
+        tail: "C6062"
+        count: 1
+    top_mission_types:
+      -
+        mission: "SAR Drill"
+        count: 1
+    top_operators:
+      -
+        operator: "USCG"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Central Highlands"
+    name: "Central Highlands"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SIG"
+        count: 1
+      -
+        poi: "Río Usabón"
+        count: 1
+      -
+        poi: "Comerío"
+        count: 1
+    top_aircraft:
+      -
+        tail: "ORANGE"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Hydro-Corridor Survey"
+        count: 1
+    top_operators:
+      -
+        operator: "Yellow Media"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Arecibo Corridor"
+    name: "Arecibo Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SJU"
+        count: 1
+      -
+        poi: "ARE"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Grid Patrol"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "West Coast"
+    name: "West Coast"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "BQN"
+        count: 1
+      -
+        poi: "Aguada"
+        count: 1
+      -
+        poi: "Mayagüez"
+        count: 1
+    top_aircraft:
+      -
+        tail: "C6054"
+        count: 1
+    top_mission_types:
+      -
+        mission: "SAR Drill"
+        count: 1
+    top_operators:
+      -
+        operator: "USCG"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Central Corridor"
+    name: "Central Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Coamo"
+        count: 1
+      -
+        poi: "Aibonito"
+        count: 1
+      -
+        poi: "Salinas"
+        count: 1
+    top_aircraft:
+      -
+        tail: "BLUEBOY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Hydro Transit"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "SW ISR Corridor"
+    name: "SW ISR Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Lajas"
+        count: 1
+      -
+        poi: "Guánica"
+        count: 1
+      -
+        poi: "Boquerón"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N999ZY"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR Loop"
+        count: 1
+    top_operators:
+      -
+        operator: "Southwest Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Hydro-Visual Loop"
+    name: "Hydro-Visual Loop"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SIG"
+        count: 2
+      -
+        poi: "Vega Alta"
+        count: 1
+      -
+        poi: "Cibuco"
+        count: 1
+      -
+        poi: "Comerío"
+        count: 1
+      -
+        poi: "Bayamón"
+        count: 1
+      -
+        poi: "Old San Juan"
+        count: 1
+    top_aircraft:
+      -
+        tail: "ORANGE"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Survey / Media"
+        count: 1
+    top_operators:
+      -
+        operator: "Yellow Media"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Dos Bocas Reservoir"
+    name: "Dos Bocas Reservoir"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SJU"
+        count: 1
+      -
+        poi: "Arecibo"
+        count: 1
+      -
+        poi: "Utuado"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Extended Grid Check"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Island Transect"
+    name: "Island Transect"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "BQN"
+        count: 1
+      -
+        poi: "Arecibo"
+        count: 1
+      -
+        poi: "Ceiba"
+        count: 1
+    top_aircraft:
+      -
+        tail: "C6054"
+        count: 1
+    top_mission_types:
+      -
+        mission: "SAR Route"
+        count: 1
+    top_operators:
+      -
+        operator: "USCG"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Hydro Corridor"
+    name: "Hydro Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SIG"
+        count: 2
+      -
+        poi: "Cibuco"
+        count: 1
+      -
+        poi: "Comerío"
+        count: 1
+      -
+        poi: "San Juan"
+        count: 1
+    top_aircraft:
+      -
+        tail: "ORANGE"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Recurrent Survey"
+        count: 1
+    top_operators:
+      -
+        operator: "Yellow Media"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Metro Loop"
+    name: "Metro Loop"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Toa Baja"
+        count: 1
+      -
+        poi: "Bahía Urbana"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N196DM"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Tour / Recon"
+        count: 1
+    top_operators:
+      -
+        operator: "Blue Aviation"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Cambalache"
+    name: "Cambalache"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SJU"
+        count: 1
+      -
+        poi: "ARE"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Routine"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Arecibo"
+    name: "Arecibo"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SJU"
+        count: 1
+      -
+        poi: "ARE"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "North Grid"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Aguadilla Coast / Mona"
+    name: "Aguadilla Coast / Mona"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "BQN ↺ Mona Passage Loop"
+        count: 1
+    top_aircraft:
+      -
+        tail: "C6054"
+        count: 1
+    top_mission_types:
+      -
+        mission: "SAR / Patrol"
+        count: 1
+    top_operators:
+      -
+        operator: "USCG"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Río Cibuco / Bayamón Corridor"
+    name: "Río Cibuco / Bayamón Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SJU ↺ Island Loop"
+        count: 1
+      -
+        poi: "SJU"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N5854Z"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Extended Grid Patrol"
+        count: 1
+    top_operators:
+      -
+        operator: "PREPA"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Cataño Industrial → Carraízo"
+    name: "Cataño Industrial → Carraízo"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SIG"
+        count: 1
+      -
+        poi: "N/A"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N413LP"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Test / Transfer"
+        count: 1
+    top_operators:
+      -
+        operator: "Private"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "East Coast"
+    name: "East Coast"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SIG"
+        count: 1
+      -
+        poi: "NRR"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N407PR"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Inter-Base Transit"
+        count: 1
+    top_operators:
+      -
+        operator: "Private"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Diagonal Cross-Island"
+    name: "Diagonal Cross-Island"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "BQN"
+        count: 1
+      -
+        poi: "Yabucoa"
+        count: 1
+      -
+        poi: "Carite"
+        count: 1
+      -
+        poi: "Ciales"
+        count: 1
+    top_aircraft:
+      -
+        tail: "C6054"
+        count: 1
+    top_mission_types:
+      -
+        mission: "SAR / Recon"
+        count: 1
+    top_operators:
+      -
+        operator: "USCG"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "West Industrial Axis"
+    name: "West Industrial Axis"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Mayagüez"
+        count: 1
+      -
+        poi: "Interior Foothills"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N150F"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Industrial Survey"
+        count: 1
+    top_operators:
+      -
+        operator: "Private"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "South → East Arc"
+    name: "South → East Arc"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "BQN"
+        count: 1
+      -
+        poi: "Yabucoa"
+        count: 1
+      -
+        poi: "Ceiba"
+        count: 1
+      -
+        poi: "Vieques Loop"
+        count: 1
+    top_aircraft:
+      -
+        tail: "C6054"
+        count: 1
+    top_mission_types:
+      -
+        mission: "SAR Sweep"
+        count: 1
+    top_operators:
+      -
+        operator: "USCG"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Cordillera Central Corridor"
+    name: "Cordillera Central Corridor"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Ponce"
+        count: 1
+      -
+        poi: "Arecibo"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N413LP"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Private Survey"
+        count: 1
+    top_operators:
+      -
+        operator: "Private"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "Mona Passage → Hispaniola"
+    name: "Mona Passage → Hispaniola"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "SIG"
+        count: 1
+      -
+        poi: "Puerto Plata"
+        count: 1
+    top_aircraft:
+      -
+        tail: "R032698"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Inter-Theater Transfer"
+        count: 1
+    top_operators:
+      -
+        operator: "Army"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "AASB-2"
+    name: "AASB-2"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "San Juan"
+        count: 1
+      -
+        poi: "Gurabo Ridge"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N407PR"
+        count: 1
+    top_mission_types:
+      -
+        mission: "Inland"
+        count: 1
+    top_operators:
+      -
+        operator: "Private"
+        count: 1
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"
+  -
+    canonical_id: "AASB-9"
+    name: "AASB-9"
+    flights_logged: 1
+    top_pois:
+      -
+        poi: "Ponce"
+        count: 1
+      -
+        poi: "Tallaboa Fishtail"
+        count: 1
+    top_aircraft:
+      -
+        tail: "N20"
+        count: 1
+    top_mission_types:
+      -
+        mission: "ISR-type"
+        count: 1
+    top_operators: []
+    sample_behavior_notes: []
+    inferred_geography_status: "auto_from_poi_chains_needs_review"

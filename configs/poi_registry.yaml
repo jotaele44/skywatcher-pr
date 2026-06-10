@@ -1,0 +1,25 @@
+version: rlsm_poi_registry_v0_1
+poi_taxonomy:
+  HYDRO:
+    aliases: [reservoir, embalse, represa, dam, presa, spillway, intake, outlet, canal, canal de riego, penstock, powerhouse, hydro plant, quebrada, río, rio, humedal, wetland, lagoon, laguna]
+  POWER_GRID:
+    aliases: [substation, transmission line, powerline, tower line, corredor electrico, corredor eléctrico, PREPA line, LUMA line, ROW, right-of-way, utility corridor]
+  WATER_SEWER:
+    aliases: [PRASA, AAA, trunk sewer, pump station, wastewater plant, treatment plant, sanitary line, stormwater channel, culvert]
+  INDUSTRIAL:
+    aliases: [refinery, central, sugar mill, plant, factory, cement plant, quarry, aggregate pit, tank farm, warehouse, industrial park]
+  TRANSPORTATION:
+    aliases: [airport, heliport, port, marina, pier, rail trace, highway, PR route, tunnel, bridge, service road]
+  MILITARY_FEDERAL:
+    aliases: [Ramey, Roosevelt Roads, USCG, radar, aerostat, federal facility, restricted area, former base]
+  TERRAIN:
+    aliases: [ridge, saddle, valley, karst, sinkhole, mogote, escarpment, drainage cut, ravine, canyon, cliff, coastal shelf]
+  SUBSURFACE_INDICATOR:
+    aliases: [adit, shaft, portal, vent, grate, culvert, drainage portal, access scar, cut-and-cover, tunnel mouth]
+  RESIDENTIAL_COVER:
+    aliases: [gated community, urbanizacion, urbanización, dead-end street, boundary seam, municipal seam, private road]
+  MUNICIPAL_BOUNDARY:
+    aliases: [municipio, barrio, sector, comunidad, zona urbana, municipal boundary, MBIL seam]
+  ANOMALY_LAYER:
+    aliases: [sighting zone, USO zone, blackout cluster, coastal emergence, anomalous corridor, witness cluster]
+poi_records: []

@@ -1,0 +1,137 @@
+version: project_language_bridge_v0_1
+purpose: transparent_alias_mapping_for_project_specific_language
+rules:
+  preserve_raw_phrase: true
+  preserve_canonical_meaning: true
+  no_obfuscation_for_bypass: true
+  alias_terms_must_expand_to_plain_language: true
+  unresolved_terms_route_to_review: true
+
+families:
+  STRUCTURE:
+    description: Built or natural spatial entities used in map analysis.
+    terms:
+      NODE:
+        canonical: spatial_node
+        plain_language: mapped point or area that needs classification
+        aliases: [node, point, spot, site, anchor, target point, POI]
+      SEAM:
+        canonical: boundary_interface
+        plain_language: boundary, edge, transition zone, or municipal interface
+        aliases: [seam, boundary seam, municipal seam, edge, interface, MBIL seam]
+      FLOWER:
+        canonical: clustered_area_of_interest
+        plain_language: named AOI cluster with repeated evidence layers
+        aliases: [flower, cluster, AOI cluster, zone cluster]
+      PETAL:
+        canonical: subnode_within_cluster
+        plain_language: smaller POI inside a larger AOI cluster
+        aliases: [petal, subnode, subsite, branch point]
+      THREAD:
+        canonical: route_or_relation_link
+        plain_language: connection between two nodes, records, or route segments
+        aliases: [thread, link, relation, edge, connection]
+      WEB:
+        canonical: graph_of_related_nodes
+        plain_language: graph or network of related nodes and links
+        aliases: [web, spiderweb, network, graph, system]
+
+  AIRSPACE:
+    description: Flight-pattern analysis terms.
+    terms:
+      FN:
+        canonical: flight_event_record
+        plain_language: one flight event record
+        aliases: [FN, flight node, flight event, flight narrative]
+      UF:
+        canonical: unresolved_flight_record
+        plain_language: unresolved or unidentified flight event
+        aliases: [UF, unknown flight, unresolved flight, unverified flight]
+      ECHO:
+        canonical: repeated_pattern
+        plain_language: repeat of a prior timing, route, or behavior pattern
+        aliases: [echo, repeat, recurrence, route echo, pattern echo]
+      SHADOW:
+        canonical: data_gap_or_low_visibility_segment
+        plain_language: tracking gap or unclear data segment
+        aliases: [shadow, gap, blackout, missing segment, unclear trace]
+      P_ROUTE:
+        canonical: predicted_route_record
+        plain_language: model-predicted route hypothesis
+        aliases: [P-Route, predicted route, route row, probability route]
+      HTF:
+        canonical: forecast_horizon
+        plain_language: short-term forecast window such as T+15, T+30, or T+60
+        aliases: [HTF, horizon, T+15, T+30, T+60]
+      CHBL:
+        canonical: cross_aircraft_pattern_link
+        plain_language: observed timing or route relationship between aircraft records
+        aliases: [CHBL, paired pattern, cross-aircraft link, behavior link]
+
+  INFRASTRUCTURE:
+    description: Infrastructure and access-context terms used for GIS scoring.
+    terms:
+      ILAP:
+        canonical: infrastructure_linked_access_point
+        plain_language: candidate place where infrastructure context overlaps route or POI evidence
+        aliases: [ILAP, infrastructure linked access point, inferred access point, access-linked POI]
+      ROW:
+        canonical: right_of_way
+        plain_language: utility, road, rail, or service corridor
+        aliases: [ROW, right-of-way, service corridor, utility corridor]
+      HYDRO_THREAD:
+        canonical: hydro_infrastructure_link
+        plain_language: water-related infrastructure or drainage relationship
+        aliases: [hydro thread, water link, quebrada link, embalse link, canal link]
+      ACCESS_SCAR:
+        canonical: visible_access_or_construction_trace
+        plain_language: visible path, clearing, road spur, disturbed ground, or service trace
+        aliases: [access scar, trace, cut, clearing, spur, service trace]
+      GATE:
+        canonical: access_control_point
+        plain_language: mapped access-control point or transition into restricted/private area
+        aliases: [gate, controlled entry, access point, entrance, checkpoint]
+
+  SOURCE_QUALITY:
+    description: Source reliability labels for records and inferences.
+    terms:
+      PRIMARY:
+        canonical: source_quality_primary
+        plain_language: official, technical, or directly reproducible source
+        aliases: [primary, T1, official, technical, registry, reproducible]
+      TRACK_RECORD:
+        canonical: source_quality_track_record
+        plain_language: screenshot, ADS-B, flight log, route trace, or directly observed operational data
+        aliases: [track record, T2, screenshot, ADS-B, flight log, route trace]
+      MANUAL_NOTE:
+        canonical: source_quality_manual_note
+        plain_language: analyst annotation, local knowledge, or human-provided context
+        aliases: [manual note, T3, annotation, local context, analyst note]
+      SECONDARY:
+        canonical: source_quality_secondary
+        plain_language: secondary, indirect, or weak contextual reference
+        aliases: [secondary, T4, indirect, weak context]
+
+  STATUS:
+    description: Confidence and workflow status language.
+    terms:
+      CANDIDATE:
+        canonical: candidate_record
+        plain_language: possible match needing evidence review
+        aliases: [candidate, possible, provisional, needs review]
+      CONFIRMED:
+        canonical: confirmed_record
+        plain_language: supported by sufficient defined evidence
+        aliases: [confirmed, verified, supported]
+      DISPROVEN:
+        canonical: disproven_record
+        plain_language: previous hypothesis contradicted by evidence
+        aliases: [disproven, rejected, contradicted]
+      REVIEW:
+        canonical: manual_review_required
+        plain_language: requires manual review before use in model decisions
+        aliases: [review, manual review, check, unresolved]
+      FIELD_REVIEW:
+        canonical: lawful_field_review_candidate
+        plain_language: candidate for lawful, public, non-intrusive field observation planning
+        aliases: [field review, ground review, site review, public observation candidate]

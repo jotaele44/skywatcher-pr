@@ -1,0 +1,66 @@
+version: rlsm_location_naming_guardrails_v0_1
+purpose: Canonical naming rules for locations that may be visible or inferred from screenshots but not clearly labeled in the image.
+principles:
+  preserve_raw_label: true
+  preserve_coordinates_when_available: true
+  never_invent_site_names: true
+  separate_visible_label_from_project_name: true
+  separate_airport_ramp_hangar_lz_poi_fields: true
+  require_review_for_unlabeled_locations: true
+naming_levels:
+  RAW_SCREENSHOT_LABEL:
+    meaning: Exact visible text or OCR text from the image.
+    example: BQN
+  CANONICAL_KNOWN_PLACE:
+    meaning: Registry-resolved place name.
+    example: Rafael Hernández Airport / Ramey
+  PROJECT_LOCATION_ID:
+    meaning: Stable project-generated ID for an unlabeled or partially labeled point.
+    example: LOC_BQN_RAMP_CANDIDATE_001
+  FUNCTIONAL_ROLE:
+    meaning: Observed or inferred role of the point.
+    example: takeoff_point_candidate
+  REVIEW_NAME:
+    meaning: Human-readable temporary name for analyst review.
+    example: BQN northwest ramp candidate
+location_roles:
+  TAKEOFF_POINT_CANDIDATE:
+    aliases: [takeoff point, departure point, origin point, launch point]
+    allowed_assertions: [observed, inferred, candidate, confirmed, rejected]
+  LANDING_POINT_CANDIDATE:
+    aliases: [landing point, arrival point, destination point, touchdown candidate]
+    allowed_assertions: [observed, inferred, candidate, confirmed, rejected]
+  RAMP_CANDIDATE:
+    aliases: [ramp, apron, aircraft parking area, staging area]
+    allowed_assertions: [observed, inferred, candidate, confirmed, rejected]
+  HANGAR_CANDIDATE:
+    aliases: [hangar, maintenance building, aircraft shelter]
+    allowed_assertions: [observed, inferred, candidate, confirmed, rejected]
+  HELIPAD_CANDIDATE:
+    aliases: [helipad, marked pad, helicopter pad]
+    allowed_assertions: [observed, inferred, candidate, confirmed, rejected]
+  POI_CANDIDATE:
+    aliases: [point of interest, infrastructure point, local feature, map feature]
+    allowed_assertions: [observed, inferred, candidate, confirmed, rejected]
+  TRACK_ENDPOINT_UNRESOLVED:
+    aliases: [unresolved endpoint, unclear origin, unclear destination]
+    allowed_assertions: [observed, candidate, rejected]
+required_fields_for_unlabeled_locations:
+  - project_location_id
+  - raw_label
+  - lat
+  - lon
+  - location_role
+  - assertion_level
+  - visibility_class
+  - source_quality
+  - review_required
+  - notes
+id_patterns:
+  takeoff_point_candidate: LOC_TKO_{AREA}_{NNN}
+  landing_point_candidate: LOC_LDG_{AREA}_{NNN}
+  ramp_candidate: LOC_RAMP_{AREA}_{NNN}
+  hangar_candidate: LOC_HANGAR_{AREA}_{NNN}
+  helipad_candidate: LOC_HELIPAD_{AREA}_{NNN}
+  poi_candidate: LOC_POI_{AREA}_{NNN}
+  unresolved_endpoint: LOC_ENDPT_{AREA}_{NNN}

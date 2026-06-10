@@ -1,0 +1,16 @@
+version: rlsm_access_status_vocab_v0_1
+access_statuses:
+  PUBLIC:
+    aliases: [public, open access, public road, public park]
+  PRIVATE:
+    aliases: [private, private road, gated, restricted private, no public access]
+  RESTRICTED:
+    aliases: [restricted, federal, military, secured, controlled access]
+  UNKNOWN:
+    aliases: [unknown, not verified, unclear, unconfirmed]
+  OBSERVE_ONLY:
+    aliases: [remote observation only, map-only, imagery-only, no field access]
+rules:
+  no_trespass_instruction: true
+  default_unknown_to_observe_only: true
+  require_manual_verification_before_field_visit: true

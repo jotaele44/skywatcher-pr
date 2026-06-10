@@ -1,0 +1,48 @@
+version: rlsm_operator_registry_v0_1
+operator_buckets:
+  - operator_id: op_blue_aviation_cluster
+    canonical_name: Blue Aviation / Benítez Aviation cluster
+    visibility: V2
+    evidence_tier: T2
+    aliases: [Blue Aviation, Blue Aviation LLC, Benitez Aviation, Benítez Aviation, Benítez / Blue Aviation, BlueBoy]
+  - operator_id: op_southwest_aviation_prepa_cluster
+    canonical_name: Southwest Aviation / PREPA utility cluster
+    visibility: V2
+    evidence_tier: T2
+    aliases: [Southwest Aviation, Southwest Aviation Enterprises, PREPA, PREPA Utility, utility helo, grid inspection]
+  - operator_id: op_uscg_cluster
+    canonical_name: U.S. Coast Guard cluster
+    visibility: V2
+    evidence_tier: T2
+    aliases: [USCG, U.S. Coast Guard, Coast Guard, Ramey, Borinquen, maritime SAR]
+  - operator_id: op_caribbean_helicopters_cluster
+    canonical_name: Caribbean Helicopters cluster
+    visibility: V2
+    evidence_tier: T2
+    aliases: [Caribbean Helicopters, LMM-SIG shuttle, SJU-SIG shuttle, terminal transfer]
+  - operator_id: op_private_corporate_cluster
+    canonical_name: Private / corporate cluster
+    visibility: V2
+    evidence_tier: T3
+    aliases: [Private, Private Helo, corporate, business charter, unknown private]
+  - operator_id: op_tourism_cluster
+    canonical_name: Tourism cluster
+    visibility: V2
+    evidence_tier: T3
+    aliases: [tour, tourism, coastal tour, scenic, R66 tourism]
+  - operator_id: op_public_safety_cluster
+    canonical_name: Law-enforcement / public-safety cluster
+    visibility: V2
+    evidence_tier: T2
+    aliases: [police, PRPD, FURA, emergency response, medevac, public safety]
+  - operator_id: op_federal_adjacent_cluster
+    canonical_name: Federal / military-adjacent cluster
+    visibility: V4
+    evidence_tier: T2
+    aliases: [military-adjacent, federal, DoD-adjacent, masked government, Ramey-linked]
+  - operator_id: op_unknown_unresolved
+    canonical_name: Unknown / unresolved
+    visibility: V0
+    evidence_tier: T2
+    aliases: [Unknown, masked, shadow, no registration, no operator, N/A]
+aircraft_operator_links: []

@@ -1,0 +1,195 @@
+version: 1
+generated_at: "2026-05-29T07:56:26Z"
+operators:
+  -
+    canonical_name: "Southwest Aviation"
+    variants:
+      - "Southwest Av"
+      - "Southwest Av / AS350"
+      - "Southwest Av / R44"
+      - "Southwest Av / R66"
+      - "Southwest Av."
+      - "Southwest Aviation"
+      - "Southwest Aviation Enterprises"
+    manual_log_flights: 93
+    aircraft_seen:
+      - "N999ZY"
+  -
+    canonical_name: "Blue Aviation"
+    variants:
+      - "Benitez / Blue Aviation LLC"
+      - "Benítez / Blue Aviation LLC"
+      - "Blue Av"
+      - "Blue Av / B407"
+      - "Blue Av / R44"
+      - "Blue Av."
+      - "Blue Av. / B407"
+      - "Blue Aviation"
+      - "Blue Aviation LLC"
+    manual_log_flights: 74
+    aircraft_seen:
+      - "BLUEBOY"
+      - "MASKED"
+      - "N196DM"
+  -
+    canonical_name: "PREPA"
+    variants:
+      - "PREPA"
+      - "PREPA / H125"
+      - "PREPA / Southwest Aviation"
+      - "PREPA H125"
+      - "PREPA Utility"
+    manual_log_flights: 51
+    aircraft_seen:
+      - "N5854Z"
+      - "PREPA"
+  -
+    canonical_name: "Private"
+    variants:
+      - "Private"
+      - "Private (Unknown Op)"
+      - "Private (unknown)"
+      - "Private / B206 JetRanger"
+      - "Private / B407"
+      - "Private / C421"
+      - "Private / H125"
+      - "Private Helo"
+    manual_log_flights: 35
+    aircraft_seen:
+      - "N150F"
+      - "N407PR"
+      - "N413LP"
+      - "N999DM"
+  -
+    canonical_name: "R66"
+    variants:
+      - "R66"
+    manual_log_flights: 34
+    aircraft_seen:
+      - "N999ZY"
+  -
+    canonical_name: "Caribbean Helicopters"
+    variants:
+      - "Caribbean Helicopters"
+    manual_log_flights: 23
+    aircraft_seen:
+      - "N411H"
+  -
+    canonical_name: "USCG"
+    variants:
+      - "US Coast Guard"
+      - "US Coast Guard / MH-60T Jayhawk"
+      - "USCG"
+      - "USCG / MH-60T"
+      - "USCG / MH-60T Jayhawk"
+    manual_log_flights: 22
+    aircraft_seen:
+      - "C6038"
+      - "C6054"
+      - "C6062"
+  -
+    canonical_name: "Robinson"
+    variants:
+      - "Robinson"
+    manual_log_flights: 9
+    aircraft_seen:
+      - "N13VL"
+      - "N5854Z"
+  -
+    canonical_name: "Shadow"
+    variants:
+      - "Shadow"
+    manual_log_flights: 9
+    aircraft_seen: []
+  -
+    canonical_name: "Utility"
+    variants:
+      - "Utility"
+    manual_log_flights: 7
+    aircraft_seen:
+      - "PREPA"
+  -
+    canonical_name: "Police Ops"
+    variants:
+      - "Police Ops"
+      - "Police Ops / H125"
+    manual_log_flights: 4
+    aircraft_seen:
+      - "N767PD"
+  -
+    canonical_name: "Yellow Media"
+    variants:
+      - "Yellow Media / SIG"
+    manual_log_flights: 3
+    aircraft_seen:
+      - "ORANGE"
+  -
+    canonical_name: "Benítez Aviation"
+    variants:
+      - "Benítez Aviation"
+    manual_log_flights: 2
+    aircraft_seen:
+      - "N196DM"
+  -
+    canonical_name: "B407"
+    variants:
+      - "B407"
+    manual_log_flights: 2
+    aircraft_seen:
+      - "N407PR"
+  -
+    canonical_name: "AS350"
+    variants:
+      - "AS350"
+    manual_log_flights: 2
+    aircraft_seen:
+      - "N5854Z"
+      - "N999ZY"
+  -
+    canonical_name: "R44"
+    variants:
+      - "R44"
+    manual_log_flights: 2
+    aircraft_seen:
+      - "N5854Z"
+  -
+    canonical_name: "PREPA (H125)"
+    variants:
+      - "PREPA (H125)"
+    manual_log_flights: 1
+    aircraft_seen: []
+  -
+    canonical_name: "B429"
+    variants:
+      - "B429"
+    manual_log_flights: 1
+    aircraft_seen:
+      - "N429LE"
+  -
+    canonical_name: "Army"
+    variants:
+      - "Army / UH-60L Black Hawk"
+    manual_log_flights: 1
+    aircraft_seen:
+      - "R032698"
+  -
+    canonical_name: "Tourism R66"
+    variants:
+      - "Tourism R66"
+    manual_log_flights: 1
+    aircraft_seen:
+      - "N999ZY"
+  -
+    canonical_name: "R66 Tourism"
+    variants:
+      - "R66 Tourism"
+    manual_log_flights: 1
+    aircraft_seen:
+      - "N999ZY"
+  -
+    canonical_name: "Benítez Aviation R44"
+    variants:
+      - "Benítez Aviation R44"
+    manual_log_flights: 1
+    aircraft_seen:
+      - "N196DM"

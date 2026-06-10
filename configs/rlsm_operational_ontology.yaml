@@ -1,0 +1,44 @@
+version: rlsm_operational_ontology_v0_1
+visibility_classes:
+  V0: screenshot_visible
+  V1: screenshot_inferable
+  V2: context_only
+  V3: external_registry_only
+  V4: hypothesis_only
+required_registries:
+  - configs/place_aliases.yaml
+  - configs/airport_registry.yaml
+  - configs/hangar_registry.yaml
+  - configs/lz_registry.yaml
+  - configs/poi_registry.yaml
+  - configs/operator_registry.yaml
+  - configs/facility_operator_registry.yaml
+  - configs/aircraft_aliases.yaml
+  - configs/mission_vocab.yaml
+  - configs/behavior_vocab.yaml
+  # Renamed at rebase time (2026-06-02): main's `configs/corridor_registry.yaml`
+  # is an observed-corridor catalog (canonical_id / flights_logged / top_pois);
+  # the ontology layer reads canonical-name + aliases from corridor_aliases.yaml,
+  # parallel to operator_aliases.yaml. Both files coexist on disk.
+  - configs/corridor_aliases.yaml
+  - configs/blackout_vocab.yaml
+  - configs/access_status_vocab.yaml
+  - configs/spiderweb_terms.yaml
+  - configs/location_naming_guardrails.yaml
+  - configs/endpoint_recall_audit.yaml
+normalization_rules:
+  preserve_raw_text: true
+  preserve_raw_label: true
+  preserve_coordinates_when_available: true
+  never_invent_site_names: true
+  separate_visible_label_from_project_name: true
+  separate_airport_ramp_hangar_lz: true
+  separate_facility_operator_from_aircraft_operator: true
+  preserve_visible_operator_label: true
+  use_project_location_ids_for_unlabeled_points: true
+  audit_takeoff_and_landing_endpoints: true
+  do_not_assume_track_start_equals_takeoff: true
+  do_not_assume_track_end_equals_landing: true
+  never_merge_na_aircraft_without_cluster_evidence: true
+  route_unknowns_to_review: true
+  block_ocr_baseline_until_alias_tests_pass: true
