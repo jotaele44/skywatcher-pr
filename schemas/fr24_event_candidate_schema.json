@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "fr24_event_candidate",
+  "title": "FR24 Event Candidate",
+  "description": "A single OCR-derived candidate flight/event record extracted from a FlightRadar24 screenshot. All fields are candidates requiring review. No automatic confirmation labels are emitted.",
+  "type": "object",
+  "required": ["image_path", "image_name", "review_status"],
+  "properties": {
+    "image_path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative or absolute path to the source screenshot. Never mutated."
+    },
+    "image_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Filename of the source screenshot."
+    },
+    "sidecar_path": {
+      "type": ["string", "null"],
+      "description": "Path to linked Google Takeout supplemental-metadata JSON, if reconciled."
+    },
+    "sidecar_title": {
+      "type": ["string", "null"],
+      "description": "Title field from the linked sidecar JSON."
+    },
+    "match_band": {
+      "type": ["string", "null"],
+      "enum": ["strong", "reviewable", "weak", "unmatched", null, ""],
+      "description": "Sidecar timestamp match quality band."
+    },
+    "resolved_status": {
+      "type": ["string", "null"],
+      "description": "One-to-one sidecar assignment status from fr24_sidecar_reconcile.py."
+    },
+    "ocr_region": {
+      "type": ["string", "null"],
+      "description": "Name of the image region that was OCR-ed (whole-image, panel, callsign, altitude, speed, route, map, unknown)."
+    },
+    "region_type": {
+      "type": ["string", "null"],
+      "enum": ["callsign", "altitude", "speed", "route", "panel", "map", "unknown", null, ""],
+      "description": "Semantic type of the image region."
+    },
+    "region_bbox": {
+      "type": ["string", "object", "null"],
+      "description": "Bounding box of the cropped region as JSON {x,y,w,h} or serialized string."
+    },
+    "parser_version": {
+      "type": ["string", "null"],
+      "description": "Version of the parser that produced this record."
+    },
+    "callsign_or_label": {
+      "type": ["string", "null"],
+      "description": "OCR-extracted callsign or aircraft label. Candidate only."
+    },
+    "registration": {
+      "type": ["string", "null"],
+      "description": "OCR-extracted aircraft registration (N-number or equivalent). Candidate only."
+    },
+    "aircraft_type": {
+      "type": ["string", "null"],
+      "description": "OCR-extracted aircraft type/model string. Candidate only."
+    },
+    "origin_code": {
+      "type": ["string", "null"],
+      "description": "OCR-extracted origin airport code. Candidate only."
+    },
+    "destination_code": {
+      "type": ["string", "null"],
+      "description": "OCR-extracted destination airport code. Candidate only."
+    },
+    "barometric_altitude_ft": {
+      "type": ["string", "null"],
+      "description": "OCR-extracted barometric altitude in feet. Candidate only."
+    },
+    "ground_speed_mph": {
+      "type": ["string", "null"],
+      "description": "OCR-extracted ground speed in mph. Candidate only."
+    },
+    "flight_status": {
+      "type": ["string", "null"],
+      "enum": [
+        "arrived_candidate",
+        "departed_candidate",
+        "arriving_candidate",
+        "",
+        null
+      ],
+      "description": "Candidate flight status derived from OCR text. Candidate only."
+    },
+    "playback_date": {
+      "type": ["string", "null"],
+      "description": "Candidate playback date parsed from FR24 UI timestamp."
+    },
+    "playback_time": {
+      "type": ["string", "null"],
+      "description": "Candidate playback time parsed from FR24 UI timestamp."
+    },
+    "playback_timezone": {
+      "type": ["string", "null"],
+      "description": "Candidate timezone offset parsed from FR24 UI timestamp."
+    },
+    "confidence": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Heuristic confidence score [0.0–1.0] based on number of populated fields."
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "parsed_candidate",
+        "region_parsed_candidate",
+        "fused_candidate",
+        "manual_review_required",
+        "region_manual_review_required",
+        "fusion_conflict_review",
+        "fusion_no_region_match",
+        "fusion_region_only",
+        "low_text_review",
+        "region_low_text_review",
+        "region_ocr_failed",
+        "sidecar_linked",
+        "weak_sidecar_match_review",
+        "sidecar_conflict_review",
+        "metadata_gap"
+      ],
+      "description": "Current review disposition. No confirmed labels are permitted.",
+      "not": {
+        "enum": [
+          "confirmed",
+          "confirmed_anomaly",
+          "confirmed_aircraft_event",
+          "confirmed_infrastructure"
+        ]
+      }
+    },
+    "conflict_fields": {
+      "type": ["string", "null"],
+      "description": "Comma-separated list of field names where whole-image and region OCR disagree."
+    },
+    "region_source_count": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Number of region OCR rows fused into this record."
+    },
+    "ocr_text_excerpt": {
+      "type": ["string", "null"],
+      "description": "First 500–700 characters of raw OCR text for reference."
+    }
+  },
+  "additionalProperties": true
+}

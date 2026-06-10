@@ -20,3 +20,11 @@ tile_cache/
 
 # generated canonical export (scripts/federation_export.py)
 exports/federation/
+
+# FR24 ingest data — large baseline corpus + run manifests.
+# Owned by skywatcher (relocated here from spiderweb-pr); large + machine-local,
+# so tracked out of git.
+data/FR24_baseline
+data/_manifests/
+data/.migration_trash/
+flight_database.db
