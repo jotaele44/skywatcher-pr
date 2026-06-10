@@ -1,0 +1,71 @@
+version: rlsm_facility_operator_registry_v0_1
+purpose: Link airports, ramps, hangars, heliports, LZ candidates, and track endpoints to visible or context-only operator labels without inventing ownership.
+
+operator_label_sources:
+  LABEL_VISIBLE:
+    meaning: Operator or facility label appears in the screenshot, OCR text, map label, or source image.
+  REGISTRY_VERIFIED:
+    meaning: Operator is supported by a formal registry, airport source, business record, or other primary source.
+  MANUAL_CONTEXT:
+    meaning: Operator is supplied by project context, prior logs, or local knowledge and requires source linkage.
+  PATTERN_CONTEXT:
+    meaning: Operator association is suggested by repeated use of a facility, route, aircraft, or endpoint.
+  UNRESOLVED:
+    meaning: No operator can be assigned yet.
+
+facility_operator_roles:
+  HANGAR_OPERATOR:
+    aliases: [hangar operator, company hangar, maintenance hangar operator, aircraft shelter operator]
+  RAMP_OPERATOR:
+    aliases: [ramp operator, apron operator, general aviation operator, staging ramp]
+  FBO_OR_SERVICE_PROVIDER:
+    aliases: [FBO, fixed-base operator, aviation service provider, fuel provider, ground handler]
+  AIRCRAFT_OPERATOR:
+    aliases: [aircraft operator, fleet operator, helicopter company, air charter company]
+  FACILITY_OWNER:
+    aliases: [owner, airport owner, property owner, facility owner]
+  PUBLIC_SAFETY_OPERATOR:
+    aliases: [public safety, emergency service, rescue service, police aviation]
+  GOVERNMENT_OPERATOR:
+    aliases: [government operator, public agency operator, agency ramp user]
+  UNKNOWN_OPERATOR:
+    aliases: [unknown operator, unresolved operator, unlabeled operator]
+
+facility_types:
+  - AIRPORT
+  - RAMP
+  - HANGAR
+  - HELIPAD
+  - LZ_CANDIDATE
+  - TRACK_ENDPOINT
+  - MAINTENANCE_AREA
+  - FUEL_AREA
+  - STAGING_AREA
+
+required_fields:
+  - facility_operator_link_id
+  - facility_id
+  - facility_type
+  - operator_id
+  - operator_name_raw
+  - operator_name_canonical
+  - operator_role
+  - operator_label_source
+  - source_quality
+  - assertion_level
+  - confidence_score
+  - source_ref
+  - review_required
+  - notes
+
+rules:
+  preserve_visible_operator_label: true
+  preserve_unlabeled_operator_as_unresolved: true
+  do_not_convert_context_operator_to_verified: true
+  allow_multiple_operators_per_facility: true
+  allow_multiple_facilities_per_operator: true
+  require_source_ref_for_registry_verified: true
+  require_review_for_pattern_context: true
+  separate_facility_operator_from_aircraft_operator: true
+
+seed_links: []

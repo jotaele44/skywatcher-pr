@@ -1,0 +1,13 @@
+version: rlsm_behavior_vocab_v0_1
+behavior_families:
+  TAKEOFF: [takeoff, departure, launch, lift, origin, initial climb]
+  LANDING: [landing, arrival, touchdown, LZ, destination, descent, final approach]
+  RETURN: [return, RTB, loop closure, backtrack, origin return]
+  HOVER: [hover, stationary, low-speed hold, pause, loiter point]
+  LOITER: [orbit, circle, racetrack, holding pattern, repeated pass]
+  GRID: [search grid, lawnmower pattern, parallel tracks, search pattern]
+  INSPECTION: [line-follow, corridor-follow, tower-to-tower, canal-follow]
+  TRACK_GAP: [track gap, FR24 fragment, ADS-B loss, N/A segment, shadow]
+  LOW_ALTITUDE: [low-level, terrain-following, ridge-following]
+  ROUTE_DEVIATION: [jog, wobble, drift, offset, break, dogleg]
+  COORDINATION: [parallel route, paired flight, timing overlap, shared origin, shared corridor]

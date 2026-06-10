@@ -19,6 +19,7 @@
       "fr24_ingest"
     ],
     "fr24_ingest": "fr24/ package (FlightRadar24 screenshot inventory, ensemble OCR, RLSM/route extraction, manual-review queue, event export); CLI entry scripts/fr24_vision_ingest.py. Stdlib-only core.",
+    "rlsm_analysis_suite": "scripts/rlsm_*.py (route-line-segment mining: OCR retry, tail recovery, unlabeled POI clustering, route inference, network graph) backed by pipeline/ normalization+ontology modules (normalize_locations/missions/operators, rlsm_ontology_gate, db_utils) and configs/*.yaml registries; data/rlsm/schema.sql.",
     "optional_terrain_layer": "gebco/ (requires requirements-geo.txt: numpy/scipy/xarray/netCDF4)",
     "export_contract": "scripts/validate_airspace_export.py + schemas/airspace_observation.schema.json + schemas/airspace_export_manifest.schema.json",
     "primary_inputs": "FlightRadar24 screenshots/tracks (ingested in-tree via fr24/), aircraft registry, GEBCO bathymetry (optional)",

@@ -1,0 +1,41 @@
+version: rlsm_lz_registry_v0_1
+lz_classes:
+  - lz_class: FORMAL_HELIPAD
+    aliases: [helipad, heliport, marked pad]
+  - lz_class: HOSPITAL_LZ
+    aliases: [hospital pad, medevac pad, Centro Médico pad, emergency pad, rooftop hospital pad]
+  - lz_class: UTILITY_LZ
+    aliases: [utility pad, powerline LZ, substation pad, PREPA staging, LUMA staging]
+  - lz_class: INDUSTRIAL_LZ
+    aliases: [industrial pad, plant pad, refinery pad, port pad]
+  - lz_class: RESERVOIR_LZ
+    aliases: [dam pad, reservoir service pad, intake access, spillway pad]
+  - lz_class: CONSTRUCTION_LZ
+    aliases: [construction staging, work pad, cleared lot, machinery pad]
+  - lz_class: FIELD_LZ
+    aliases: [open field, pasture, sports field, agricultural field]
+  - lz_class: ROAD_LZ
+    aliases: [road shoulder, service road, dead-end road, access spur]
+  - lz_class: COASTAL_LZ
+    aliases: [beach landing, coast pad, marina pad, waterfront LZ]
+  - lz_class: ROOFTOP_LZ
+    aliases: [rooftop pad, roof landing]
+  - lz_class: IMPROVISED_LZ
+    aliases: [unmarked LZ, temporary LZ, suspected landing site]
+  - lz_class: BLACKOUT_LZ_CANDIDATE
+    aliases: [track-loss landing candidate, ADS-B gap LZ, shadow landing candidate]
+known_lz_candidates:
+  - lz_id: lz_candidate_bqn_ramey_blackout
+    canonical_name: BQN / Ramey recurring blackout landing candidate
+    lz_class: BLACKOUT_LZ_CANDIDATE
+    airport_id: airport_bqn_tjbq
+    visibility: V2
+    evidence_tier: T2
+    status: candidate
+  - lz_id: lz_candidate_sig_sju_shuttle_terminal
+    canonical_name: SJU-SIG shuttle endpoint candidate
+    lz_class: FORMAL_HELIPAD
+    airport_id: airport_sig_tjig
+    visibility: V2
+    evidence_tier: T2
+    status: candidate

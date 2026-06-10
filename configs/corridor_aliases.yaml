@@ -1,0 +1,41 @@
+version: rlsm_corridor_registry_v0_1
+corridors:
+  - corridor_id: corridor_metro_coastal
+    canonical_name: Metro Coastal
+    aliases: [Bahía Urbana, Bahia Urbana, Condado, Isla Verde, Piñones, Pinones, Loíza, Loiza, Cataño, Catano, Toa Baja, Carolina loop]
+  - corridor_id: corridor_sju_sig_terminal_shuttle
+    canonical_name: San Juan terminal shuttle
+    aliases: [SJU-SIG, LMM-Isla Grande, terminal transfer, airport shuttle]
+  - corridor_id: corridor_north_coast
+    canonical_name: North Coast
+    aliases: [Aguadilla, Ramey, Isabela, Arecibo, Barceloneta, Vega Baja, Dorado]
+  - corridor_id: corridor_west_coast_mona
+    canonical_name: West Coast / Mona approach
+    aliases: [Mayagüez, Mayaguez, Añasco, Anasco, Rincón, Rincon, offshore west grid]
+  - corridor_id: corridor_southwest_wetlands
+    canonical_name: Southwest wetlands / Boquerón
+    aliases: [Cabo Rojo, Boquerón, Boqueron, Lajas, Guánica, Guanica, Sabana Grande]
+  - corridor_id: corridor_south_industrial_hydro
+    canonical_name: South industrial / hydro
+    aliases: [Guánica, Guanica, Yauco, Guayanilla, Peñuelas, Penuelas, Tallaboa, Ponce]
+  - corridor_id: corridor_coamo_aibonito_cayey_spine
+    canonical_name: Coamo-Aibonito-Cayey spine
+    aliases: [Coamo, Aibonito, Cayey, Cidra, Barranquitas, central ridge]
+  - corridor_id: corridor_salinas_guayama_santa_isabel
+    canonical_name: Salinas-Guayama-Santa Isabel
+    aliases: [Salinas, Santa Isabel, Guayama, Jobos, south coast utility corridor]
+  - corridor_id: corridor_pr30_east_interior
+    canonical_name: PR-30 / East Interior
+    aliases: [Caguas, Gurabo, Juncos, Las Piedras, Humacao, PR-30]
+  - corridor_id: corridor_pr31_naguabo_cut
+    canonical_name: PR-31 / Naguabo cut
+    aliases: [Juncos, Las Piedras, Naguabo, Humacao, PR-31]
+  - corridor_id: corridor_ceiba_rr_vieques
+    canonical_name: Ceiba / Roosevelt Roads / Vieques
+    aliases: [Ceiba, Roosevelt Roads, Fajardo, Vieques, Culebra, east maritime corridor]
+  - corridor_id: corridor_el_yunque_ne_ridge
+    canonical_name: El Yunque / NE ridge
+    aliases: [Río Grande, Rio Grande, Luquillo, Fajardo, Naguabo, El Yunque flank]
+  - corridor_id: corridor_arecibo_utuado_adjuntas
+    canonical_name: Arecibo-Utuado-Adjuntas interior
+    aliases: [Arecibo, Lares, Utuado, Adjuntas, karst interior ridge]

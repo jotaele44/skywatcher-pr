@@ -1,0 +1,453 @@
+version: 1
+generated_at: "2026-05-29T07:56:26Z"
+mission_types:
+  -
+    name: "Tourism"
+    flights_logged: 27
+    unique_aircraft: 2
+    unique_corridors: 3
+  -
+    name: "Unknown"
+    flights_logged: 16
+    unique_aircraft: 0
+    unique_corridors: 7
+  -
+    name: "Transit"
+    flights_logged: 14
+    unique_aircraft: 3
+    unique_corridors: 7
+  -
+    name: "Evening ISR"
+    flights_logged: 14
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "ISR Loop"
+    flights_logged: 11
+    unique_aircraft: 1
+    unique_corridors: 8
+  -
+    name: "Utility"
+    flights_logged: 10
+    unique_aircraft: 2
+    unique_corridors: 3
+  -
+    name: "Inland"
+    flights_logged: 9
+    unique_aircraft: 2
+    unique_corridors: 3
+  -
+    name: "Shadow"
+    flights_logged: 8
+    unique_aircraft: 0
+    unique_corridors: 5
+  -
+    name: "Hydro Survey"
+    flights_logged: 8
+    unique_aircraft: 2
+    unique_corridors: 7
+  -
+    name: "Coastal"
+    flights_logged: 7
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Routine"
+    flights_logged: 6
+    unique_aircraft: 1
+    unique_corridors: 3
+  -
+    name: "Hydro Loop"
+    flights_logged: 6
+    unique_aircraft: 2
+    unique_corridors: 5
+  -
+    name: "Metro"
+    flights_logged: 5
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "ISR Coastal"
+    flights_logged: 5
+    unique_aircraft: 1
+    unique_corridors: 4
+  -
+    name: "Utility Patrol"
+    flights_logged: 4
+    unique_aircraft: 1
+    unique_corridors: 4
+  -
+    name: "ISR Run"
+    flights_logged: 4
+    unique_aircraft: 1
+    unique_corridors: 2
+  -
+    name: "ISR Closure"
+    flights_logged: 4
+    unique_aircraft: 1
+    unique_corridors: 4
+  -
+    name: "Survey"
+    flights_logged: 3
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Shadow-lite"
+    flights_logged: 3
+    unique_aircraft: 0
+    unique_corridors: 2
+  -
+    name: "ISR Survey"
+    flights_logged: 3
+    unique_aircraft: 1
+    unique_corridors: 3
+  -
+    name: "Hydro Transit"
+    flights_logged: 3
+    unique_aircraft: 2
+    unique_corridors: 2
+  -
+    name: "Grid Patrol"
+    flights_logged: 3
+    unique_aircraft: 1
+    unique_corridors: 3
+  -
+    name: "Utility Run"
+    flights_logged: 2
+    unique_aircraft: 1
+    unique_corridors: 2
+  -
+    name: "Tour / Recon"
+    flights_logged: 2
+    unique_aircraft: 1
+    unique_corridors: 2
+  -
+    name: "SAR Drill"
+    flights_logged: 2
+    unique_aircraft: 2
+    unique_corridors: 2
+  -
+    name: "SAR / Patrol"
+    flights_logged: 2
+    unique_aircraft: 1
+    unique_corridors: 2
+  -
+    name: "Routine Run"
+    flights_logged: 2
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Loop"
+    flights_logged: 2
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "ISR-like"
+    flights_logged: 2
+    unique_aircraft: 0
+    unique_corridors: 2
+  -
+    name: "ISR Recon"
+    flights_logged: 2
+    unique_aircraft: 1
+    unique_corridors: 2
+  -
+    name: "ISR Pattern"
+    flights_logged: 2
+    unique_aircraft: 1
+    unique_corridors: 2
+  -
+    name: "Utility Survey"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Utility Recon"
+    flights_logged: 1
+    unique_aircraft: 0
+    unique_corridors: 1
+  -
+    name: "Utility Grid Run"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Utility / Grid"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Tour Loop"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Tour + Visual ISR"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Test / Transfer"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Survey-lite"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Survey / Media"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Sunset ISR"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "SAR Sweep"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "SAR Route"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "SAR Pattern"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "SAR / Recon"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Routine Loop"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Return Transit"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Recurrent Survey"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Recon Pattern"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Private Survey"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Powerline Run"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Police Recon"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Pattern Break"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "PREPA Patrol"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "North Grid"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Law Enf. / Gov Transit"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Law Enf Flight"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Inter-base Ferry"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Inter-Theater Transfer"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Inter-Base Transit"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Inland Transit"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Inland Survey"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Industrial Survey"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Industrial"
+    flights_logged: 1
+    unique_aircraft: 0
+    unique_corridors: 1
+  -
+    name: "Idle"
+    flights_logged: 1
+    unique_aircraft: 0
+    unique_corridors: 1
+  -
+    name: "ISR-type"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "ISR-lite"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "ISR Support"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "ISR Patrol"
+    flights_logged: 1
+    unique_aircraft: 0
+    unique_corridors: 1
+  -
+    name: "ISR Evening"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "ISR Coastal Run"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Hydro-Corridor Survey"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Hydro Route"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Hydro Mapping"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Hydro Corridor"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Hydro / Survey"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Hydro / Grid Recon"
+    flights_logged: 1
+    unique_aircraft: 0
+    unique_corridors: 1
+  -
+    name: "Grid Transfer"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Grid Sweep"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Grid Survey"
+    flights_logged: 1
+    unique_aircraft: 0
+    unique_corridors: 1
+  -
+    name: "Grid Line Run"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Ferry / Training"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Extended Grid Patrol"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Extended Grid Check"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Evening ISR Sweep"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Evening ISR Loop"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Escort Landing"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Coastal Transit"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Central Corridor"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1
+  -
+    name: "Cargo Vector"
+    flights_logged: 1
+    unique_aircraft: 1
+    unique_corridors: 1

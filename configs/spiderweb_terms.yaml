@@ -1,0 +1,44 @@
+version: spiderweb_terms_v0_1
+terms:
+  FN:
+    canonical: flight_node
+    aliases: [flight number, flight narrative, flight node, event ID]
+  UF:
+    canonical: unknown_flight
+    aliases: [unknown flight, unresolved flight, unverified flight]
+  P_ROUTE:
+    canonical: predicted_route
+    aliases: [P-Route, predicted route, probability route, route row]
+  GRID_ID:
+    canonical: spatial_grid_cell
+    aliases: [GridID, grid cell, lat-lon cell, AOI cell]
+  POI:
+    canonical: point_of_interest
+    aliases: [POI, point of interest, node, target point, anomaly point, anchor]
+  ILAP:
+    canonical: infrastructure_linked_access_point
+    aliases: [ILAP, inferred landing access point, infrastructure-linked access point]
+  MBIL:
+    canonical: municipal_boundary_interface_layer
+    aliases: [MBIL, municipal seam, boundary interface]
+  AASB:
+    canonical: aerial_anomaly_surveillance_band
+    aliases: [AASB, route band, corridor class]
+  ARCI:
+    canonical: accumulated_route_confidence_index
+    aliases: [aRCI, route confidence index, accumulated route confidence]
+  HTF:
+    canonical: horizon_forecast
+    aliases: [HTF, T+15, T+30, T+60]
+  CHBL:
+    canonical: coordinated_helicopter_behavior_link
+    aliases: [CHBL, coordinated helo behavior link, cross-helicopter link]
+  FNEPB:
+    canonical: flight_node_ensemble_probability_blend
+    aliases: [FNEPB, ensemble probability blend, FN ensemble]
+  SPM:
+    canonical: shadow_probability_map
+    aliases: [SPM, ADS-B shadow probability map, blackout probability map]
+  BOGR:
+    canonical: boots_on_ground_recommendation
+    aliases: [BoGR, boots-on-ground recommendation, ground recon target]
