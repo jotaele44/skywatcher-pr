@@ -31,6 +31,24 @@ pip install -r requirements-geo.txt   # numpy / scipy / xarray / netCDF4
 
 Its tests self-skip when those packages are absent.
 
+## FR24 ingest subsystem (migrated from spiderweb-pr)
+
+The FlightRadar24 screenshot-processing pipeline that turns raw FR24 captures into
+airspace observations now lives in-tree under `fr24/` (38 stdlib-only modules — no
+torch/opencv/paddleocr):
+
+| Module | Role |
+|--------|------|
+| `fr24/screenshot_inventory.py` | Directory scan, SHA-256 hashing, corrupt/duplicate detection |
+| `fr24/ui_segmenter.py` | Segments the FR24 UI into map/panel/label regions |
+| `fr24/route_extractor.py` | HSV masking + BFS to extract route polylines |
+| `fr24/manual_review_queue.py` | SQLite-backed queue for low-quality items |
+| `fr24/event_export.py` | inventory → `screenshots` table; routes → `track_points` table |
+
+Drive the pipeline with `scripts/fr24_vision_ingest.py`. Coverage is `tests/test_fr24_*`,
+`test_rlsm_*`, `test_route_extractor`, `test_manual_review_queue` (stdlib-only, runs under
+the default `pytest -q`).
+
 ## Federation export contract
 
 Skywatcher emits **airspace observation packages** validated by
