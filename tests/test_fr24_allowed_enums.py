@@ -26,6 +26,9 @@ def test_load_default_allowed_enum_registry():
     assert "ground_context" in registry.pipeline_stage_order
     assert "tile_seam_anomalies" in registry.allowed_export_targets
     assert "vehicle_cluster_signature" in registry.allowed_families
+    assert "roi_mask_analysis" in registry.allowed_families
+    assert "blur_smear_canopy" in registry.allowed_families
+    assert "tile_score_breakdown" in registry.allowed_families
 
 
 def test_tile_analysis_runs_before_ground_context():
@@ -39,10 +42,63 @@ def test_signal_group_routes_have_expected_owners():
     registry = load_allowed_enum_registry(REGISTRY_PATH)
 
     assert registry.route_for("seam_anomaly_detection").owned_by_module == "fr24_tile_analysis.py"
+    assert registry.route_for("roi_mask_analysis").owned_by_module == "fr24_tile_analysis.py"
+    assert registry.route_for("blur_smear_canopy").owned_by_module == "fr24_tile_analysis.py"
+    assert registry.route_for("dem_terrain_mismatch").owned_by_module == "fr24_tile_analysis.py"
+    assert registry.route_for("mixed_epoch_detection").owned_by_module == "fr24_tile_analysis.py"
+    assert registry.route_for("ui_route_annotation_suppression").owned_by_module == "fr24_tile_analysis.py"
+    assert registry.route_for("shadow_canopy_confusion").owned_by_module == "fr24_tile_analysis.py"
+    assert registry.route_for("seam_context_recurrence").owned_by_module == "fr24_tile_analysis.py"
+    assert registry.route_for("tile_score_breakdown").owned_by_module == "fr24_tile_analysis.py"
     assert registry.route_for("vehicle_cluster_signature").owned_by_module == "fr24_ground_context.py"
     assert registry.route_for("land_clearing_signature").owned_by_module == "fr24_ground_context.py"
     assert registry.route_for("unlabeled_warehouse_signature").owned_by_module == "fr24_ground_context.py"
     assert registry.route_for("poi_recurrence").owned_by_module == "fr24_poi_recurrence.py"
+
+
+def test_tile_analysis_v2_groups_emit_tile_seam_anomalies_only():
+    registry = load_allowed_enum_registry(REGISTRY_PATH)
+    groups = [
+        "roi_mask_analysis",
+        "seam_geometry_v2",
+        "tone_texture_v2",
+        "geometry_displacement_v2",
+        "blur_smear_canopy",
+        "dem_terrain_mismatch",
+        "mixed_epoch_detection",
+        "ui_route_annotation_suppression",
+        "shadow_canopy_confusion",
+        "seam_context_recurrence",
+        "tile_score_breakdown",
+        "calibration_expected_outputs",
+    ]
+
+    for group in groups:
+        route = registry.route_for(group)
+        assert route.pipeline_stage == "tile_suppression"
+        assert route.export_targets == ["tile_seam_anomalies"]
+        assert route.interpretation_guardrail == "artifact_only"
+
+
+def test_tile_analysis_capability_contains_v2_groups():
+    registry = load_allowed_enum_registry(REGISTRY_PATH)
+    tile = registry.capability_for("fr24_tile_analysis.py")
+
+    expected = {
+        "roi_mask_analysis",
+        "seam_geometry_v2",
+        "tone_texture_v2",
+        "geometry_displacement_v2",
+        "blur_smear_canopy",
+        "dem_terrain_mismatch",
+        "mixed_epoch_detection",
+        "ui_route_annotation_suppression",
+        "shadow_canopy_confusion",
+        "seam_context_recurrence",
+        "tile_score_breakdown",
+        "calibration_expected_outputs",
+    }
+    assert expected.issubset(tile.handled_signal_groups)
 
 
 def test_recurrence_module_does_not_own_visual_detection_groups():
@@ -55,6 +111,9 @@ def test_recurrence_module_does_not_own_visual_detection_groups():
         "unlabeled_warehouse_signature",
         "pool_signature",
         "seam_anomaly_detection",
+        "roi_mask_analysis",
+        "blur_smear_canopy",
+        "shadow_canopy_confusion",
     }
     assert forbidden.isdisjoint(recurrence.handled_signal_groups)
 
