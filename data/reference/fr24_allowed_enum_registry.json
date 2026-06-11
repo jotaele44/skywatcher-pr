@@ -1,9 +1,17 @@
 {
   "registry_id": "fr24_allowed_enum_registry",
-  "registry_version": "1.1.0",
+  "registry_version": "1.2.0",
   "active_branch": "codex/fr24-visual-parameter-registry-v1",
-  "purpose": "Allowed enum registry plus signal-group router for FR24 visual parameter contracts and staged analysis modules. Version 1.1 expands the tile-suppression stage for ROI masks, blur/smear/canopy artifacts, DEM/terrain mismatch, mixed-epoch detection, UI/route/annotation suppression, shadow/canopy confusion, seam context recurrence, score breakdowns, and calibration gates.",
-  "pipeline_stage_order": ["provenance", "privacy", "tile_suppression", "ground_context", "infrastructure_context", "recurrence", "export"],
+  "purpose": "Allowed enum registry plus signal-group router for FR24 visual parameter contracts and staged analysis modules. Version 1.2 adds container storage/yards as visual candidate signal groups routed through ground context, infrastructure context, and recurrence.",
+  "pipeline_stage_order": [
+    "provenance",
+    "privacy",
+    "tile_suppression",
+    "ground_context",
+    "infrastructure_context",
+    "recurrence",
+    "export"
+  ],
   "allowed_families": [
     "parameter_origin",
     "feature_presence_absence",
@@ -58,6 +66,13 @@
     "warehouse_poi_recurrence",
     "unlabeled_warehouse_signature",
     "warehouse_false_positive_control",
+    "container_poi_identity",
+    "container_poi_match",
+    "container_poi_recurrence",
+    "container_storage_signature",
+    "container_yard_signature",
+    "container_false_positive_control",
+    "container_place_context",
     "infrastructure_context",
     "poi_identity",
     "poi_match",
@@ -73,29 +88,258 @@
     "export_sidecar",
     "audit_coverage"
   ],
-  "allowed_source_methods": ["visual", "ocr", "geometric", "manual", "derived", "registry", "metadata", "export", "audit", "qc", "hybrid", "deferred"],
-  "allowed_export_targets": ["observation", "visual_parameters", "poi_recurrence", "poi_layer_recurrence", "ilap_tlt_recurrence", "small_waterbody_locator", "waterbody_recurrence", "tile_seam_anomalies", "ground_poi_locator", "vehicle_cluster_recurrence", "land_clearing_recurrence", "warehouse_poi_recurrence", "sidecar", "manifest", "audit", "deferred"],
-  "allowed_status_values": ["draft", "queued", "defined", "implemented", "tested", "export_ready", "complete", "deferred", "deprecated"],
-  "allowed_review_statuses": ["pending", "auto_accepted", "needs_review", "accepted", "rejected", "patched"],
-  "allowed_feature_presence_states": ["present", "absent", "uncertain", "obscured", "not_applicable", "not_reviewed"],
-  "allowed_claim_strength_classes": ["visual_observation_only", "candidate_marker", "contextual_correlation", "recurrence_supported", "externally_verified", "rejected"],
-  "allowed_seam_anomaly_classes": ["none", "ordinary_tile_artifact", "low_priority_artifact", "review_required", "high_priority_review", "suppressed"],
-  "allowed_roi_types": ["ui_overlay", "fr24_logo_overlay", "apple_maps_overlay", "route_line_overlay", "ground_area", "suspected_seam_area", "blurred_canopy_area", "building_area", "road_area", "pool_area", "shadow_area", "symbol_overlay", "unknown"],
-  "allowed_roi_suppression_statuses": ["not_suppressed", "review_gated", "suppressed", "blocked_by_ui", "blocked_by_annotation", "blocked_by_low_readability", "unknown"],
-  "allowed_shadow_types": ["canopy_shadow", "building_shadow", "terrain_shadow", "cloud_shadow", "unknown_shadow"],
-  "allowed_vegetation_artifact_classes": ["none", "directional_smear", "low_resolution_canopy", "compression_canopy", "mixed_epoch_canopy", "shadowed_canopy", "unknown"],
-  "allowed_imagery_date_sources": ["visible_label", "tile_metadata", "external_metadata", "estimated", "unavailable", "unknown"],
-  "allowed_seam_persistence_classes": ["single_screenshot_only", "same_zoom_recurrent", "cross_zoom_recurrent", "cross_platform_recurrent", "cross_date_recurrent", "not_recurrent", "unknown"],
-  "allowed_tile_anomaly_score_components": ["hard_boundary_score", "tone_discontinuity_score", "texture_mismatch_score", "geometry_displacement_score", "blur_masking_score", "dem_terrain_mismatch_score", "mixed_epoch_score", "overlay_confusion_score", "context_overlap_score", "artifact_suppression_score", "final_tile_anomaly_score"],
-  "allowed_waterbody_types": ["small_pond", "farm_pond", "stock_pond", "irrigation_pond", "irrigation_reservoir", "small_reservoir", "well", "wellhead", "cistern_or_tank", "golf_pond", "retention_basin", "drainage_basin", "quarry_pond", "small_lagoon", "swimming_pool", "residential_pool", "commercial_pool", "hotel_or_resort_pool", "public_pool", "school_or_institutional_pool", "abandoned_or_empty_pool", "unknown_pool", "unknown_water_feature"],
-  "allowed_vehicle_cluster_types": ["unexplained_vehicle_cluster", "residential_vehicle_cluster", "worksite_vehicle_cluster", "warehouse_vehicle_cluster", "roadside_vehicle_cluster", "field_edge_vehicle_cluster", "unknown_vehicle_cluster"],
-  "allowed_land_clearing_types": ["bare_soil_clearing", "graded_pad", "scraped_hillside", "quarry_or_borrow_area", "construction_pad", "agricultural_field_clearance", "roadside_clearing", "forest_edge_clearing", "unknown_clearing"],
-  "allowed_warehouse_poi_types": ["unlabeled_warehouse", "industrial_shed", "large_roof_structure", "logistics_or_storage_building", "agricultural_warehouse", "unknown_warehouse_like_structure"],
-  "allowed_poi_tlt_codes": ["SHAG"],
+  "allowed_source_methods": [
+    "visual",
+    "ocr",
+    "geometric",
+    "manual",
+    "derived",
+    "registry",
+    "metadata",
+    "export",
+    "audit",
+    "qc",
+    "hybrid",
+    "deferred"
+  ],
+  "allowed_export_targets": [
+    "observation",
+    "visual_parameters",
+    "poi_recurrence",
+    "poi_layer_recurrence",
+    "ilap_tlt_recurrence",
+    "small_waterbody_locator",
+    "waterbody_recurrence",
+    "tile_seam_anomalies",
+    "ground_poi_locator",
+    "vehicle_cluster_recurrence",
+    "land_clearing_recurrence",
+    "warehouse_poi_recurrence",
+    "container_poi_locator",
+    "container_recurrence",
+    "container_place_context",
+    "sidecar",
+    "manifest",
+    "audit",
+    "deferred"
+  ],
+  "allowed_status_values": [
+    "draft",
+    "queued",
+    "defined",
+    "implemented",
+    "tested",
+    "export_ready",
+    "complete",
+    "deferred",
+    "deprecated"
+  ],
+  "allowed_review_statuses": [
+    "pending",
+    "auto_accepted",
+    "needs_review",
+    "accepted",
+    "rejected",
+    "patched"
+  ],
+  "allowed_feature_presence_states": [
+    "present",
+    "absent",
+    "uncertain",
+    "obscured",
+    "not_applicable",
+    "not_reviewed"
+  ],
+  "allowed_claim_strength_classes": [
+    "visual_observation_only",
+    "candidate_marker",
+    "contextual_correlation",
+    "recurrence_supported",
+    "externally_verified",
+    "rejected"
+  ],
+  "allowed_seam_anomaly_classes": [
+    "none",
+    "ordinary_tile_artifact",
+    "low_priority_artifact",
+    "review_required",
+    "high_priority_review",
+    "suppressed"
+  ],
+  "allowed_roi_types": [
+    "ui_overlay",
+    "fr24_logo_overlay",
+    "apple_maps_overlay",
+    "route_line_overlay",
+    "ground_area",
+    "suspected_seam_area",
+    "blurred_canopy_area",
+    "building_area",
+    "road_area",
+    "pool_area",
+    "shadow_area",
+    "symbol_overlay",
+    "unknown"
+  ],
+  "allowed_roi_suppression_statuses": [
+    "not_suppressed",
+    "review_gated",
+    "suppressed",
+    "blocked_by_ui",
+    "blocked_by_annotation",
+    "blocked_by_low_readability",
+    "unknown"
+  ],
+  "allowed_shadow_types": [
+    "canopy_shadow",
+    "building_shadow",
+    "terrain_shadow",
+    "cloud_shadow",
+    "unknown_shadow"
+  ],
+  "allowed_vegetation_artifact_classes": [
+    "none",
+    "directional_smear",
+    "low_resolution_canopy",
+    "compression_canopy",
+    "mixed_epoch_canopy",
+    "shadowed_canopy",
+    "unknown"
+  ],
+  "allowed_imagery_date_sources": [
+    "visible_label",
+    "tile_metadata",
+    "external_metadata",
+    "estimated",
+    "unavailable",
+    "unknown"
+  ],
+  "allowed_seam_persistence_classes": [
+    "single_screenshot_only",
+    "same_zoom_recurrent",
+    "cross_zoom_recurrent",
+    "cross_platform_recurrent",
+    "cross_date_recurrent",
+    "not_recurrent",
+    "unknown"
+  ],
+  "allowed_tile_anomaly_score_components": [
+    "hard_boundary_score",
+    "tone_discontinuity_score",
+    "texture_mismatch_score",
+    "geometry_displacement_score",
+    "blur_masking_score",
+    "dem_terrain_mismatch_score",
+    "mixed_epoch_score",
+    "overlay_confusion_score",
+    "context_overlap_score",
+    "artifact_suppression_score",
+    "final_tile_anomaly_score"
+  ],
+  "allowed_waterbody_types": [
+    "small_pond",
+    "farm_pond",
+    "stock_pond",
+    "irrigation_pond",
+    "irrigation_reservoir",
+    "small_reservoir",
+    "well",
+    "wellhead",
+    "cistern_or_tank",
+    "golf_pond",
+    "retention_basin",
+    "drainage_basin",
+    "quarry_pond",
+    "small_lagoon",
+    "swimming_pool",
+    "residential_pool",
+    "commercial_pool",
+    "hotel_or_resort_pool",
+    "public_pool",
+    "school_or_institutional_pool",
+    "abandoned_or_empty_pool",
+    "unknown_pool",
+    "unknown_water_feature"
+  ],
+  "allowed_vehicle_cluster_types": [
+    "unexplained_vehicle_cluster",
+    "residential_vehicle_cluster",
+    "worksite_vehicle_cluster",
+    "warehouse_vehicle_cluster",
+    "roadside_vehicle_cluster",
+    "field_edge_vehicle_cluster",
+    "unknown_vehicle_cluster"
+  ],
+  "allowed_land_clearing_types": [
+    "bare_soil_clearing",
+    "graded_pad",
+    "scraped_hillside",
+    "quarry_or_borrow_area",
+    "construction_pad",
+    "agricultural_field_clearance",
+    "roadside_clearing",
+    "forest_edge_clearing",
+    "unknown_clearing"
+  ],
+  "allowed_warehouse_poi_types": [
+    "unlabeled_warehouse",
+    "industrial_shed",
+    "large_roof_structure",
+    "logistics_or_storage_building",
+    "agricultural_warehouse",
+    "unknown_warehouse_like_structure"
+  ],
+  "allowed_container_poi_types": [
+    "shipping_container",
+    "storage_container",
+    "container_yard",
+    "trailer_yard",
+    "warehouse_container_staging",
+    "retail_backlot_container",
+    "port_container_stack",
+    "industrial_container_lot",
+    "construction_container",
+    "temporary_container_storage",
+    "unknown_container_like_object"
+  ],
+  "allowed_poi_tlt_codes": [
+    "SHAG"
+  ],
   "module_capability_map": {
-    "fr24_screenshot_model.py": {"pipeline_stage": "provenance", "handled_signal_groups": ["screenshot_identity"], "emits": ["observation"], "depends_on": []},
-    "fr24_screenshot_provenance.py": {"pipeline_stage": "provenance", "handled_signal_groups": ["screenshot_provenance"], "emits": ["manifest"], "depends_on": ["fr24_screenshot_model.py"]},
-    "fr24_screenshot_privacy.py": {"pipeline_stage": "privacy", "handled_signal_groups": ["screenshot_privacy"], "emits": ["audit"], "depends_on": ["fr24_screenshot_model.py"]},
+    "fr24_screenshot_model.py": {
+      "pipeline_stage": "provenance",
+      "handled_signal_groups": [
+        "screenshot_identity"
+      ],
+      "emits": [
+        "observation"
+      ],
+      "depends_on": []
+    },
+    "fr24_screenshot_provenance.py": {
+      "pipeline_stage": "provenance",
+      "handled_signal_groups": [
+        "screenshot_provenance"
+      ],
+      "emits": [
+        "manifest"
+      ],
+      "depends_on": [
+        "fr24_screenshot_model.py"
+      ]
+    },
+    "fr24_screenshot_privacy.py": {
+      "pipeline_stage": "privacy",
+      "handled_signal_groups": [
+        "screenshot_privacy"
+      ],
+      "emits": [
+        "audit"
+      ],
+      "depends_on": [
+        "fr24_screenshot_model.py"
+      ]
+    },
     "fr24_tile_analysis.py": {
       "pipeline_stage": "tile_suppression",
       "handled_signal_groups": [
@@ -115,38 +359,481 @@
         "tile_score_breakdown",
         "calibration_expected_outputs"
       ],
-      "emits": ["tile_seam_anomalies"],
-      "depends_on": ["fr24_screenshot_model.py", "fr24_screenshot_privacy.py"]
+      "emits": [
+        "tile_seam_anomalies"
+      ],
+      "depends_on": [
+        "fr24_screenshot_model.py",
+        "fr24_screenshot_privacy.py"
+      ]
     },
-    "fr24_ground_context.py": {"pipeline_stage": "ground_context", "handled_signal_groups": ["ground_context", "small_waterbody_identity", "small_waterbody_match", "water_infrastructure_signature", "well_irrigation_signature", "pool_signature", "vehicle_cluster_signature", "land_clearing_signature", "unlabeled_warehouse_signature"], "emits": ["ground_poi_locator", "small_waterbody_locator", "visual_parameters"], "depends_on": ["fr24_tile_analysis.py"]},
-    "fr24_infrastructure_context.py": {"pipeline_stage": "infrastructure_context", "handled_signal_groups": ["infrastructure_context", "ilap_layer_convergence", "ilap_tlt_identity", "ilap_tlt_match", "access_control_signature", "vehicle_cluster_match", "land_clearing_match", "warehouse_poi_match", "small_waterbody_match"], "emits": ["visual_parameters", "poi_layer_recurrence"], "depends_on": ["fr24_ground_context.py"]},
-    "fr24_poi_recurrence.py": {"pipeline_stage": "recurrence", "handled_signal_groups": ["poi_identity", "poi_match", "poi_recurrence", "poi_layer_identity", "poi_layer_match", "poi_layer_recurrence", "small_waterbody_recurrence", "ilap_tlt_recurrence", "vehicle_cluster_recurrence", "land_clearing_recurrence", "warehouse_poi_recurrence"], "emits": ["poi_recurrence", "poi_layer_recurrence", "waterbody_recurrence", "ilap_tlt_recurrence", "vehicle_cluster_recurrence", "land_clearing_recurrence", "warehouse_poi_recurrence"], "depends_on": ["fr24_infrastructure_context.py"]},
-    "fr24_observation_builder.py": {"pipeline_stage": "export", "handled_signal_groups": ["export_sidecar"], "emits": ["observation", "sidecar", "manifest"], "depends_on": ["fr24_poi_recurrence.py"]}
+    "fr24_ground_context.py": {
+      "pipeline_stage": "ground_context",
+      "handled_signal_groups": [
+        "ground_context",
+        "small_waterbody_identity",
+        "small_waterbody_match",
+        "water_infrastructure_signature",
+        "well_irrigation_signature",
+        "pool_signature",
+        "vehicle_cluster_signature",
+        "land_clearing_signature",
+        "unlabeled_warehouse_signature",
+        "container_storage_signature",
+        "container_yard_signature",
+        "container_false_positive_control"
+      ],
+      "emits": [
+        "ground_poi_locator",
+        "small_waterbody_locator",
+        "container_poi_locator",
+        "visual_parameters"
+      ],
+      "depends_on": [
+        "fr24_tile_analysis.py"
+      ]
+    },
+    "fr24_infrastructure_context.py": {
+      "pipeline_stage": "infrastructure_context",
+      "handled_signal_groups": [
+        "infrastructure_context",
+        "ilap_layer_convergence",
+        "ilap_tlt_identity",
+        "ilap_tlt_match",
+        "access_control_signature",
+        "vehicle_cluster_match",
+        "land_clearing_match",
+        "warehouse_poi_match",
+        "small_waterbody_match",
+        "container_poi_match",
+        "container_place_context"
+      ],
+      "emits": [
+        "visual_parameters",
+        "poi_layer_recurrence",
+        "container_place_context"
+      ],
+      "depends_on": [
+        "fr24_ground_context.py"
+      ]
+    },
+    "fr24_poi_recurrence.py": {
+      "pipeline_stage": "recurrence",
+      "handled_signal_groups": [
+        "poi_identity",
+        "poi_match",
+        "poi_recurrence",
+        "poi_layer_identity",
+        "poi_layer_match",
+        "poi_layer_recurrence",
+        "small_waterbody_recurrence",
+        "ilap_tlt_recurrence",
+        "vehicle_cluster_recurrence",
+        "land_clearing_recurrence",
+        "warehouse_poi_recurrence",
+        "container_poi_recurrence"
+      ],
+      "emits": [
+        "poi_recurrence",
+        "poi_layer_recurrence",
+        "waterbody_recurrence",
+        "ilap_tlt_recurrence",
+        "vehicle_cluster_recurrence",
+        "land_clearing_recurrence",
+        "warehouse_poi_recurrence",
+        "container_recurrence"
+      ],
+      "depends_on": [
+        "fr24_infrastructure_context.py"
+      ]
+    },
+    "fr24_observation_builder.py": {
+      "pipeline_stage": "export",
+      "handled_signal_groups": [
+        "export_sidecar"
+      ],
+      "emits": [
+        "observation",
+        "sidecar",
+        "manifest"
+      ],
+      "depends_on": [
+        "fr24_poi_recurrence.py"
+      ]
+    }
   },
   "signal_group_export_map": {
-    "tile_analysis": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": [], "interpretation_guardrail": "artifact_only"},
-    "seam_anomaly_detection": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": true, "suppression_dependencies": ["visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "tile_artifact_suppression": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": ["visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "roi_mask_analysis": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": ["visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "seam_geometry_v2": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": ["roi_mask_analysis", "visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "tone_texture_v2": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": ["roi_mask_analysis", "visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "geometry_displacement_v2": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": ["roi_mask_analysis", "visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "blur_smear_canopy": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": ["roi_mask_analysis", "visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "mixed_epoch_detection": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": true, "suppression_dependencies": ["tile_analysis", "visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "dem_terrain_mismatch": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": ["tile_analysis", "visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "ui_route_annotation_suppression": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": [], "interpretation_guardrail": "artifact_only"},
-    "shadow_canopy_confusion": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": ["roi_mask_analysis", "visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "seam_context_recurrence": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": true, "suppression_dependencies": ["seam_anomaly_detection", "roi_mask_analysis", "visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "tile_score_breakdown": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": ["roi_mask_analysis", "visual_artifact_control"], "interpretation_guardrail": "artifact_only"},
-    "calibration_expected_outputs": {"owned_by_module": "fr24_tile_analysis.py", "pipeline_stage": "tile_suppression", "export_targets": ["tile_seam_anomalies"], "recurrence_enabled": false, "suppression_dependencies": ["tile_score_breakdown"], "interpretation_guardrail": "artifact_only"},
-    "small_waterbody_identity": {"owned_by_module": "fr24_ground_context.py", "pipeline_stage": "ground_context", "export_targets": ["small_waterbody_locator", "waterbody_recurrence"], "recurrence_enabled": true, "suppression_dependencies": ["tile_analysis", "visual_artifact_control"], "interpretation_guardrail": "visual_candidate_only"},
-    "pool_signature": {"owned_by_module": "fr24_ground_context.py", "pipeline_stage": "ground_context", "export_targets": ["small_waterbody_locator", "waterbody_recurrence"], "recurrence_enabled": true, "suppression_dependencies": ["tile_analysis", "visual_artifact_control"], "interpretation_guardrail": "visual_candidate_only"},
-    "vehicle_cluster_signature": {"owned_by_module": "fr24_ground_context.py", "pipeline_stage": "ground_context", "export_targets": ["ground_poi_locator", "vehicle_cluster_recurrence"], "recurrence_enabled": true, "suppression_dependencies": ["tile_analysis", "visual_artifact_control"], "interpretation_guardrail": "visual_candidate_only"},
-    "land_clearing_signature": {"owned_by_module": "fr24_ground_context.py", "pipeline_stage": "ground_context", "export_targets": ["ground_poi_locator", "land_clearing_recurrence"], "recurrence_enabled": true, "suppression_dependencies": ["tile_analysis", "environmental_context", "visual_artifact_control"], "interpretation_guardrail": "visual_candidate_only"},
-    "unlabeled_warehouse_signature": {"owned_by_module": "fr24_ground_context.py", "pipeline_stage": "ground_context", "export_targets": ["ground_poi_locator", "warehouse_poi_recurrence"], "recurrence_enabled": true, "suppression_dependencies": ["tile_analysis", "visual_artifact_control"], "interpretation_guardrail": "visual_candidate_only"},
-    "ilap_layer_convergence": {"owned_by_module": "fr24_infrastructure_context.py", "pipeline_stage": "infrastructure_context", "export_targets": ["visual_parameters", "poi_layer_recurrence"], "recurrence_enabled": true, "suppression_dependencies": ["tile_analysis"], "interpretation_guardrail": "contextual_correlation_only"},
-    "access_control_signature": {"owned_by_module": "fr24_infrastructure_context.py", "pipeline_stage": "infrastructure_context", "export_targets": ["ilap_tlt_recurrence", "poi_layer_recurrence"], "recurrence_enabled": true, "suppression_dependencies": ["tile_analysis", "ground_context"], "interpretation_guardrail": "visual_candidate_only"},
-    "poi_recurrence": {"owned_by_module": "fr24_poi_recurrence.py", "pipeline_stage": "recurrence", "export_targets": ["poi_recurrence"], "recurrence_enabled": true, "suppression_dependencies": ["infrastructure_context"], "interpretation_guardrail": "recurrence_supported_only"}
+    "tile_analysis": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "seam_anomaly_detection": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "tile_artifact_suppression": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "roi_mask_analysis": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "seam_geometry_v2": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [
+        "roi_mask_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "tone_texture_v2": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [
+        "roi_mask_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "geometry_displacement_v2": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [
+        "roi_mask_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "blur_smear_canopy": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [
+        "roi_mask_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "mixed_epoch_detection": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "tile_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "dem_terrain_mismatch": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [
+        "tile_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "ui_route_annotation_suppression": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "shadow_canopy_confusion": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [
+        "roi_mask_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "seam_context_recurrence": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "seam_anomaly_detection",
+        "roi_mask_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "tile_score_breakdown": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [
+        "roi_mask_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "calibration_expected_outputs": {
+      "owned_by_module": "fr24_tile_analysis.py",
+      "pipeline_stage": "tile_suppression",
+      "export_targets": [
+        "tile_seam_anomalies"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [
+        "tile_score_breakdown"
+      ],
+      "interpretation_guardrail": "artifact_only"
+    },
+    "small_waterbody_identity": {
+      "owned_by_module": "fr24_ground_context.py",
+      "pipeline_stage": "ground_context",
+      "export_targets": [
+        "small_waterbody_locator",
+        "waterbody_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "tile_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "visual_candidate_only"
+    },
+    "pool_signature": {
+      "owned_by_module": "fr24_ground_context.py",
+      "pipeline_stage": "ground_context",
+      "export_targets": [
+        "small_waterbody_locator",
+        "waterbody_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "tile_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "visual_candidate_only"
+    },
+    "vehicle_cluster_signature": {
+      "owned_by_module": "fr24_ground_context.py",
+      "pipeline_stage": "ground_context",
+      "export_targets": [
+        "ground_poi_locator",
+        "vehicle_cluster_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "tile_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "visual_candidate_only"
+    },
+    "land_clearing_signature": {
+      "owned_by_module": "fr24_ground_context.py",
+      "pipeline_stage": "ground_context",
+      "export_targets": [
+        "ground_poi_locator",
+        "land_clearing_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "tile_analysis",
+        "environmental_context",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "visual_candidate_only"
+    },
+    "unlabeled_warehouse_signature": {
+      "owned_by_module": "fr24_ground_context.py",
+      "pipeline_stage": "ground_context",
+      "export_targets": [
+        "ground_poi_locator",
+        "warehouse_poi_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "tile_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "visual_candidate_only"
+    },
+    "container_storage_signature": {
+      "owned_by_module": "fr24_ground_context.py",
+      "pipeline_stage": "ground_context",
+      "export_targets": [
+        "container_poi_locator",
+        "container_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "tile_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "visual_candidate_only"
+    },
+    "container_yard_signature": {
+      "owned_by_module": "fr24_ground_context.py",
+      "pipeline_stage": "ground_context",
+      "export_targets": [
+        "container_poi_locator",
+        "container_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "tile_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "visual_candidate_only"
+    },
+    "container_false_positive_control": {
+      "owned_by_module": "fr24_ground_context.py",
+      "pipeline_stage": "ground_context",
+      "export_targets": [
+        "container_poi_locator"
+      ],
+      "recurrence_enabled": false,
+      "suppression_dependencies": [
+        "tile_analysis",
+        "visual_artifact_control"
+      ],
+      "interpretation_guardrail": "visual_candidate_only"
+    },
+    "ilap_layer_convergence": {
+      "owned_by_module": "fr24_infrastructure_context.py",
+      "pipeline_stage": "infrastructure_context",
+      "export_targets": [
+        "visual_parameters",
+        "poi_layer_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "tile_analysis"
+      ],
+      "interpretation_guardrail": "contextual_correlation_only"
+    },
+    "access_control_signature": {
+      "owned_by_module": "fr24_infrastructure_context.py",
+      "pipeline_stage": "infrastructure_context",
+      "export_targets": [
+        "ilap_tlt_recurrence",
+        "poi_layer_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "tile_analysis",
+        "ground_context"
+      ],
+      "interpretation_guardrail": "visual_candidate_only"
+    },
+    "container_place_context": {
+      "owned_by_module": "fr24_infrastructure_context.py",
+      "pipeline_stage": "infrastructure_context",
+      "export_targets": [
+        "container_place_context",
+        "container_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "container_storage_signature",
+        "container_yard_signature",
+        "tile_analysis"
+      ],
+      "interpretation_guardrail": "contextual_correlation_only"
+    },
+    "poi_recurrence": {
+      "owned_by_module": "fr24_poi_recurrence.py",
+      "pipeline_stage": "recurrence",
+      "export_targets": [
+        "poi_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "infrastructure_context"
+      ],
+      "interpretation_guardrail": "recurrence_supported_only"
+    },
+    "container_poi_recurrence": {
+      "owned_by_module": "fr24_poi_recurrence.py",
+      "pipeline_stage": "recurrence",
+      "export_targets": [
+        "container_recurrence"
+      ],
+      "recurrence_enabled": true,
+      "suppression_dependencies": [
+        "container_place_context"
+      ],
+      "interpretation_guardrail": "recurrence_supported_only"
+    }
   },
-  "validation_rules": {"suppression_before_interpretation": true, "recurrence_modules_must_not_detect_visual_features": true, "tile_analysis_must_precede_ground_context": true, "all_signal_groups_must_have_owner_module": true, "all_signal_group_exports_must_be_allowed": true, "all_module_stages_must_be_in_pipeline_order": true}
+  "validation_rules": {
+    "suppression_before_interpretation": true,
+    "recurrence_modules_must_not_detect_visual_features": true,
+    "tile_analysis_must_precede_ground_context": true,
+    "all_signal_groups_must_have_owner_module": true,
+    "all_signal_group_exports_must_be_allowed": true,
+    "all_module_stages_must_be_in_pipeline_order": true
+  }
 }
