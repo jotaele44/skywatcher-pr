@@ -138,7 +138,8 @@ def _to_review(image_name: str, frame_type: str, reason: str, ocr_chars: int,
 
 
 def _row(image_name, frame_type, endpoint_kind, t_code, t_name, l_code, l_name,
-         flight_status, name_source, tier, review_reason, ocr_chars, text) -> dict:
+         flight_status, name_source, tier, review_reason, ocr_chars, text,
+         suggested_name="", nearby_places="") -> dict:
     return {
         "image_name": image_name,
         "frame_type": frame_type,
@@ -151,6 +152,8 @@ def _row(image_name, frame_type, endpoint_kind, t_code, t_name, l_code, l_name,
         "name_source": name_source,
         "confidence_tier": tier,
         "review_reason": review_reason,
+        "suggested_name": suggested_name,
+        "nearby_places": nearby_places,
         "ocr_chars": ocr_chars,
         "ocr_excerpt": (text or "")[:160].replace("\n", " "),
         "harvest_version": HARVEST_VERSION,
@@ -348,6 +351,54 @@ def _endpoint_kind(status: str) -> str:
     return "unknown"
 
 
+# Feature classes worth surfacing as a place suggestion from OCR'd labels.
+_USEFUL_FCLASS = {"Populated Place", "Civil", "Military", "Airport", "Locale"}
+
+
+def scan_place_names(text: str, reg: dict, limit: int = 5) -> List[str]:
+    """Find GNIS place names that appear in OCR text (1-3 word grams), filtered
+    to useful feature classes. Returns distinct names in order of appearance."""
+    idx = reg.get("gnis_index") or {}
+    toks = _norm(text).split()
+    out: List[str] = []
+    seen = set()
+    i = 0
+    while i < len(toks):
+        matched = False
+        for span in (3, 2, 1):  # prefer longer matches
+            if i + span > len(toks):
+                continue
+            key = " ".join(toks[i:i + span])
+            if len(key) < 4:
+                continue
+            pl = idx.get(key)
+            if pl and pl.get("feature_class") in _USEFUL_FCLASS:
+                nm = pl["name"]
+                if nm not in seen:
+                    seen.add(nm)
+                    out.append(nm)
+                i += span
+                matched = True
+                break
+        if not matched:
+            i += 1
+        if len(out) >= limit:
+            break
+    return out
+
+
+def ocr_top_strip(image_path: str) -> str:
+    """OCR the top ~9% (search bar on Earth/Maps ground frames)."""
+    if pytesseract is None:
+        raise RuntimeError("pytesseract is required")
+    im = Image.open(image_path).convert("RGB")
+    w, h = im.size
+    crop = im.crop((int(w * 0.10), int(h * 0.03), int(w * 0.92), int(h * 0.085)))
+    g = np.array(crop.convert("L"))
+    up = cv2.resize(g, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+    return pytesseract.image_to_string(up, config="--psm 6")
+
+
 def harvest_image(image_path: str, reg) -> dict:
     # ``reg`` may be the full registry dict (names + vclass) or a plain
     # code->name map (back-compat).
@@ -368,9 +419,23 @@ def harvest_image(image_path: str, reg) -> dict:
 
     frame_type = classify_frame(text)
     if frame_type != "fr24":
-        # Ground/Earth frame: the facility name is on the image but sits over
-        # satellite imagery; reliable POI/search-bar OCR is a deferred step.
-        return _to_review(name, frame_type, "ground_frame_needs_label_ocr", chars, text)
+        # Earth/Maps ground frame: try the search bar (the searched place) and
+        # scan visible labels against GNIS. A clean hit becomes a suggestion;
+        # otherwise it stays for review.
+        try:
+            bar = ocr_top_strip(image_path)
+        except Exception:
+            bar = ""
+        hit = resolve_place_name(bar, reg) if isinstance(reg, dict) else None
+        nearby = scan_place_names(text + "\n" + bar, reg) if isinstance(reg, dict) else []
+        if hit:
+            return _row(name, frame_type, "ground_site", "", "", "", "", "",
+                        "earth_search_bar", "PROBABLE", "earth_search_resolved",
+                        chars, text, suggested_name=hit["name"],
+                        nearby_places="; ".join(nearby))
+        return _row(name, frame_type, "ground_site", "", "", "", "", "",
+                    "earth_frame", "REVIEW", "ground_frame_needs_label_ocr",
+                    chars, text, nearby_places="; ".join(nearby))
 
     origin, dest, status, code_source = _extract_endpoints(text, names)
     o_name = resolve_code(origin, names)
@@ -379,10 +444,17 @@ def harvest_image(image_path: str, reg) -> dict:
     ek = "both" if (origin and dest) else ("origin_only" if origin else
                                            "dest_only" if dest else "unknown")
 
-    # N/A flights, or panels with no readable code, always go to review.
+    # N/A flights, or panels with no readable code: fall back to the visible
+    # map-town labels. A single visible town (zoomed-in endpoint) becomes a
+    # suggestion; many towns (cruise overview) just list as context for review.
     if status == "not_available":
+        nearby = scan_place_names(text, reg) if isinstance(reg, dict) else []
+        sug = nearby[0] if len(nearby) == 1 else ""
         return _row(name, "fr24", "unknown", "", "", "", "", status,
-                    "fr24_panel", "REVIEW", "panel_no_airport_code", chars, text)
+                    "fr24_map_label" if sug else "fr24_panel",
+                    "PROBABLE" if sug else "REVIEW",
+                    "map_label_single_suggestion" if sug else "panel_no_airport_code",
+                    chars, text, suggested_name=sug, nearby_places="; ".join(nearby))
 
     if code_source == "gazetteer":
         # verification class of the resolved endpoint codes drives the tier
@@ -405,15 +477,20 @@ def harvest_image(image_path: str, reg) -> dict:
         return _row(name, "fr24", ek, origin, "", dest, "", status,
                     "fr24_panel", "REVIEW", "unknown_codes_extend_gazetteer", chars, text)
 
+    nearby = scan_place_names(text, reg) if isinstance(reg, dict) else []
+    sug = nearby[0] if len(nearby) == 1 else ""
     return _row(name, "fr24", "unknown", "", "", "", "", status,
-                "fr24_panel", "REVIEW", "no_codes_in_panel", chars, text)
+                "fr24_map_label" if sug else "fr24_panel",
+                "PROBABLE" if sug else "REVIEW",
+                "map_label_single_suggestion" if sug else "no_codes_in_panel",
+                chars, text, suggested_name=sug, nearby_places="; ".join(nearby))
 
 
 FIELDNAMES = [
     "image_name", "frame_type", "endpoint_kind", "takeoff_code", "takeoff_name",
     "landing_code", "landing_name", "flight_status", "name_source",
-    "confidence_tier", "review_reason", "ocr_chars", "ocr_excerpt",
-    "harvest_version",
+    "confidence_tier", "review_reason", "suggested_name", "nearby_places",
+    "ocr_chars", "ocr_excerpt", "harvest_version",
 ]
 
 

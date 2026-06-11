@@ -85,3 +85,20 @@ def test_haversine_sane():
     # ~ SJU to BQN is roughly 60-70 nm
     d = zlh.haversine_nm(18.4394, -66.0012, 18.4949, -67.1294)
     assert 55 < d < 75
+
+
+def test_scan_place_names(reg):
+    multi = zlh.scan_place_names("Aguadilla Mayaguez Ponce San Juan", reg)
+    assert len(multi) >= 3 and any("Ponce" in n for n in multi)
+    single = zlh.scan_place_names("only Carolina visible", reg)
+    assert single == ["Carolina Municipio"]
+    assert zlh.scan_place_names("xyzzy qwerty", reg) == []
+
+
+def test_row_schema_has_suggestion_columns():
+    row = zlh._row("x.png", "fr24", "unknown", "", "", "", "", "", "src",
+                   "REVIEW", "reason", 10, "text",
+                   suggested_name="Carolina Municipio", nearby_places="A; B")
+    assert set(zlh.FIELDNAMES) <= set(row)
+    assert row["suggested_name"] == "Carolina Municipio"
+    assert row["nearby_places"] == "A; B"
