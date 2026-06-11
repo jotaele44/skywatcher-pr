@@ -1,0 +1,43 @@
+version: rlsm_hangar_registry_v0_1
+hangar_classes:
+  - class_id: AIRPORT_RAMP
+    aliases: [ramp, apron, tarmac, aircraft parking, parking stand]
+  - class_id: OPERATOR_HANGAR
+    aliases: [hangar, hanger, private hangar, company hangar, maintenance hangar]
+  - class_id: GOVERNMENT_RAMP
+    aliases: [police ramp, FURA ramp, federal ramp, public safety ramp]
+  - class_id: USCG_RAMP
+    aliases: [Coast Guard ramp, Ramey CG ramp, Borinquen ramp, USCG ramp]
+  - class_id: MILITARY_RAMP
+    aliases: [military apron, former base ramp, restricted ramp]
+  - class_id: MAINTENANCE_PAD
+    aliases: [maintenance area, service pad, repair pad]
+  - class_id: FUEL_PAD
+    aliases: [fuel point, fuel farm, aviation fuel area]
+  - class_id: STAGING_AREA
+    aliases: [staging pad, temporary base, deployment point]
+known_hangar_candidates:
+  - hangar_id: hangar_candidate_bqn_uscg_ramp
+    airport_id: airport_bqn_tjbq
+    class_id: USCG_RAMP
+    canonical_name: BQN / Ramey USCG ramp candidate
+    visibility: V2
+    evidence_tier: T2
+    status: candidate
+    aliases: [Ramey CG ramp, Borinquen ramp, USCG Borinquen]
+  - hangar_id: hangar_candidate_sig_private_operator_ramp
+    airport_id: airport_sig_tjig
+    class_id: OPERATOR_HANGAR
+    canonical_name: Isla Grande private/operator hangar cluster candidate
+    visibility: V2
+    evidence_tier: T2
+    status: candidate
+    aliases: [Isla Grande hangar, SIG private hangar, operator ramp]
+  - hangar_id: hangar_candidate_sju_general_aviation
+    airport_id: airport_sju_tjsj
+    class_id: AIRPORT_RAMP
+    canonical_name: SJU general aviation ramp candidate
+    visibility: V2
+    evidence_tier: T2
+    status: candidate
+    aliases: [SJU GA ramp, LMM general aviation, San Juan GA]

@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "track_point",
+  "type": "object",
+  "required": ["flight_id", "latitude", "longitude"],
+  "properties": {
+    "id":               {"type": ["integer", "null"]},
+    "flight_id":        {"type": "string", "minLength": 1},
+    "timestamp":        {"type": ["string", "null"]},
+    "latitude":         {"type": "number", "minimum": -90, "maximum": 90},
+    "longitude":        {"type": "number", "minimum": -180, "maximum": 180},
+    "altitude_ft":      {"type": ["integer", "null"], "minimum": 0},
+    "ground_speed_mph": {"type": ["integer", "null"], "minimum": 0}
+  },
+  "additionalProperties": true
+}

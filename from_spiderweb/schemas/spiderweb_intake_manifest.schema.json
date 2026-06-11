@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "spiderweb_intake_manifest",
+  "title": "Spiderweb Intake Manifest",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "export_dir", "candidate_count", "missing_files"],
+  "properties": {
+    "schema_version":   {"type": "string", "pattern": "^\\d+\\.\\d+$"},
+    "generated_at":     {"type": "string", "minLength": 1},
+    "export_dir":       {"type": "string", "minLength": 1},
+    "candidate_count":  {"type": "integer", "minimum": 0},
+    "missing_files":    {"type": "array", "items": {"type": "string"}},
+    "dedup_removed":    {"type": ["integer", "null"], "minimum": 0},
+    "sources":          {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_file", "records_loaded"],
+        "properties": {
+          "source_file":    {"type": "string", "minLength": 1},
+          "records_loaded": {"type": "integer", "minimum": 0},
+          "records_valid":  {"type": ["integer", "null"], "minimum": 0},
+          "parse_errors":   {"type": ["integer", "null"], "minimum": 0}
+        }
+      }
+    },
+    "notes":            {"type": ["string", "null"]}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "prii_readiness_report",
+  "title": "PRII Readiness Report",
+  "type": "object",
+  "required": ["generated_at", "status", "gates"],
+  "properties": {
+    "generated_at": {"type": "string", "minLength": 1},
+    "status":       {"type": "string", "enum": ["READY", "NOT_READY", "DEGRADED"]},
+    "gates": {
+      "type": "object",
+      "properties": {
+        "prii":                {"$ref": "#/definitions/gateResult"},
+        "calibration":         {"$ref": "#/definitions/gateResult"},
+        "satellite_manifests": {"$ref": "#/definitions/gateResult"}
+      }
+    },
+    "warnings":     {"type": "array", "items": {"type": "string"}},
+    "errors":       {"type": "array", "items": {"type": "string"}},
+    "notes":        {"type": ["string", "null"]}
+  },
+  "definitions": {
+    "gateResult": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status":  {"type": "string", "enum": ["PASS", "FAIL", "WARN", "MISSING"]},
+        "message": {"type": ["string", "null"]}
+      }
+    }
+  },
+  "additionalProperties": true
+}

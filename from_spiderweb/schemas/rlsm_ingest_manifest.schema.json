@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rlsm_ingest_manifest",
+  "type": "object",
+  "description": "Single row from outputs/rlsm_ingest_manifest.csv (Phase 1 inventory). One row per image in data/FR24_baseline/**.",
+  "required": ["screenshot_id", "sha256", "filename", "rel_path", "ext", "size_bytes", "ingest_status", "ocr_status", "ingested_at"],
+  "properties": {
+    "screenshot_id":     {"type": ["integer", "string"]},
+    "sha256":            {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "filename":          {"type": "string"},
+    "rel_path":          {"type": "string"},
+    "month_bucket":      {"type": ["string", "null"]},
+    "filename_ts":       {"type": ["string", "null"]},
+    "ext":               {"type": "string"},
+    "size_bytes":        {"type": "integer", "minimum": 0},
+    "width":             {"type": ["integer", "null"], "minimum": 1},
+    "height":            {"type": ["integer", "null"], "minimum": 1},
+    "phash":             {"type": ["string", "null"]},
+    "dup_group_id":      {"type": ["integer", "null"]},
+    "near_dup_group_id": {"type": ["integer", "null"]},
+    "ingest_status":     {"type": "string", "enum": ["ok", "corrupt", "unreadable"]},
+    "ingest_error":      {"type": ["string", "null"]},
+    "ocr_status":        {"type": "string", "enum": ["pending", "ok", "partial", "failed"]},
+    "ingested_at":       {"type": "string"}
+  },
+  "additionalProperties": true
+}

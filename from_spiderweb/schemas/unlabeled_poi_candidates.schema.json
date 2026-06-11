@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "unlabeled_poi_candidates",
+  "type": "object",
+  "description": "Single row from outputs/unlabeled_poi_candidates.csv. Visual features detected without labels, ~40-50 per map image, flagged unreviewed.",
+  "required": ["candidate_id", "screenshot_id", "candidate_type"],
+  "properties": {
+    "candidate_id":      {"type": ["integer", "string"]},
+    "screenshot_id":     {"type": ["integer", "string"]},
+    "filename":          {"type": ["string", "null"]},
+    "candidate_type":    {
+      "type": "string",
+      "enum": ["pad", "clearing", "road_scar", "facility_cluster", "antenna", "tank", "quarry", "shoreline_infra", "access_road", "unknown"]
+    },
+    "bbox_x":            {"type": ["integer", "null"]},
+    "bbox_y":            {"type": ["integer", "null"]},
+    "bbox_w":            {"type": ["integer", "null"]},
+    "bbox_h":            {"type": ["integer", "null"]},
+    "centroid_x":        {"type": ["integer", "null"]},
+    "centroid_y":        {"type": ["integer", "null"]},
+    "evidence_features": {"type": ["string", "null"], "description": "JSON-encoded blob of detector evidence (area, aspect, brightness, etc.)"},
+    "confidence":        {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "review_status":     {"type": ["string", "null"], "enum": ["unreviewed", "reviewing", "approved", "rejected", null]},
+    "observed_at":       {"type": "string"}
+  },
+  "additionalProperties": true
+}

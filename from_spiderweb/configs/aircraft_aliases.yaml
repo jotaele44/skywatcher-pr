@@ -1,0 +1,17 @@
+version: rlsm_aircraft_aliases_v0_1
+identity_fields:
+  tail_number: [N-number, registration, reg, matrícula, matricula, tail, callsign]
+  masked_identity: [N/A, Unknown, blank, blocked, no callsign, private, suppressed]
+  icao_hex: [Mode-S, hex code, ADS-B hex]
+  aircraft_type: [B407, Bell 407, AS350, H125, R44, R66, Robinson, Dolphin, fixed-wing]
+masked_identity_rules:
+  na_values: [N/A, NA, Unknown, UNKNOWN, blank, null, private, blocked, suppressed, no registration, no callsign]
+  merge_policy: do_not_merge_without_cluster_evidence
+  cluster_evidence_required: [time_proximity, spatial_overlap, behavior_similarity]
+known_aircraft_aliases:
+  - aircraft_alias_id: aircraft_unresolved_na_b407
+    canonical_name: unresolved masked Bell 407 identity cluster
+    aliases: [N/A B407, Unknown B407, masked Bell 407]
+    visibility: V0
+    evidence_tier: T2
+    status: unresolved_cluster_template

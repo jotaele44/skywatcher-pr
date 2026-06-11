@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "source.schema.json",
+  "title": "Source",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "type": { "type": "string" },
+    "uri": { "type": "string" },
+    "tier": { "$ref": "common.defs.schema.json#/definitions/Tier" },
+    "description": { "type": ["string", "null"] }
+  },
+  "required": ["id", "type", "uri", "tier"]
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "common.defs.schema.json",
+  "definitions": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Date": {
+      "type": "string",
+      "format": "date"
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "Tier": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4
+    }
+  }
+}

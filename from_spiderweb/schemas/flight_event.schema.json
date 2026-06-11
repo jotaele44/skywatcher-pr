@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "flight_event",
+  "type": "object",
+  "required": ["flight_id", "callsign"],
+  "properties": {
+    "flight_id":                 {"type": "string", "minLength": 1},
+    "callsign":                  {"type": "string", "minLength": 1},
+    "aircraft_type":             {"type": ["string", "null"]},
+    "operator":                  {"type": ["string", "null"]},
+    "origin_airport":            {"type": ["string", "null"]},
+    "destination_airport":       {"type": ["string", "null"]},
+    "origin_lat":                {"type": ["number", "null"], "minimum": -90, "maximum": 90},
+    "origin_lon":                {"type": ["number", "null"], "minimum": -180, "maximum": 180},
+    "dest_lat":                  {"type": ["number", "null"], "minimum": -90, "maximum": 90},
+    "dest_lon":                  {"type": ["number", "null"], "minimum": -180, "maximum": 180},
+    "takeoff_time":              {"type": ["string", "null"]},
+    "landing_time":              {"type": ["string", "null"]},
+    "flight_duration_minutes":   {"type": ["integer", "null"], "minimum": 0},
+    "max_altitude_ft":           {"type": ["integer", "null"], "minimum": 0},
+    "avg_speed_mph":             {"type": ["number", "null"], "minimum": 0},
+    "mission_type":              {"type": ["string", "null"]},
+    "num_screenshots":           {"type": ["integer", "null"], "minimum": 0}
+  },
+  "additionalProperties": true
+}

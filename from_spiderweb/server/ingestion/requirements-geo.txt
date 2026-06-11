@@ -1,0 +1,6 @@
+# Geospatial dependencies for ingest_tiger_pr.py
+# Install with:  pip install -r server/ingestion/requirements-geo.txt
+geopandas>=0.14
+shapely>=2.0
+pyogrio>=0.7
+requests>=2.31

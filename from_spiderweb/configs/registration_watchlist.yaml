@@ -1,0 +1,88 @@
+# Aircraft registration watchlist for PRIIS alerts.
+#
+# Consumed by server/ingestion/registration_alerts.py. Each entry fires a
+# "seen" alert when the registration appears in ingested FR24 events. Adding
+# `expected_within_days` also fires an "expected but missing" alert when the
+# aircraft has not been seen inside that window.
+#
+# Fields:
+#   registration          (required) the tail number / N-number to watch
+#   label                 (optional) human-friendly name shown in the alert
+#   operator              (optional) operator note, for context only
+#   expected_within_days  (optional) cadence for the missing-aircraft alert
+#
+# Seed list below is the project's key aircraft (see README "Key aircraft").
+# Edit freely — registrations are matched case/spacing/dash-insensitively.
+
+registrations:
+  - registration: N5854Z
+    label: PREPA powerline inspection (Airbus H125)
+    operator: Puerto Rico Electric Power Authority
+    expected_within_days: 14
+  - registration: C6062
+    label: USCG Search & Rescue (Sikorsky MH-60T)
+    operator: US Coast Guard
+  - registration: N767PD
+    label: PR Police FURA (Bell 429)
+    operator: Puerto Rico Police
+    expected_within_days: 30
+  - registration: N684JB
+    label: Private charter (Airbus H130)
+    operator: Private
+
+  # Recovered from Flight Log 2025 reconciliation (2026-06-01) and validated
+  # against the log's own operator data (FAA registry lookup was blocked in CI).
+  # N20 (ambiguous/truncated singleton) remains held in the recovery queue for
+  # manual review, NOT added here. N407PR was promoted to active alerting below.
+  - registration: N999ZY
+    label: Most-active tail in log (ISR/tourism loops)
+    operator: Southwest Aviation Enterprises
+  - registration: N196DM
+    label: "Tourism/recon (BlueBoy)"
+    operator: Blue Aviation LLC
+  - registration: N411H
+    label: Corporate/VIP transport
+    operator: Caribbean Helicopters
+  - registration: N413LP
+    label: ADS-B archive import (Eurocopter AS350 B3)
+    operator: CAMAPE SE
+  - registration: N150F
+    operator: Private
+  - registration: N999DM
+    operator: Private
+  - registration: N13VL
+    label: Recovered from Flight Log 2025 — operator unconfirmed (Robinson)
+  - registration: N429LE
+    label: Recovered from Flight Log 2025 — operator unconfirmed (Bell 429)
+
+  # US Coast Guard SAR/maritime patrol — surfaced by the Flight Log 2025 parse,
+  # siblings of C6062 already tracked above.
+  - registration: C6038
+    label: USCG SAR (Ramey/Mayagüez patrols)
+    operator: US Coast Guard
+  - registration: C6054
+    label: USCG SAR/coastal training
+    operator: US Coast Guard
+
+  # Promoted from manual-review hold (operator decision 2026-06-01). Flagged
+  # sensitive (private/government-adjacent); 29 flights in the log, Oct–Nov 2025.
+  - registration: N407PR
+    label: Private helo — sensitive (promoted from hold)
+    operator: Private
+    expected_within_days: 21
+
+  # ADS-B per-tail archive import (operator upload, 2026-06-02). Flight tracks
+  # ingested into events + track_points by scripts/parse_adsb_archive.py.
+  # Operators unconfirmed (no FAA registry lookup in CI) except where an info
+  # PDF accompanied the export. N513LP is reserved/unassigned (no aircraft, no
+  # flights) — held in the recovery ledger, not watchlisted. N79035 was a
+  # mislabel for N79036 and is not a separate tail.
+  - registration: N79036
+    label: ADS-B archive import (Jun 2025, 25 flights)
+  - registration: N26370
+    label: ADS-B archive import (Dec 2025–Jan 2026, 14 flights)
+  - registration: N90JF
+    label: ADS-B archive import (Dec 2025, 11 flights)
+  - registration: N888EV
+    label: ADS-B archive import (MD/Hughes 369E)
+    operator: Netwave Equipment Worldwide Inc

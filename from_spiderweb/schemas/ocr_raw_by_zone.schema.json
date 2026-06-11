@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ocr_raw_by_zone",
+  "type": "object",
+  "description": "Single JSONL record from outputs/ocr_raw_by_zone.jsonl. Append-only by the OCR runner; raw_text is immutable per (screenshot, zone, run).",
+  "required": ["screenshot_id", "zone", "raw_text", "observed_at"],
+  "properties": {
+    "screenshot_id":   {"type": ["integer", "string"]},
+    "run_id":          {"type": ["integer", "null"]},
+    "zone":            {
+      "type": "string",
+      "enum": ["status_bar", "top_bar", "map_center", "label_layer", "aircraft_card", "bottom_actions", "side_panel", "bottom_panel"]
+    },
+    "raw_text":        {"type": "string"},
+    "raw_lines_json":  {"type": ["string", "null"]},
+    "confidence_mean": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+    "confidence_min":  {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+    "n_words":         {"type": ["integer", "null"], "minimum": 0},
+    "engine":          {"type": "string"},
+    "engine_version":  {"type": ["string", "null"]},
+    "psm":             {"type": ["integer", "null"]},
+    "ocr_status":      {"type": "string", "enum": ["ok", "empty", "failed"]},
+    "ocr_error":       {"type": ["string", "null"]},
+    "bbox_x":          {"type": ["integer", "null"]},
+    "bbox_y":          {"type": ["integer", "null"]},
+    "bbox_w":          {"type": ["integer", "null"]},
+    "bbox_h":          {"type": ["integer", "null"]},
+    "observed_at":     {"type": "string"}
+  },
+  "additionalProperties": true
+}

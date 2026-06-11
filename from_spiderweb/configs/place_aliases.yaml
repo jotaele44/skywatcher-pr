@@ -1,0 +1,52 @@
+version: rlsm_place_aliases_v0_1
+places:
+  - canonical_id: place_airport_sju_tjsj
+    canonical_name: Luis Muñoz Marín International Airport
+    type: airport
+    visibility: V3
+    aliases: [SJU, TJSJ, LMM, Luis Munoz Marin, Luis Muñoz Marín, San Juan airport, Isla Verde airport, Carolina airport]
+  - canonical_id: place_airport_sig_tjig
+    canonical_name: Fernando Luis Ribas Dominicci Airport
+    type: airport
+    visibility: V3
+    aliases: [SIG, TJIG, Isla Grande, San Juan Isla Grande, Miramar airport, Ribas Dominicci]
+  - canonical_id: place_airport_bqn_tjbq
+    canonical_name: Rafael Hernández Airport / Ramey
+    type: airport
+    visibility: V3
+    aliases: [BQN, TJBQ, Aguadilla airport, Rafael Hernandez, Rafael Hernández, Ramey, Ramey AFB, Borinquen, former Ramey]
+  - canonical_id: place_airport_pse_tjps
+    canonical_name: Mercedita Airport
+    type: airport
+    visibility: V3
+    aliases: [PSE, TJPS, Ponce airport, Mercedita, Ponce base]
+  - canonical_id: place_airport_rvrd_ceiba
+    canonical_name: José Aponte de la Torre Airport / Roosevelt Roads
+    type: airport
+    visibility: V3
+    aliases: [Ceiba airport, TJRV, NRR, Roosevelt Roads, former Roosevelt Roads, Jose Aponte de la Torre]
+  - canonical_id: place_airport_vqs_tjvq
+    canonical_name: Antonio Rivera Rodríguez Airport
+    type: airport
+    visibility: V3
+    aliases: [VQS, TJVQ, Vieques airport, Antonio Rivera Rodriguez]
+  - canonical_id: place_airport_cpx_tjcp
+    canonical_name: Benjamín Rivera Noriega Airport
+    type: airport
+    visibility: V3
+    aliases: [CPX, TJCP, Culebra airport, Benjamin Rivera Noriega]
+  - canonical_id: place_airport_maz_tjmz
+    canonical_name: Eugenio María de Hostos Airport
+    type: airport
+    visibility: V3
+    aliases: [MAZ, TJMZ, Mayaguez airport, Mayagüez airport, Eugenio Maria de Hostos]
+  - canonical_id: place_metro_san_juan
+    canonical_name: San Juan Metro Area
+    type: municipality_cluster
+    visibility: V2
+    aliases: [San Juan, Guaynabo, Bayamon, Bayamón, Carolina, Cataño, Catano, metro, metro area]
+  - canonical_id: place_ramey_borinquen_complex
+    canonical_name: Ramey / Borinquen Complex
+    type: operational_area
+    visibility: V2
+    aliases: [Ramey, Borinquen, Aguadilla base, BQN complex, USCG Borinquen]

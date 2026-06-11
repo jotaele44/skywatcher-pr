@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "flight_track_features",
+  "type": "object",
+  "description": "Single row from outputs/flight_track_features.csv. Track-shape descriptors per screenshot. Currently empty (deferred — no extractor yet; see Workstream B follow-up in docs/NEXT_100_TASKS.md).",
+  "required": ["track_feat_id", "screenshot_id"],
+  "properties": {
+    "track_feat_id":   {"type": ["integer", "string"]},
+    "screenshot_id":   {"type": ["integer", "string"]},
+    "filename":        {"type": ["string", "null"]},
+    "path_shape":      {
+      "type": ["string", "null"],
+      "enum": ["linear", "curve", "loop", "orbit", "hover", "gap", "multi", "absent", null]
+    },
+    "has_loop":        {"type": ["integer", "null"], "minimum": 0, "maximum": 1},
+    "has_orbit":       {"type": ["integer", "null"], "minimum": 0, "maximum": 1},
+    "has_hover":       {"type": ["integer", "null"], "minimum": 0, "maximum": 1},
+    "has_gap":         {"type": ["integer", "null"], "minimum": 0, "maximum": 1},
+    "follows_coast":   {"type": ["integer", "null"], "minimum": 0, "maximum": 1},
+    "near_airport":    {"type": ["integer", "null"], "minimum": 0, "maximum": 1},
+    "track_length_px": {"type": ["number", "null"], "minimum": 0},
+    "bbox_x":          {"type": ["integer", "null"]},
+    "bbox_y":          {"type": ["integer", "null"]},
+    "bbox_w":          {"type": ["integer", "null"]},
+    "bbox_h":          {"type": ["integer", "null"]},
+    "confidence":      {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "observed_at":     {"type": "string"}
+  },
+  "additionalProperties": true
+}

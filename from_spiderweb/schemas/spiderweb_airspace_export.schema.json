@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "spiderweb_airspace_export",
+  "title": "Spiderweb Airspace Export Manifest",
+  "description": "Top-level manifest for a federation export package produced by spiderweb-pr. Lists the four record streams (events, observations, tracks, sources) and stamps producer metadata required by downstream federation consumers.",
+  "type": "object",
+  "required": [
+    "package_id",
+    "producer_id",
+    "producer_version",
+    "schema_version",
+    "generated_at",
+    "mode",
+    "time_range",
+    "files"
+  ],
+  "properties": {
+    "package_id": {
+      "type": "string",
+      "minLength": 16,
+      "description": "Deterministic sha256 (lowercase hex) over the manifest body excluding this field."
+    },
+    "producer_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier of the producer (e.g. 'spiderweb-pr')."
+    },
+    "producer_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Semantic or git-revision version of the producer at build time."
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Federation export contract version (MAJOR.MINOR)."
+    },
+    "generated_at": {
+      "type": "string",
+      "minLength": 20,
+      "description": "RFC3339 / ISO-8601 timestamp with timezone (UTC recommended)."
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["test", "production"],
+      "description": "test allows synthetic rows; production rejects them."
+    },
+    "time_range": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": {"type": "string", "minLength": 20},
+        "end":   {"type": "string", "minLength": 20}
+      },
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["filename", "stream", "record_count", "sha256", "schema_id"],
+        "properties": {
+          "filename":     {"type": "string", "minLength": 1},
+          "stream":       {"type": "string", "enum": ["events", "observations", "tracks", "sources"]},
+          "record_count": {"type": "integer", "minimum": 0},
+          "sha256":       {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "schema_id":    {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "notes": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}

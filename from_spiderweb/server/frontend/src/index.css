@@ -1,0 +1,69 @@
+/*
+ * Basic styling for the PRIIS workbench layout. A real application
+ * would import a design system or CSS framework. These rules keep
+ * things readable and separate the main UI regions: command bar,
+ * sidebar, workspace, and inspector.
+ */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.command-bar {
+  background: #1f2937;
+  color: white;
+  padding: 0.75rem 1rem;
+  font-size: 1.25rem;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 200px;
+  background: #f9fafb;
+  border-right: 1px solid #e5e7eb;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.workspace {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.inspector {
+  width: 250px;
+  border-left: 1px solid #e5e7eb;
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th,
+td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+tr:nth-child(even) {
+  background-color: #f3f4f6;
+}

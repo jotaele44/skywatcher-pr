@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "mission_inference",
+  "type": "object",
+  "required": ["flight_id", "mission_type", "total_score"],
+  "properties": {
+    "flight_id":        {"type": "string", "minLength": 1},
+    "mission_type":     {"type": "string", "minLength": 1},
+    "total_score":      {"type": "number", "minimum": 0, "maximum": 1},
+    "confidence_level": {"type": ["string", "null"], "enum": ["HIGH", "MEDIUM", "LOW", null]},
+    "signal_scores":    {"type": ["string", "null"]},
+    "explanation":      {"type": ["string", "null"]},
+    "scored_at":        {"type": ["string", "null"]}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aircraft_observations",
+  "type": "object",
+  "description": "Single row from outputs/aircraft_observations.csv. Aircraft metadata extracted from OCR (primary path) or raw-text rescue scan (recovered tier).",
+  "required": ["aircraft_obs_id", "screenshot_id", "identity_status", "observed_at"],
+  "properties": {
+    "aircraft_obs_id": {"type": ["integer", "string"]},
+    "screenshot_id":   {"type": ["integer", "string"]},
+    "filename":        {"type": ["string", "null"]},
+    "filename_ts":     {"type": ["string", "null"]},
+    "registration":    {"type": ["string", "null"], "description": "FAA-style N-number, Canadian C-XXXX, or ICAO XX-XXX."},
+    "callsign":        {"type": ["string", "null"]},
+    "aircraft_type":   {"type": ["string", "null"]},
+    "altitude_ft":     {"type": ["integer", "null"], "minimum": 0},
+    "speed_kt":        {"type": ["integer", "null"], "minimum": 0},
+    "heading_deg":     {"type": ["integer", "null"], "minimum": 0, "maximum": 360},
+    "operator_text":   {"type": ["string", "null"]},
+    "identity_status": {
+      "type": "string",
+      "enum": ["confirmed", "partial", "conflicting", "unknown", "recovered"],
+      "description": "5 valid values — see docs/SCHEMA_AND_EXPORT_CONTRACTS.md. 'recovered' = registration discovered by raw-text scan after primary extraction."
+    },
+    "confidence":      {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "source_zone":     {"type": ["string", "null"]},
+    "raw_excerpt":     {"type": ["string", "null"]},
+    "observed_at":     {"type": "string"}
+  },
+  "additionalProperties": true
+}

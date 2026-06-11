@@ -1,0 +1,15 @@
+# Puerto Rico Airspace Intelligence System
+# Dependencies are defined as the `airspace` extra in pyproject.toml.
+#
+#   pip install -r requirements-airspace.txt
+#   pip install -c constraints.txt -r requirements-airspace.txt   # exact pins
+#
+# System prerequisite (not pip-installable):
+#   Ubuntu:  sudo apt-get install tesseract-ocr
+#   macOS:   brew install tesseract
+#
+# Optional Phase-1 ensemble OCR engines (large downloads) are intentionally not
+# pinned here; install on demand:
+#   pip install "paddlepaddle>=2.6" "paddleocr>=2.7"
+#   pip install "torch>=2.0" "easyocr>=1.7"
+-e .[airspace]

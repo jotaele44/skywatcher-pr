@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<!--
+  Puerto Rico Airspace Intelligence Dashboard
+  ============================================
+  Standalone browser dashboard — no build step required.
+
+  Usage:
+    1. Export a DB snapshot:
+         python run_all.py --db ~/flight_database.db --export-json dashboard_data.json
+
+    2. Open this file in a browser:
+         open dashboard.html          # macOS
+         xdg-open dashboard.html      # Linux
+         # or serve with: python -m http.server 8080
+
+  The page loads dashboard_data.json plus optional FR24 and Contract-Finance
+  exports from ../outputs/ via fetch(). Optional layers degrade gracefully.
+  If served from a local file:// URL, use --allow-file-access-from-files (Chrome)
+  or simply run the python http.server one-liner above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Puerto Rico Airspace Intelligence</title>
+
+  <!-- Tailwind CSS (CDN, v3) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React 18 (CDN) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel standalone (transpiles JSX in the browser) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body { margin: 0; }
+    #loading {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; font-family: sans-serif; color: #6b7280; font-size: 14px;
+    }
+    .source-status-panel {
+      position: fixed; right: 16px; bottom: 16px; z-index: 40;
+      width: min(420px, calc(100vw - 32px)); max-height: 42vh; overflow: auto;
+      font-family: sans-serif; font-size: 12px; background: rgba(255,255,255,.97);
+      border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 20px 40px rgba(15,23,42,.18);
+    }
+    .source-status-panel summary { cursor: pointer; padding: 10px 12px; font-weight: 700; color: #111827; }
+    .source-status-panel table { width: 100%; border-collapse: collapse; }
+    .source-status-panel td { border-top: 1px solid #f3f4f6; padding: 7px 10px; vertical-align: top; }
+    .source-status-panel code { background: #f3f4f6; border-radius: 4px; padding: 1px 4px; }
+    .source-status-ok { color: #047857; font-weight: 700; }
+    .source-status-missing { color: #92400e; font-weight: 700; }
+    .source-status-error { color: #b91c1c; font-weight: 700; }
+    .source-status-blocked { color: #b91c1c; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div id="loading">Loading flight data…</div>
+  <div id="root" style="display:none"></div>
+  <div id="contract-finance-root"></div>
+  <div id="source-status-panel" class="source-status-panel" style="display:none"></div>
+
+  <script>
+    // Fetch the JSON export(s), validate the required dashboard contract,
+    // inject into window.*, then mount the app. Optional layers degrade gracefully.
+    const DASHBOARD_SOURCES = [
+      {
+        key: "flight",
+        label: "dashboard_data.json",
+        url: "../outputs/dashboard_data.json",
+        required: true,
+        requiredArrays: ["flights", "aircraft_profiles", "alerts", "anomalies"],
+      },
+      {
+        key: "fr24",
+        label: "fr24_dashboard_review_queue.json",
+        url: "../outputs/fr24_dashboard_review_queue.json",
+        required: false,
+      },
+      {
+        key: "contractReport",
+        label: "contract_finance_layer_report.json",
+        url: "../outputs/contract_finance_layer_report.json",
+        required: false,
+      },
+      {
+        key: "contractOverlay",
+        label: "contract_finance_scored_overlay.geojson",
+        url: "../outputs/contract_finance_scored_overlay.geojson",
+        required: false,
+      },
+    ];
+
+    const escapeHtml = (value) => String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+    const fetchJsonSource = (source) =>
+      fetch(source.url)
+        .then(r => {
+          if (!r.ok) throw new Error(`${source.url}: HTTP ${r.status}`);
+          return r.json();
+        })
+        .then(value => ({ source, status: "loaded", value }))
+        .catch(error => ({
+          source,
+          status: source.required ? "error" : "missing",
+          error: error && error.message ? error.message : String(error),
+        }));
+
+    const validateRequiredDashboard = (data) => {
+      const errors = [];
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        return ["dashboard_data.json must be a JSON object"];
+      }
+      DASHBOARD_SOURCES[0].requiredArrays.forEach(key => {
+        if (!Array.isArray(data[key])) {
+          errors.push(`dashboard_data.json missing required array: ${key}`);
+        }
+      });
+      return errors;
+    };
+
+    const countRows = (value) => {
+      if (!value || typeof value !== "object") return "—";
+      if (Array.isArray(value.rows)) return value.rows.length.toLocaleString();
+      if (Array.isArray(value.features)) return value.features.length.toLocaleString();
+      if (Array.isArray(value.flights)) return value.flights.length.toLocaleString();
+      if (typeof value.row_count === "number") return value.row_count.toLocaleString();
+      return "loaded";
+    };
+
+    const sourceRows = (results, validationErrors) => results.map(result => {
+      const base = {
+        key: result.source.key,
+        label: result.source.label,
+        url: result.source.url,
+        required: result.source.required,
+        status: result.status,
+        detail: result.error || "loaded",
+        rows: result.status === "loaded" ? countRows(result.value) : "—",
+      };
+      if (result.source.key === "flight" && validationErrors.length > 0) {
+        return { ...base, status: "blocked", detail: validationErrors.join("; ") };
+      }
+      return base;
+    });
+
+    const renderSourceStatus = (contract) => {
+      const el = document.getElementById("source-status-panel");
+      const mode = contract.mode === "ready" ? "ready" : contract.mode === "degraded" ? "degraded" : "blocked";
+      el.innerHTML = `
+        <details open>
+          <summary>Source status · ${escapeHtml(mode)}</summary>
+          <table>
+            <tbody>
+              ${contract.sources.map(s => `
+                <tr>
+                  <td><code>${escapeHtml(s.label)}</code><br/><span>${s.required ? "required" : "optional"}</span></td>
+                  <td class="source-status-${escapeHtml(s.status)}">${escapeHtml(s.status)}</td>
+                  <td>${escapeHtml(s.rows)}<br/><span>${escapeHtml(s.detail)}</span></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </details>`;
+      el.style.display = "";
+    };
+
+    const renderLoadFailure = (message, validationErrors = []) => {
+      const validationBlock = validationErrors.length > 0
+        ? `<p style="margin-top:8px;font-size:12px;color:#b91c1c">${escapeHtml(validationErrors.join("; "))}</p>`
+        : "";
+      document.getElementById("loading").innerHTML =
+        `<div style="text-align:center;max-width:680px;padding:24px">
+          <p style="color:#dc2626;font-weight:700">Could not load valid dashboard_data.json</p>
+          <p style="margin-top:8px;font-size:12px">${escapeHtml(message)}</p>
+          ${validationBlock}
+          <p style="margin-top:12px;font-size:12px">
+            Generate it with:<br/>
+            <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px">
+              python run_all.py --db ~/flight_database.db --export-json dashboard_data.json
+            </code>
+          </p>
+          <p style="margin-top:8px;font-size:12px">Then serve this directory:<br/>
+            <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px">python -m http.server 8080</code>
+          </p>
+        </div>`;
+    };
+
+    Promise.all(DASHBOARD_SOURCES.map(fetchJsonSource)).then(results => {
+      const byKey = Object.fromEntries(results.map(r => [r.source.key, r]));
+      const flight = byKey.flight;
+      const validationErrors = flight.status === "loaded" ? validateRequiredDashboard(flight.value) : [];
+      const sources = sourceRows(results, validationErrors);
+      const optionalMissing = sources.filter(s => !s.required && s.status !== "loaded");
+      const requiredBlocked = sources.filter(s => s.required && s.status !== "loaded");
+      const mode = requiredBlocked.length || validationErrors.length
+        ? "blocked"
+        : optionalMissing.length
+          ? "degraded"
+          : "ready";
+
+      window.dashboardLoadContract = {
+        mode,
+        generated_at: new Date().toISOString(),
+        required_outputs: ["dashboard_data.json"],
+        optional_outputs: DASHBOARD_SOURCES.filter(s => !s.required).map(s => s.label),
+        sources,
+        validation_errors: validationErrors,
+      };
+      renderSourceStatus(window.dashboardLoadContract);
+
+      if (mode === "blocked") {
+        const err = flight.error || "dashboard_data.json failed load-contract validation";
+        renderLoadFailure(err, validationErrors);
+        return;
+      }
+
+      window.flightData = flight.value;
+      window.fr24DashboardData = byKey.fr24.status === "loaded" ? byKey.fr24.value : null;
+      window.contractFinanceDashboardData =
+        byKey.contractReport.status === "loaded" && byKey.contractOverlay.status === "loaded"
+          ? { report: byKey.contractReport.value, overlay: byKey.contractOverlay.value }
+          : null;
+
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("root").style.display = "";
+      window.dispatchEvent(new CustomEvent("dashboardDataLoaded", { detail: window.dashboardLoadContract }));
+    }).catch(err => {
+      window.dashboardLoadContract = {
+        mode: "blocked",
+        generated_at: new Date().toISOString(),
+        required_outputs: ["dashboard_data.json"],
+        optional_outputs: [],
+        sources: [],
+        validation_errors: [err && err.message ? err.message : String(err)],
+      };
+      renderSourceStatus(window.dashboardLoadContract);
+      renderLoadFailure(err && err.message ? err.message : String(err));
+    });
+  </script>
+
+  <!-- Load dashboard.jsx via Babel (transpiled at runtime) -->
+  <script type="text/babel" src="dashboard.jsx" data-type="module"></script>
+
+  <!-- Optional Contract-Finance layer toggle. -->
+  <script type="text/babel" src="dashboard_contract_finance.jsx" data-type="module"></script>
+</body>
+</html>

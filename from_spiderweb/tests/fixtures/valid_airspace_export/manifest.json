@@ -1,0 +1,43 @@
+{
+  "files": [
+    {
+      "filename": "airspace_events.jsonl",
+      "record_count": 3,
+      "schema_id": "spiderweb_event",
+      "sha256": "0041da7f45d7256fb6975799a8b5d02e583a66bdcf34dd6f717f45c0483f81d6",
+      "stream": "events"
+    },
+    {
+      "filename": "observations.jsonl",
+      "record_count": 3,
+      "schema_id": "spiderweb_observation",
+      "sha256": "43fbb5f58accaf733d9842354ff6098d3711cc59093a5955e6d1cf416632dc7b",
+      "stream": "observations"
+    },
+    {
+      "filename": "tracks.jsonl",
+      "record_count": 2,
+      "schema_id": "spiderweb_track",
+      "sha256": "9750a8def033aae9e9d32763a6adbdf0e4759a0781c78d79d1f656ea9f1d3dda",
+      "stream": "tracks"
+    },
+    {
+      "filename": "sources.jsonl",
+      "record_count": 2,
+      "schema_id": "spiderweb_source",
+      "sha256": "73c3fc36e56d25dd1230a8fb5d03283896a09a51ed12c6b4479e508356e1631f",
+      "stream": "sources"
+    }
+  ],
+  "generated_at": "2026-05-28T00:00:00+00:00",
+  "mode": "test",
+  "notes": "Synthetic federation producer sample. Mode=test required; production mode will reject synthetic rows.",
+  "package_id": "92f33a2328b1a47000aef377a07206f7b75b502892936c9a1755fdee8961160e",
+  "producer_id": "spiderweb-pr",
+  "producer_version": "0.1.0",
+  "schema_version": "1.0",
+  "time_range": {
+    "end": "2024-03-15T13:00:00+00:00",
+    "start": "2024-03-15T08:00:00+00:00"
+  }
+}

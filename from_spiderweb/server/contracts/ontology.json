@@ -1,0 +1,22 @@
+{
+  "entities": [
+    "Agency",
+    "Vendor",
+    "Site",
+    "Contract",
+    "Source",
+    "Event",
+    "Anomaly",
+    "Finding",
+    "Investigation"
+  ],
+  "relationships": [
+    { "from": "Contract", "to": "Vendor", "type": "awarded_to" },
+    { "from": "Contract", "to": "Agency", "type": "issued_by" },
+    { "from": "Contract", "to": "Site", "type": "located_at" },
+    { "from": "Anomaly", "to": "Finding", "type": "has_finding" },
+    { "from": "Anomaly", "to": "Event", "type": "manifested_by" },
+    { "from": "Finding", "to": "Source", "type": "supported_by" },
+    { "from": "Investigation", "to": "Finding", "type": "contains" }
+  ]
+}

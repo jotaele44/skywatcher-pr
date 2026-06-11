@@ -1,0 +1,24 @@
+{
+  "tiers": [
+    {
+      "id": 1,
+      "label": "T1",
+      "description": "Technical evidence such as satellite imagery, sensor logs, or official datasets."
+    },
+    {
+      "id": 2,
+      "label": "T2",
+      "description": "Operational evidence such as contracts, permits, procurement records."
+    },
+    {
+      "id": 3,
+      "label": "T3",
+      "description": "Eyewitness evidence such as testimony or field reports."
+    },
+    {
+      "id": 4,
+      "label": "T4",
+      "description": "Secondary evidence such as news articles or social media posts."
+    }
+  ]
+}

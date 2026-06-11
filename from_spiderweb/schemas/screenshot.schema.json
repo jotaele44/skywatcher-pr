@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "screenshot",
+  "type": "object",
+  "required": ["screenshot_id", "image_path", "processed_at"],
+  "properties": {
+    "screenshot_id":          {"type": "string", "minLength": 1},
+    "image_path":             {"type": "string"},
+    "flight_id":              {"type": ["string", "null"]},
+    "processed_at":           {"type": "string"},
+    "callsign":               {"type": ["string", "null"]},
+    "altitude_ft":            {"type": ["integer", "null"]},
+    "ground_speed_mph":       {"type": ["integer", "null"]},
+    "latitude":               {"type": ["number", "null"], "minimum": -90, "maximum": 90},
+    "longitude":              {"type": ["number", "null"], "minimum": -180, "maximum": 180},
+    "timestamp":              {"type": ["string", "null"]},
+    "raw_text":               {"type": ["string", "null"]},
+    "ocr_confidence":         {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "sha256":                 {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$|^$"},
+    "coordinate_method":      {"type": ["string", "null"], "enum": ["fixed_pr_bounds", "airport_anchor", "manual_anchor_csv", null]},
+    "coordinate_confidence":  {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "estimated_error_m":      {"type": ["number", "null"], "minimum": 0},
+    "review_status":          {"type": ["string", "null"], "enum": ["pending", "reviewed", "flagged", "approved", null]}
+  },
+  "additionalProperties": true
+}

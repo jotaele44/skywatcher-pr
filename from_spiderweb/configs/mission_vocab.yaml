@@ -1,0 +1,30 @@
+version: rlsm_mission_vocab_v0_1
+mission_enums:
+  TOURISM:
+    aliases: [tour, scenic, coastal tour, tourism loop, BlueBoy loop]
+  FERRY:
+    aliases: [ferry, reposition, transfer, relocation, long ferry, cross-island transfer]
+  SHUTTLE:
+    aliases: [shuttle, terminal transfer, airport transfer, LMM-SIG, SJU-SIG]
+  UTILITY_INSPECTION:
+    aliases: [grid inspection, powerline inspection, line patrol, utility survey, tower-to-tower]
+  HYDRO_SURVEY:
+    aliases: [hydro run, reservoir pass, dam inspection, water corridor, aquifer corridor]
+  MARITIME_PATROL:
+    aliases: [offshore grid, coastal patrol, USCG patrol, maritime SAR]
+  SAR_TRAINING:
+    aliases: [SAR pattern, search grid, rescue drill, triangular grid, training]
+  ISR_LIKE:
+    aliases: [ISR, recon, sensor pass, mapping loop, surveillance-like, loiter]
+  LAW_ENFORCEMENT:
+    aliases: [police, FURA, patrol, pursuit, public safety]
+  MEDEVAC:
+    aliases: [medical, hospital, emergency transport, ambulance helicopter]
+  PRIVATE_CHARTER:
+    aliases: [private, corporate, business charter, VIP transfer]
+  DISASTER_RESPONSE:
+    aliases: [FEMA, emergency response, post-storm, recovery flight]
+  UNKNOWN:
+    aliases: [unknown, masked, unclassified, insufficient data]
+  PATTERN_BREAK:
+    aliases: [unusual deviation, route break, off-pattern, drift, anomaly]

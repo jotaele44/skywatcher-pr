@@ -1,0 +1,296 @@
+version: rlsm_lz_registry_v0_2
+lz_classes:
+- lz_class: FORMAL_HELIPAD
+  aliases:
+  - helipad
+  - heliport
+  - marked pad
+- lz_class: HOSPITAL_LZ
+  aliases:
+  - hospital pad
+  - medevac pad
+  - Centro Médico pad
+  - emergency pad
+  - rooftop hospital pad
+- lz_class: UTILITY_LZ
+  aliases:
+  - utility pad
+  - powerline LZ
+  - substation pad
+  - PREPA staging
+  - LUMA staging
+- lz_class: INDUSTRIAL_LZ
+  aliases:
+  - industrial pad
+  - plant pad
+  - refinery pad
+  - port pad
+- lz_class: RESERVOIR_LZ
+  aliases:
+  - dam pad
+  - reservoir service pad
+  - intake access
+  - spillway pad
+- lz_class: CONSTRUCTION_LZ
+  aliases:
+  - construction staging
+  - work pad
+  - cleared lot
+  - machinery pad
+- lz_class: FIELD_LZ
+  aliases:
+  - open field
+  - pasture
+  - sports field
+  - agricultural field
+- lz_class: ROAD_LZ
+  aliases:
+  - road shoulder
+  - service road
+  - dead-end road
+  - access spur
+- lz_class: COASTAL_LZ
+  aliases:
+  - beach landing
+  - coast pad
+  - marina pad
+  - waterfront LZ
+- lz_class: ROOFTOP_LZ
+  aliases:
+  - rooftop pad
+  - roof landing
+- lz_class: IMPROVISED_LZ
+  aliases:
+  - unmarked LZ
+  - temporary LZ
+  - suspected landing site
+- lz_class: BLACKOUT_LZ_CANDIDATE
+  aliases:
+  - track-loss landing candidate
+  - ADS-B gap LZ
+  - shadow landing candidate
+known_lz_candidates:
+- lz_id: lz_candidate_bqn_ramey_blackout
+  canonical_name: BQN / Ramey recurring blackout landing candidate
+  lz_class: BLACKOUT_LZ_CANDIDATE
+  airport_id: airport_bqn_tjbq
+  visibility: V2
+  evidence_tier: T2
+  status: candidate
+- lz_id: lz_candidate_sig_sju_shuttle_terminal
+  canonical_name: SJU-SIG shuttle endpoint candidate
+  lz_class: FORMAL_HELIPAD
+  airport_id: airport_sig_tjig
+  visibility: V2
+  evidence_tier: T2
+  status: candidate
+- lz_id: lz_luis_muñoz_marín
+  canonical_name: Luis Muñoz Marín
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.4394
+  lon: -66.0012
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_sig
+  canonical_name: SIG
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.45667
+  lon: -66.09833
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_ramey_afb__bqn
+  canonical_name: Ramey AFB (BQN)
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.4949
+  lon: -67.1294
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_roosevelt_roads__rrn
+  canonical_name: Roosevelt Roads (RRN)
+  lz_class: ROAD_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.23575
+  lon: -65.6565
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_eugenio_maría_de_hostos
+  canonical_name: Eugenio María de Hostos
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.25575
+  lon: -67.14875
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_mercedita
+  canonical_name: Mercedita
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.013
+  lon: -66.563
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_nery
+  canonical_name: Nery
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.4509
+  lon: -66.6754
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_diego_jimenez_torres__faj
+  canonical_name: Diego Jimenez Torres (FAJ)
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.3089
+  lon: -65.6617
+  visibility: V3
+  evidence_tier: T3
+  status: historic
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: historic_inactive
+- lz_id: lz_humacao
+  canonical_name: Humacao
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.1362
+  lon: -65.8005
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_ft__allen
+  canonical_name: Ft. Allen
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.0084
+  lon: -66.5067
+  visibility: V3
+  evidence_tier: T3
+  status: historic
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: historic_inactive
+- lz_id: lz_sabana_seca_airstrip
+  canonical_name: Sabana Seca Airstrip
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.42917
+  lon: -66.2
+  visibility: V3
+  evidence_tier: T3
+  status: historic
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: historic_inactive
+- lz_id: lz_boquerón
+  canonical_name: Boquerón
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.00767
+  lon: -67.1405
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_cuylers
+  canonical_name: Cuylers
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.453333
+  lon: -66.366944
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_santa_isabel
+  canonical_name: Santa Isabel
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 17.9632
+  lon: -66.3912
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_lajas_airstrip
+  canonical_name: Lajas Airstrip
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.0125
+  lon: -67.075
+  visibility: V3
+  evidence_tier: T2
+  status: verified_active
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: active_verified
+- lz_id: lz_tortuguero_airstrip
+  canonical_name: Tortuguero Airstrip
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.48
+  lon: -66.43
+  visibility: V3
+  evidence_tier: T3
+  status: historic
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: historic_inactive
+- lz_id: lz_san_sebastián
+  canonical_name: San Sebastián
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.3366
+  lon: -66.9902
+  visibility: V3
+  evidence_tier: T3
+  status: candidate
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: candidate
+- lz_id: lz_puerto_del_rey_helipad
+  canonical_name: Puerto del Rey Helipad
+  lz_class: FORMAL_HELIPAD
+  lz_class_method: keyword_inference_from_name
+  lat: 18.286394
+  lon: -65.635521
+  visibility: V3
+  evidence_tier: T3
+  status: candidate
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: candidate
+- lz_id: lz_helipuerto_cuerpo_de_bomberos
+  canonical_name: Helipuerto Cuerpo de Bomberos
+  lz_class: IMPROVISED_LZ
+  lz_class_method: keyword_inference_from_name
+  lat: 18.424719
+  lon: -66.468243
+  visibility: V3
+  evidence_tier: T3
+  status: candidate
+  source_file: PR_Landing_Zones_Master.gpkg
+  source_layer_status: candidate
+populated_at: '2026-06-11T17:46:02Z'

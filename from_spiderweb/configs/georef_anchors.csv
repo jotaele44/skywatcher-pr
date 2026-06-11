@@ -1,0 +1,6 @@
+anchor_id,name,pixel_x_fraction,pixel_y_fraction,lat,lon,notes
+SJU,Luis Munoz Marin International Airport,0.72,0.42,18.4373,-66.0018,Primary San Juan airport; well-defined on FR24 PR view
+BQN,Rafael Hernandez Airport,0.18,0.28,18.4948,-67.1294,Northwest PR; Aguadilla
+PSE,Mercedita Airport,0.45,0.72,18.0083,-66.5632,Southwest PR; Ponce
+SIG,Fernando Luis Ribas Dominicci Airport,0.70,0.40,18.4561,-66.0978,San Juan harbor seaplane base
+PR_CENTROID,Puerto Rico Geographic Centroid,0.50,0.50,18.2208,-66.5901,Approximate island centroid for fallback anchor

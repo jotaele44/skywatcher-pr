@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aasb_export",
+  "title": "AASB Airport-Node Edge Export",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "edges"],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^\\d+\\.\\d+$"},
+    "generated_at":   {"type": "string", "minLength": 1},
+    "source_db":      {"type": ["string", "null"]},
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["airport_code", "node_id", "edge_weight"],
+        "properties": {
+          "airport_code":  {"type": "string", "minLength": 1},
+          "node_id":       {"type": "string", "minLength": 1},
+          "edge_weight":   {"type": "number", "minimum": 0},
+          "edge_type":     {"type": ["string", "null"]},
+          "distance_nm":   {"type": ["number", "null"], "minimum": 0},
+          "flight_count":  {"type": ["integer", "null"], "minimum": 0}
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

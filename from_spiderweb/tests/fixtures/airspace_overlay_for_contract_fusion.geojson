@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-66.614, 18.011]},
+      "properties": {
+        "candidate_type": "ilap",
+        "confidence": 0.62,
+        "municipality_code": "72113",
+        "municipality_name": "Ponce",
+        "evidence_tier": "T2"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-65.3, 18.5]},
+      "properties": {
+        "candidate_type": "poi",
+        "confidence": 0.20,
+        "evidence_tier": "T4"
+      }
+    }
+  ]
+}

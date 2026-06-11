@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rlsm_failed_files",
+  "type": "object",
+  "description": "Single row from outputs/rlsm_failed_files.csv. One row per ingest-failed file (ingest_status != 'ok').",
+  "required": ["screenshot_id", "filename", "rel_path", "ingest_status"],
+  "properties": {
+    "screenshot_id": {"type": ["integer", "string"]},
+    "filename":      {"type": "string"},
+    "rel_path":      {"type": "string"},
+    "ingest_status": {"type": "string", "enum": ["corrupt", "unreadable"]},
+    "ingest_error":  {"type": ["string", "null"]}
+  },
+  "additionalProperties": true
+}

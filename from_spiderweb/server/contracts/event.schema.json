@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "event.schema.json",
+  "title": "Event",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "site_id": { "type": "string" },
+    "name": { "type": "string" },
+    "event_timestamp": { "$ref": "common.defs.schema.json#/definitions/Timestamp" },
+    "description": { "type": ["string", "null"] }
+  },
+  "required": ["id", "site_id", "name", "event_timestamp"]
+}

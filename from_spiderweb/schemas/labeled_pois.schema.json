@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "labeled_pois",
+  "type": "object",
+  "description": "Single row from outputs/labeled_pois.csv. Text labels found on the map layer, deduped per screenshot.",
+  "required": ["poi_id", "screenshot_id", "raw_label"],
+  "properties": {
+    "poi_id":           {"type": ["integer", "string"]},
+    "screenshot_id":    {"type": ["integer", "string"]},
+    "filename":         {"type": ["string", "null"]},
+    "raw_label":        {"type": "string"},
+    "normalized_label": {"type": ["string", "null"]},
+    "bbox_x":           {"type": ["integer", "null"]},
+    "bbox_y":           {"type": ["integer", "null"]},
+    "bbox_w":           {"type": ["integer", "null"]},
+    "bbox_h":           {"type": ["integer", "null"]},
+    "centroid_x":       {"type": ["integer", "null"]},
+    "centroid_y":       {"type": ["integer", "null"]},
+    "poi_type_guess":   {"type": ["string", "null"], "enum": ["city", "airport", "water", "mountain", "highway", "neighborhood", "unknown", null]},
+    "confidence":       {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "review_status":    {"type": ["string", "null"], "enum": ["unreviewed", "reviewing", "approved", "rejected", null]},
+    "observed_at":      {"type": "string"}
+  },
+  "additionalProperties": true
+}

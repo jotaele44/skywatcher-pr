@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "operational_alert",
+  "title": "Operational Alert",
+  "type": "object",
+  "required": ["alert_id", "flight_id", "callsign", "category", "severity",
+               "title", "description", "evidence", "timestamp", "recommended_action"],
+  "properties": {
+    "alert_id":           {"type": "string", "minLength": 1},
+    "flight_id":          {"type": "string", "minLength": 1},
+    "callsign":           {"type": "string", "minLength": 1},
+    "category":           {
+      "type": "string",
+      "enum": [
+        "Restricted Airspace Entry", "Unusual Flight Behavior",
+        "Critical Infrastructure Proximity", "Unknown/Unidentified Aircraft",
+        "Temporal Anomaly (Physics Violation)", "Pattern Deviation from Historical Norm",
+        "Extended Operation (Possible Emergency)", "Previously Unseen Aircraft",
+        "Night Operation (Non-Emergency Operator)", "Behavioral Cluster Deviation"
+      ]
+    },
+    "severity":           {"type": "string", "enum": ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]},
+    "title":              {"type": "string", "minLength": 1},
+    "description":        {"type": "string", "minLength": 1},
+    "evidence":           {"type": "array", "items": {"type": "string"}},
+    "timestamp":          {"type": "string", "minLength": 1},
+    "recommended_action": {"type": "string", "minLength": 1},
+    "auto_resolved":      {"type": "boolean"},
+    "escalation_count":   {"type": ["integer", "null"], "minimum": 0},
+    "auto_resolved_reason": {"type": ["string", "null"]}
+  },
+  "additionalProperties": true
+}

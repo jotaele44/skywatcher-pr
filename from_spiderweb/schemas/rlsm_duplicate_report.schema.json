@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rlsm_duplicate_report",
+  "type": "object",
+  "description": "Single row from outputs/rlsm_duplicate_report.csv. Lists each screenshot belonging to an exact-SHA dup group.",
+  "required": ["dup_group_id", "group_size", "sha256", "filename", "rel_path"],
+  "properties": {
+    "dup_group_id": {"type": ["integer", "string"]},
+    "group_size":   {"type": "integer", "minimum": 2},
+    "sha256":       {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "filename":     {"type": "string"},
+    "rel_path":     {"type": "string"}
+  },
+  "additionalProperties": true
+}

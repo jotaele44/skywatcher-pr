@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "contract.schema.json",
+  "title": "Contract",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "contract_id": { "type": "string" },
+    "vendor_id": { "type": "string" },
+    "agency_id": { "type": "string" },
+    "amount": { "type": "number" },
+    "start_date": { "$ref": "common.defs.schema.json#/definitions/Date" },
+    "end_date": { "$ref": "common.defs.schema.json#/definitions/Date" },
+    "description": { "type": ["string", "null"] }
+  },
+  "required": ["contract_id", "vendor_id", "agency_id", "amount", "start_date", "end_date"]
+}

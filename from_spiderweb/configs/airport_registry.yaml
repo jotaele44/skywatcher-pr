@@ -1,0 +1,66 @@
+version: rlsm_airport_registry_v0_1
+airports:
+  - airport_id: airport_sju_tjsj
+    canonical_name: Luis Muñoz Marín International Airport
+    iata: SJU
+    icao: TJSJ
+    municipality: Carolina
+    lat: 18.4394
+    lon: -66.0018
+    aliases: [SJU, TJSJ, LMM, Luis Munoz Marin, Luis Muñoz Marín, San Juan airport]
+  - airport_id: airport_sig_tjig
+    canonical_name: Fernando Luis Ribas Dominicci Airport
+    iata: SIG
+    icao: TJIG
+    municipality: San Juan
+    lat: 18.4568
+    lon: -66.0981
+    aliases: [SIG, TJIG, Isla Grande, Ribas Dominicci, Miramar airport]
+  - airport_id: airport_bqn_tjbq
+    canonical_name: Rafael Hernández Airport / Ramey
+    iata: BQN
+    icao: TJBQ
+    municipality: Aguadilla
+    lat: 18.4949
+    lon: -67.1294
+    aliases: [BQN, TJBQ, Aguadilla airport, Rafael Hernandez, Ramey, Borinquen]
+  - airport_id: airport_pse_tjps
+    canonical_name: Mercedita Airport
+    iata: PSE
+    icao: TJPS
+    municipality: Ponce
+    lat: 18.0083
+    lon: -66.5630
+    aliases: [PSE, TJPS, Ponce airport, Mercedita]
+  - airport_id: airport_rvrd_tjrv
+    canonical_name: José Aponte de la Torre Airport / Roosevelt Roads
+    iata: null
+    icao: TJRV
+    municipality: Ceiba
+    lat: 18.2453
+    lon: -65.6434
+    aliases: [TJRV, Ceiba airport, Roosevelt Roads, former Roosevelt Roads]
+  - airport_id: airport_vqs_tjvq
+    canonical_name: Antonio Rivera Rodríguez Airport
+    iata: VQS
+    icao: TJVQ
+    municipality: Vieques
+    lat: 18.1348
+    lon: -65.4936
+    aliases: [VQS, TJVQ, Vieques airport]
+  - airport_id: airport_cpx_tjcp
+    canonical_name: Benjamín Rivera Noriega Airport
+    iata: CPX
+    icao: TJCP
+    municipality: Culebra
+    lat: 18.3133
+    lon: -65.3043
+    aliases: [CPX, TJCP, Culebra airport]
+  - airport_id: airport_maz_tjmz
+    canonical_name: Eugenio María de Hostos Airport
+    iata: MAZ
+    icao: TJMZ
+    municipality: Mayagüez
+    lat: 18.2557
+    lon: -67.1485
+    aliases: [MAZ, TJMZ, Mayaguez airport, Mayagüez airport]
