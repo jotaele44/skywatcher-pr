@@ -1,139 +1,109 @@
 {
   "config_id": "fr24_config_defaults",
-  "config_version": "1.0.0",
+  "config_version": "1.1.0",
   "active_branch": "codex/fr24-visual-parameter-registry-v1",
   "purpose": "Default thresholds, scoring weights, suppression multipliers, and review thresholds for FR24 signal-group analysis modules.",
-  "pipeline_stage_order": [
-    "provenance",
-    "privacy",
-    "tile_suppression",
-    "ground_context",
-    "infrastructure_context",
-    "recurrence",
-    "export"
-  ],
+  "pipeline_stage_order": ["provenance", "privacy", "tile_suppression", "ground_context", "infrastructure_context", "recurrence", "export"],
   "global_defaults": {
     "score_min": 0.0,
     "score_max": 1.0,
-    "default_review_thresholds": {
-      "reject_below": 0.25,
-      "review_at": 0.45,
-      "high_priority_at": 0.75,
-      "auto_accept_at": 0.9
-    },
-    "default_suppression_multipliers": {
-      "none": 1.0,
-      "ordinary_artifact": 0.25,
-      "ui_or_annotation_confusion": 0.1,
-      "low_resolution": 0.5,
-      "privacy_blocked": 0.0
-    }
+    "default_review_thresholds": {"reject_below": 0.25, "review_at": 0.45, "high_priority_at": 0.75, "auto_accept_at": 0.9},
+    "default_suppression_multipliers": {"none": 1.0, "ordinary_artifact": 0.25, "ui_or_annotation_confusion": 0.1, "low_resolution": 0.5, "privacy_blocked": 0.0}
   },
   "threshold_groups": {
     "tile_suppression": {
       "pipeline_stage": "tile_suppression",
       "description": "Runs before ground-context interpretation. Scores tile/seam/map-artifact evidence and suppresses likely visual artifacts.",
       "signal_groups": {
+        "tile_analysis": {
+          "weights": {"tile_load_quality_score": 0.2, "tile_resolution_score": 0.2, "tile_neighbor_continuity_score": 0.2, "tile_artifact_score": 0.25, "tile_metadata_score": 0.15},
+          "review_thresholds": {"reject_below": 0.2, "review_at": 0.4, "high_priority_at": 0.7, "auto_accept_at": 0.9},
+          "suppression_multipliers": {"tile_load_failure": 0.1, "partial_tile_load": 0.35, "low_resolution": 0.5, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only", "requires_privacy_clearance": true}
+        },
         "seam_anomaly_detection": {
-          "weights": {
-            "hard_boundary_score": 0.15,
-            "tone_discontinuity_score": 0.1,
-            "texture_mismatch_score": 0.15,
-            "geometry_displacement_score": 0.2,
-            "blur_masking_score": 0.1,
-            "dem_terrain_mismatch_score": 0.1,
-            "mixed_epoch_score": 0.1,
-            "context_overlap_score": 0.1
-          },
-          "review_thresholds": {
-            "reject_below": 0.25,
-            "review_at": 0.45,
-            "high_priority_at": 0.75,
-            "auto_accept_at": 0.95
-          },
-          "suppression_multipliers": {
-            "ordinary_tile_artifact": 0.25,
-            "ui_overlay_confusion": 0.1,
-            "fr24_track_line_confusion": 0.1,
-            "user_annotation_confusion": 0.1,
-            "low_resolution": 0.5,
-            "insufficient_zoom": 0.5,
-            "none": 1.0
-          },
-          "defaults": {
-            "recurrence_multiplier_max": 1.5,
-            "context_overlap_bonus_max": 0.15,
-            "interpretation_guardrail": "artifact_only"
-          }
+          "weights": {"hard_boundary_score": 0.15, "tone_discontinuity_score": 0.1, "texture_mismatch_score": 0.15, "geometry_displacement_score": 0.2, "blur_masking_score": 0.1, "dem_terrain_mismatch_score": 0.1, "mixed_epoch_score": 0.1, "context_overlap_score": 0.1},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.45, "high_priority_at": 0.75, "auto_accept_at": 0.95},
+          "suppression_multipliers": {"ordinary_tile_artifact": 0.25, "ui_overlay_confusion": 0.1, "fr24_track_line_confusion": 0.1, "user_annotation_confusion": 0.1, "low_resolution": 0.5, "insufficient_zoom": 0.5, "none": 1.0},
+          "defaults": {"recurrence_multiplier_max": 1.5, "context_overlap_bonus_max": 0.15, "interpretation_guardrail": "artifact_only"}
         },
         "tile_artifact_suppression": {
-          "weights": {
-            "ui_overlay_confusion_score": 0.25,
-            "fr24_track_line_confusion_score": 0.2,
-            "user_annotation_confusion_score": 0.2,
-            "map_label_edge_confusion_score": 0.15,
-            "low_resolution_score": 0.2
-          },
-          "review_thresholds": {
-            "reject_below": 0.2,
-            "review_at": 0.4,
-            "high_priority_at": 0.7,
-            "auto_accept_at": 0.9
-          },
-          "suppression_multipliers": {
-            "strong_confusion": 0.1,
-            "moderate_confusion": 0.4,
-            "weak_confusion": 0.75,
-            "none": 1.0
-          },
-          "defaults": {
-            "suppression_required_before_ground_context": true,
-            "interpretation_guardrail": "artifact_only"
-          }
+          "weights": {"ui_overlay_confusion_score": 0.25, "fr24_track_line_confusion_score": 0.2, "user_annotation_confusion_score": 0.2, "map_label_edge_confusion_score": 0.15, "low_resolution_score": 0.2},
+          "review_thresholds": {"reject_below": 0.2, "review_at": 0.4, "high_priority_at": 0.7, "auto_accept_at": 0.9},
+          "suppression_multipliers": {"strong_confusion": 0.1, "moderate_confusion": 0.4, "weak_confusion": 0.75, "none": 1.0},
+          "defaults": {"suppression_required_before_ground_context": true, "interpretation_guardrail": "artifact_only"}
+        },
+        "roi_mask_analysis": {
+          "weights": {"ui_overlay_mask_score": 0.25, "route_line_mask_score": 0.2, "symbol_overlay_mask_score": 0.15, "ground_area_readability_score": 0.25, "roi_boundary_confidence_score": 0.15},
+          "review_thresholds": {"reject_below": 0.2, "review_at": 0.4, "high_priority_at": 0.7, "auto_accept_at": 0.9},
+          "suppression_multipliers": {"blocked_by_ui": 0.1, "blocked_by_annotation": 0.1, "blocked_by_low_readability": 0.35, "review_gated": 0.65, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only", "ground_area_roi_required": true}
+        },
+        "seam_geometry_v2": {
+          "weights": {"hard_boundary_score": 0.25, "straight_edge_score": 0.2, "tile_aligned_edge_score": 0.2, "seam_width_score": 0.15, "edge_continuity_break_score": 0.2},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.45, "high_priority_at": 0.75, "auto_accept_at": 0.95},
+          "suppression_multipliers": {"ordinary_tile_boundary": 0.25, "label_edge_confusion": 0.3, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only"}
+        },
+        "tone_texture_v2": {
+          "weights": {"brightness_discontinuity_score": 0.2, "color_temperature_mismatch_score": 0.2, "texture_mismatch_score": 0.25, "sharpness_mismatch_score": 0.2, "compression_texture_change_score": 0.15},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.45, "high_priority_at": 0.75, "auto_accept_at": 0.95},
+          "suppression_multipliers": {"seasonal_only": 0.6, "ordinary_mosaic": 0.45, "compression_only": 0.55, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only"}
+        },
+        "geometry_displacement_v2": {
+          "weights": {"road_offset_score": 0.25, "drainage_offset_score": 0.2, "building_cutoff_score": 0.2, "clearing_cutoff_score": 0.2, "hydro_line_discontinuity_score": 0.15},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.5, "high_priority_at": 0.78, "auto_accept_at": 0.95},
+          "suppression_multipliers": {"low_georef_confidence": 0.5, "road_label_confusion": 0.3, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only"}
+        },
+        "blur_smear_canopy": {
+          "weights": {"localized_blur_score": 0.25, "smear_softening_score": 0.25, "feathered_blend_score": 0.2, "canopy_obstruction_score": 0.15, "interpretability_loss_score": 0.15},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.45, "high_priority_at": 0.75, "auto_accept_at": 0.95},
+          "suppression_multipliers": {"ordinary_canopy": 0.55, "cloud_mask_residual": 0.4, "low_resolution": 0.5, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only"}
         },
         "mixed_epoch_detection": {
-          "weights": {
-            "seasonal_mismatch_score": 0.25,
-            "source_date_conflict_score": 0.25,
-            "feature_present_one_side_absent_other_score": 0.3,
-            "imagery_patch_age_mismatch_score": 0.2
-          },
-          "review_thresholds": {
-            "reject_below": 0.2,
-            "review_at": 0.45,
-            "high_priority_at": 0.75,
-            "auto_accept_at": 0.95
-          },
-          "suppression_multipliers": {
-            "ordinary_mosaic": 0.45,
-            "seasonal_only": 0.6,
-            "none": 1.0
-          },
-          "defaults": {
-            "interpretation_guardrail": "mixed_epoch_candidate_only"
-          }
+          "weights": {"seasonal_mismatch_score": 0.25, "source_date_conflict_score": 0.25, "feature_present_one_side_absent_other_score": 0.3, "imagery_patch_age_mismatch_score": 0.2},
+          "review_thresholds": {"reject_below": 0.2, "review_at": 0.45, "high_priority_at": 0.75, "auto_accept_at": 0.95},
+          "suppression_multipliers": {"ordinary_mosaic": 0.45, "seasonal_only": 0.6, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only"}
         },
         "dem_terrain_mismatch": {
-          "weights": {
-            "slope_texture_mismatch_score": 0.3,
-            "terrain_warping_score": 0.25,
-            "triangular_slope_artifact_score": 0.25,
-            "terrain_shadow_mismatch_score": 0.2
-          },
-          "review_thresholds": {
-            "reject_below": 0.25,
-            "review_at": 0.5,
-            "high_priority_at": 0.8,
-            "auto_accept_at": 0.95
-          },
-          "suppression_multipliers": {
-            "ordinary_orthorectification": 0.35,
-            "shadow_only": 0.55,
-            "none": 1.0
-          },
-          "defaults": {
-            "interpretation_guardrail": "artifact_only"
-          }
+          "weights": {"slope_texture_mismatch_score": 0.3, "terrain_warping_score": 0.25, "triangular_slope_artifact_score": 0.25, "terrain_shadow_mismatch_score": 0.2},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.5, "high_priority_at": 0.8, "auto_accept_at": 0.95},
+          "suppression_multipliers": {"ordinary_orthorectification": 0.35, "shadow_only": 0.55, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only"}
+        },
+        "ui_route_annotation_suppression": {
+          "weights": {"ui_overlay_score": 0.25, "fr24_track_line_score": 0.25, "user_annotation_score": 0.25, "label_edge_score": 0.15, "symbol_overlay_score": 0.1},
+          "review_thresholds": {"reject_below": 0.2, "review_at": 0.4, "high_priority_at": 0.7, "auto_accept_at": 0.9},
+          "suppression_multipliers": {"ui_overlay": 0.1, "route_line_overlay": 0.1, "user_annotation": 0.1, "symbol_overlay": 0.2, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only", "must_run_before_ground_context": true}
+        },
+        "shadow_canopy_confusion": {
+          "weights": {"canopy_shadow_score": 0.25, "terrain_shadow_score": 0.2, "building_shadow_score": 0.15, "canopy_density_score": 0.2, "false_water_or_clearing_risk_score": 0.2},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.45, "high_priority_at": 0.75, "auto_accept_at": 0.9},
+          "suppression_multipliers": {"shadow_only": 0.45, "dense_canopy": 0.55, "unknown_shadow": 0.7, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only"}
+        },
+        "seam_context_recurrence": {
+          "weights": {"same_zoom_recurrence_score": 0.2, "cross_zoom_recurrence_score": 0.2, "cross_platform_recurrence_score": 0.2, "cross_date_recurrence_score": 0.2, "context_overlap_score": 0.2},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.5, "high_priority_at": 0.78, "auto_accept_at": 0.95},
+          "suppression_multipliers": {"single_screenshot_only": 0.5, "not_recurrent": 0.6, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only", "maximum_recurrence_multiplier": 1.5}
+        },
+        "tile_score_breakdown": {
+          "weights": {"base_score_component": 0.25, "suppression_component": 0.25, "context_component": 0.2, "recurrence_component": 0.15, "calibration_component": 0.15},
+          "review_thresholds": {"reject_below": 0.2, "review_at": 0.4, "high_priority_at": 0.7, "auto_accept_at": 0.9},
+          "suppression_multipliers": {"component_missing": 0.5, "unvalidated_component": 0.7, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only", "export_score_components": true}
+        },
+        "calibration_expected_outputs": {
+          "weights": {"positive_fixture_match_score": 0.25, "negative_fixture_suppression_score": 0.25, "ambiguous_fixture_review_score": 0.2, "snapshot_stability_score": 0.15, "threshold_consistency_score": 0.15},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.45, "high_priority_at": 0.75, "auto_accept_at": 0.9},
+          "suppression_multipliers": {"missing_expected_output": 0.3, "snapshot_drift": 0.5, "none": 1.0},
+          "defaults": {"interpretation_guardrail": "artifact_only", "fixtures_required_before_release": true}
         }
       }
     },
@@ -142,140 +112,34 @@
       "description": "Extracts visual candidate ground signatures after tile/artifact suppression has run.",
       "signal_groups": {
         "small_waterbody_identity": {
-          "weights": {
-            "water_signature_score": 0.25,
-            "shape_score": 0.15,
-            "context_score": 0.2,
-            "access_score": 0.1,
-            "false_positive_control_score": 0.2,
-            "confidence_score": 0.1
-          },
-          "review_thresholds": {
-            "reject_below": 0.25,
-            "review_at": 0.45,
-            "high_priority_at": 0.72,
-            "auto_accept_at": 0.9
-          },
-          "suppression_multipliers": {
-            "tile_artifact": 0.2,
-            "pool_confusion": 0.6,
-            "shadow_confusion": 0.45,
-            "canopy_confusion": 0.55,
-            "none": 1.0
-          },
-          "defaults": {
-            "recurrence_enabled": true,
-            "interpretation_guardrail": "visual_candidate_only"
-          }
+          "weights": {"water_signature_score": 0.25, "shape_score": 0.15, "context_score": 0.2, "access_score": 0.1, "false_positive_control_score": 0.2, "confidence_score": 0.1},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.45, "high_priority_at": 0.72, "auto_accept_at": 0.9},
+          "suppression_multipliers": {"tile_artifact": 0.2, "pool_confusion": 0.6, "shadow_confusion": 0.45, "canopy_confusion": 0.55, "none": 1.0},
+          "defaults": {"recurrence_enabled": true, "interpretation_guardrail": "visual_candidate_only"}
         },
         "pool_signature": {
-          "weights": {
-            "rectangular_or_curved_pool_shape_score": 0.25,
-            "pool_color_score": 0.2,
-            "deck_or_patio_score": 0.15,
-            "fenced_yard_score": 0.15,
-            "residential_or_commercial_context_score": 0.15,
-            "false_positive_control_score": 0.1
-          },
-          "review_thresholds": {
-            "reject_below": 0.2,
-            "review_at": 0.45,
-            "high_priority_at": 0.7,
-            "auto_accept_at": 0.88
-          },
-          "suppression_multipliers": {
-            "pond_confusion": 0.6,
-            "dry_basin_confusion": 0.5,
-            "tile_artifact": 0.2,
-            "none": 1.0
-          },
-          "defaults": {
-            "recurrence_enabled": true,
-            "interpretation_guardrail": "visual_candidate_only"
-          }
+          "weights": {"rectangular_or_curved_pool_shape_score": 0.25, "pool_color_score": 0.2, "deck_or_patio_score": 0.15, "fenced_yard_score": 0.15, "residential_or_commercial_context_score": 0.15, "false_positive_control_score": 0.1},
+          "review_thresholds": {"reject_below": 0.2, "review_at": 0.45, "high_priority_at": 0.7, "auto_accept_at": 0.88},
+          "suppression_multipliers": {"pond_confusion": 0.6, "dry_basin_confusion": 0.5, "tile_artifact": 0.2, "none": 1.0},
+          "defaults": {"recurrence_enabled": true, "interpretation_guardrail": "visual_candidate_only"}
         },
         "vehicle_cluster_signature": {
-          "weights": {
-            "vehicle_count_score": 0.25,
-            "density_score": 0.2,
-            "unexplained_context_score": 0.2,
-            "access_road_score": 0.1,
-            "junkyard_exclusion_score": 0.15,
-            "parking_lot_exclusion_score": 0.1
-          },
-          "review_thresholds": {
-            "reject_below": 0.3,
-            "review_at": 0.5,
-            "high_priority_at": 0.78,
-            "auto_accept_at": 0.92
-          },
-          "suppression_multipliers": {
-            "junkyard_context": 0.0,
-            "known_parking_lot_context": 0.15,
-            "event_or_worksite_context": 0.45,
-            "tile_artifact": 0.2,
-            "none": 1.0
-          },
-          "defaults": {
-            "minimum_vehicle_count_review": 8,
-            "recurrence_enabled": true,
-            "interpretation_guardrail": "visual_candidate_only"
-          }
+          "weights": {"vehicle_count_score": 0.25, "density_score": 0.2, "unexplained_context_score": 0.2, "access_road_score": 0.1, "junkyard_exclusion_score": 0.15, "parking_lot_exclusion_score": 0.1},
+          "review_thresholds": {"reject_below": 0.3, "review_at": 0.5, "high_priority_at": 0.78, "auto_accept_at": 0.92},
+          "suppression_multipliers": {"junkyard_context": 0.0, "known_parking_lot_context": 0.15, "event_or_worksite_context": 0.45, "tile_artifact": 0.2, "none": 1.0},
+          "defaults": {"minimum_vehicle_count_review": 8, "recurrence_enabled": true, "interpretation_guardrail": "visual_candidate_only"}
         },
         "land_clearing_signature": {
-          "weights": {
-            "vegetation_absence_score": 0.25,
-            "bare_soil_score": 0.2,
-            "size_class_score": 0.2,
-            "graded_surface_score": 0.15,
-            "access_road_score": 0.1,
-            "false_positive_control_score": 0.1
-          },
-          "review_thresholds": {
-            "reject_below": 0.25,
-            "review_at": 0.48,
-            "high_priority_at": 0.76,
-            "auto_accept_at": 0.92
-          },
-          "suppression_multipliers": {
-            "agricultural_field": 0.45,
-            "seasonal_dryness": 0.55,
-            "tile_artifact": 0.2,
-            "low_resolution": 0.5,
-            "none": 1.0
-          },
-          "defaults": {
-            "minimum_medium_clearing_area_m2": 1500,
-            "minimum_large_clearing_area_m2": 10000,
-            "recurrence_enabled": true,
-            "interpretation_guardrail": "visual_candidate_only"
-          }
+          "weights": {"vegetation_absence_score": 0.25, "bare_soil_score": 0.2, "size_class_score": 0.2, "graded_surface_score": 0.15, "access_road_score": 0.1, "false_positive_control_score": 0.1},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.48, "high_priority_at": 0.76, "auto_accept_at": 0.92},
+          "suppression_multipliers": {"agricultural_field": 0.45, "seasonal_dryness": 0.55, "tile_artifact": 0.2, "low_resolution": 0.5, "none": 1.0},
+          "defaults": {"minimum_medium_clearing_area_m2": 1500, "minimum_large_clearing_area_m2": 10000, "recurrence_enabled": true, "interpretation_guardrail": "visual_candidate_only"}
         },
         "unlabeled_warehouse_signature": {
-          "weights": {
-            "large_roof_score": 0.25,
-            "rectangular_geometry_score": 0.2,
-            "loading_or_service_area_score": 0.15,
-            "paved_apron_score": 0.15,
-            "industrial_context_score": 0.15,
-            "label_absence_score": 0.1
-          },
-          "review_thresholds": {
-            "reject_below": 0.3,
-            "review_at": 0.5,
-            "high_priority_at": 0.78,
-            "auto_accept_at": 0.92
-          },
-          "suppression_multipliers": {
-            "labeled_known_site": 0.55,
-            "agricultural_shed_confusion": 0.6,
-            "tile_artifact": 0.2,
-            "none": 1.0
-          },
-          "defaults": {
-            "recurrence_enabled": true,
-            "interpretation_guardrail": "visual_candidate_only"
-          }
+          "weights": {"large_roof_score": 0.25, "rectangular_geometry_score": 0.2, "loading_or_service_area_score": 0.15, "paved_apron_score": 0.15, "industrial_context_score": 0.15, "label_absence_score": 0.1},
+          "review_thresholds": {"reject_below": 0.3, "review_at": 0.5, "high_priority_at": 0.78, "auto_accept_at": 0.92},
+          "suppression_multipliers": {"labeled_known_site": 0.55, "agricultural_shed_confusion": 0.6, "tile_artifact": 0.2, "none": 1.0},
+          "defaults": {"recurrence_enabled": true, "interpretation_guardrail": "visual_candidate_only"}
         }
       }
     },
@@ -284,56 +148,16 @@
       "description": "Scores spatial/contextual overlap between visual candidates and infrastructure/ILAP layers.",
       "signal_groups": {
         "ilap_layer_convergence": {
-          "weights": {
-            "independent_layer_count_score": 0.3,
-            "poi_layer_overlap_score": 0.25,
-            "corridor_alignment_score": 0.2,
-            "recurrence_amplifier_score": 0.15,
-            "match_confidence_score": 0.1
-          },
-          "review_thresholds": {
-            "reject_below": 0.25,
-            "review_at": 0.5,
-            "high_priority_at": 0.78,
-            "auto_accept_at": 0.95
-          },
-          "suppression_multipliers": {
-            "single_layer_only": 0.55,
-            "tile_artifact_dependency": 0.25,
-            "low_match_confidence": 0.5,
-            "none": 1.0
-          },
-          "defaults": {
-            "minimum_independent_layers_for_boost": 2,
-            "interpretation_guardrail": "contextual_correlation_only"
-          }
+          "weights": {"independent_layer_count_score": 0.3, "poi_layer_overlap_score": 0.25, "corridor_alignment_score": 0.2, "recurrence_amplifier_score": 0.15, "match_confidence_score": 0.1},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.5, "high_priority_at": 0.78, "auto_accept_at": 0.95},
+          "suppression_multipliers": {"single_layer_only": 0.55, "tile_artifact_dependency": 0.25, "low_match_confidence": 0.5, "none": 1.0},
+          "defaults": {"minimum_independent_layers_for_boost": 2, "interpretation_guardrail": "contextual_correlation_only"}
         },
         "access_control_signature": {
-          "weights": {
-            "gate_score": 0.2,
-            "small_house_score": 0.2,
-            "driveway_access_score": 0.2,
-            "fence_line_score": 0.15,
-            "gatekeeper_house_score": 0.15,
-            "context_overlap_score": 0.1
-          },
-          "review_thresholds": {
-            "reject_below": 0.25,
-            "review_at": 0.5,
-            "high_priority_at": 0.78,
-            "auto_accept_at": 0.93
-          },
-          "suppression_multipliers": {
-            "ordinary_residential_gate": 0.55,
-            "tile_artifact": 0.2,
-            "low_resolution": 0.5,
-            "none": 1.0
-          },
-          "defaults": {
-            "poi_tlt_code": "SHAG",
-            "candidate_access_point_role": "TAP",
-            "interpretation_guardrail": "visual_candidate_only"
-          }
+          "weights": {"gate_score": 0.2, "small_house_score": 0.2, "driveway_access_score": 0.2, "fence_line_score": 0.15, "gatekeeper_house_score": 0.15, "context_overlap_score": 0.1},
+          "review_thresholds": {"reject_below": 0.25, "review_at": 0.5, "high_priority_at": 0.78, "auto_accept_at": 0.93},
+          "suppression_multipliers": {"ordinary_residential_gate": 0.55, "tile_artifact": 0.2, "low_resolution": 0.5, "none": 1.0},
+          "defaults": {"poi_tlt_code": "SHAG", "candidate_access_point_role": "TAP", "interpretation_guardrail": "visual_candidate_only"}
         }
       }
     },
@@ -342,57 +166,10 @@
       "description": "Aggregates already-QC'd visual/context matches. It must not detect visual features directly.",
       "signal_groups": {
         "poi_recurrence": {
-          "weights": {
-            "observation_count_score": 0.25,
-            "unique_date_count_score": 0.2,
-            "unique_flight_count_score": 0.2,
-            "aircraft_diversity_score": 0.15,
-            "layer_convergence_score": 0.15,
-            "median_match_confidence_score": 0.05
-          },
-          "review_thresholds": {
-            "reject_below": 0.2,
-            "review_at": 0.45,
-            "high_priority_at": 0.75,
-            "auto_accept_at": 0.9
-          },
-          "suppression_multipliers": {
-            "duplicate_screenshot_group": 0.1,
-            "same_flight_overcount": 0.5,
-            "low_match_confidence": 0.5,
-            "none": 1.0
-          },
-          "defaults": {
-            "minimum_observations_for_recurring": 3,
-            "minimum_dates_for_recurring": 2,
-            "interpretation_guardrail": "recurrence_supported_only"
-          }
-        },
-        "poi_layer_recurrence": {
-          "weights": {
-            "layer_observation_count_score": 0.25,
-            "unique_poi_count_seen_score": 0.2,
-            "unique_date_count_score": 0.2,
-            "corridor_alignment_score": 0.15,
-            "ilap_multilayer_convergence_score": 0.15,
-            "median_layer_match_confidence_score": 0.05
-          },
-          "review_thresholds": {
-            "reject_below": 0.2,
-            "review_at": 0.45,
-            "high_priority_at": 0.75,
-            "auto_accept_at": 0.9
-          },
-          "suppression_multipliers": {
-            "layer_too_broad": 0.45,
-            "single_member_only": 0.65,
-            "low_match_confidence": 0.5,
-            "none": 1.0
-          },
-          "defaults": {
-            "minimum_member_matches_for_layer_boost": 2,
-            "interpretation_guardrail": "recurrence_supported_only"
-          }
+          "weights": {"observation_count_score": 0.25, "unique_date_count_score": 0.2, "unique_flight_count_score": 0.2, "aircraft_diversity_score": 0.15, "layer_convergence_score": 0.15, "median_match_confidence_score": 0.05},
+          "review_thresholds": {"reject_below": 0.2, "review_at": 0.45, "high_priority_at": 0.75, "auto_accept_at": 0.9},
+          "suppression_multipliers": {"duplicate_screenshot_group": 0.1, "same_flight_overcount": 0.5, "low_match_confidence": 0.5, "none": 1.0},
+          "defaults": {"minimum_observations_for_recurring": 3, "minimum_dates_for_recurring": 2, "interpretation_guardrail": "recurrence_supported_only"}
         }
       }
     }
