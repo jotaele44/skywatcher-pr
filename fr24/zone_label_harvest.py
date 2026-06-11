@@ -21,9 +21,11 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 import re
 import sqlite3
 import sys
+import unicodedata
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -43,7 +45,13 @@ HARVEST_VERSION = "zone_label_harvest_v0.1.0"
 REPO = Path(__file__).resolve().parents[1]
 PR_LANDING_ZONES_GPKG = REPO / "data" / "reference" / "PR_Landing_Zones_Master.gpkg"
 MIL_AVIATION_GPKG = REPO / "data" / "reference" / "Military_and_Aviation.gpkg"
+GNIS_GPKG = REPO / "data" / "reference" / "Gazetteer_PR_GNIS.gpkg"  # USGS GNIS PR
 PR_AIRPORTS_JSONL = REPO / "data" / "reference" / "pr_airports.jsonl"  # legacy fallback
+
+# Generic place-name suffixes stripped when matching OCR'd map/POI labels.
+_GENERIC_SUFFIX = re.compile(
+    r"\b(municipio|barrio|subbarrio|zona urbana|comunidad|sector|urbanizacion|"
+    r"urb|bo|km)\b", re.I)
 
 # Verification classes (from PR_Landing_Zones_Master) that we trust enough to
 # auto-name. Candidate-Low and unverified zones are routed to review instead.
@@ -210,7 +218,29 @@ def load_registry() -> Dict[str, object]:
         finally:
             con.close()
 
-    return {"names": names, "vclass": vclass, "places": places}
+    # GNIS general place names (towns, military sites, landmarks) — the
+    # resolution layer for map-town labels and Earth-frame POIs that the
+    # landing-zone registry does not cover.
+    gnis: List[dict] = []
+    gnis_index: Dict[str, dict] = {}
+    if GNIS_GPKG.exists():
+        con = sqlite3.connect(str(GNIS_GPKG))
+        try:
+            q = ("SELECT feature_name, feature_class, county_name, prim_lat_dec, "
+                 "prim_long_dec FROM DomesticNames "
+                 "WHERE state_name='Puerto Rico' AND prim_lat_dec IS NOT NULL")
+            for fn, fc, county, lat, lon in con.execute(q):
+                place = {"name": fn, "feature_class": fc, "county": county,
+                         "lat": lat, "lon": lon}
+                gnis.append(place)
+                for key in (_norm(fn), _norm(_strip_generic(fn))):
+                    if key and key not in gnis_index:
+                        gnis_index[key] = place
+        finally:
+            con.close()
+
+    return {"names": names, "vclass": vclass, "places": places,
+            "gnis": gnis, "gnis_index": gnis_index}
 
 
 def load_gazetteer() -> Dict[str, str]:
@@ -222,6 +252,73 @@ def resolve_code(code: str, gaz: Dict[str, str]) -> str:
     if not code:
         return ""
     return gaz.get(code.upper(), "")
+
+
+# --------------------------------------------------------------------------- #
+# General place-name + geo resolution (for map-town labels, POIs, endpoint geo)
+# --------------------------------------------------------------------------- #
+
+
+def _norm(s: str) -> str:
+    """Accent-fold + lowercase + collapse to alphanumerics/space for matching."""
+    if not s:
+        return ""
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    s = re.sub(r"[^a-z0-9 ]+", " ", s.lower())
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def _strip_generic(s: str) -> str:
+    return _GENERIC_SUFFIX.sub("", s)
+
+
+def resolve_place_name(text: str, reg: dict) -> Optional[dict]:
+    """Match an OCR'd label/POI string to a GNIS place. Exact normalized hit
+    first, then a token-subset match (all label tokens appear in a feature)."""
+    idx = reg.get("gnis_index") or {}
+    n = _norm(_strip_generic(text))
+    if not n:
+        return None
+    if n in idx:
+        return idx[n]
+    toks = set(n.split())
+    if not toks or len(min(toks, key=len)) < 3:
+        return None
+    best = None
+    for key, place in idx.items():
+        kt = set(key.split())
+        if toks <= kt:  # every label token present in the feature name
+            if best is None or len(kt) < len(best[0]):
+                best = (kt, place)
+    return best[1] if best else None
+
+
+def haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 3440.065  # nautical miles
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(min(1.0, math.sqrt(a)))
+
+
+def nearest_place(lat: float, lon: float, reg: dict, max_nm: float = 5.0) -> Optional[dict]:
+    """Nearest named place to a coordinate: landing zones first, then GNIS.
+    Returns the place dict augmented with ``distance_nm`` and ``layer``."""
+    if lat is None or lon is None:
+        return None
+    best = None
+    for layer, items in (("landing_zone", reg.get("places") or []),
+                         ("gnis", reg.get("gnis") or [])):
+        for pl in items:
+            plat, plon = pl.get("lat"), pl.get("lon")
+            if plat is None or plon is None:
+                continue
+            d = haversine_nm(lat, lon, plat, plon)
+            if d <= max_nm and (best is None or d < best["distance_nm"]):
+                best = {**pl, "distance_nm": round(d, 2), "layer": layer}
+    return best
 
 
 def ocr_lower_band(image_path: str) -> str:

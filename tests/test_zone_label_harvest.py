@@ -58,3 +58,30 @@ def test_resolve_code(reg):
     assert zlh.resolve_code("SJU", names).startswith("Luis Mu")
     assert zlh.resolve_code("ZZZ", names) == ""
     assert zlh.resolve_code("", names) == ""
+
+
+def test_gnis_layer_loaded(reg):
+    assert len(reg["gnis"]) > 5000
+    assert len(reg["gnis_index"]) > 4000
+
+
+def test_resolve_place_name_accent_folding(reg):
+    # OCR'd labels rarely carry diacritics; matching must be accent-insensitive
+    assert "Mayag" in (zlh.resolve_place_name("Mayaguez", reg) or {}).get("name", "")
+    assert "Aguadilla" in (zlh.resolve_place_name("Aguadilla", reg) or {}).get("name", "")
+    assert zlh.resolve_place_name("NotARealTown_xyz", reg) is None
+
+
+def test_nearest_place_prefers_landing_zone(reg):
+    # SJU airport coordinates resolve to the airport, not a nearby town
+    p = zlh.nearest_place(18.4394, -66.0012, reg, max_nm=4)
+    assert p is not None and p["layer"] == "landing_zone"
+    assert "Luis Mu" in p["name"]
+    # open ocean resolves to nothing within range
+    assert zlh.nearest_place(19.6, -66.0, reg, max_nm=3) is None
+
+
+def test_haversine_sane():
+    # ~ SJU to BQN is roughly 60-70 nm
+    d = zlh.haversine_nm(18.4394, -66.0012, 18.4949, -67.1294)
+    assert 55 < d < 75
