@@ -15,7 +15,7 @@
   ],
   "properties": {
     "schema_version": {"type": "string", "minLength": 1},
-    "producer": {"type": "string", "const": "Puerto-Rico-Airspace-Intelligence-Tool"},
+    "producer": {"type": "string", "const": "skywatcher-pr"},
     "package_id": {"type": "string", "minLength": 1},
     "created_at": {"type": "string", "format": "date-time"},
     "mode": {"type": "string", "enum": ["test", "production"]},
