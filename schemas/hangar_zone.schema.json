@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://priis.local/schemas/hangar_zone.schema.json",
+  "title": "Skywatcher Hangar or Ramp Zone",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "zone_id",
+    "facility_id",
+    "zone_type",
+    "label_status",
+    "geometry_status",
+    "tenant_status",
+    "source_tier",
+    "source_ref",
+    "confidence",
+    "review_status"
+  ],
+  "properties": {
+    "zone_id": {"type": "string", "minLength": 1},
+    "facility_id": {"type": "string", "minLength": 1},
+    "zone_type": {"type": "string", "enum": ["hangar", "ramp", "apron", "helipad", "terminal", "fuel_area", "unknown_zone"]},
+    "name_or_label": {"type": ["string", "null"]},
+    "label_status": {"type": "string", "enum": ["public_label", "map_label", "analyst_label", "unlabeled"]},
+    "tenant_candidate": {"type": ["string", "null"]},
+    "tenant_status": {"type": "string", "enum": ["confirmed", "candidate", "unlabeled", "unknown"]},
+    "geometry": {"type": ["object", "null"]},
+    "lat": {"type": ["number", "null"], "minimum": -90, "maximum": 90},
+    "lon": {"type": ["number", "null"], "minimum": -180, "maximum": 180},
+    "geometry_status": {"type": "string", "enum": ["polygon_verified", "point_verified", "approximate", "unknown"]},
+    "source_tier": {"type": "string", "enum": ["T1", "T2", "T3", "T4"]},
+    "source_ref": {"type": "string", "minLength": 1},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "review_status": {"type": "string", "enum": ["draft", "needs_review", "reviewed", "promoted", "rejected"]},
+    "notes": {"type": ["string", "null"]}
+  }
+}
