@@ -16,6 +16,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+PRODUCER_ID = "skywatcher-pr"
+
 ALLOWED_EVIDENCE_TIERS = {"T1", "T2", "T3", "T4"}
 ALLOWED_GEOMETRY_STATUS = {"located", "approximate", "unlocated", "invalid"}
 ALLOWED_TEMPORAL_STATUS = {"exact", "approximate", "missing", "invalid"}
@@ -113,8 +115,8 @@ def validate_package(package_dir: Path, mode: str) -> list[str]:
 
     if not manifest.get("schema_version"):
         errors.append("manifest schema_version is required")
-    if manifest.get("producer") != "Puerto-Rico-Airspace-Intelligence-Tool":
-        errors.append("manifest producer must be Puerto-Rico-Airspace-Intelligence-Tool")
+    if manifest.get("producer") != PRODUCER_ID:
+        errors.append(f"manifest producer must be {PRODUCER_ID}")
     if manifest.get("mode") not in {"test", "production"}:
         errors.append("manifest mode must be test or production")
 
