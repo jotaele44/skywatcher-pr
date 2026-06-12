@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://priis.local/schemas/flight_endpoint_event.schema.json",
+  "title": "Skywatcher Flight Endpoint Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "endpoint_event_id",
+    "observation_id",
+    "event_datetime",
+    "endpoint_type",
+    "matched_facility_id",
+    "match_method",
+    "distance_m",
+    "confidence",
+    "source_id",
+    "lineage_id",
+    "synthetic",
+    "review_status"
+  ],
+  "properties": {
+    "endpoint_event_id": {"type": "string", "minLength": 1},
+    "observation_id": {"type": "string", "minLength": 1},
+    "event_datetime": {"type": "string", "format": "date-time"},
+    "endpoint_type": {"type": "string", "enum": ["start", "end", "touch_and_go", "overflight_near_facility", "unknown"]},
+    "aircraft_registration": {"type": ["string", "null"]},
+    "callsign": {"type": ["string", "null"]},
+    "matched_facility_id": {"type": "string", "minLength": 1},
+    "matched_zone_id": {"type": ["string", "null"]},
+    "match_method": {"type": "string", "enum": ["track_endpoint_distance", "screenshot_label", "manual_review", "declared_route", "unknown"]},
+    "distance_m": {"type": "number", "minimum": 0},
+    "bearing": {"type": ["number", "null"], "minimum": 0, "maximum": 360},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "source_id": {"type": "string", "minLength": 1},
+    "lineage_id": {"type": "string", "minLength": 1},
+    "synthetic": {"type": "boolean"},
+    "review_status": {"type": "string", "enum": ["draft", "needs_review", "reviewed", "promoted", "rejected"]},
+    "notes": {"type": ["string", "null"]}
+  }
+}
