@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PuertoRicoHelipad",
+  "type": "object",
+  "required": [
+    "helipad_id",
+    "faa_code",
+    "name",
+    "operator_class",
+    "latitude",
+    "longitude",
+    "radius_m",
+    "confidence",
+    "source_tier",
+    "last_verified"
+  ],
+  "properties": {
+    "helipad_id": {"type": "string", "pattern": "^pr-[a-z0-9-]+$"},
+    "faa_code": {"type": "string"},
+    "name": {"type": "string"},
+    "organization_name": {"type": "string"},
+    "operator_class": {
+      "type": "string",
+      "enum": ["medical", "federal_dod", "utility_infrastructure", "private_industrial", "commonwealth_government", "unknown"]
+    },
+    "location_text": {"type": "string"},
+    "latitude": {"type": "number"},
+    "longitude": {"type": "number"},
+    "radius_m": {"type": "integer", "minimum": 1},
+    "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+    "source_tier": {"type": "string", "enum": ["T1", "T2", "T3", "T4"]},
+    "source_citations": {"type": "string"},
+    "last_verified": {"type": "string", "format": "date"},
+    "description": {"type": "string"}
+  },
+  "additionalProperties": false
+}
