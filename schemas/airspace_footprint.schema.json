@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AirspaceFootprint",
+  "type": "object",
+  "required": [
+    "footprint_id",
+    "airfield_code",
+    "facility_name",
+    "facility_type",
+    "operator_class",
+    "confidence",
+    "geometry_level",
+    "source_tier",
+    "last_verified"
+  ],
+  "properties": {
+    "footprint_id": {"type": "string", "pattern": "^pr-[a-z0-9-]+$"},
+    "airfield_code": {"type": "string"},
+    "airfield_name": {"type": "string"},
+    "municipality": {"type": "string"},
+    "facility_name": {"type": "string"},
+    "organization_name": {"type": "string"},
+    "facility_type": {
+      "type": "string",
+      "enum": [
+        "fbo",
+        "mro",
+        "cargo_facility",
+        "cargo_carrier",
+        "flight_school",
+        "government_aviation",
+        "military_unit",
+        "law_enforcement_air",
+        "weather_office",
+        "helipad",
+        "airport_operations",
+        "postal_facility",
+        "unknown_airspace_org"
+      ]
+    },
+    "operator_class": {
+      "type": "string",
+      "enum": [
+        "commercial_fbo",
+        "commercial_logistics",
+        "maintenance_repair_overhaul",
+        "flight_training",
+        "federal_dhs",
+        "federal_dod",
+        "federal_noaa",
+        "commonwealth_government",
+        "medical",
+        "utility_infrastructure",
+        "academic",
+        "private_industrial",
+        "airport_authority",
+        "unknown"
+      ]
+    },
+    "aviation_roles": {"type": "string"},
+    "location_text": {"type": "string"},
+    "latitude": {"type": ["number", "null"]},
+    "longitude": {"type": ["number", "null"]},
+    "radius_m": {"type": "integer", "minimum": 1},
+    "geometry_level": {"type": "string", "enum": ["G0", "G1", "G2"]},
+    "geometry_wkt": {"type": "string"},
+    "geometry_confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+    "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+    "needs_geometry": {"type": "boolean"},
+    "needs_manual_verification": {"type": "boolean"},
+    "source_tier": {"type": "string", "enum": ["T1", "T2", "T3", "T4"]},
+    "source_citations": {"type": "string"},
+    "last_verified": {"type": "string", "format": "date"},
+    "description": {"type": "string"}
+  },
+  "additionalProperties": false
+}
