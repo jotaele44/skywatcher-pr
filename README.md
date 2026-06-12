@@ -1,82 +1,88 @@
 # skywatcher-pr — Airspace Intelligence Producer (PRII federation)
 
-The **airspace / aircraft-intelligence** node of the Puerto Rico Integrated Intelligence
-(PRII) federation. Skywatcher turns FlightRadar24 tracks/screenshots and aircraft-registry
-data into airspace observations, links them to PR infrastructure, and exports them for the
-federation Hub ([thehub-pr](https://github.com/jotaele44/thehub-pr)).
+`skywatcher-pr` is the **airspace / aircraft-intelligence producer** for the Puerto Rico Integrated Intelligence (PRII) federation. It owns FlightRadar24 screenshot/track ingestion, airspace observation generation, aircraft-intelligence enrichment, and airspace export packages for [`thehub-pr`](https://github.com/jotaele44/thehub-pr).
 
-> Skywatcher maps aircraft activity, missions, and airspace–infrastructure relationships.
-> It does not allege wrongdoing.
+> Skywatcher maps aircraft activity, missions, and airspace-infrastructure relationships. It does not allege wrongdoing.
 
-## Engine (pure-Python core)
+## Federation role
+
+| Field | Value |
+|---|---|
+| Program id | `skywatcher-pr` |
+| Federation role | `airspace_intelligence_node` |
+| Parent hub | [`thehub-pr`](https://github.com/jotaele44/thehub-pr) |
+| Active vector | `SKYWATCHER_AIRSPACE_AIRCRAFT_INTELLIGENCE` |
+| Production status | `NON_PRODUCTION_DIAGNOSTIC` |
+
+Skywatcher is the active owner of the FR24 pipeline migrated out of `spiderweb-pr`. Spiderweb may retain spatial bridge/reference material, but FR24 ingestion and active airspace observation export belong here.
+
+## Engine
 
 | Module | Role |
-|--------|------|
-| `aircraft_intelligence.py` | Callsign → aircraft profile lookup, operator/mission inference, intelligence reports |
-| `ilap_airspace_bridge.py` | ILAP (Infrastructure-Linked Airspace Profile) bridge: links flights to PR infrastructure (uses `gis_intelligence`) |
-| `aasb_airspace_bridge.py` | Airspace–Asset Spatial Bridge |
+|---|---|
+| `aircraft_intelligence.py` | Callsign to aircraft profile lookup, operator/mission inference, reports |
+| `ilap_airspace_bridge.py` | Infrastructure-Linked Airspace Profile bridge |
+| `aasb_airspace_bridge.py` | Airspace-Asset Spatial Bridge |
 | `prii_readiness_engine.py` | Operational readiness scoring/reporting |
-| `gis_intelligence.py` | PR infrastructure model + geodesy helpers (`haversine_nm`) |
+| `gis_intelligence.py` | Puerto Rico infrastructure model and geodesy helpers |
+| `fr24/` | FR24 screenshot inventory, segmentation, route extraction, review queue, event export |
 
-The core has **no third-party dependencies** (stdlib + sqlite3). Run the suite with `pytest`.
+The core is designed to run with stdlib-first dependencies. Optional geospatial layers are isolated behind separate requirements.
 
-### Optional GEBCO terrain layer
+## FR24 ingest subsystem
 
-`gebco/` (bathymetry/terrain analysis — Mona Passage profiles, underwater ridges) needs the
-heavy geospatial stack and is opt-in:
+The migrated FlightRadar24 screenshot-processing pipeline lives in `fr24/`.
+
+| Module | Role |
+|---|---|
+| `fr24/screenshot_inventory.py` | Directory scan, SHA-256 hashing, corrupt/duplicate detection |
+| `fr24/ui_segmenter.py` | Segments FR24 UI regions |
+| `fr24/route_extractor.py` | Extracts route polylines |
+| `fr24/manual_review_queue.py` | SQLite-backed queue for low-quality items |
+| `fr24/event_export.py` | Converts inventory/routes into observation tables |
+
+Drive the pipeline with:
 
 ```bash
-pip install -r requirements-geo.txt   # numpy / scipy / xarray / netCDF4
+python scripts/fr24_vision_ingest.py
 ```
-
-Its tests self-skip when those packages are absent.
-
-## FR24 ingest subsystem (migrated from spiderweb-pr)
-
-The FlightRadar24 screenshot-processing pipeline that turns raw FR24 captures into
-airspace observations now lives in-tree under `fr24/` (38 stdlib-only modules — no
-torch/opencv/paddleocr):
-
-| Module | Role |
-|--------|------|
-| `fr24/screenshot_inventory.py` | Directory scan, SHA-256 hashing, corrupt/duplicate detection |
-| `fr24/ui_segmenter.py` | Segments the FR24 UI into map/panel/label regions |
-| `fr24/route_extractor.py` | HSV masking + BFS to extract route polylines |
-| `fr24/manual_review_queue.py` | SQLite-backed queue for low-quality items |
-| `fr24/event_export.py` | inventory → `screenshots` table; routes → `track_points` table |
-
-Drive the pipeline with `scripts/fr24_vision_ingest.py`. Coverage is `tests/test_fr24_*`,
-`test_rlsm_*`, `test_route_extractor`, `test_manual_review_queue` (stdlib-only, runs under
-the default `pytest -q`).
 
 ## Federation export contract
 
-Skywatcher emits **airspace observation packages** validated by
-`scripts/validate_airspace_export.py` against `schemas/airspace_observation.schema.json` and
-`schemas/airspace_export_manifest.schema.json`. A synthetic example lives in
-`exports/examples/synthetic_airspace_package/`.
+Skywatcher emits airspace observation packages validated against:
+
+```text
+schemas/airspace_observation.schema.json
+schemas/airspace_export_manifest.schema.json
+```
+
+Synthetic package validation:
 
 ```bash
 python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
-python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode production  # rejects synthetic rows
+python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode production
 ```
 
-See [`docs/AIRSPACE_PRODUCER_EXPORT_TARGET.md`](docs/AIRSPACE_PRODUCER_EXPORT_TARGET.md) and the
-node's [`federation.json`](federation.json).
+Production-mode validation rejects synthetic rows. Current live-execution blockers should remain explicit until non-synthetic observations are loaded and exported.
 
-## Provenance
+## Optional GEBCO terrain layer
 
-- **Engine** extracted from `spiderweb-pr` branch `claude/pr-airspace-intelligence-v7Mbh`
-  (final-gap-closure airspace implementation), keeping the flat-module layout it was built in.
-- **Export contract** salvaged from `Puerto-Rico-Airspace-Intelligence-Tool` PR #1 before that
-  repo's retirement.
+```bash
+pip install -r requirements-geo.txt
+```
 
-Deferred follow-ups (still in the spiderweb archive branch): GEBCO wiring into ILAP,
-RAG/earthgpt context, satellite ingest, and the mission/operational-intelligence modules.
+`gebco/` is optional and tests should self-skip when geospatial dependencies are absent.
 
 ## Develop
 
 ```bash
 python -m pip install -r requirements-dev.txt
 pytest -q
+python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
 ```
+
+## Provenance
+
+- Engine extracted from the Spiderweb airspace implementation branch.
+- FR24 ingest migrated from `spiderweb-pr` into `fr24/`.
+- Export contract salvaged from the retired airspace tooling path.
