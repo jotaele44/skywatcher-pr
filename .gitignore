@@ -29,3 +29,7 @@ data/_manifests/
 data/.migration_trash/
 
 flight_database.db
+
+# FR24 ground-truth track harvest (controller: scripts/fr24_harvest.py)
+# Machine-local harvested CSVs + ledger/carryover; migrated from spiderweb-pr.
+data/ground_truth/
