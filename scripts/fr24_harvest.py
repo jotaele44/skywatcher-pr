@@ -52,6 +52,15 @@ GT = os.path.join(REPO, "data", "ground_truth")
 LEDGER = os.path.join(GT, "_harvest_ledger.json")
 DNR_GLOB = os.path.join(GT, "*", "_carryover_next_quota.csv")  # "no FR24 track" lists
 
+# ---------------------------------------------------------------- priority tails
+# Aircraft that must not be lost to the rolling Gold history floor. A flight from
+# one of these tails is bumped to the FRONT of the queue once it is within
+# EXPIRY_BUMP_DAYS of aging out (date + GOLD_WINDOW_DAYS <= today + EXPIRY_BUMP_DAYS).
+# Outside that window it keeps its normal oldest-first position.
+PRIORITY_TAILS = {"N409TD"}
+GOLD_WINDOW_DAYS = 365   # FR24 Gold rolling history window (oldest fetchable = today-365)
+EXPIRY_BUMP_DAYS = 2     # bump a priority-tail flight this many days before it ages out
+
 
 # ---------------------------------------------------------------- downloads dir
 def find_downloads() -> str:
@@ -139,6 +148,32 @@ def latest_carryover() -> str | None:
     return cands[-1] if cands else None
 
 
+def _days_to_expiry(date: str, today: "datetime.date | None" = None) -> "int | None":
+    """Days until this flight ages out of the Gold window (date + window - today).
+    Negative once it has dropped below the floor; None if the date won't parse."""
+    try:
+        d = datetime.date.fromisoformat(date)
+    except Exception:
+        return None
+    today = today or datetime.date.today()
+    return (d + datetime.timedelta(days=GOLD_WINDOW_DAYS) - today).days
+
+
+def prioritize_queue(q: list[dict], today: "datetime.date | None" = None) -> list[dict]:
+    """Stable reordering: priority-tail flights that are within EXPIRY_BUMP_DAYS of
+    aging out of the Gold window are bumped to the FRONT (soonest-expiry first); every
+    other entry keeps its existing carryover order. A priority tail OUTSIDE that window
+    is not bumped — it stays in its normal oldest-first slot."""
+    def near_expiry_priority(e: dict) -> bool:
+        if (e.get("tail") or "").upper() not in PRIORITY_TAILS:
+            return False
+        d = _days_to_expiry(e.get("date", ""), today)
+        return d is not None and 0 <= d <= EXPIRY_BUMP_DAYS
+    front = sorted((e for e in q if near_expiry_priority(e)), key=lambda e: e.get("date", ""))
+    rest = [e for e in q if not near_expiry_priority(e)]
+    return front + rest
+
+
 def load_queue() -> list[dict]:
     """Prioritized list of {date,tail,flight_id} from the newest carryover file,
     with already-harvested and do-not-requeue entries filtered out."""
@@ -159,7 +194,7 @@ def load_queue() -> list[dict]:
         if (tail, date) in dnr:
             continue
         q.append({"date": date, "tail": tail, "flight_id": fid})
-    return q
+    return prioritize_queue(q)
 
 
 # ---------------------------------------------------------------- commands
