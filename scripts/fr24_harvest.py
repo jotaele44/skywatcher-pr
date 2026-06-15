@@ -57,7 +57,7 @@ DNR_GLOB = os.path.join(GT, "*", "_carryover_next_quota.csv")  # "no FR24 track"
 # one of these tails is bumped to the FRONT of the queue once it is within
 # EXPIRY_BUMP_DAYS of aging out (date + GOLD_WINDOW_DAYS <= today + EXPIRY_BUMP_DAYS).
 # Outside that window it keeps its normal oldest-first position.
-PRIORITY_TAILS = {"N409TD"}
+PRIORITY_TAILS = {"N409TD", "N999ZY", "N767PD", "N407PR"}
 GOLD_WINDOW_DAYS = 365   # FR24 Gold rolling history window (oldest fetchable = today-365)
 EXPIRY_BUMP_DAYS = 2     # bump a priority-tail flight this many days before it ages out
 
