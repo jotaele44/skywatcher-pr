@@ -1,0 +1,26 @@
+{
+  "policy_id": "fr24_screenshot_privacy_redaction_policy",
+  "policy_version": "1.0.0",
+  "operation": "04_SCREENSHOT_PRIVACY_REDACTION_POLICY",
+  "status": "foundation_complete",
+  "raw_screenshot_default": "do_not_commit",
+  "allowed_raw_fixture_classes": ["synthetic", "redacted_screenshot"],
+  "metadata_only_classes": ["metadata_only", "external_reference_only"],
+  "sensitive_ui_fields": [
+    "user_account",
+    "email_or_handle",
+    "device_status_bar",
+    "notification_banner",
+    "contact_or_message",
+    "precise_private_location",
+    "home_or_school_context",
+    "face_or_person",
+    "vehicle_plate",
+    "device_identifier",
+    "browser_tab_or_history",
+    "access_token_or_secret",
+    "payment_or_account_info",
+    "other"
+  ],
+  "next_operation": "05_PARAMETER_CONTRACT_LAYER"
+}
