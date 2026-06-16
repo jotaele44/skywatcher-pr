@@ -79,6 +79,9 @@ VALID_EXPORT_TARGETS = {
     "vehicle_cluster_recurrence",
     "land_clearing_recurrence",
     "warehouse_poi_recurrence",
+    "container_poi_locator",
+    "container_recurrence",
+    "container_place_context",
     "sidecar",
     "manifest",
     "audit",
@@ -118,184 +121,110 @@ def normalize_string_sequence(
     normalized: list[str] = []
     for value in values:
         if not isinstance(value, str) or not value:
-            raise ParameterContractError(f"{field_name} must contain non-empty strings")
+            raise ParameterContractError(f"{field_name} values must be non-empty strings")
         if require_snake_case_values:
             require_snake_case(value, field_name)
-        if value not in normalized:
-            normalized.append(value)
-    return tuple(normalized)
-
-
-def normalize_int_sequence(values: Iterable[int] | None, field_name: str) -> tuple[int, ...]:
-    """Normalize optional integer sequences into tuples."""
-
-    if values is None:
-        return ()
-    if isinstance(values, (str, bytes)):
-        raise ParameterContractError(f"{field_name} must be a sequence of integers")
-    normalized: list[int] = []
-    for value in values:
-        if not isinstance(value, int):
-            raise ParameterContractError(f"{field_name} must contain integers")
-        if value not in normalized:
-            normalized.append(value)
+        normalized.append(value)
     return tuple(normalized)
 
 
 @dataclass(frozen=True)
 class ParameterContract:
-    """Registry-ready contract for one FR24 parameter."""
+    """Validated metadata contract for one visual-analysis parameter."""
 
     parameter_id: str
     family: str
     type: str
     source_method: str
     confidence_field: str | None
-    failure_modes: Sequence[str]
+    failure_modes: tuple[str, ...]
     export_target: str
     review_rule: str
-    implemented_by: str | None
-    test_required: bool
-    status: ParameterStatus | str
+    implemented_by: str | None = None
+    test_required: bool = True
+    status: ParameterStatus = ParameterStatus.DRAFT
     required: bool = False
     nullable: bool = True
-    allowed_values: Sequence[str] = field(default_factory=tuple)
-    default_value: Any = None
+    allowed_values: tuple[str, ...] = ()
     fixture_required: bool = False
     registry_version: str = "1.0.0"
     parameter_version: str = "1.0.0"
     deprecated: bool = False
     replacement_parameter_id: str | None = None
-    created_in_operation: int | None = None
-    mapped_operation_ids: Sequence[int] = field(default_factory=tuple)
-    parameter_origin: str = "assistant_recommended"
-    parameter_origin_note: str | None = None
-    parameter_dependency_ids: Sequence[str] = field(default_factory=tuple)
-    notes: str | None = None
+    created_in_operation: str | None = None
+    mapped_operation_ids: tuple[int, ...] = field(default_factory=tuple)
+    parameter_origin: str = "repo_required"
+    parameter_dependency_ids: tuple[str, ...] = field(default_factory=tuple)
+    notes: str = ""
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "status", ParameterStatus(self.status))
-        object.__setattr__(
-            self,
-            "failure_modes",
-            normalize_string_sequence(
-                self.failure_modes,
-                "failure_modes",
-                require_snake_case_values=True,
-            ),
-        )
-        object.__setattr__(
-            self,
-            "allowed_values",
-            normalize_string_sequence(self.allowed_values, "allowed_values"),
-        )
-        object.__setattr__(
-            self,
-            "mapped_operation_ids",
-            normalize_int_sequence(self.mapped_operation_ids, "mapped_operation_ids"),
-        )
-        object.__setattr__(
-            self,
-            "parameter_dependency_ids",
-            normalize_string_sequence(
-                self.parameter_dependency_ids,
-                "parameter_dependency_ids",
-                require_snake_case_values=True,
-            ),
-        )
-        self.validate()
-
-    def validate(self) -> None:
-        """Validate the parameter contract."""
-
         require_snake_case(self.parameter_id, "parameter_id")
         require_snake_case(self.family, "family")
-        if self.confidence_field is not None:
-            require_snake_case(self.confidence_field, "confidence_field")
-        if self.replacement_parameter_id is not None:
-            require_snake_case(self.replacement_parameter_id, "replacement_parameter_id")
         if self.type not in VALID_PARAMETER_TYPES:
-            raise ParameterContractError(f"unsupported parameter type: {self.type!r}")
+            raise ParameterContractError(f"unsupported parameter type: {self.type}")
         if self.source_method not in VALID_SOURCE_METHODS:
-            raise ParameterContractError(f"unsupported source_method: {self.source_method!r}")
+            raise ParameterContractError(f"unsupported source_method: {self.source_method}")
         if self.export_target not in VALID_EXPORT_TARGETS:
-            raise ParameterContractError(f"unsupported export_target: {self.export_target!r}")
+            raise ParameterContractError(f"unsupported export_target: {self.export_target}")
         if self.parameter_origin not in VALID_PARAMETER_ORIGINS:
-            raise ParameterContractError(f"unsupported parameter_origin: {self.parameter_origin!r}")
+            raise ParameterContractError(f"unsupported parameter_origin: {self.parameter_origin}")
         if not self.failure_modes:
-            raise ParameterContractError("failure_modes must contain at least one value")
-        if not isinstance(self.review_rule, str) or not self.review_rule:
-            raise ParameterContractError("review_rule is required")
+            raise ParameterContractError("failure_modes must not be empty")
+        if not self.review_rule:
+            raise ParameterContractError("review_rule must not be empty")
         if self.status in {
             ParameterStatus.IMPLEMENTED,
             ParameterStatus.TESTED,
             ParameterStatus.EXPORT_READY,
             ParameterStatus.COMPLETE,
         } and not self.implemented_by:
-            raise ParameterContractError("implemented parameters require implemented_by")
+            raise ParameterContractError("implemented/export-ready parameters require implemented_by")
         if self.deprecated and not self.replacement_parameter_id:
             raise ParameterContractError("deprecated parameters require replacement_parameter_id")
         if self.required and self.nullable:
-            raise ParameterContractError("required parameters cannot be nullable")
+            raise ParameterContractError("required parameters must not be nullable")
         if self.type == "enum" and not self.allowed_values:
             raise ParameterContractError("enum parameters require allowed_values")
-        if self.created_in_operation is not None and self.created_in_operation < 0:
-            raise ParameterContractError("created_in_operation must be non-negative")
 
-    @property
-    def is_registry_ready(self) -> bool:
-        """Whether this contract is complete enough for registry inclusion."""
-
-        return self.status not in {ParameterStatus.DRAFT, ParameterStatus.DEPRECATED}
-
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize to JSON-compatible registry payload."""
-
-        return {
-            "parameter_id": self.parameter_id,
-            "family": self.family,
-            "type": self.type,
-            "source_method": self.source_method,
-            "required": self.required,
-            "nullable": self.nullable,
-            "allowed_values": list(self.allowed_values),
-            "default_value": self.default_value,
-            "confidence_field": self.confidence_field,
-            "failure_modes": list(self.failure_modes),
-            "export_target": self.export_target,
-            "review_rule": self.review_rule,
-            "implemented_by": self.implemented_by,
-            "test_required": self.test_required,
-            "fixture_required": self.fixture_required,
-            "status": self.status.value,
-            "registry_version": self.registry_version,
-            "parameter_version": self.parameter_version,
-            "deprecated": self.deprecated,
-            "replacement_parameter_id": self.replacement_parameter_id,
-            "created_in_operation": self.created_in_operation,
-            "mapped_operation_ids": list(self.mapped_operation_ids),
-            "parameter_origin": self.parameter_origin,
-            "parameter_origin_note": self.parameter_origin_note,
-            "parameter_dependency_ids": list(self.parameter_dependency_ids),
-            "notes": self.notes,
-        }
+        normalize_string_sequence(self.failure_modes, "failure_modes", require_snake_case_values=True)
+        normalize_string_sequence(self.allowed_values, "allowed_values")
+        normalize_string_sequence(
+            self.parameter_dependency_ids,
+            "parameter_dependency_ids",
+            require_snake_case_values=True,
+        )
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ParameterContract":
-        """Create a contract from a mapping."""
+    def from_mapping(cls, payload: Mapping[str, Any]) -> "ParameterContract":
+        """Create a contract from a JSON-compatible mapping."""
 
-        return cls(**dict(payload))
+        values = dict(payload)
+        if "status" in values and not isinstance(values["status"], ParameterStatus):
+            values["status"] = ParameterStatus(values["status"])
+        for key in ("failure_modes", "allowed_values", "parameter_dependency_ids"):
+            if key in values:
+                values[key] = tuple(values[key])
+        if "mapped_operation_ids" in values:
+            values["mapped_operation_ids"] = tuple(values["mapped_operation_ids"])
+        return cls(**values)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-compatible representation."""
+
+        payload = dict(self.__dict__)
+        payload["status"] = self.status.value
+        payload["failure_modes"] = list(self.failure_modes)
+        payload["allowed_values"] = list(self.allowed_values)
+        payload["mapped_operation_ids"] = list(self.mapped_operation_ids)
+        payload["parameter_dependency_ids"] = list(self.parameter_dependency_ids)
+        return payload
 
 
-def validate_parameter_contracts(contracts: Iterable[ParameterContract | Mapping[str, Any]]) -> list[ParameterContract]:
-    """Validate contracts and reject duplicate parameter IDs."""
+def validate_parameter_contracts(contracts: Sequence[ParameterContract]) -> None:
+    """Validate a collection for cross-record constraints."""
 
-    normalized: list[ParameterContract] = []
     seen: set[str] = set()
     for contract in contracts:
-        item = contract if isinstance(contract, ParameterContract) else ParameterContract.from_dict(contract)
-        if item.parameter_id in seen:
-            raise ParameterContractError(f"duplicate parameter_id: {item.parameter_id}")
-        seen.add(item.parameter_id)
-        normalized.append(item)
-    return normalized
+        if contract.parameter_id in seen:
+            raise ParameterContractError(f"duplicate parameter_id: {contract.parameter_id}")
+        seen.add(contract.parameter_id)
