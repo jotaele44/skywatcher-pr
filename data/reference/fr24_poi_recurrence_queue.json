@@ -1,0 +1,26 @@
+{
+  "queue_id": "poi_recurrence_parameter_family",
+  "status": "queued",
+  "active_vector_continuation": "04_SCREENSHOT_PRIVACY_REDACTION_POLICY",
+  "module": "fr24_poi_recurrence.py",
+  "targets": [13, 14, 20, 22, 30, 31, 32],
+  "registry_families": [
+    "poi_identity",
+    "poi_match",
+    "poi_recurrence",
+    "poi_layer_identity",
+    "poi_layer_match",
+    "poi_layer_recurrence",
+    "ilap_layer_convergence"
+  ],
+  "exports": [
+    "poi_recurrence.jsonl",
+    "poi_layer_recurrence.jsonl"
+  ],
+  "notes": [
+    "POI means one stable unique location.",
+    "POI Layer means a grouped set of locations from one or more ILAP layers.",
+    "Recurrence must deduplicate screenshot hashes and track unique flight, aircraft, and date counts separately.",
+    "This queue item is deferred until the parameter registry and infrastructure context stages."
+  ]
+}
