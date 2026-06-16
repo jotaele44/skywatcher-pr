@@ -37,6 +37,22 @@ def test_all_routed_scoring_signal_groups_have_defaults():
             assert signal_group_id in configured
 
 
+def test_container_defaults_are_loaded_with_expected_guardrails():
+    config = load_config_defaults()
+
+    storage = config.signal_group_config("container_storage_signature")
+    yard = config.signal_group_config("container_yard_signature")
+    place = config.signal_group_config("container_place_context")
+    recurrence = config.signal_group_config("container_poi_recurrence")
+
+    assert storage.defaults["interpretation_guardrail"] == "visual_candidate_only"
+    assert yard.defaults["interpretation_guardrail"] == "visual_candidate_only"
+    assert place.defaults["interpretation_guardrail"] == "contextual_correlation_only"
+    assert recurrence.defaults["interpretation_guardrail"] == "recurrence_supported_only"
+    assert config.suppression_multiplier("container_storage_signature", "roof_unit_confusion") == 0.45
+    assert config.suppression_multiplier("container_storage_signature", "unknown_reason") == 1.0
+
+
 def test_weights_must_sum_to_one():
     payload = copy.deepcopy(load_config_defaults().payload)
     payload["threshold_groups"]["tile_suppression"]["signal_groups"]["seam_anomaly_detection"]["weights"][
