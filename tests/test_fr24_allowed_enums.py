@@ -29,6 +29,10 @@ def test_load_default_allowed_enum_registry():
     assert "roi_mask_analysis" in registry.allowed_families
     assert "blur_smear_canopy" in registry.allowed_families
     assert "tile_score_breakdown" in registry.allowed_families
+    assert "container_storage_signature" in registry.allowed_families
+    assert "container_poi_locator" in registry.allowed_export_targets
+    assert "container_recurrence" in registry.allowed_export_targets
+    assert "container_place_context" in registry.allowed_export_targets
 
 
 def test_tile_analysis_runs_before_ground_context():
@@ -53,6 +57,11 @@ def test_signal_group_routes_have_expected_owners():
     assert registry.route_for("vehicle_cluster_signature").owned_by_module == "fr24_ground_context.py"
     assert registry.route_for("land_clearing_signature").owned_by_module == "fr24_ground_context.py"
     assert registry.route_for("unlabeled_warehouse_signature").owned_by_module == "fr24_ground_context.py"
+    assert registry.route_for("container_storage_signature").owned_by_module == "fr24_ground_context.py"
+    assert registry.route_for("container_yard_signature").owned_by_module == "fr24_ground_context.py"
+    assert registry.route_for("container_false_positive_control").owned_by_module == "fr24_ground_context.py"
+    assert registry.route_for("container_place_context").owned_by_module == "fr24_infrastructure_context.py"
+    assert registry.route_for("container_poi_recurrence").owned_by_module == "fr24_poi_recurrence.py"
     assert registry.route_for("poi_recurrence").owned_by_module == "fr24_poi_recurrence.py"
 
 
@@ -101,6 +110,27 @@ def test_tile_analysis_capability_contains_v2_groups():
     assert expected.issubset(tile.handled_signal_groups)
 
 
+def test_container_groups_route_to_expected_modules_and_exports():
+    registry = load_allowed_enum_registry(REGISTRY_PATH)
+
+    storage = registry.route_for("container_storage_signature")
+    yard = registry.route_for("container_yard_signature")
+    context = registry.route_for("container_place_context")
+    recurrence = registry.route_for("container_poi_recurrence")
+
+    assert storage.pipeline_stage == "ground_context"
+    assert storage.export_targets == ["container_poi_locator", "container_recurrence"]
+    assert yard.pipeline_stage == "ground_context"
+    assert yard.export_targets == ["container_poi_locator", "container_recurrence"]
+    assert context.pipeline_stage == "infrastructure_context"
+    assert context.export_targets == ["container_place_context", "container_recurrence"]
+    assert recurrence.pipeline_stage == "recurrence"
+    assert recurrence.export_targets == ["container_recurrence"]
+    assert storage.interpretation_guardrail == "visual_candidate_only"
+    assert context.interpretation_guardrail == "contextual_correlation_only"
+    assert recurrence.interpretation_guardrail == "recurrence_supported_only"
+
+
 def test_recurrence_module_does_not_own_visual_detection_groups():
     registry = load_allowed_enum_registry(REGISTRY_PATH)
     recurrence = registry.capability_for("fr24_poi_recurrence.py")
@@ -110,6 +140,9 @@ def test_recurrence_module_does_not_own_visual_detection_groups():
         "land_clearing_signature",
         "unlabeled_warehouse_signature",
         "pool_signature",
+        "container_storage_signature",
+        "container_yard_signature",
+        "container_false_positive_control",
         "seam_anomaly_detection",
         "roi_mask_analysis",
         "blur_smear_canopy",
@@ -164,7 +197,7 @@ def test_registry_rejects_visual_groups_in_recurrence_module():
     payload = load_payload()
     payload = copy.deepcopy(payload)
     payload["module_capability_map"]["fr24_poi_recurrence.py"]["handled_signal_groups"].append(
-        "vehicle_cluster_signature"
+        "container_storage_signature"
     )
 
     with pytest.raises(AllowedEnumRegistryError, match="recurrence module must not own"):
