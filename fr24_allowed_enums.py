@@ -170,7 +170,13 @@ class AllowedEnumRegistry:
             "land_clearing_signature",
             "unlabeled_warehouse_signature",
             "pool_signature",
+            "container_storage_signature",
+            "container_yard_signature",
+            "container_false_positive_control",
             "seam_anomaly_detection",
+            "roi_mask_analysis",
+            "blur_smear_canopy",
+            "shadow_canopy_confusion",
         }
         overlap = forbidden_visual_groups.intersection(recurrence_module.handled_signal_groups)
         if overlap:
