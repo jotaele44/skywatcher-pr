@@ -1,0 +1,36 @@
+calibration_id: SATIM-CAL-MOCA-C6038_v1
+false_positive_classes:
+  PALM:
+    description: Palm or palm-like isolated tree crowns visible as radial or bright canopy forms.
+    suppress_when:
+      - crown_texture_is_vegetative
+      - feature_casts_tree_like_shadow
+      - feature_repeats_as_normal_vegetation_cluster
+  SHADOW:
+    description: Dark canopy, building, or terrain shadow mistaken for object, void, seam, or water.
+    suppress_when:
+      - boundary_aligns_with_sun_angle
+      - adjacent_canopy_or_structure_explains_dark_area
+      - no_hard_geometric_edge_is_present
+  WATER:
+    description: Pool, cistern, pond, or small water body mistaken for artificial anomaly.
+    suppress_when:
+      - blue_green_reflectance_is_enclosed_or_natural
+      - feature_has_expected_pool_or_cistern_geometry
+      - feature_is_adjacent_to_residential_or_farm_structure
+  FR24_3D_RENDER:
+    description: Flightradar24 3D mobile rendering, oblique terrain drape, compression, route overlay, or tile LOD artifact.
+    suppress_when:
+      - feature_exists_only_in_FR24_screenshot
+      - feature_aligns_with map_tile_or_lod_transition
+      - geometry_distortion_matches_oblique_view
+      - route_overlay_or_ui_compression_masks_surface_detail
+scoring_adjustments:
+  PALM: -0.25
+  SHADOW: -0.20
+  WATER: -0.30
+  FR24_3D_RENDER: -0.35
+promotion_thresholds:
+  review: 0.55
+  cross_source_required: 0.70
+  promote_to_candidate: 0.80
