@@ -1,0 +1,54 @@
+calibration_id: SATIM-CAL-MOCA-C6038_v1
+source_context:
+  platform: Flightradar24
+  view_mode: 3D mobile screenshot
+  aircraft_label: C6038 / CG638 / H60
+  aircraft_type: Sikorsky MH-60T Jayhawk
+  area_label: Moca / Antigua Escuela de Moca
+  evidence_tier: T2_operational_screenshot
+marker_classes:
+  dotted_line:
+    meaning: suspected seam
+    satim_role: tile_or_lod_boundary_detection
+    expected_false_positives:
+      - app_tile_loading
+      - 3d_lod_transition
+      - canopy_shadow_edge
+  squiggle:
+    meaning: smudge_or_texture_loss
+    satim_role: texture_frequency_anomaly_scoring
+    expected_false_positives:
+      - canopy_shadow
+      - compression_blur
+      - oblique_texture_stretching
+  triangle:
+    meaning: body_of_water_pool_or_cistern
+    satim_role: known_feature_class
+    expected_false_positives:
+      - roof_reflection
+      - blue_roof_material
+  straight_line:
+    meaning: geometry_warp_or_slanted_edge
+    satim_role: perspective_and_orthorectification_check
+    expected_false_positives:
+      - oblique_3d_perspective
+      - roof_pitch
+      - terrain_drape
+  x:
+    meaning: palm_tree
+    satim_role: vegetation_false_positive_class
+    expected_false_positives:
+      - isolated_tree_crown
+      - bright_leaf_reflectance
+  circle:
+    meaning: unusual_object_or_shadow
+    satim_role: ambiguous_candidate_class
+    expected_false_positives:
+      - shadow_pool
+      - small_clearing
+      - isolated_tree_crown
+promotion_checks:
+  - frame_to_frame_repeatability
+  - cross_source_persistence
+  - geometry_coherence
+  - false_positive_screening
