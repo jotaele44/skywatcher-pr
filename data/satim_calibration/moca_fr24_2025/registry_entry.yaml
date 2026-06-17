@@ -1,0 +1,42 @@
+registry_id: SATIM-CAL-MOCA-C6038_v1
+status: active
+repo_path: data/satim_calibration/moca_fr24_2025
+created_from: user_marked_FR24_mobile_screenshots
+area_label: Moca_Antigua_Escuela_de_Moca
+aircraft:
+  primary_label: C6038
+  secondary_label: CG638
+  type_label: H60
+  model_label: Sikorsky MH-60T Jayhawk
+flight_context:
+  platform: Flightradar24
+  display_mode: 3D_view
+  local_time_window: "12:27"
+  altitude_ft_observed:
+    - 800
+    - 850
+    - 900
+    - 925
+  ground_speed_mph_observed:
+    - 44
+    - 52
+    - 59
+    - 61
+evidence_tier: T2_operational_screenshot
+calibration_scope:
+  - tile_seam_detection
+  - smudge_texture_detection
+  - geometry_warp_check
+  - vegetation_false_positive_suppression
+  - water_feature_false_positive_suppression
+  - fr24_3d_render_false_positive_suppression
+required_cross_source_validation:
+  - Google_Earth_or_equivalent_historical_imagery
+  - Esri_World_Imagery_or_equivalent
+  - Sentinel_2_or_equivalent
+  - USGS_or_NOAA_aerial_where_available
+outputs:
+  marker_legend: marker_legend.yaml
+  labels: labels.csv
+  false_positive_classes: false_positive_classes.yaml
+  notes: README.md
