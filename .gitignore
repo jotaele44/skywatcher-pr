@@ -13,6 +13,14 @@ venv/
 .DS_Store
 .remember/
 
+# Secrets — never track credentials
+.env
+.env.*
+*.key
+*.pem
+*.p12
+secrets/
+
 # Local airspace data / outputs (only the synthetic example is tracked)
 *.db
 outputs/
