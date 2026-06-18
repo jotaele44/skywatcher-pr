@@ -1,0 +1,215 @@
+{
+  "calibration_id": "SATIM-CAL-MOCA-C6038_v1",
+  "set_path": "data/satim_calibration/moca_fr24_2025",
+  "evidence_tier": "T2_operational_screenshot",
+  "aircraft": {
+    "primary_label": "C6038",
+    "secondary_label": "CG638",
+    "type_label": "H60",
+    "model_label": "Sikorsky MH-60T Jayhawk"
+  },
+  "promotion_thresholds": {
+    "review": 0.55,
+    "cross_source_required": 0.7,
+    "promote_to_candidate": 0.8
+  },
+  "scoring_adjustments": {
+    "PALM": -0.25,
+    "SHADOW": -0.2,
+    "WATER": -0.3,
+    "FR24_3D_RENDER": -0.35
+  },
+  "counts": {
+    "labels": 12,
+    "frames": 4,
+    "marker_classes": 6,
+    "false_positive_classes": 4
+  },
+  "frames": [
+    "page_09",
+    "page_10",
+    "page_11",
+    "page_12"
+  ],
+  "score_summary": {
+    "mean_raw": 0.6458,
+    "mean_adjusted": 0.4458,
+    "min_adjusted": 0.2,
+    "max_adjusted": 0.65
+  },
+  "decision_breakdown": {
+    "suppressed": 7,
+    "review": 5
+  },
+  "fp_class_breakdown": {
+    "FR24_3D_RENDER": 4,
+    "SHADOW_OR_COMPRESSION": 2,
+    "PALM": 2,
+    "SHADOW": 1,
+    "TREE_CROWN": 1,
+    "COMPRESSION_OR_CANOPY": 1,
+    "WATER": 1
+  },
+  "warnings": [
+    "4 label(s) use non-canonical false_positive_class (no scoring adjustment applied): COMPRESSION_OR_CANOPY x1, SHADOW_OR_COMPRESSION x2, TREE_CROWN x1"
+  ],
+  "labels": [
+    {
+      "image_id": "moca_c6038_frame_09",
+      "frame": "page_09",
+      "marker_type": "straight_line",
+      "feature_class": "roof_or_building_edge",
+      "false_positive_class": "FR24_3D_RENDER",
+      "raw_confidence": 0.7,
+      "adjustment": -0.35,
+      "adjusted_score": 0.35,
+      "decision": "suppressed",
+      "unknown_false_positive_class": false,
+      "notes": "Marked roof/edge line; likely oblique perspective rather than surface anomaly."
+    },
+    {
+      "image_id": "moca_c6038_frame_09",
+      "frame": "page_09",
+      "marker_type": "squiggle",
+      "feature_class": "canopy_texture_smudge",
+      "false_positive_class": "SHADOW_OR_COMPRESSION",
+      "raw_confidence": 0.55,
+      "adjustment": 0.0,
+      "adjusted_score": 0.55,
+      "decision": "review",
+      "unknown_false_positive_class": true,
+      "notes": "Upper canopy texture appears soft; use as smudge calibration."
+    },
+    {
+      "image_id": "moca_c6038_frame_09",
+      "frame": "page_09",
+      "marker_type": "x",
+      "feature_class": "palm_or_isolated_tree_crown",
+      "false_positive_class": "PALM",
+      "raw_confidence": 0.9,
+      "adjustment": -0.25,
+      "adjusted_score": 0.65,
+      "decision": "review",
+      "unknown_false_positive_class": false,
+      "notes": "Multiple X marks correspond to palm-like crowns or isolated vegetation."
+    },
+    {
+      "image_id": "moca_c6038_frame_10",
+      "frame": "page_10",
+      "marker_type": "dotted_line",
+      "feature_class": "suspected_tile_or_lod_seam",
+      "false_positive_class": "FR24_3D_RENDER",
+      "raw_confidence": 0.65,
+      "adjustment": -0.35,
+      "adjusted_score": 0.3,
+      "decision": "suppressed",
+      "unknown_false_positive_class": false,
+      "notes": "Diagonal dotted feature; strongest seam/LOD candidate in the marked set."
+    },
+    {
+      "image_id": "moca_c6038_frame_10",
+      "frame": "page_10",
+      "marker_type": "circle",
+      "feature_class": "unusual_object_or_shadow",
+      "false_positive_class": "SHADOW",
+      "raw_confidence": 0.4,
+      "adjustment": -0.2,
+      "adjusted_score": 0.2,
+      "decision": "suppressed",
+      "unknown_false_positive_class": false,
+      "notes": "Left circled feature may be small clearing or shadow boundary."
+    },
+    {
+      "image_id": "moca_c6038_frame_10",
+      "frame": "page_10",
+      "marker_type": "circle",
+      "feature_class": "unusual_object_or_shadow",
+      "false_positive_class": "TREE_CROWN",
+      "raw_confidence": 0.35,
+      "adjustment": 0.0,
+      "adjusted_score": 0.35,
+      "decision": "suppressed",
+      "unknown_false_positive_class": true,
+      "notes": "Right circled feature likely isolated vegetation or clearing edge."
+    },
+    {
+      "image_id": "moca_c6038_frame_10",
+      "frame": "page_10",
+      "marker_type": "squiggle",
+      "feature_class": "canopy_texture_smudge",
+      "false_positive_class": "COMPRESSION_OR_CANOPY",
+      "raw_confidence": 0.5,
+      "adjustment": 0.0,
+      "adjusted_score": 0.5,
+      "decision": "suppressed",
+      "unknown_false_positive_class": true,
+      "notes": "Small smudge marks near lower-left frame; maintain as low-confidence texture class."
+    },
+    {
+      "image_id": "moca_c6038_frame_11",
+      "frame": "page_11",
+      "marker_type": "squiggle",
+      "feature_class": "large_canopy_smear",
+      "false_positive_class": "FR24_3D_RENDER",
+      "raw_confidence": 0.7,
+      "adjustment": -0.35,
+      "adjusted_score": 0.35,
+      "decision": "suppressed",
+      "unknown_false_positive_class": false,
+      "notes": "Large low-texture vegetation zone; useful for texture-frequency calibration."
+    },
+    {
+      "image_id": "moca_c6038_frame_12",
+      "frame": "page_12",
+      "marker_type": "dotted_line",
+      "feature_class": "suspected_tile_or_lod_seam",
+      "false_positive_class": "FR24_3D_RENDER",
+      "raw_confidence": 0.6,
+      "adjustment": -0.35,
+      "adjusted_score": 0.25,
+      "decision": "suppressed",
+      "unknown_false_positive_class": false,
+      "notes": "Dotted line continues toward built area; check frame-to-frame repeatability."
+    },
+    {
+      "image_id": "moca_c6038_frame_12",
+      "frame": "page_12",
+      "marker_type": "x",
+      "feature_class": "palm_or_isolated_tree_crown",
+      "false_positive_class": "PALM",
+      "raw_confidence": 0.9,
+      "adjustment": -0.25,
+      "adjusted_score": 0.65,
+      "decision": "review",
+      "unknown_false_positive_class": false,
+      "notes": "Cluster of X marks near edge of compound; vegetation false-positive class."
+    },
+    {
+      "image_id": "moca_c6038_frame_12",
+      "frame": "page_12",
+      "marker_type": "triangle",
+      "feature_class": "water_feature_pool_or_cistern",
+      "false_positive_class": "WATER",
+      "raw_confidence": 0.95,
+      "adjustment": -0.3,
+      "adjusted_score": 0.65,
+      "decision": "review",
+      "unknown_false_positive_class": false,
+      "notes": "Blue enclosed feature adjacent to structure; known water/pool/cistern class."
+    },
+    {
+      "image_id": "moca_c6038_frame_12",
+      "frame": "page_12",
+      "marker_type": "squiggle",
+      "feature_class": "canopy_texture_smudge",
+      "false_positive_class": "SHADOW_OR_COMPRESSION",
+      "raw_confidence": 0.55,
+      "adjustment": 0.0,
+      "adjusted_score": 0.55,
+      "decision": "review",
+      "unknown_false_positive_class": true,
+      "notes": "Smudge mark at lower-left edge of seam path; retain as texture anomaly candidate."
+    }
+  ],
+  "generated_at": "2026-06-18T07:05:48.402201+00:00"
+}

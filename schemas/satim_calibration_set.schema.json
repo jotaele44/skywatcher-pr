@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SatimCalibrationSet",
+  "description": "Reference schema for a SATIM visual-analysis calibration set's registry_entry.yaml. Documentation-only; the repo validates with scripts/validate_satim_calibration.py (stdlib, no jsonschema dependency).",
+  "type": "object",
+  "required": [
+    "registry_id",
+    "status",
+    "repo_path",
+    "aircraft",
+    "evidence_tier",
+    "calibration_scope",
+    "outputs"
+  ],
+  "properties": {
+    "registry_id": {
+      "type": "string",
+      "description": "Unique calibration set id, e.g. SATIM-CAL-MOCA-C6038_v1. Must match calibration_id in marker_legend.yaml and false_positive_classes.yaml."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "draft", "retired"]
+    },
+    "repo_path": {
+      "type": "string",
+      "description": "Path to this set relative to the repo root."
+    },
+    "created_from": {
+      "type": "string"
+    },
+    "area_label": {
+      "type": "string"
+    },
+    "aircraft": {
+      "type": "object",
+      "required": ["primary_label"],
+      "properties": {
+        "primary_label": { "type": "string" },
+        "secondary_label": { "type": "string" },
+        "type_label": { "type": "string" },
+        "model_label": { "type": "string" }
+      }
+    },
+    "flight_context": {
+      "type": "object",
+      "properties": {
+        "platform": { "type": "string" },
+        "display_mode": { "type": "string" },
+        "local_time_window": { "type": "string" },
+        "altitude_ft_observed": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "ground_speed_mph_observed": {
+          "type": "array",
+          "items": { "type": "number" }
+        }
+      }
+    },
+    "evidence_tier": {
+      "type": "string",
+      "description": "Evidence tier, e.g. T2_operational_screenshot. T2 = operational screenshot, not orthorectified source imagery."
+    },
+    "calibration_scope": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "required_cross_source_validation": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Independent sources required before a marked feature may be promoted out of review."
+    },
+    "outputs": {
+      "type": "object",
+      "required": ["marker_legend", "labels", "false_positive_classes"],
+      "properties": {
+        "marker_legend": { "type": "string" },
+        "labels": { "type": "string" },
+        "false_positive_classes": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

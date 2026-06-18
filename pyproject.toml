@@ -1,7 +1,8 @@
 # skywatcher-pr is a flat-layout airspace producer (modules at repo root,
 # importing each other as top-level names). It is run as an application, not
 # installed as a package, so there is no build-system here — pytest discovers
-# the root modules via pythonpath.
+# the root modules via pythonpath. "src" is also on the path so the
+# src/skywatcher package (registry/correlation helpers) is importable.
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "src"]
