@@ -32,14 +32,22 @@ data/satim_calibration/<set>/
 Reference schema: `schemas/satim_calibration_set.schema.json` (documentation
 only; validation is stdlib, see below).
 
+## Class resolution (aliases)
+
+Each label's `false_positive_class` resolves to a canonical scoring class:
+
+- already canonical (`PALM`, `SHADOW`, `WATER`, `FR24_3D_RENDER`) → `resolved`;
+- mapped through `false_positive_aliases` in `false_positive_classes.yaml`
+  (e.g. `TREE_CROWN → PALM`) → `aliased`, preserving the analyst's original
+  wording while applying the canonical adjustment;
+- otherwise → `unknown` (no adjustment, flagged + warned).
+
+Alias targets must themselves be canonical (validator-enforced).
+
 ## Scoring & promotion
 
-For each label: `adjusted = clamp01(raw_confidence + scoring_adjustment[fp_class])`.
-The adjustment is **0** for any `false_positive_class` that isn't one of the
-canonical classes (`PALM`, `SHADOW`, `WATER`, `FR24_3D_RENDER`); such rows are
-flagged `unknown_false_positive_class` and reported as a warning.
-
-Promotion bands come from `promotion_thresholds`:
+For each label: `adjusted = clamp01(raw_confidence + scoring_adjustment[resolved_class])`.
+Unknown classes get **0** adjustment. Promotion bands come from `promotion_thresholds`:
 
 | Band | Default | Meaning |
 |---|---|---|
@@ -48,10 +56,23 @@ Promotion bands come from `promotion_thresholds`:
 | `review` | ≥ 0.55 | enters human review |
 | `suppressed` | < 0.55 | below review threshold |
 
+## Promotion gate, repeatability, provenance
+
+The scored summary also carries:
+
+- **`promotion_gate`** — the registry's `required_cross_source_validation` sources
+  plus `marker_legend` `promotion_checks`, all `status: pending`. These are the
+  human gates a `candidate` must clear; the engine never marks them satisfied.
+- **`repeatability`** — distinct-frame count per `feature_class`
+  (`frame_to_frame_repeatability`). A **reported signal only**; it does not change
+  any score.
+- **`provenance`** — `engine_version` + SHA-256 of each source file, for
+  reproducibility/auditability.
+
 ## Commands
 
 ```bash
-# Integrity check (errors fail; non-canonical classes are warnings)
+# Integrity check (errors fail; unresolved classes / soft issues warn)
 python scripts/validate_satim_calibration.py data/satim_calibration
 
 # Score a set -> exports/satim_calibration/<id>/{scored_labels.csv,summary.json}
@@ -74,10 +95,17 @@ page (`/calibration`) from the committed static summary
 (`frontend/public/satim/<set>.summary.json`). It is decoupled from the
 federation `/api` client, so it works with no backend.
 
+## Reference schemas
+
+Documentation-only (validation is stdlib via `scripts/validate_satim_calibration.py`):
+`schemas/satim_calibration_set.schema.json`, `schemas/satim_marker_legend.schema.json`,
+`schemas/satim_false_positive_classes.schema.json`.
+
 ## Known data note
 
-The seed set `moca_fr24_2025` includes `labels.csv` rows whose
-`false_positive_class` is non-canonical (`SHADOW_OR_COMPRESSION`, `TREE_CROWN`,
-`COMPRESSION_OR_CANOPY`). These receive no scoring adjustment and are surfaced as
-warnings for a human to reconcile — the engine does not silently rewrite the
-annotations.
+The seed set `moca_fr24_2025` has `labels.csv` rows whose `false_positive_class`
+is a compound/observed value (`SHADOW_OR_COMPRESSION`, `TREE_CROWN`,
+`COMPRESSION_OR_CANOPY`). These are reconciled via `false_positive_aliases`
+(→ `SHADOW`, `PALM`, `SHADOW`) rather than by rewriting `labels.csv`, so the
+analyst's original wording is preserved. The alias targets are conservative
+defaults and are analyst-adjustable.

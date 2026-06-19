@@ -36,11 +36,14 @@ SCORED_LABEL_COLUMNS = (
     "marker_type",
     "feature_class",
     "false_positive_class",
+    "resolved_false_positive_class",
+    "resolution_status",
     "raw_confidence",
     "adjustment",
     "adjusted_score",
     "decision",
     "unknown_false_positive_class",
+    "frame_recurrence",
     "notes",
 )
 

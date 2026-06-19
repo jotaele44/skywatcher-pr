@@ -34,3 +34,11 @@ promotion_thresholds:
   review: 0.55
   cross_source_required: 0.70
   promote_to_candidate: 0.80
+# Observed compound classes used in labels.csv -> canonical scoring class.
+# Preserves the analyst's original wording while giving it a suppression
+# adjustment. Targets are conservative defaults and are analyst-adjustable.
+false_positive_aliases:
+  TREE_CROWN: PALM                 # isolated vegetation crown
+  SHADOW_OR_COMPRESSION: SHADOW    # shared-component default (milder suppressor)
+  COMPRESSION_OR_CANOPY: SHADOW    # texture/shadow reading of the ambiguity
+

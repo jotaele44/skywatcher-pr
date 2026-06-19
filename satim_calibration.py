@@ -19,20 +19,30 @@ Pure stdlib. YAML parsing reuses ``pipeline.normalize_locations.load_simple_yaml
 from __future__ import annotations
 
 import csv
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from pipeline.normalize_locations import load_simple_yaml
 
+SATIM_ENGINE_VERSION = "1.1.0"
+
 # Canonical false-positive classes that carry a scoring adjustment. Labels may
-# reference other (compound) classes; those get no adjustment and are flagged.
+# reference other (compound) classes; those are resolved via false_positive_aliases
+# where possible, and otherwise flagged as unknown (no adjustment).
 CANONICAL_FALSE_POSITIVE_CLASSES = ("PALM", "SHADOW", "WATER", "FR24_3D_RENDER")
+
+# Resolution status for a label's false_positive_class.
+RESOLUTION_RESOLVED = "resolved"  # already a canonical class
+RESOLUTION_ALIASED = "aliased"    # mapped to canonical via false_positive_aliases
+RESOLUTION_UNKNOWN = "unknown"    # neither canonical nor aliased -> no adjustment
 
 REGISTRY_FILE = "registry_entry.yaml"
 MARKER_LEGEND_FILE = "marker_legend.yaml"
 FALSE_POSITIVE_FILE = "false_positive_classes.yaml"
 LABELS_FILE = "labels.csv"
+SOURCE_FILES = (REGISTRY_FILE, MARKER_LEGEND_FILE, FALSE_POSITIVE_FILE, LABELS_FILE)
 
 LABELS_COLUMNS = (
     "image_id",
@@ -97,11 +107,14 @@ class ScoredLabel:
     marker_type: str
     feature_class: str
     false_positive_class: str
+    resolved_false_positive_class: str
+    resolution_status: str
     raw_confidence: float
     adjustment: float
     adjusted_score: float
     decision: str
     unknown_false_positive_class: bool
+    frame_recurrence: int
     notes: str
 
 
@@ -114,6 +127,9 @@ class CalibrationSet:
     registry: dict[str, Any]
     marker_classes: tuple[MarkerClass, ...]
     false_positive_classes: tuple[FalsePositiveClass, ...]
+    false_positive_aliases: dict[str, str]
+    promotion_checks: tuple[str, ...]
+    required_cross_sources: tuple[str, ...]
     promotion_thresholds: dict[str, float]
     labels: tuple[CalibrationLabel, ...]
 
@@ -221,6 +237,9 @@ def load_calibration_set(set_dir: str | Path) -> CalibrationSet:
     thresholds_raw = false_positives.get("promotion_thresholds") or DEFAULT_PROMOTION_THRESHOLDS
     thresholds = {key: _to_float(value) for key, value in thresholds_raw.items()}
 
+    aliases_raw = false_positives.get("false_positive_aliases") or {}
+    aliases = {str(k): str(v) for k, v in aliases_raw.items()}
+
     return CalibrationSet(
         set_dir=set_dir,
         calibration_id=str(registry.get("registry_id") or false_positives.get("calibration_id") or ""),
@@ -229,6 +248,9 @@ def load_calibration_set(set_dir: str | Path) -> CalibrationSet:
         registry=registry,
         marker_classes=parse_marker_classes(marker_legend),
         false_positive_classes=parse_false_positive_classes(false_positives),
+        false_positive_aliases=aliases,
+        promotion_checks=_as_tuple(marker_legend.get("promotion_checks")),
+        required_cross_sources=_as_tuple(registry.get("required_cross_source_validation")),
         promotion_thresholds=thresholds,
         labels=labels,
     )
@@ -257,6 +279,26 @@ def clamp01(value: float) -> float:
     return max(0.0, min(1.0, value))
 
 
+def resolve_false_positive_class(
+    fp_class: str,
+    scoring_adjustments: dict[str, float],
+    aliases: dict[str, str] | None = None,
+) -> tuple[str, str]:
+    """Resolve an observed false_positive_class to a canonical scoring class.
+
+    Returns (resolved_class, resolution_status). A class that is already canonical
+    resolves to itself; a compound/observed class is mapped via ``aliases``; an
+    unmapped class stays as-is with status ``unknown`` (and gets no adjustment).
+    """
+    aliases = aliases or {}
+    if fp_class in scoring_adjustments:
+        return fp_class, RESOLUTION_RESOLVED
+    resolved = aliases.get(fp_class)
+    if resolved and resolved in scoring_adjustments:
+        return resolved, RESOLUTION_ALIASED
+    return fp_class, RESOLUTION_UNKNOWN
+
+
 def promotion_decision(adjusted_score: float, thresholds: dict[str, float]) -> str:
     """Map an adjusted score to a conservative promotion band.
 
@@ -278,40 +320,81 @@ def score_label(
     label: CalibrationLabel,
     scoring_adjustments: dict[str, float],
     thresholds: dict[str, float],
+    aliases: dict[str, str] | None = None,
+    frame_recurrence: int = 0,
 ) -> ScoredLabel:
-    """Apply the false-positive scoring adjustment and a promotion decision."""
-    fp_class = label.false_positive_class
-    unknown = fp_class not in scoring_adjustments
-    adjustment = float(scoring_adjustments.get(fp_class, 0.0))
+    """Apply the false-positive scoring adjustment and a promotion decision.
+
+    ``frame_recurrence`` is a reported signal (how many distinct frames the
+    feature_class appears in); it does not change the adjusted score.
+    """
+    original = label.false_positive_class
+    resolved, status = resolve_false_positive_class(original, scoring_adjustments, aliases)
+    adjustment = float(scoring_adjustments.get(resolved, 0.0))
     adjusted = clamp01(label.confidence + adjustment)
     return ScoredLabel(
         image_id=label.image_id,
         source_page_or_frame=label.source_page_or_frame,
         marker_type=label.marker_type,
         feature_class=label.feature_class,
-        false_positive_class=fp_class,
+        false_positive_class=original,
+        resolved_false_positive_class=resolved,
+        resolution_status=status,
         raw_confidence=round(label.confidence, 4),
         adjustment=round(adjustment, 4),
         adjusted_score=round(adjusted, 4),
         decision=promotion_decision(adjusted, thresholds),
-        unknown_false_positive_class=unknown,
+        unknown_false_positive_class=(status == RESOLUTION_UNKNOWN),
+        frame_recurrence=frame_recurrence,
         notes=label.notes,
     )
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def build_provenance(calibration_set: CalibrationSet) -> dict[str, Any]:
+    """Deterministic provenance: engine version + SHA-256 of each source file."""
+    inputs = []
+    for filename in SOURCE_FILES:
+        path = calibration_set.set_dir / filename
+        if path.exists():
+            inputs.append({"file": filename, "sha256": _sha256(path)})
+    return {"engine_version": SATIM_ENGINE_VERSION, "inputs": inputs}
+
+
+def frame_recurrence_map(calibration_set: CalibrationSet) -> dict[str, int]:
+    """Distinct-frame count per feature_class (frame-to-frame repeatability signal)."""
+    frames_by_feature: dict[str, set[str]] = {}
+    for lbl in calibration_set.labels:
+        frames_by_feature.setdefault(lbl.feature_class, set()).add(lbl.source_page_or_frame)
+    return {feature: len(frames) for feature, frames in frames_by_feature.items()}
 
 
 def score_calibration_set(calibration_set: CalibrationSet) -> dict[str, Any]:
     """Produce a frontend-ready scored summary for a calibration set."""
     adjustments = calibration_set.scoring_adjustments
     thresholds = calibration_set.promotion_thresholds
-    scored = [score_label(lbl, adjustments, thresholds) for lbl in calibration_set.labels]
+    aliases = calibration_set.false_positive_aliases
+    recurrence = frame_recurrence_map(calibration_set)
+
+    scored = [
+        score_label(lbl, adjustments, thresholds, aliases, recurrence.get(lbl.feature_class, 0))
+        for lbl in calibration_set.labels
+    ]
 
     decision_breakdown: dict[str, int] = {}
     fp_class_breakdown: dict[str, int] = {}
+    resolution_breakdown: dict[str, int] = {}
     non_canonical: dict[str, int] = {}
     for s in scored:
         decision_breakdown[s.decision] = decision_breakdown.get(s.decision, 0) + 1
         fp_class_breakdown[s.false_positive_class] = (
             fp_class_breakdown.get(s.false_positive_class, 0) + 1
+        )
+        resolution_breakdown[s.resolution_status] = (
+            resolution_breakdown.get(s.resolution_status, 0) + 1
         )
         if s.unknown_false_positive_class:
             non_canonical[s.false_positive_class] = (
@@ -329,9 +412,44 @@ def score_calibration_set(calibration_set: CalibrationSet) -> dict[str, Any]:
     if non_canonical:
         detail = ", ".join(f"{name} x{count}" for name, count in sorted(non_canonical.items()))
         warnings.append(
-            f"{sum(non_canonical.values())} label(s) use non-canonical "
+            f"{sum(non_canonical.values())} label(s) use an unresolved "
             f"false_positive_class (no scoring adjustment applied): {detail}"
         )
+
+    label_rows = [
+        {
+            "image_id": s.image_id,
+            "frame": s.source_page_or_frame,
+            "marker_type": s.marker_type,
+            "feature_class": s.feature_class,
+            "false_positive_class": s.false_positive_class,
+            "resolved_false_positive_class": s.resolved_false_positive_class,
+            "resolution_status": s.resolution_status,
+            "raw_confidence": s.raw_confidence,
+            "adjustment": s.adjustment,
+            "adjusted_score": s.adjusted_score,
+            "decision": s.decision,
+            "unknown_false_positive_class": s.unknown_false_positive_class,
+            "frame_recurrence": s.frame_recurrence,
+            "notes": s.notes,
+        }
+        for s in scored
+    ]
+
+    candidates = [
+        {
+            "image_id": row["image_id"],
+            "frame": row["frame"],
+            "marker_type": row["marker_type"],
+            "feature_class": row["feature_class"],
+            "resolved_false_positive_class": row["resolved_false_positive_class"],
+            "adjusted_score": row["adjusted_score"],
+            "decision": row["decision"],
+            "frame_recurrence": row["frame_recurrence"],
+        }
+        for row in label_rows
+        if row["decision"] != "suppressed"
+    ]
 
     return {
         "calibration_id": calibration_set.calibration_id,
@@ -340,11 +458,22 @@ def score_calibration_set(calibration_set: CalibrationSet) -> dict[str, Any]:
         "aircraft": calibration_set.aircraft,
         "promotion_thresholds": thresholds,
         "scoring_adjustments": adjustments,
+        "false_positive_aliases": aliases,
+        "marker_legend": [
+            {
+                "marker_type": m.marker_type,
+                "meaning": m.meaning,
+                "satim_role": m.satim_role,
+                "expected_false_positives": list(m.expected_false_positives),
+            }
+            for m in calibration_set.marker_classes
+        ],
         "counts": {
             "labels": len(scored),
             "frames": len(frames),
             "marker_classes": len(calibration_set.marker_classes),
             "false_positive_classes": len(calibration_set.false_positive_classes),
+            "candidates": len(candidates),
         },
         "frames": frames,
         "score_summary": {
@@ -355,21 +484,19 @@ def score_calibration_set(calibration_set: CalibrationSet) -> dict[str, Any]:
         },
         "decision_breakdown": decision_breakdown,
         "fp_class_breakdown": fp_class_breakdown,
+        "resolution_breakdown": resolution_breakdown,
+        "repeatability": {
+            "by_feature_class": recurrence,
+            "recurring_feature_classes": sorted(f for f, c in recurrence.items() if c > 1),
+        },
+        "promotion_gate": {
+            "checks": list(calibration_set.promotion_checks),
+            "required_cross_sources": list(calibration_set.required_cross_sources),
+            "status": "pending",
+            "note": "All gates start pending; a human completes them before promotion.",
+        },
+        "candidates": candidates,
         "warnings": warnings,
-        "labels": [
-            {
-                "image_id": s.image_id,
-                "frame": s.source_page_or_frame,
-                "marker_type": s.marker_type,
-                "feature_class": s.feature_class,
-                "false_positive_class": s.false_positive_class,
-                "raw_confidence": s.raw_confidence,
-                "adjustment": s.adjustment,
-                "adjusted_score": s.adjusted_score,
-                "decision": s.decision,
-                "unknown_false_positive_class": s.unknown_false_positive_class,
-                "notes": s.notes,
-            }
-            for s in scored
-        ],
+        "provenance": build_provenance(calibration_set),
+        "labels": label_rows,
     }

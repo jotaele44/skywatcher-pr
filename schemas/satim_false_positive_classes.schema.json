@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SatimFalsePositiveClasses",
+  "description": "Reference schema for a SATIM calibration set's false_positive_classes.yaml. Documentation-only; validation is performed by scripts/validate_satim_calibration.py (stdlib, no jsonschema dependency).",
+  "type": "object",
+  "required": ["calibration_id", "false_positive_classes", "scoring_adjustments", "promotion_thresholds"],
+  "properties": {
+    "calibration_id": {
+      "type": "string",
+      "description": "Must match registry_entry.yaml registry_id."
+    },
+    "false_positive_classes": {
+      "type": "object",
+      "description": "Canonical class -> definition.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" },
+          "suppress_when": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "scoring_adjustments": {
+      "type": "object",
+      "description": "Canonical class -> suppressive adjustment in [-1.0, 0.0].",
+      "additionalProperties": {
+        "type": "number",
+        "minimum": -1.0,
+        "maximum": 0.0
+      }
+    },
+    "false_positive_aliases": {
+      "type": "object",
+      "description": "Observed compound class -> canonical class (must be a key of scoring_adjustments).",
+      "additionalProperties": { "type": "string" }
+    },
+    "promotion_thresholds": {
+      "type": "object",
+      "required": ["review", "cross_source_required", "promote_to_candidate"],
+      "properties": {
+        "review": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "cross_source_required": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "promote_to_candidate": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+      }
+    }
+  }
+}
