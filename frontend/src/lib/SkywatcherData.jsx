@@ -26,11 +26,20 @@ export function SkywatcherDataProvider({ children }) {
 
   const loadAll = useCallback(async () => {
     const keys = Object.keys(ENTITIES);
-    const results = await Promise.all(keys.map((k) => federation.entities[ENTITIES[k]].list("-created_date", 500)));
-    const next = {};
-    keys.forEach((k, i) => { next[k] = results[i] || []; });
-    setData(next);
-    setLoading(false);
+    try {
+      // allSettled + finally: a single failed/missing collection (e.g. no
+      // backend yet, or a 401 before login) must not trap the UI on the spinner.
+      const results = await Promise.allSettled(
+        keys.map((k) => federation.entities[ENTITIES[k]].list("-created_date", 500))
+      );
+      const next = {};
+      keys.forEach((k, i) => {
+        next[k] = results[i].status === "fulfilled" ? (results[i].value || []) : [];
+      });
+      setData(next);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);

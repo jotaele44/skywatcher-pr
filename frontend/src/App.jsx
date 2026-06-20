@@ -19,6 +19,10 @@ import ManualReview from '@/pages/ManualReview';
 import ExportCenter from '@/pages/ExportCenter';
 import Readiness from '@/pages/Readiness';
 import Calibration from '@/pages/Calibration';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
 
 const AuthenticatedApp = () => {
   return (
@@ -38,6 +42,10 @@ const AuthenticatedApp = () => {
             <Route path="/readiness" element={<Readiness />} />
             <Route path="/calibration" element={<Calibration />} />
           </Route>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </DrawerHubProvider>
