@@ -40,6 +40,16 @@ data/satim_calibration/moca_fr24_2025/raw/
 data/satim_calibration/moca_fr24_2025/annotated/
 ```
 
+## Processing
+
+Validate and score this set with the SATIM engine (see
+`docs/SATIM_CALIBRATION.md`):
+
+```bash
+python scripts/validate_satim_calibration.py data/satim_calibration/moca_fr24_2025
+python scripts/satim_score_labels.py data/satim_calibration/moca_fr24_2025
+```
+
 ## Promotion rule
 
 Promote a marked feature only after:

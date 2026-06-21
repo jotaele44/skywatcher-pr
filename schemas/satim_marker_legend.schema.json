@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SatimMarkerLegend",
+  "description": "Reference schema for a SATIM calibration set's marker_legend.yaml. Documentation-only; validation is performed by scripts/validate_satim_calibration.py (stdlib, no jsonschema dependency).",
+  "type": "object",
+  "required": ["calibration_id", "marker_classes"],
+  "properties": {
+    "calibration_id": {
+      "type": "string",
+      "description": "Must match registry_entry.yaml registry_id."
+    },
+    "source_context": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "marker_classes": {
+      "type": "object",
+      "description": "Map of marker_type -> definition.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["meaning", "satim_role"],
+        "properties": {
+          "meaning": { "type": "string" },
+          "satim_role": { "type": "string" },
+          "expected_false_positives": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "promotion_checks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Human checks required before a marked feature is promoted."
+    }
+  }
+}

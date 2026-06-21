@@ -1,0 +1,13 @@
+image_id,frame,marker_type,feature_class,false_positive_class,resolved_false_positive_class,resolution_status,raw_confidence,adjustment,adjusted_score,decision,unknown_false_positive_class,frame_recurrence,notes
+moca_c6038_frame_09,page_09,straight_line,roof_or_building_edge,FR24_3D_RENDER,FR24_3D_RENDER,resolved,0.7,-0.35,0.35,suppressed,False,1,Marked roof/edge line; likely oblique perspective rather than surface anomaly.
+moca_c6038_frame_09,page_09,squiggle,canopy_texture_smudge,SHADOW_OR_COMPRESSION,SHADOW,aliased,0.55,-0.2,0.35,suppressed,False,3,Upper canopy texture appears soft; use as smudge calibration.
+moca_c6038_frame_09,page_09,x,palm_or_isolated_tree_crown,PALM,PALM,resolved,0.9,-0.25,0.65,review,False,2,Multiple X marks correspond to palm-like crowns or isolated vegetation.
+moca_c6038_frame_10,page_10,dotted_line,suspected_tile_or_lod_seam,FR24_3D_RENDER,FR24_3D_RENDER,resolved,0.65,-0.35,0.3,suppressed,False,2,Diagonal dotted feature; strongest seam/LOD candidate in the marked set.
+moca_c6038_frame_10,page_10,circle,unusual_object_or_shadow,SHADOW,SHADOW,resolved,0.4,-0.2,0.2,suppressed,False,1,Left circled feature may be small clearing or shadow boundary.
+moca_c6038_frame_10,page_10,circle,unusual_object_or_shadow,TREE_CROWN,PALM,aliased,0.35,-0.25,0.1,suppressed,False,1,Right circled feature likely isolated vegetation or clearing edge.
+moca_c6038_frame_10,page_10,squiggle,canopy_texture_smudge,COMPRESSION_OR_CANOPY,SHADOW,aliased,0.5,-0.2,0.3,suppressed,False,3,Small smudge marks near lower-left frame; maintain as low-confidence texture class.
+moca_c6038_frame_11,page_11,squiggle,large_canopy_smear,FR24_3D_RENDER,FR24_3D_RENDER,resolved,0.7,-0.35,0.35,suppressed,False,1,Large low-texture vegetation zone; useful for texture-frequency calibration.
+moca_c6038_frame_12,page_12,dotted_line,suspected_tile_or_lod_seam,FR24_3D_RENDER,FR24_3D_RENDER,resolved,0.6,-0.35,0.25,suppressed,False,2,Dotted line continues toward built area; check frame-to-frame repeatability.
+moca_c6038_frame_12,page_12,x,palm_or_isolated_tree_crown,PALM,PALM,resolved,0.9,-0.25,0.65,review,False,2,Cluster of X marks near edge of compound; vegetation false-positive class.
+moca_c6038_frame_12,page_12,triangle,water_feature_pool_or_cistern,WATER,WATER,resolved,0.95,-0.3,0.65,review,False,1,Blue enclosed feature adjacent to structure; known water/pool/cistern class.
+moca_c6038_frame_12,page_12,squiggle,canopy_texture_smudge,SHADOW_OR_COMPRESSION,SHADOW,aliased,0.55,-0.2,0.35,suppressed,False,3,Smudge mark at lower-left edge of seam path; retain as texture anomaly candidate.
