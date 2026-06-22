@@ -6,10 +6,12 @@ import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 SATIM_SCHEMA_VERSION = "satim.calibration.v1"
 LAYER_STATUSES = {"READY", "PARTIAL", "DEGRADED", "MISSING"}
+REQUIRED_BASE_LAYERS = ["L1_ui_segmenter", "L2_route_extractor", "L3_vision_ocr"]
+ADVISORY_LAYERS = ["L4_aircraft_intelligence", "L5_tile_seam_shadow"]
 
 
 @dataclass
@@ -41,6 +43,9 @@ class SATIMCalibrationReport:
     def to_dict(self) -> Dict[str, Any]:
         payload = asdict(self)
         payload["overall_status"] = self.overall_status or derive_overall_status(self.layers)
+        derived_blocking_gaps, derived_next_actions = derive_gap_accounting(self.layers)
+        payload["blocking_gaps"] = self.blocking_gaps or derived_blocking_gaps
+        payload["recommended_next_actions"] = self.recommended_next_actions or derived_next_actions
         return payload
 
 
@@ -62,8 +67,7 @@ def derive_overall_status(layers: Mapping[str, Mapping[str, Any]]) -> str:
     L5 itself is explicitly degraded.
     """
     statuses = {name: data.get("status") for name, data in layers.items()}
-    required = ["L1_ui_segmenter", "L2_route_extractor", "L3_vision_ocr"]
-    if any(statuses.get(layer) in {"DEGRADED", "MISSING", None} for layer in required):
+    if any(statuses.get(layer) in {"DEGRADED", "MISSING", None} for layer in REQUIRED_BASE_LAYERS):
         return "DEGRADED"
     if statuses.get("L4_aircraft_intelligence") in {"DEGRADED", "MISSING", None}:
         return "PARTIAL"
@@ -72,6 +76,38 @@ def derive_overall_status(layers: Mapping[str, Mapping[str, Any]]) -> str:
     if all(status == "READY" for status in statuses.values()):
         return "READY_FOR_BATCH_ANALYSIS"
     return "PARTIAL"
+
+
+def derive_gap_accounting(layers: Mapping[str, Mapping[str, Any]]) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Derive operator-facing gaps from SATIM layer readiness.
+
+    L1-L3 are base SATIM readiness gates. Any non-ready L1-L3 layer is a
+    blocking gap because it prevents reliable FR24 screenshot batch analysis.
+    L4 and L5 are surfaced as recommended next actions because they gate
+    enrichment quality and imagery-artifact workflows rather than base FR24
+    screenshot parsing.
+    """
+    blocking_gaps: List[Dict[str, Any]] = []
+    recommended_next_actions: List[str] = []
+
+    for layer in REQUIRED_BASE_LAYERS:
+        status = layers.get(layer, {}).get("status")
+        if status != "READY":
+            blocking_gaps.append({
+                "layer": layer,
+                "status": status or "MISSING",
+                "severity": "blocker",
+                "detail": f"{layer} is required for SATIM batch readiness and is not READY.",
+            })
+
+    for layer in ADVISORY_LAYERS:
+        status = layers.get(layer, {}).get("status")
+        if status != "READY":
+            recommended_next_actions.append(
+                f"Resolve {layer} status {status or 'MISSING'} before production promotion."
+            )
+
+    return blocking_gaps, recommended_next_actions
 
 
 def read_json(path: str | Path) -> Dict[str, Any]:
