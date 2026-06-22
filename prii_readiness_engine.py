@@ -23,6 +23,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+try:
+    from fr24.calibration.readiness_adapter import satim_report_to_legacy_calibration
+except Exception:  # pragma: no cover - keeps legacy engine importable in partial builds
+    satim_report_to_legacy_calibration = None
+
 
 READINESS_STATUS_READY            = "READY"
 READINESS_STATUS_DEGRADED         = "DEGRADED"
@@ -170,9 +175,22 @@ class PRIIReadinessEngine:
         if not path.exists():
             return None
         try:
-            return json.loads(path.read_text(encoding="utf-8"))
+            payload = json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             return None
+        return self._normalise_loaded_json(filename, payload)
+
+    @staticmethod
+    def _normalise_loaded_json(filename: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalize newer artifact schemas into contracts expected by assess()."""
+        if (
+            filename == "calibration_report.json"
+            and isinstance(payload, dict)
+            and payload.get("schema_version") == "satim.calibration.v1"
+            and satim_report_to_legacy_calibration is not None
+        ):
+            return satim_report_to_legacy_calibration(payload)
+        return payload
 
     @staticmethod
     def _gate_detail(gate_name: str, gate: Dict[str, Any]) -> str:
