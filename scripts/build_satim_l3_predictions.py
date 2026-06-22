@@ -42,6 +42,15 @@ def index_registry(rows: Iterable[Mapping[str, Any]]) -> Dict[str, Mapping[str, 
     return out
 
 
+def index_panel_fields(rows: Iterable[Mapping[str, Any]]) -> Dict[str, Mapping[str, Any]]:
+    out: Dict[str, Mapping[str, Any]] = {}
+    for row in rows:
+        image_path = clean(row.get("image_path"))
+        if image_path:
+            out[image_path] = row
+    return out
+
+
 def find_image_path(baseline_root: Path, sample_image: str) -> str:
     sample_image = clean(sample_image)
     if not sample_image:
@@ -96,8 +105,10 @@ def build_records(
     registry_rows: List[Mapping[str, Any]],
     baseline_root: Path,
     image_filter: set[str] | None = None,
+    panel_rows: Iterable[Mapping[str, Any]] | None = None,
 ) -> List[Dict[str, Any]]:
     registry = index_registry(registry_rows)
+    panel_by_image = index_panel_fields(panel_rows or [])
     records: List[Dict[str, Any]] = []
 
     for row in ocr_events:
@@ -109,16 +120,24 @@ def build_records(
 
         tail = clean(row.get("tail")).upper()
         reg = registry.get(tail, {})
+        panel = panel_by_image.get(image_path, {})
 
+        panel_aircraft_type = clean(panel.get("aircraft_type"))
         make_model = clean(reg.get("make_model"))
         registry_type = clean(reg.get("aircraft_type"))
         owner = clean(reg.get("owner_or_status"))
 
-        aircraft_type = make_model or registry_type
+        aircraft_type = panel_aircraft_type or make_model or registry_type
 
-        # Current OCR event packet does not expose timeline OCR presence.
-        # Apply the canonical fallback: no visible/OCR timeline signal => file creation timestamp.
-        event_timestamp, timestamp_source, timestamp_confidence = file_creation_timestamp(image_path)
+        timeline_present = parse_bool(panel.get("timeline_present"))
+        ocr_timeline_timestamp = clean(panel.get("ocr_timeline_timestamp"))
+
+        if timeline_present and ocr_timeline_timestamp:
+            event_timestamp = ocr_timeline_timestamp
+            timestamp_source = "fr24_timeline_ocr"
+            timestamp_confidence = 0.90
+        else:
+            event_timestamp, timestamp_source, timestamp_confidence = file_creation_timestamp(image_path)
 
         records.append({
             "image_path": image_path,
@@ -128,20 +147,22 @@ def build_records(
             "ground_speed_mph": clean(row.get("speed_mph")),
 
             "aircraft_type": aircraft_type,
-            "aircraft_type_source": "registry_make_model" if make_model else ("registry_aircraft_type" if registry_type else ""),
+            "aircraft_type_source": (
+                "panel_ocr" if panel_aircraft_type
+                else ("registry_make_model" if make_model else ("registry_aircraft_type" if registry_type else ""))
+            ),
             "operator": owner,
             "operator_source": "registry_owner_or_status" if owner else "",
 
-            # These remain blank until panel OCR emits route/location fields.
-            "origin_code": "",
-            "destination_code": "",
-            "nearest_location": "",
+            "origin_code": clean(panel.get("origin_code")),
+            "destination_code": clean(panel.get("destination_code")),
+            "nearest_location": clean(panel.get("nearest_location")),
 
             # Timestamp provenance fields.
             "event_timestamp": event_timestamp,
             "timestamp_source": timestamp_source,
-            "timeline_present": False,
-            "ocr_timeline_timestamp": "",
+            "timeline_present": timeline_present,
+            "ocr_timeline_timestamp": ocr_timeline_timestamp,
             "file_created_at": event_timestamp if timestamp_source == "file_creation_time" else "",
             "filename_timestamp": event_timestamp if timestamp_source == "filename_timestamp" else "",
             "timestamp_confidence": timestamp_confidence,
@@ -159,6 +180,7 @@ def main() -> None:
     parser.add_argument("--registry-tails", required=True)
     parser.add_argument("--baseline-root", default="data/FR24_baseline")
     parser.add_argument("--image-list-csv", default="")
+    parser.add_argument("--panel-fields-csv", default="")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
@@ -169,6 +191,7 @@ def main() -> None:
         registry_rows=read_csv(args.registry_tails),
         baseline_root=Path(args.baseline_root),
         image_filter=image_filter or None,
+        panel_rows=read_csv(args.panel_fields_csv) if args.panel_fields_csv else [],
     )
 
     out = Path(args.output)
