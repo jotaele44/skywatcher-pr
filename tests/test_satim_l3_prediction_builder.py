@@ -56,3 +56,65 @@ def test_read_csv_roundtrip(tmp_path):
     path = tmp_path / "rows.csv"
     write_csv(path, [{"tail": "N2JJ"}], ["tail"])
     assert read_csv(path) == [{"tail": "N2JJ"}]
+
+
+from scripts.extract_satim_l3_panel_fields import parse_panel_text
+
+
+def test_parse_panel_text_extracts_route_location_aircraft_and_timeline():
+    text = """
+    N407PR
+    Bell 407
+    From SIG SAN JUAN
+    To NRR CEIBA
+    Near Lamboglia, Patillas
+    Timeline 2025-10-23 09:55:25
+    """
+
+    rec = parse_panel_text(text, image_path="sample.png")
+
+    assert rec["image_path"] == "sample.png"
+    assert rec["aircraft_type"] == "Bell 407"
+    assert rec["origin_code"] == "SIG"
+    assert rec["destination_code"] == "NRR"
+    assert rec["nearest_location"] == "Lamboglia, Patillas"
+    assert rec["timeline_present"] == "true"
+    assert rec["ocr_timeline_timestamp"] == "2025-10-23T09:55:25"
+
+
+def test_build_l3_predictions_uses_panel_fields_over_registry(tmp_path):
+    baseline = tmp_path / "data" / "FR24_baseline" / "2025-10"
+    baseline.mkdir(parents=True)
+    image = baseline / "2025-10-23T09-55-25_87fec1d1.png"
+    image.write_bytes(b"placeholder")
+
+    records = build_records(
+        ocr_events=[{
+            "tail": "N407PR",
+            "alt_ft": "879",
+            "speed_mph": "155",
+            "best_confidence": "0.94",
+            "sample_image": image.name,
+        }],
+        registry_rows=[],
+        baseline_root=tmp_path / "data" / "FR24_baseline",
+        panel_rows=[{
+            "image_path": str(image),
+            "aircraft_type": "Bell 407",
+            "origin_code": "SIG",
+            "destination_code": "NRR",
+            "nearest_location": "Lamboglia, Patillas",
+            "timeline_present": "true",
+            "ocr_timeline_timestamp": "2025-10-23T09:55:25",
+        }],
+    )
+
+    rec = records[0]
+    assert rec["aircraft_type"] == "Bell 407"
+    assert rec["aircraft_type_source"] == "panel_ocr"
+    assert rec["origin_code"] == "SIG"
+    assert rec["destination_code"] == "NRR"
+    assert rec["nearest_location"] == "Lamboglia, Patillas"
+    assert rec["timeline_present"] is True
+    assert rec["timestamp_source"] == "fr24_timeline_ocr"
+    assert rec["event_timestamp"] == "2025-10-23T09:55:25"
