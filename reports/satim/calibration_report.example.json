@@ -1,0 +1,43 @@
+{
+  "schema_version": "satim.calibration.v1",
+  "generated_at": "2026-06-19T00:00:00Z",
+  "repo": "skywatcher-pr",
+  "layers": {
+    "L1_ui_segmenter": {
+      "status": "READY",
+      "metrics": {"image_count": 12, "route_pixel_coverage": 0.94, "panel_text_overlap_pixels": 0},
+      "thresholds": {"route_pixel_coverage_min": 0.9, "panel_text_overlap_max": 0},
+      "findings": []
+    },
+    "L2_route_extractor": {
+      "status": "READY",
+      "metrics": {"image_count": 12, "blank_false_positive_rate": 0.0, "min_route_pixels": 8},
+      "thresholds": {"blank_false_positive_rate_max": 0.05, "min_route_pixels": 8},
+      "findings": []
+    },
+    "L3_vision_ocr": {
+      "status": "READY",
+      "metrics": {"record_count": 40, "field_scores": {"callsign": 0.95, "aircraft_type": 0.93, "altitude_ft": 0.92, "origin_code": 0.85, "destination_code": 0.83, "nearest_location": 0.72}},
+      "thresholds": {"callsign": 0.9, "aircraft_type": 0.9, "altitude_ft": 0.9, "origin_code": 0.8, "destination_code": 0.8, "nearest_location": 0.7},
+      "findings": []
+    },
+    "L4_aircraft_intelligence": {
+      "status": "PARTIAL",
+      "metrics": {"record_count": 50, "registry_coverage": 0.48, "onboarding_candidates": []},
+      "thresholds": {"registry_coverage_min": 0.5, "minimum_sightings": 3, "requires_faa_confirmation": true, "requires_operational_source": true},
+      "findings": [{"severity": "warning", "detail": "registry coverage below 50%"}]
+    },
+    "L5_tile_seam_shadow": {
+      "status": "READY",
+      "metrics": {"candidate_count": 8, "decision_counts": {"probable_tile_seam": 2, "probable_cloud_shadow": 3, "probable_terrain_shadow": 1, "probable_ground_feature": 1, "indeterminate": 1}},
+      "thresholds": {"promotion_min_likelihood": 0.55},
+      "findings": []
+    }
+  },
+  "overall_status": "PARTIAL",
+  "blocking_gaps": [],
+  "recommended_next_actions": [
+    "Expand L4 aircraft registry coverage for CBP, NOAA, DOD/SOCOM, and Puerto Rico public-safety operators.",
+    "Validate L5 against multi-date imagery and DEM hillshade before promoting satellite artifact decisions."
+  ]
+}
