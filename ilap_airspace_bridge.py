@@ -6,6 +6,7 @@ as GeoJSON for ingestion into the ILAP/Spiderweb airspace intelligence system.
 
 import json
 import math
+import os
 import sqlite3
 from collections import defaultdict
 from datetime import datetime
@@ -72,7 +73,7 @@ def _hydro_utility_score(center_lat: float, center_lon: float) -> float:
     """
     try:
         from gebco.io import GebcoIO
-        gio = GebcoIO()
+        gio = GebcoIO(path=os.environ.get("GEBCO_PATH"))
         if not gio.validate_bounds(center_lat - 0.01, center_lat + 0.01,
                                    center_lon - 0.01, center_lon + 0.01):
             return 0.2
