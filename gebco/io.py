@@ -68,14 +68,72 @@ class GebcoIO:
                 lon_min <= PR_LON_MAX and lon_max >= PR_LON_MIN)
 
     def to_geojson_contours(self, depth_intervals: List[float]) -> Dict:
-        """Generate depth contour GeoJSON from loaded data."""
+        """Generate depth contour GeoJSON from loaded GEBCO data.
+
+        Returns a FeatureCollection with one LineString feature per depth
+        interval.  Each LineString is built from the boundary pixels of the
+        region shallower-than-or-equal-to that depth level, converted to
+        (lon, lat) coordinates.  Requires the dataset to be open (call
+        ``self.open()`` first or initialise with a path).  Returns empty
+        coordinates when the dataset is unavailable or scipy is not installed.
+        """
+        ds = self._ds
+        if ds is None and self.path:
+            try:
+                ds = self.open()
+            except Exception:
+                pass
+
         features = []
-        for depth in depth_intervals:
-            features.append({
-                "type": "Feature",
-                "geometry": {"type": "LineString", "coordinates": []},
-                "properties": {"depth_m": depth, "label": f"{depth}m"}
-            })
+        if ds is None:
+            for depth in depth_intervals:
+                features.append({
+                    "type": "Feature",
+                    "geometry": {"type": "LineString", "coordinates": []},
+                    "properties": {"depth_m": depth, "label": f"{depth}m"},
+                })
+            return {"type": "FeatureCollection", "features": features}
+
+        try:
+            import numpy as np
+            from scipy import ndimage
+
+            elev_da = (
+                ds["elevation"] if "elevation" in ds
+                else next(iter(ds.data_vars.values()))
+            )
+            elev = elev_da.values.astype(np.float32)
+            lat_name = "lat" if "lat" in ds.coords else "latitude"
+            lon_name = "lon" if "lon" in ds.coords else "longitude"
+            lat_vals = ds.coords[lat_name].values
+            lon_vals = ds.coords[lon_name].values
+
+            for depth in depth_intervals:
+                mask = elev <= depth
+                boundary = mask & ~ndimage.binary_erosion(mask)
+                labeled, n_labels = ndimage.label(boundary)
+                coords: List = []
+                for label_id in range(1, n_labels + 1):
+                    rows, cols = np.where(labeled == label_id)
+                    order = np.argsort(rows)
+                    for i in order:
+                        coords.append([
+                            round(float(lon_vals[cols[i]]), 5),
+                            round(float(lat_vals[rows[i]]), 5),
+                        ])
+                features.append({
+                    "type": "Feature",
+                    "geometry": {"type": "LineString", "coordinates": coords},
+                    "properties": {"depth_m": depth, "label": f"{depth}m"},
+                })
+        except Exception:
+            for depth in depth_intervals:
+                features.append({
+                    "type": "Feature",
+                    "geometry": {"type": "LineString", "coordinates": []},
+                    "properties": {"depth_m": depth, "label": f"{depth}m"},
+                })
+
         return {"type": "FeatureCollection", "features": features}
 
     def cache_tile(self, tile_id: str, data: Dict = None) -> str:

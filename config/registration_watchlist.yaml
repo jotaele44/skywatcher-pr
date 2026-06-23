@@ -1,0 +1,55 @@
+# Registration watchlist for FR24 alert system.
+# Each entry triggers a REG-MISS alert when the aircraft has not been seen
+# within expected_within_days of the current date.
+registrations:
+  - registration: N5854Z
+    label: PREPA power line inspection helicopter (H125)
+    expected_within_days: 7
+
+  - registration: C6062
+    label: USCG MH-60T Jayhawk search and rescue
+    expected_within_days: 14
+
+  - registration: N767PD
+    label: Puerto Rico Police / FURA Bell 429
+    expected_within_days: 14
+
+  - registration: N684JB
+    label: Private/charter H130
+    expected_within_days: 30
+
+  - registration: N911PR
+    label: Emergency medical services
+    expected_within_days: 7
+
+  - registration: N304NG
+    label: Puerto Rico National Guard
+    expected_within_days: 30
+
+  - registration: N448CB
+    label: CBP air and marine operations
+    expected_within_days: 30
+
+  - registration: N229AE
+    label: AeroMed air ambulance
+    expected_within_days: 14
+
+  - registration: N87TV
+    label: Telemundo news helicopter
+    expected_within_days: 60
+
+  - registration: N521PR
+    label: Puerto Rico Port Authority
+    expected_within_days: 30
+
+  - registration: N172FA
+    label: FAA flight inspection
+    expected_within_days: 60
+
+  - registration: N388DR
+    label: DroneUp UAS operations
+    expected_within_days: 30
+
+  - registration: N960PR
+    label: Puerto Rico Forestry Service
+    expected_within_days: 30
