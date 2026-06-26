@@ -1,0 +1,5 @@
+image_id,source_page_or_frame,time_local,aircraft,altitude_ft,ground_speed_mph,marker_type,feature_class,false_positive_class,confidence,notes
+control_palm_01,ref_01,00:00,C6038,800,0,x,confirmed_palm_crown,PALM,0.90,"Confirmed palm crown in reference imagery; true vegetation false positive."
+control_water_01,ref_01,00:00,C6038,800,0,triangle,confirmed_pool,WATER,0.95,"Confirmed residential pool in reference imagery; true water false positive."
+control_render_01,ref_02,00:00,C6038,850,0,dotted_line,confirmed_tile_seam,FR24_3D_RENDER,0.65,"Tile seam absent from reference imagery; true FR24 render false positive."
+control_struct_01,ref_02,00:00,C6038,850,0,square,confirmed_real_structure,SHADOW,0.40,"Confirmed real building edge; anchor confirmed-negative (see ground_truth.csv)."

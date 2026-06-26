@@ -1,0 +1,27 @@
+calibration_id: SATIM-CAL-CONTROL-MOCA_v1
+false_positive_classes:
+  PALM:
+    description: Confirmed palm or isolated tree crown, verified against reference imagery.
+    suppress_when:
+      - crown_texture_is_vegetative
+  SHADOW:
+    description: Confirmed canopy / structure / terrain shadow.
+    suppress_when:
+      - boundary_aligns_with_sun_angle
+  WATER:
+    description: Confirmed pool, cistern, or pond verified against reference imagery.
+    suppress_when:
+      - feature_has_expected_pool_or_cistern_geometry
+  FR24_3D_RENDER:
+    description: Confirmed Flightradar24 3D render / tile LOD artifact absent from reference imagery.
+    suppress_when:
+      - feature_exists_only_in_FR24_screenshot
+scoring_adjustments:
+  PALM: -0.25
+  SHADOW: -0.20
+  WATER: -0.30
+  FR24_3D_RENDER: -0.35
+promotion_thresholds:
+  review: 0.55
+  cross_source_required: 0.70
+  promote_to_candidate: 0.80
