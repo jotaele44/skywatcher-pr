@@ -1,0 +1,30 @@
+calibration_id: SATIM-CAL-CONTROL-MOCA_v1
+source_context:
+  platform: orthorectified_reference
+  view_mode: nadir reference imagery
+  area_label: Moca / Antigua Escuela de Moca
+  evidence_tier: T1_orthorectified_reference
+marker_classes:
+  x:
+    meaning: confirmed_palm
+    satim_role: vegetation_false_positive_ground_truth
+    expected_false_positives:
+      - isolated_tree_crown
+  triangle:
+    meaning: confirmed_water_pool_or_cistern
+    satim_role: water_false_positive_ground_truth
+    expected_false_positives:
+      - roof_reflection
+  dotted_line:
+    meaning: confirmed_render_seam
+    satim_role: fr24_3d_render_ground_truth
+    expected_false_positives:
+      - 3d_lod_transition
+  square:
+    meaning: confirmed_real_structure
+    satim_role: confirmed_negative_anchor
+    expected_false_positives:
+      - none
+promotion_checks:
+  - cross_source_persistence
+  - false_positive_screening

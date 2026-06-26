@@ -1,0 +1,5 @@
+image_id,false_positive_class,confidence,is_false_positive,source
+control_palm_01,PALM,0.9000,1,reference_imagery
+control_water_01,WATER,0.9500,1,reference_imagery
+control_render_01,FR24_3D_RENDER,0.6500,1,reference_imagery
+control_struct_01,SHADOW,0.4000,0,reference_imagery
