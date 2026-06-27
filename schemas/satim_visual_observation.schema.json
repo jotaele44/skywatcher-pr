@@ -22,7 +22,7 @@
     "map_anchor": {"type": ["string", "null"]},
     "observation_type": {"enum": ["road", "clearing", "structure", "pond", "linear_feature", "vegetation_pattern", "access_pattern", "unknown"]},
     "candidate_signal": {"type": ["string", "null"]},
-    "artifact_controls_checked": {"type": "array", "items": {"type": "string"}},
+    "artifact_controls_checked": {"type": ["string", "array"], "items": {"type": "string"}},
     "confidence": {"enum": ["low", "medium", "high"]},
     "contradiction": {"type": "string"},
     "blind_spot": {"type": "string"},
