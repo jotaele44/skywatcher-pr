@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Ingest FR24 screenshot packets into Skywatcher test-run ledgers.
+"""Manifest-driven intake for analyst-provided Skywatcher/SATIM media.
 
-This is a conservative stub. It does not scrape FR24 or bypass security checks.
-It expects analyst-provided screenshot/PDF packets and writes normalized row stubs.
+The engine accepts local runtime files supplied by the operator. Source media are
+not committed to the repository and are not hard-coded into ledgers.
 """
 
 from __future__ import annotations
@@ -10,42 +10,78 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import Any
+
+SUPPORTED_EXTENSIONS = {
+    ".pdf",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".heic",
+    ".heif",
+    ".webp",
+    ".tif",
+    ".tiff",
+}
 
 
-def build_event_stub(packet: str, event_id: str) -> dict:
+def load_manifest(path: Path) -> dict[str, Any]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("manifest must be a JSON object")
+    return data
+
+
+def validate_input_path(input_path: str) -> Path:
+    path = Path(input_path)
+    ext = path.suffix.lower()
+    if ext not in SUPPORTED_EXTENSIONS:
+        allowed = ", ".join(sorted(SUPPORTED_EXTENSIONS))
+        raise ValueError(f"unsupported input extension {ext!r}; allowed: {allowed}")
+    return path
+
+
+def build_event_stub(manifest: dict[str, Any]) -> dict[str, Any]:
+    input_path = validate_input_path(str(manifest["input_path"]))
+    run_id = str(manifest.get("run_id") or input_path.stem)
+
     return {
-        "event_id": event_id,
-        "source_packet": packet,
-        "source_app": "Flightradar24 over Apple Maps",
-        "observed_timestamp_local": "2026-06-26 23:13 UTC-04:00",
-        "observed_timestamp_utc": "2026-06-27T03:13:00Z",
-        "aircraft_label": "N407PR",
-        "registration": "N407PR",
-        "callsign": None,
-        "route_summary": "Screenshot-derived FR24 playback context over Puerto Rico.",
-        "geographic_context": "Puerto Rico; Arecibo/San Sebastian/Lares/PR-370 visual sequence.",
-        "page_refs": list(range(1, 14)),
-        "evidence_tier": "T4",
-        "confidence": "medium",
-        "qa_flags": [
-            "screenshot_source",
-            "ui_overlay_present",
-            "route_line_not_tile_seam_by_default",
-            "raw_adsb_not_attached",
-        ],
-        "notes": "Replace with extracted metadata when raw ADS-B/FR24 export is available.",
+        "event_id": run_id,
+        "source_packet": "runtime_input_not_committed",
+        "source_app": manifest.get("source_app") or manifest.get("source_family") or "unknown",
+        "observed_timestamp_local": manifest.get("observed_timestamp_local"),
+        "observed_timestamp_utc": manifest.get("observed_timestamp_utc"),
+        "aircraft_label": manifest.get("aircraft_label"),
+        "registration": manifest.get("registration"),
+        "callsign": manifest.get("callsign"),
+        "route_summary": manifest.get("route_summary"),
+        "geographic_context": manifest.get("geographic_context") or "runtime input; AOI not specified",
+        "page_refs": manifest.get("page_refs") or [],
+        "evidence_tier": manifest.get("evidence_tier") or "T4",
+        "confidence": manifest.get("confidence") or "low",
+        "qa_flags": sorted(set([
+            "runtime_media_input",
+            "source_media_not_committed",
+            "artifact_controls_required",
+            *manifest.get("qa_flags", []),
+        ])),
+        "notes": manifest.get("analyst_notes") or "Generated from runtime manifest; source media not committed.",
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("packet", help="Path/name of analyst-provided screenshot PDF")
-    parser.add_argument("--event-id", default="FR24_2026-06-26_2313UTC_N407PR_TEST01")
+    parser.add_argument("manifest", help="JSON manifest describing the runtime media input")
     parser.add_argument("--out", default="flight_event_ledger.jsonl")
     args = parser.parse_args()
 
-    row = build_event_stub(args.packet, args.event_id)
+    manifest = load_manifest(Path(args.manifest))
+    if "input_path" not in manifest:
+        raise ValueError("manifest requires input_path")
+
+    row = build_event_stub(manifest)
     out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"wrote {out_path}")
 
