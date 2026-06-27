@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""
-Classify SATIM visual observations against artifact controls.
+"""Classify SATIM visual observations against artifact controls.
 
 Conservative test stub: separates flight-app route geometry from basemap tile
-artifacts and holds uncorroborated screenshot observations before promotion.
+artifacts and holds uncorroborated runtime-media observations before promotion.
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ def classify_row(row: dict) -> dict:
     text = " ".join(str(v).lower() for v in row.values())
     classes: list[str] = []
 
-    if any(term in text for term in ["fr24", "track", "playback", "diagonal"]):
+    if any(term in text for term in ["fr24", "track", "playback", "diagonal", "route"]):
         classes.append("TRACK_LINE")
     if any(term in text for term in ["logo", "player", "label", "overlay"]):
         classes.append("UI_OVERLAY")
@@ -25,11 +24,13 @@ def classify_row(row: dict) -> dict:
         classes.append("ZOOM_BLUR")
     if any(term in text for term in ["shadow", "canopy", "forest"]):
         classes.append("SHADOW_CONFUSION")
-    if any(term in text for term in ["tile", "seam", "epoch"]):
+    if any(term in text for term in ["tile", "seam", "epoch", "mosaic"]):
         classes.append("TILE_SEAM")
+    if any(term in text for term in ["compression", "jpeg", "artifact"]):
+        classes.append("COMPRESSION")
 
     if not classes:
-        classes = ["COMPRESSION"]
+        classes = ["HOLD_REVIEW"]
 
     row["classifier_artifact_classes"] = ";".join(dict.fromkeys(classes))
     row["promotion_status"] = "hold_artifact_control"
