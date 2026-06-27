@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Classify SATIM screenshot observations against artifact controls.
+"""Classify SATIM observations against artifact controls.
 
-This script is intentionally conservative. It classifies likely screenshot/map artifacts
-before any visual observation can be promoted to a structural signal.
+Conservative rule: unknowns are held for review. The classifier must never
+promote a weak or unknown row directly to STRUCTURAL_SIGNAL.
 """
 
 from __future__ import annotations
@@ -20,23 +20,25 @@ ARTIFACT_CLASSES = {
     "MIXED_EPOCH",
     "SHADOW_CONFUSION",
     "LABEL_COLLISION",
-    "STRUCTURAL_SIGNAL",
+    "HOLD_REVIEW",
 }
 
 
 def classify(description: str) -> tuple[str, str]:
     text = description.lower()
-    if "fr24" in text or "route" in text or "playback" in text or "diagonal line" in text:
+    if "fr24" in text or "route" in text or "playback" in text or "diagonal line" in text or "track" in text:
         return "TRACK_LINE", "high"
-    if "logo" in text or "player" in text or "label" in text:
+    if "logo" in text or "player" in text or "label" in text or "overlay" in text:
         return "UI_OVERLAY", "high"
     if "zoom" in text or "blur" in text or "smear" in text:
         return "ZOOM_BLUR", "high"
-    if "shadow" in text or "canopy" in text:
+    if "shadow" in text or "canopy" in text or "forest" in text:
         return "SHADOW_CONFUSION", "medium"
-    if "tile" in text or "epoch" in text or "mosaic" in text:
+    if "tile" in text or "epoch" in text or "mosaic" in text or "seam" in text:
         return "TILE_SEAM", "medium"
-    return "STRUCTURAL_SIGNAL", "low"
+    if "compression" in text or "jpeg" in text or "artifact" in text:
+        return "COMPRESSION", "medium"
+    return "HOLD_REVIEW", "low"
 
 
 def main() -> None:
@@ -50,13 +52,13 @@ def main() -> None:
 
     for row in rows:
         artifact_class, risk = classify(row.get("description", ""))
-        row.setdefault("artifact_class", artifact_class)
-        if not row.get("artifact_class"):
+        if not row.get("artifact_class") or row.get("artifact_class") == "STRUCTURAL_SIGNAL":
             row["artifact_class"] = artifact_class
-        row.setdefault("artifact_risk", risk)
         if not row.get("artifact_risk"):
             row["artifact_risk"] = risk
         row.setdefault("impact_on_analysis", "Requires analyst review before promotion.")
+        row.setdefault("promotion_status", "hold_artifact_control")
+        row.setdefault("promotion_rule", "No STRUCTURAL_SIGNAL promotion without georeference and independent corroboration.")
 
     fieldnames = sorted({key for row in rows for key in row.keys()})
     with Path(args.out).open("w", newline="", encoding="utf-8") as f:
