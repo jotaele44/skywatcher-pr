@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/tile_artifact_ledger.schema.json",
+  "title": "SATIM Tile Artifact Ledger Row",
+  "description": "Canonical audit row for tile seams, UI overlays, track lines, mixed-epoch boundaries, and other map/render artifacts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "visual_id",
+    "artifact_class",
+    "artifact_family",
+    "likelihoods",
+    "evidence",
+    "decision",
+    "created_at_utc"
+  ],
+  "properties": {
+    "schema_version": { "const": "satim.tile_artifact_ledger.v1" },
+    "artifact_id": { "type": "string", "pattern": "^SATIM-ART-[A-Z0-9_-]+$" },
+    "visual_id": { "type": "string", "pattern": "^SATIM-VIS-[A-Z0-9_-]+$" },
+    "artifact_family": {
+      "enum": [
+        "imagery_tile_artifact",
+        "fr24_render_artifact",
+        "ui_overlay_artifact",
+        "track_overlay_artifact",
+        "mixed_epoch_artifact",
+        "environmental_shadow",
+        "persistent_ground_feature",
+        "unknown"
+      ]
+    },
+    "artifact_class": {
+      "enum": [
+        "tile_seam",
+        "mosaic_edge",
+        "lod_boundary",
+        "track_line",
+        "label_box",
+        "range_ring",
+        "panel_overlay",
+        "cloud_shadow",
+        "terrain_shadow",
+        "mixed_epoch_boundary",
+        "ground_feature",
+        "indeterminate"
+      ]
+    },
+    "likelihoods": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tile_seam_likelihood",
+        "cloud_shadow_likelihood",
+        "terrain_shadow_likelihood",
+        "persistent_ground_feature_likelihood"
+      ],
+      "properties": {
+        "tile_seam_likelihood": { "type": "number", "minimum": 0, "maximum": 1 },
+        "cloud_shadow_likelihood": { "type": "number", "minimum": 0, "maximum": 1 },
+        "terrain_shadow_likelihood": { "type": "number", "minimum": 0, "maximum": 1 },
+        "persistent_ground_feature_likelihood": { "type": "number", "minimum": 0, "maximum": 1 },
+        "track_line_likelihood": { "type": "number", "minimum": 0, "maximum": 1 },
+        "ui_overlay_likelihood": { "type": "number", "minimum": 0, "maximum": 1 },
+        "mixed_epoch_likelihood": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "straight_boundary": { "type": "boolean" },
+        "axis_aligned": { "type": "boolean" },
+        "radiometric_discontinuity": { "type": "boolean" },
+        "screen_locked": { "type": "boolean" },
+        "non_persistent_across_dates": { "type": "boolean" },
+        "terrain_aligned": { "type": "boolean" },
+        "infrastructure_aligned": { "type": "boolean" },
+        "track_color_match": { "type": "boolean" },
+        "ui_anchor_match": { "type": "boolean" },
+        "epoch_discontinuity": { "type": "boolean" },
+        "notes": { "type": ["string", "null"] }
+      }
+    },
+    "source_dates_compared": {
+      "type": "array",
+      "items": { "type": "string", "format": "date-time" }
+    },
+    "decision": { "enum": ["suppress", "review", "cross_source_required", "candidate", "accepted_artifact"] },
+    "review_state": { "enum": ["unreviewed", "needs_review", "accepted", "rejected", "deferred"] },
+    "contradiction_flags": { "type": "array", "items": { "type": "string" } },
+    "created_at_utc": { "type": "string", "format": "date-time" },
+    "updated_at_utc": { "type": ["string", "null"], "format": "date-time" }
+  }
+}
