@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/satim_visual_observation.schema.json",
+  "title": "SATIM Visual Observation",
+  "type": "object",
+  "required": [
+    "observation_id",
+    "event_id",
+    "page",
+    "visual_context",
+    "observation_type",
+    "artifact_controls_checked",
+    "confidence",
+    "contradiction",
+    "blind_spot"
+  ],
+  "properties": {
+    "observation_id": {"type": "string"},
+    "event_id": {"type": "string"},
+    "page": {"type": "integer"},
+    "visual_context": {"type": "string"},
+    "map_anchor": {"type": ["string", "null"]},
+    "observation_type": {"enum": ["road", "clearing", "structure", "pond", "linear_feature", "vegetation_pattern", "access_pattern", "unknown"]},
+    "candidate_signal": {"type": ["string", "null"]},
+    "artifact_controls_checked": {"type": "array", "items": {"type": "string"}},
+    "confidence": {"enum": ["low", "medium", "high"]},
+    "contradiction": {"type": "string"},
+    "blind_spot": {"type": "string"},
+    "notes": {"type": ["string", "null"]}
+  }
+}
