@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/satim_visual_ledger.schema.json",
+  "title": "SATIM Visual Ledger Row",
+  "description": "Canonical audit row for one SATIM imagery-derived visual candidate before or after L5 classification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "visual_id",
+    "source_image_id",
+    "source_uri",
+    "capture_datetime_utc",
+    "aoi_id",
+    "candidate_kind",
+    "geometry",
+    "feature_scores",
+    "classification",
+    "confidence",
+    "review_state",
+    "created_at_utc"
+  ],
+  "properties": {
+    "schema_version": { "const": "satim.visual_ledger.v1" },
+    "visual_id": { "type": "string", "pattern": "^SATIM-VIS-[A-Z0-9_-]+$" },
+    "source_image_id": { "type": "string", "minLength": 1 },
+    "source_uri": { "type": "string", "minLength": 1 },
+    "capture_datetime_utc": { "type": "string", "format": "date-time" },
+    "imagery_provider": { "type": ["string", "null"] },
+    "imagery_epoch": { "type": ["string", "null"] },
+    "aoi_id": { "type": "string", "minLength": 1 },
+    "municipality": { "type": ["string", "null"] },
+    "geometry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "enum": ["Point", "LineString", "Polygon"] },
+        "coordinates": { "type": "array" },
+        "bbox": { "type": ["array", "null"], "items": { "type": "number" }, "minItems": 4, "maxItems": 4 }
+      }
+    },
+    "candidate_kind": {
+      "enum": [
+        "linear_boundary",
+        "rectilinear_boundary",
+        "tonal_boundary",
+        "ui_overlay_candidate",
+        "track_line_candidate",
+        "mixed_epoch_candidate",
+        "other"
+      ]
+    },
+    "feature_scores": {
+      "type": "object",
+      "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 },
+      "properties": {
+        "straightness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "radiometric_delta": { "type": "number", "minimum": 0, "maximum": 1 },
+        "terrain_crossing": { "type": "number", "minimum": 0, "maximum": 1 },
+        "landcover_persistence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "coastal_crossing_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "road_alignment": { "type": "number", "minimum": 0, "maximum": 1 },
+        "building_alignment": { "type": "number", "minimum": 0, "maximum": 1 },
+        "airport_alignment": { "type": "number", "minimum": 0, "maximum": 1 },
+        "parcel_alignment": { "type": "number", "minimum": 0, "maximum": 1 },
+        "screen_locked_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "track_line_overlap": { "type": "number", "minimum": 0, "maximum": 1 },
+        "ui_overlay_overlap": { "type": "number", "minimum": 0, "maximum": 1 },
+        "multi_date_persistence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "classification": {
+      "enum": [
+        "probable_tile_seam",
+        "probable_cloud_shadow",
+        "probable_terrain_shadow",
+        "probable_ground_feature",
+        "probable_track_line",
+        "probable_ui_overlay",
+        "mixed_epoch_artifact",
+        "indeterminate"
+      ]
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "review_state": { "enum": ["unreviewed", "needs_review", "accepted", "rejected", "deferred"] },
+    "reviewer": { "type": ["string", "null"] },
+    "review_note": { "type": ["string", "null"] },
+    "contradiction_flags": { "type": "array", "items": { "type": "string" } },
+    "cross_source_refs": { "type": "array", "items": { "type": "string" } },
+    "created_at_utc": { "type": "string", "format": "date-time" },
+    "updated_at_utc": { "type": ["string", "null"], "format": "date-time" }
+  }
+}
