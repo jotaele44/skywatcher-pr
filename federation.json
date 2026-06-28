@@ -31,14 +31,16 @@
     "validate_export": "python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test",
     "test_suite": "python -m pytest -q",
     "export_canonical": "python3 scripts/federation_export.py --mode test",
-    "ingest_airports": "python3 scripts/ingest_airports.py"
+    "ingest_airports": "python3 scripts/ingest_airports.py",
+    "maintenance": "python3 scripts/run_maintenance.py --repo skywatcher-pr --mode audit"
   },
   "canonical_outputs": {
     "airspace_observation_schema": "schemas/airspace_observation.schema.json",
     "airspace_export_manifest_schema": "schemas/airspace_export_manifest.schema.json",
     "synthetic_example_package": "exports/examples/synthetic_airspace_package",
     "export_target_contract": "docs/AIRSPACE_PRODUCER_EXPORT_TARGET.md",
-    "canonical_export_dir": "exports/federation"
+    "canonical_export_dir": "exports/federation",
+    "maintenance_report": "reports/maintenance/latest.json"
   },
   "federation_readiness_gate": {
     "ready_for_hub_discovery": true,
