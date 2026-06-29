@@ -1,5 +1,4 @@
 """L5 SATIM calibration: tile seam vs cloud/shadow/terrain artifact scoring."""
-
 from __future__ import annotations
 
 import argparse
@@ -14,6 +13,7 @@ DECISIONS = {
     "probable_cloud_shadow",
     "probable_terrain_shadow",
     "probable_ground_feature",
+    "explainable_infrastructure",
     "indeterminate",
 }
 
@@ -22,44 +22,142 @@ def clamp01(value: float) -> float:
     return max(0.0, min(1.0, value))
 
 
+def score(row: Mapping[str, Any], *names: str) -> float:
+    values: list[float] = []
+    for name in names:
+        try:
+            values.append(float(row.get(name, 0) or 0))
+        except (TypeError, ValueError):
+            values.append(0.0)
+    return clamp01(max(values) if values else 0.0)
+
+
+def context_suppression_score(row: Mapping[str, Any]) -> float:
+    """Return how strongly visible context explains orthogonal geometry.
+
+    Right angles are weak evidence by themselves. Roads, runways, reservoirs,
+    treatment plants, quarries, parcels, and buildings can all create true
+    orthogonal geometry, so these context signals suppress tile-seam promotion.
+    """
+    return score(
+        row,
+        "context_suppression_score",
+        "infrastructure_alignment",
+        "road_alignment",
+        "runway_alignment",
+        "water_edge_alignment",
+        "reservoir_edge_alignment",
+        "utility_plant_alignment",
+        "quarry_alignment",
+        "excavation_alignment",
+        "parcel_boundary_alignment",
+        "building_alignment",
+    )
+
+
+def corroborating_tile_signal_count(
+    *,
+    straight: float,
+    radiometric: float,
+    texture: float,
+    rectangular: float,
+    persistence: float,
+    terrain: float,
+) -> int:
+    """Count tile-seam signals excluding the weak right-angle prior."""
+    signals = [
+        straight >= 0.55,
+        radiometric >= 0.55,
+        texture >= 0.55,
+        rectangular >= 0.55,
+        persistence <= 0.35,
+        terrain <= 0.35,
+    ]
+    return sum(1 for item in signals if item)
+
+
 def classify_candidate(row: Mapping[str, Any]) -> Dict[str, Any]:
     """Classify one candidate from normalized feature scores.
 
-    Expected columns are booleans or 0..1 numeric scores:
+    Existing columns remain supported:
     straight_boundary_score, radiometric_discontinuity_score,
     cloud_mask_intersection, shadow_mask_intersection, dem_hillshade_alignment,
     multi_date_persistence, infrastructure_alignment.
-    """
-    straight = float(row.get("straight_boundary_score", 0) or 0)
-    radiometric = float(row.get("radiometric_discontinuity_score", 0) or 0)
-    cloud = float(row.get("cloud_mask_intersection", 0) or 0)
-    shadow = float(row.get("shadow_mask_intersection", 0) or 0)
-    terrain = float(row.get("dem_hillshade_alignment", 0) or 0)
-    persistence = float(row.get("multi_date_persistence", 0) or 0)
-    infrastructure = float(row.get("infrastructure_alignment", 0) or 0)
 
-    tile = clamp01((straight + radiometric + (1.0 - persistence) + (1.0 - terrain)) / 4.0)
-    cloud_shadow = clamp01(max(cloud, shadow) * max(radiometric, 0.1))
-    terrain_shadow = clamp01(terrain * max(shadow, radiometric))
-    ground = clamp01((persistence + infrastructure + (1.0 - max(cloud, shadow))) / 3.0)
+    Additional L5 orthogonal-artifact columns:
+    right_angle_score, orthogonal_corner_score, straight_edge_score,
+    rectangular_patch_score, color_discontinuity_score,
+    texture_discontinuity_score, context_suppression_score.
+
+    Rule:
+    - 90-degree/orthogonal geometry is a weak prior.
+    - Candidate tile seam requires at least two corroborating non-angle signals.
+    - Visible infrastructure/land-use context suppresses tile-seam promotion.
+    """
+    straight = score(row, "straight_boundary_score", "straight_edge_score")
+    radiometric = score(row, "radiometric_discontinuity_score", "color_discontinuity_score")
+    texture = score(row, "texture_discontinuity_score")
+    cloud = score(row, "cloud_mask_intersection")
+    shadow = score(row, "shadow_mask_intersection")
+    terrain = score(row, "dem_hillshade_alignment")
+    persistence = score(row, "multi_date_persistence")
+    infrastructure = score(row, "infrastructure_alignment")
+    suppression = context_suppression_score(row)
+    right_angle = score(row, "right_angle_score", "orthogonal_corner_score")
+    rectangular = score(row, "rectangular_patch_score")
+
+    corroborating = corroborating_tile_signal_count(
+        straight=straight,
+        radiometric=radiometric,
+        texture=texture,
+        rectangular=rectangular,
+        persistence=persistence,
+        terrain=terrain,
+    )
+
+    tile_base = clamp01(
+        (0.28 * straight)
+        + (0.27 * radiometric)
+        + (0.10 * texture)
+        + (0.10 * rectangular)
+        + (0.05 * right_angle)
+        + (0.15 * (1.0 - persistence))
+        + (0.15 * (1.0 - terrain))
+    )
+
+    # Orthogonal geometry alone must not promote a seam.
+    if right_angle >= 0.55 and corroborating < 2:
+        tile_base = min(tile_base, 0.49)
+
+    tile = clamp01(tile_base * (1.0 - (0.45 * suppression)))
+    cloud_shadow = clamp01(max(cloud, shadow) * max(radiometric, texture, 0.1))
+    terrain_shadow = clamp01(terrain * max(shadow, radiometric, texture))
+    ground = clamp01((persistence + infrastructure + suppression + (1.0 - max(cloud, shadow))) / 4.0)
 
     scores = {
         "tile_seam_likelihood": tile,
         "cloud_shadow_likelihood": cloud_shadow,
         "terrain_shadow_likelihood": terrain_shadow,
         "persistent_ground_feature_likelihood": ground,
+        "orthogonal_artifact_score": right_angle,
+        "rectangular_patch_score": rectangular,
+        "context_suppression_score": suppression,
+        "tile_corroborating_signal_count": corroborating,
     }
-    best_key = max(scores, key=scores.get)
-    if scores[best_key] < 0.55:
-        decision = "indeterminate"
-    elif best_key == "tile_seam_likelihood":
-        decision = "probable_tile_seam"
-    elif best_key == "cloud_shadow_likelihood":
-        decision = "probable_cloud_shadow"
-    elif best_key == "terrain_shadow_likelihood":
-        decision = "probable_terrain_shadow"
+
+    if suppression >= 0.70 and right_angle >= 0.55 and tile_base >= 0.45:
+        decision = "explainable_infrastructure"
     else:
-        decision = "probable_ground_feature"
+        decision_scores = {
+            "probable_tile_seam": tile,
+            "probable_cloud_shadow": cloud_shadow,
+            "probable_terrain_shadow": terrain_shadow,
+            "probable_ground_feature": ground,
+        }
+        decision = max(decision_scores, key=decision_scores.get)
+        if decision_scores[decision] < 0.55:
+            decision = "indeterminate"
+
     return {**scores, "decision": decision}
 
 
@@ -72,7 +170,8 @@ def summarize(results: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
     rows = list(results)
     counts = {decision: 0 for decision in DECISIONS}
     for row in rows:
-        counts[str(row.get("decision", "indeterminate"))] = counts.get(str(row.get("decision", "indeterminate")), 0) + 1
+        decision = str(row.get("decision", "indeterminate"))
+        counts[decision] = counts.get(decision, 0) + 1
     return {"candidate_count": len(rows), "decision_counts": counts}
 
 
@@ -90,7 +189,9 @@ def calibrate(candidates_csv: str) -> Dict[str, Any]:
         metrics=metrics,
         thresholds={
             "promotion_min_likelihood": 0.55,
-            "tile_seam_rule": "straight boundary + radiometric discontinuity + non-persistence + no terrain alignment",
+            "orthogonal_artifact_rule": "right angles are weak priors requiring at least two corroborating seam signals",
+            "tile_seam_rule": "straight/rectangular boundary + radiometric or texture discontinuity + non-persistence + no terrain alignment",
+            "context_suppressors": "roads, runways, reservoirs, utility plants, quarries, parcels, and buildings suppress seam promotion",
             "ground_feature_rule": "multi-date persistence + infrastructure/landcover alignment + low cloud/shadow intersection",
         },
         findings=findings,
