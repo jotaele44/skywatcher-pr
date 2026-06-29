@@ -118,3 +118,61 @@ def test_build_l3_predictions_uses_panel_fields_over_registry(tmp_path):
     assert rec["timeline_present"] is True
     assert rec["timestamp_source"] == "fr24_timeline_ocr"
     assert rec["event_timestamp"] == "2025-10-23T09:55:25"
+
+
+def test_parse_panel_text_strips_aircraft_registration_suffix():
+    rec = parse_panel_text("Bell 429 GlobalRanger REG", image_path="sample.png")
+    assert rec["aircraft_type"] == "Bell 429 GlobalRanger"
+
+
+def test_parse_panel_text_extracts_fr24_baro_route_table():
+    rec = parse_panel_text("""
+    N413LP (AS50
+    PSE > SIG BAROMETRIC ALT.
+    PONCE SAN JUAN 1,200 ft
+    Airbus Helicopters H125 REG. N413LP
+    """)
+    assert rec["origin_code"] == "PSE"
+    assert rec["destination_code"] == "SIG"
+
+
+def test_parse_panel_text_extracts_fr24_arrow_route_table():
+    rec = parse_panel_text("""
+    N407PR (B407
+    SIG »- NRR BAROMETRIC ALT.
+    SAN JUAN CEIBA 879 ft
+    """)
+    assert rec["aircraft_type"] == "Bell 407"
+    assert rec["origin_code"] == "SIG"
+    assert rec["destination_code"] == "NRR"
+
+
+def test_parse_panel_text_prefers_route_tokens_nearest_baro_line():
+    rec = parse_panel_text("N407PR (B407 SIG NRR BAROMETRIC ALT.")
+    assert rec["aircraft_type"] == "Bell 407"
+    assert rec["origin_code"] == "SIG"
+    assert rec["destination_code"] == "NRR"
+
+
+def test_parse_panel_text_extracts_origin_when_destination_not_available():
+    rec = parse_panel_text("""
+    N684JB (Ec30
+    SBH N/A BAROMETRIC ALT.
+    ST. JEAN NOT AVAILABLE 300 ft
+    Airbus Helicopters H130 REG. N684JB
+    """)
+    assert rec["aircraft_type"] == "Airbus Helicopters H130"
+    assert rec["origin_code"] == "SBH"
+    assert rec["destination_code"] == ""
+
+
+def test_parse_panel_text_extracts_fr24_utc_timestamp_line():
+    rec = parse_panel_text("Tue, Oct 14, 2025 | 12:51 PM uTC -04:00")
+    assert rec["timeline_present"] == "true"
+    assert rec["ocr_timeline_timestamp"] == "2025-10-14T12:51:00-04:00"
+
+
+def test_parse_panel_text_ignores_invalid_fr24_utc_month():
+    rec = parse_panel_text("Tue, Ocr 14, 2025 | 12:51 PM UTC -04:00")
+    assert rec["timeline_present"] == "true"
+    assert rec["ocr_timeline_timestamp"] == ""
