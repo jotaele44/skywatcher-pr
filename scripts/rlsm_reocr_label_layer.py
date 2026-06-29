@@ -9,7 +9,7 @@ each screenshot, then fit a pixel→lat/lon affine per screenshot.
 
 This script re-runs Tesseract in image_to_data mode (TSV with bounding
 boxes) on the label_layer zone of every screenshot, then populates
-labeled_pois.centroid_x/centroid_y with the actual word-level pixel
+labeled_pins.centroid_x/centroid_y with the actual word-level pixel
 centroid (not the zone-center fallback the original extractor used).
 
 REQUIREMENTS (run on user's Mac):
@@ -120,7 +120,7 @@ def main():
     skip_sids = set()
     if args.only_missing:
         for r in cur.execute("""
-            SELECT screenshot_id FROM labeled_pois
+            SELECT screenshot_id FROM labeled_pins
             WHERE centroid_x IS NOT NULL
             GROUP BY screenshot_id
             HAVING COUNT(DISTINCT centroid_x || ',' || centroid_y) >= 2
@@ -159,7 +159,7 @@ def main():
             # For each labeled_poi on this screenshot whose normalized_label matches
             # one of the words (ASCII), update centroid_x/y to the word's pixel centroid
             poi_rows = cur.execute(
-                "SELECT poi_id, normalized_label FROM labeled_pois WHERE screenshot_id = ?",
+                "SELECT pin_id, normalized_label FROM labeled_pins WHERE screenshot_id = ?",
                 (sid,)
             ).fetchall()
             # Build a word → centroid lookup (longest match wins)
@@ -168,21 +168,21 @@ def main():
                 key = _ascii_up(w["text"])
                 if key and key not in words_by_ascii:
                     words_by_ascii[key] = (w["cx"], w["cy"])
-            for poi_id, label in poi_rows:
+            for pin_id, label in poi_rows:
                 ascii_label = _ascii_up(label)
                 # Direct word match
                 if ascii_label in words_by_ascii:
                     cx, cy = words_by_ascii[ascii_label]
-                    cur.execute("UPDATE labeled_pois SET centroid_x=?, centroid_y=? WHERE poi_id=?",
-                                (cx, cy, poi_id))
+                    cur.execute("UPDATE labeled_pins SET centroid_x=?, centroid_y=? WHERE pin_id=?",
+                                (cx, cy, pin_id))
                     n_updates += 1
                     continue
                 # Substring match: any word containing the label as substring
                 for wkey, (cx, cy) in words_by_ascii.items():
                     if ascii_label in wkey or wkey in ascii_label:
                         if abs(len(wkey) - len(ascii_label)) <= 3:
-                            cur.execute("UPDATE labeled_pois SET centroid_x=?, centroid_y=? WHERE poi_id=?",
-                                        (cx, cy, poi_id))
+                            cur.execute("UPDATE labeled_pins SET centroid_x=?, centroid_y=? WHERE pin_id=?",
+                                        (cx, cy, pin_id))
                             n_updates += 1
                             break
             if n_done % 200 == 0:

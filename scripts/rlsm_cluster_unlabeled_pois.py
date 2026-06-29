@@ -60,7 +60,7 @@ def main():
         SELECT u.candidate_id, u.screenshot_id, u.candidate_type,
                u.centroid_x, u.centroid_y, u.bbox_w, u.bbox_h, u.confidence,
                s.filename_ts, s.month_bucket, s.width AS sw, s.height AS sh
-        FROM unlabeled_poi_candidates u
+        FROM unlabeled_pin_candidates u
         JOIN screenshots s USING(screenshot_id)
         WHERE u.centroid_x IS NOT NULL AND u.centroid_y IS NOT NULL
     """).fetchall()

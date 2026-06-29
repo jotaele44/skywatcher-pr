@@ -16,7 +16,7 @@ Honest limits
 -------------
 This ships **`anchor_kind='static'`** only. The `geo_anchors.anchor_kind`
 enum also allows `'derived'` (anchors matched per-screenshot via OCR'd
-labeled_pois → registry lookup) and `'failed'` (screenshots where no match
+labeled_pins → registry lookup) and `'failed'` (screenshots where no match
 worked). Those branches are the v2 pass and are NOT in this module:
 
 - Static anchors assume the FR24 PR view is consistent across the entire

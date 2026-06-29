@@ -194,7 +194,7 @@ def detect_for_screenshot(conn, sid: int, rel_path: str, run_id: int):
             "scale_x": round(scale_x, 3), "scale_y": round(scale_y, 3),
         }
         cur.execute(
-            """INSERT INTO unlabeled_poi_candidates
+            """INSERT INTO unlabeled_pin_candidates
                (screenshot_id, run_id, candidate_type, bbox_x, bbox_y, bbox_w, bbox_h,
                 centroid_x, centroid_y, evidence_features, confidence, review_status,
                 notes, observed_at)
@@ -218,7 +218,7 @@ def run(budget_sec: float, limit: int = 0):
     run_id = cur.lastrowid  # missing assignment caused NameError at first detect_for_screenshot call
     conn.commit()
     where_sql = ("WHERE s.ingest_status='ok' "
-                 "AND NOT EXISTS (SELECT 1 FROM unlabeled_poi_candidates u WHERE u.screenshot_id = s.screenshot_id)")
+                 "AND NOT EXISTS (SELECT 1 FROM unlabeled_pin_candidates u WHERE u.screenshot_id = s.screenshot_id)")
     sql = f"SELECT s.screenshot_id, s.rel_path FROM screenshots s {where_sql} ORDER BY s.screenshot_id"
     if limit:
         sql += f" LIMIT {int(limit)}"
@@ -314,7 +314,7 @@ def run_parallel(budget_sec: float, limit: int = 0, workers: int = 4) -> dict:
     main_conn.commit()
 
     where_sql = ("WHERE s.ingest_status='ok' "
-                 "AND NOT EXISTS (SELECT 1 FROM unlabeled_poi_candidates u "
+                 "AND NOT EXISTS (SELECT 1 FROM unlabeled_pin_candidates u "
                  "                WHERE u.screenshot_id = s.screenshot_id)")
     sql = (f"SELECT s.screenshot_id, s.rel_path FROM screenshots s {where_sql} "
            "ORDER BY s.screenshot_id")

@@ -3,7 +3,7 @@ RLSM derived extractors. Parse already-stored OCR observations into structured
 tables:
 
   - aircraft_observations  (from aircraft_card + top_bar zones)
-  - labeled_pois           (from label_layer + map_center zones)
+  - labeled_pins           (from label_layer + map_center zones)
   - flight_track_features  (placeholder; deferred pending route_extractor integration)
   - manual_review_queue    (low-conf rows, conflicts)
 
@@ -320,27 +320,27 @@ def _classify_poi(label: str, vocab_entry) -> tuple:
     return "unknown", 0.25
 
 
-def extract_labeled_pois(conn: sqlite3.Connection, run_id: int,
+def extract_labeled_pins(conn: sqlite3.Connection, run_id: int,
                           limit: int = 0, reset: bool = False) -> dict:
     """
     v2 extractor: tokenize OCR text and substring-match against PR vocabulary
     (5 anchors + 279 municipalities + Caribbean territories + water features).
 
     Two-tier emission:
-      Tier 1 (matched): raw_label = canonical name, poi_type_guess in
+      Tier 1 (matched): raw_label = canonical name, pin_type_guess in
               {airport, anchor, municipality, territory, water}, confidence
               boosted to 90 if OCR mean was high enough.
       Tier 2 (unknown_label_candidate): unmatched but plausibly-labeled tokens
               from the OCR text. Marked review_status='unreviewed'.
     """
     if reset:
-        conn.execute("DELETE FROM labeled_pois")
+        conn.execute("DELETE FROM labeled_pins")
         conn.commit()
 
     sql = """SELECT s.screenshot_id
              FROM screenshots s
              WHERE s.ocr_status = 'ok'
-               AND NOT EXISTS (SELECT 1 FROM labeled_pois p WHERE p.screenshot_id = s.screenshot_id)
+               AND NOT EXISTS (SELECT 1 FROM labeled_pins p WHERE p.screenshot_id = s.screenshot_id)
              ORDER BY s.screenshot_id"""
     if limit:
         sql += f" LIMIT {limit}"
@@ -382,10 +382,10 @@ def extract_labeled_pois(conn: sqlite3.Connection, run_id: int,
                 confidence = min(0.95, confidence + 0.15)
 
             conn.execute(
-                """INSERT INTO labeled_pois
+                """INSERT INTO labeled_pins
                    (screenshot_id, run_id, raw_label, normalized_label,
                     bbox_x, bbox_y, bbox_w, bbox_h, centroid_x, centroid_y,
-                    poi_type_guess, confidence, review_status, observed_at)
+                    pin_type_guess, confidence, review_status, observed_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (sid, run_id, raw_label, _normalize_label(raw_label),
                  None, None, None, None, None, None,
@@ -475,10 +475,10 @@ def build_review_queues(conn: sqlite3.Connection) -> dict:
     # 2) Labeled POI low confidence
     conn.execute("""
         INSERT INTO manual_review_queue (screenshot_id, item_kind, item_ref_table, item_ref_id, reason, severity, review_status, created_at)
-        SELECT screenshot_id, 'labeled_pin_low_conf', 'labeled_pois', poi_id,
-               'label="' || raw_label || '" type_guess=' || poi_type_guess || ' conf=' || ROUND(COALESCE(confidence,0),1),
+        SELECT screenshot_id, 'labeled_pin_low_conf', 'labeled_pins', pin_id,
+               'label="' || raw_label || '" type_guess=' || pin_type_guess || ' conf=' || ROUND(COALESCE(confidence,0),1),
                'low', 'unreviewed', ?
-        FROM labeled_pois WHERE confidence IS NOT NULL AND confidence < ?
+        FROM labeled_pins WHERE confidence IS NOT NULL AND confidence < ?
         """, (ts, LOW_CONF_POI_THRESHOLD))
     n_total += conn.execute("SELECT changes()").fetchone()[0]
 
@@ -497,11 +497,11 @@ def build_review_queues(conn: sqlite3.Connection) -> dict:
     # 4) Unlabeled candidates (all go to review)
     conn.execute("""
         INSERT INTO manual_review_queue (screenshot_id, item_kind, item_ref_table, item_ref_id, reason, severity, review_status, created_at)
-        SELECT screenshot_id, 'unlabeled_candidate', 'unlabeled_poi_candidates', candidate_id,
+        SELECT screenshot_id, 'unlabeled_candidate', 'unlabeled_pin_candidates', candidate_id,
                'type=' || candidate_type || ' conf=' || ROUND(COALESCE(confidence,0),1),
                CASE WHEN confidence > 0.7 THEN 'high' WHEN confidence > 0.4 THEN 'medium' ELSE 'low' END,
                'unreviewed', ?
-        FROM unlabeled_poi_candidates
+        FROM unlabeled_pin_candidates
     """, (ts,))
     n_total += conn.execute("SELECT changes()").fetchone()[0]
 
@@ -545,8 +545,8 @@ def main() -> None:
     ap.add_argument("--kind", choices=["aircraft", "labeled_poi", "review_queue", "all"],
                     default="all")
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--reset-labeled-pois", action="store_true",
-                    help="Clear labeled_pois before re-running (for schema changes).")
+    ap.add_argument("--reset-labeled-pins", action="store_true",
+                    help="Clear labeled_pins before re-running (for schema changes).")
     args = ap.parse_args()
 
     conn = sqlite3.connect(DB, timeout=30.0)
@@ -584,8 +584,8 @@ def main() -> None:
         )
         run_id = cur.lastrowid
         conn.commit()
-        result = extract_labeled_pois(conn, run_id, args.limit,
-                                      reset=args.reset_labeled_pois)
+        result = extract_labeled_pins(conn, run_id, args.limit,
+                                      reset=args.reset_labeled_pins)
         conn.execute(
             "UPDATE processing_runs SET ended_at=?, status='completed', n_processed=? WHERE run_id=?",
             (_iso_now(), result["emitted"], run_id),

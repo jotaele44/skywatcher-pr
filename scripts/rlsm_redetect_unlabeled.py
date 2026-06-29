@@ -9,7 +9,7 @@ markers) alongside genuine map features. This script:
   1. Masks UI-chrome regions before feature detection
   2. Re-runs OpenCV blob/contour detection with shape filters tuned for
      map-overlay icons (pads, tanks, antennas, road scars)
-  3. Replaces unlabeled_poi_candidates rows for re-processed screenshots
+  3. Replaces unlabeled_pin_candidates rows for re-processed screenshots
      (preserves audit trail via processing_runs row)
   4. Marks every new candidate with detection_method='ui_masked_v2'
 
@@ -140,13 +140,13 @@ def main():
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
 
-    # Ensure provenance column on unlabeled_poi_candidates
-    cols = {r[1] for r in cur.execute("PRAGMA table_info(unlabeled_poi_candidates)")}
+    # Ensure provenance column on unlabeled_pin_candidates
+    cols = {r[1] for r in cur.execute("PRAGMA table_info(unlabeled_pin_candidates)")}
     if "detection_method" not in cols:
-        cur.execute("ALTER TABLE unlabeled_poi_candidates ADD COLUMN detection_method TEXT")
+        cur.execute("ALTER TABLE unlabeled_pin_candidates ADD COLUMN detection_method TEXT")
         conn.commit()
     if args.replace:
-        cur.execute("DELETE FROM unlabeled_poi_candidates WHERE detection_method = 'ui_masked_v2'")
+        cur.execute("DELETE FROM unlabeled_pin_candidates WHERE detection_method = 'ui_masked_v2'")
         conn.commit()
 
     rows = cur.execute("""
@@ -178,7 +178,7 @@ def main():
                 n_fail += 1; continue
             for c in candidates or []:
                 cur.execute("""
-                    INSERT INTO unlabeled_poi_candidates
+                    INSERT INTO unlabeled_pin_candidates
                       (screenshot_id, run_id, candidate_type, centroid_x, centroid_y,
                        bbox_x, bbox_y, bbox_w, bbox_h, confidence, detected_at, detection_method)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ui_masked_v2')

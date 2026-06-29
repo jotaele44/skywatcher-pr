@@ -78,8 +78,8 @@ def build(conn: sqlite3.Connection) -> str:
     """)
 
     # ── Derived ────────────────────────────────────────────────────────────────
-    n_labeled    = _q(conn, "SELECT COUNT(*) FROM labeled_pois")[0][0]
-    n_unlabeled  = _q(conn, "SELECT COUNT(*) FROM unlabeled_poi_candidates")[0][0]
+    n_labeled    = _q(conn, "SELECT COUNT(*) FROM labeled_pins")[0][0]
+    n_unlabeled  = _q(conn, "SELECT COUNT(*) FROM unlabeled_pin_candidates")[0][0]
     n_aircraft   = _q(conn, "SELECT COUNT(*) FROM aircraft_observations")[0][0]
     n_tracks     = _q(conn, "SELECT COUNT(*) FROM flight_track_features")[0][0]
     identity_rows = _q(conn, "SELECT identity_status, COUNT(*) FROM aircraft_observations GROUP BY identity_status")
@@ -162,8 +162,8 @@ def build(conn: sqlite3.Connection) -> str:
     ln()
     ln("| Table | Rows |")
     ln("|---|---|")
-    ln(f"| labeled_pois | {n_labeled:,} |")
-    ln(f"| unlabeled_poi_candidates | {n_unlabeled:,} |")
+    ln(f"| labeled_pins | {n_labeled:,} |")
+    ln(f"| unlabeled_pin_candidates | {n_unlabeled:,} |")
     ln(f"| aircraft_observations | {n_aircraft:,} |")
     ln(f"| flight_track_features | {n_tracks} |")
     ln()
