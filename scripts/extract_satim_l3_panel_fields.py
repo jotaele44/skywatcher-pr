@@ -19,6 +19,34 @@ from typing import Any, Dict, Iterable, List, Mapping
 
 
 N_A_VALUES = {"", "N/A", "NA", "N/A NOT AVAILABLE", "NOT AVAILABLE", "UNKNOWN", "NONE"}
+ROUTE_STOP_WORDS = {
+    "ALT",
+    "BAROMETRIC",
+    "GROUND",
+    "SPEED",
+    "REG",
+    "UTC",
+    "VIEW",
+    "ROUTE",
+    "MORE",
+    "INFO",
+    "FOLLOW",
+    "SHARE",
+    "NOT",
+    "AVAILABLE",
+}
+
+SHORT_AIRCRAFT_TYPES = {
+    "AS50": "Airbus Helicopters H125",
+    "B407": "Bell 407",
+    "B429": "Bell 429 GlobalRanger",
+    "C172": "Cessna 172K Skyhawk",
+    "C401": "Cessna 401",
+    "C402": "Cessna 402",
+    "EC30": "Airbus Helicopters H130",
+    "H125": "Airbus Helicopters H125",
+    "H130": "Airbus Helicopters H130",
+}
 
 AIRCRAFT_PATTERNS = [
     re.compile(r"\b(Airbus\s+Helicopters?\s+H\d{3})\b", re.I),
@@ -30,13 +58,20 @@ AIRCRAFT_PATTERNS = [
 
 FROM_RE = re.compile(r"\b(?:from|origin|depart(?:ed|ure)?)\s*:?\s*([A-Z0-9]{3,4})\b", re.I)
 TO_RE = re.compile(r"\b(?:to|dest(?:ination)?|arrival)\s*:?\s*([A-Z0-9]{3,4})\b", re.I)
-ROUTE_RE = re.compile(r"\b([A-Z0-9]{3,4})\b\s*(?:→|->|-|to)\s*\b([A-Z0-9]{3,4})\b", re.I)
+ROUTE_RE = re.compile(r"\b([A-Z0-9]{3,4})\b\s*(?:→|->|»\-?|>|-|to)\s*\b([A-Z0-9]{3,4}|N/?A)\b", re.I)
+BARO_ROUTE_LINE_RE = re.compile(r"^(.+?)\s+BAROMETRIC\s+ALT\.?", re.I | re.M)
 NEAR_RE = re.compile(r"\b(?:near|over|location)\s*:?\s*([A-Za-zÀ-ÿ0-9 .,'~/-]+)", re.I)
 
 TIMESTAMP_PATTERNS = [
     re.compile(r"\b(\d{4}-\d{2}-\d{2})[ T](\d{2})[:\-](\d{2})(?:[:\-](\d{2}))?\b"),
     re.compile(r"\b(\d{2}/\d{2}/\d{4})[ T](\d{2})[:\-](\d{2})(?:[:\-](\d{2}))?\b"),
 ]
+
+FR24_UTC_LINE_RE = re.compile(
+    r"\b(?:[A-Za-z]{3},\s*)?([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})\s*\|\s*"
+    r"(\d{1,2}):(\d{2})\s*([AP]M)\s*u?tc\s*([+-]\d{2}:?\d{2})",
+    re.I,
+)
 
 
 def clean(value: Any) -> str:
@@ -53,7 +88,10 @@ def airport_code(value: Any) -> str:
     if not text:
         return ""
     match = re.search(r"\b([A-Z0-9]{3,4})\b", text)
-    return match.group(1) if match else ""
+    if not match:
+        return ""
+    code = match.group(1)
+    return "" if code in ROUTE_STOP_WORDS else code
 
 
 def normalize_timestamp(date_text: str, hour: str, minute: str, second: str | None = None) -> str:
@@ -66,12 +104,65 @@ def normalize_timestamp(date_text: str, hour: str, minute: str, second: str | No
     return f"{date_text}T{hour}:{minute}:{second}"
 
 
+def normalize_aircraft_type(value: str) -> str:
+    value = " ".join(value.split())
+    value = re.sub(r"\s+REG(?:ISTRATION)?\b.*$", "", value, flags=re.I).strip()
+    return value
+
+
+def extract_short_aircraft_type(text: str) -> str:
+    # FR24 often renders the type beside the tail: "N407PR (B407".
+    for match in re.finditer(r"\(([A-Z0-9]{3,4})\b", text, flags=re.I):
+        code = match.group(1).upper()
+        if code in SHORT_AIRCRAFT_TYPES:
+            return SHORT_AIRCRAFT_TYPES[code]
+
+    for code, aircraft_type in SHORT_AIRCRAFT_TYPES.items():
+        if re.search(rf"\b{re.escape(code)}\b", text, flags=re.I):
+            return aircraft_type
+
+    return ""
+
+
 def extract_aircraft_type(text: str) -> str:
     for pattern in AIRCRAFT_PATTERNS:
         match = pattern.search(text)
         if match:
-            return " ".join(match.group(1).split())
-    return ""
+            return normalize_aircraft_type(match.group(1))
+
+    return extract_short_aircraft_type(text)
+
+
+def normalized_baro_route_token(token: str) -> str | None:
+    value = token.upper()
+    if value in {"N/A", "NA"}:
+        return ""
+    if value in ROUTE_STOP_WORDS or value in SHORT_AIRCRAFT_TYPES:
+        return None
+    if re.fullmatch(r"[A-Z0-9]{3,4}", value):
+        return value
+    return None
+
+
+def route_codes_from_baro_line(text: str) -> tuple[str, str]:
+    match = BARO_ROUTE_LINE_RE.search(text)
+    if not match:
+        return "", ""
+
+    prefix = match.group(1)
+    tokens = re.findall(r"N/?A|\b[A-Za-z0-9]{3,4}\b", prefix, flags=re.I)
+
+    codes: list[str] = []
+    for token in tokens:
+        code = normalized_baro_route_token(token)
+        if code is not None:
+            codes.append(code)
+
+    if not codes:
+        return "", ""
+    if len(codes) == 1:
+        return codes[0], ""
+    return codes[-2], codes[-1]
 
 
 def extract_route(text: str) -> tuple[str, str]:
@@ -86,11 +177,14 @@ def extract_route(text: str) -> tuple[str, str]:
     if to_match:
         destination = airport_code(to_match.group(1))
 
-    if not origin or not destination:
-        route_match = ROUTE_RE.search(text)
-        if route_match:
-            origin = origin or airport_code(route_match.group(1))
-            destination = destination or airport_code(route_match.group(2))
+    route_match = ROUTE_RE.search(text)
+    if route_match:
+        origin = origin or airport_code(route_match.group(1))
+        destination = destination or airport_code(route_match.group(2))
+
+    baro_origin, baro_destination = route_codes_from_baro_line(text)
+    origin = origin or baro_origin
+    destination = destination or baro_destination
 
     return origin, destination
 
@@ -105,9 +199,34 @@ def extract_nearest_location(text: str) -> str:
     return normalize_na(value)
 
 
+def normalize_fr24_utc_line(match: re.Match[str]) -> str:
+    month, day, year, hour, minute, meridiem, offset = match.groups()
+    try:
+        dt = datetime.strptime(
+            f"{month} {day} {year} {hour}:{minute} {meridiem.upper()}",
+            "%b %d %Y %I:%M %p",
+        )
+    except ValueError:
+        return ""
+    offset = offset if ":" in offset else f"{offset[:3]}:{offset[3:]}"
+    return f"{dt:%Y-%m-%dT%H:%M}:00{offset}"
+
+
 def extract_timeline_timestamp(text: str) -> tuple[bool, str]:
+    utc_line = FR24_UTC_LINE_RE.search(text)
+    if utc_line:
+        ts = normalize_fr24_utc_line(utc_line)
+        if ts:
+            return True, ts
+
     lowered = text.lower()
-    timeline_hint = "timeline" in lowered or "playback" in lowered or "history" in lowered
+    timeline_hint = (
+        "timeline" in lowered
+        or "playback" in lowered
+        or "history" in lowered
+        or "utc -04:00" in lowered
+        or bool(re.search(r"\b\d{1,2}:\d{2}\s*(?:AM|PM)\b", text, flags=re.I))
+    )
 
     for pattern in TIMESTAMP_PATTERNS:
         match = pattern.search(text)
