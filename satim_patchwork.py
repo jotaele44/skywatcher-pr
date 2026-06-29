@@ -1,15 +1,3 @@
-"""SATIM maintained patchwork clearing detector.
-
-This module scores visible surface texture only. It is designed for SATIM
-screenshots/satellite-derived observations where low canopy, exposed soil,
-internal dirt roads, patch boundaries, road ends, and cut/fill exposure form a
-managed patchwork landscape.
-
-Guardrail: this module never infers subsurface, covert, or ILAP function from
-texture alone. It emits POI candidates and a separable P-Route confidence patch
-when flight-behavior linkage evidence is supplied.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -48,7 +36,7 @@ VISIBLE_SURFACE_ONLY_STATUS = "POI_ONLY_UNTIL_ROUTE_CORRELATION"
 SIGNAL_WEIGHTS: dict[PatchworkSignal, float] = {
     PatchworkSignal.LOW_CANOPY_MANAGED_SURFACE: 0.20,
     PatchworkSignal.DIRT_SERVICE_ROAD_NETWORK: 0.25,
-    PatchworkSignal.PATCH_BOUNDARY_GEOMETRY: 0.10,
+    PatchworkSignal.PATCH_BOUNDARY_GEOMETRY: 0.11,
     PatchworkSignal.ROAD_END_TURNAROUND: 0.20,
     PatchworkSignal.CUT_FILL_EXPOSURE: 0.15,
     PatchworkSignal.INFRASTRUCTURE_ADJACENCY: 0.10,
@@ -64,23 +52,23 @@ LINK_WEIGHTS: dict[FlightLink, float] = {
 
 SIGNAL_DEFINITIONS: dict[str, dict[str, str]] = {
     "LOW_CANOPY_MANAGED_SURFACE": {
-        "definition": "Maintained low vegetation, grass/scrub, exposed soil, or repeatedly cleared parcel surface.",
-        "visual_cue": "Low tree canopy, smooth green/brown texture, mowing or clearing edge.",
+        "definition": "Maintained low vegetation, grass or exposed soil surface.",
+        "visual_cue": "Low tree canopy and smooth green/brown texture.",
     },
     "DIRT_SERVICE_ROAD_NETWORK": {
         "definition": "Unpaved access roads or internal circulation paths.",
-        "visual_cue": "Pale/tan roads, switchbacks, spurs, loops, or service-road traces.",
+        "visual_cue": "Pale roads, switchbacks, spurs, loops, or service-road traces.",
     },
     "PATCH_BOUNDARY_GEOMETRY": {
         "definition": "Parcel-like divisions caused by roads, tracks, vegetation edges, drainage, or clearing lines.",
         "visual_cue": "Curved or rectilinear patch outlines separating green/brown surfaces.",
     },
     "ROAD_END_TURNAROUND": {
-        "definition": "Road terminus, bulb, loop, service pad, staging point, or pull-off.",
+        "definition": "Road terminus, loop, service pad, staging point, or pull-off.",
         "visual_cue": "Dead-end, circular turnaround, widened dirt node, or service pad.",
     },
     "CUT_FILL_EXPOSURE": {
-        "definition": "Exposed soil/rock, slope cut, fill pile, borrow face, quarry/landfill-like surface disturbance.",
+        "definition": "Exposed soil or rock, slope cut, fill pile, borrow face, or surface disturbance.",
         "visual_cue": "Bright soil/rock, scarps, piles, excavation margins, or graded fill.",
     },
 }
@@ -88,8 +76,6 @@ SIGNAL_DEFINITIONS: dict[str, dict[str, str]] = {
 
 @dataclass(frozen=True)
 class PatchworkObservation:
-    """Human- or model-extracted visible surface observations for one POI."""
-
     poi_id: str
     grid_id: str
     source_id: str
@@ -155,7 +141,6 @@ def confidence_band(score: float) -> str:
 
 
 def score_visible_surface(signals: dict[PatchworkSignal | str, float]) -> tuple[float, dict[str, float]]:
-    """Score visible surface signals only, preserving per-signal contributions."""
     contributions: dict[str, float] = {}
     total = 0.0
     for raw_signal, raw_presence in signals.items():
@@ -170,7 +155,6 @@ def score_visible_surface(signals: dict[PatchworkSignal | str, float]) -> tuple[
 
 
 def score_flight_links(flight_links: dict[FlightLink | str, bool]) -> tuple[float, tuple[str, ...]]:
-    """Score route-correlation linkage separately from the visual score."""
     evidence: list[str] = []
     total = 0.0
     for raw_link, present in flight_links.items():
@@ -183,12 +167,6 @@ def score_flight_links(flight_links: dict[FlightLink | str, bool]) -> tuple[floa
 
 
 def score_patchwork_observation(observation: PatchworkObservation) -> PatchworkScore:
-    """Return the POI score and P-Route patch inputs for one observation.
-
-    The returned ``ilap_status`` remains ``POI_ONLY_UNTIL_ROUTE_CORRELATION`` even
-    when route links exist; promotion to any downstream ILAP class must happen in
-    a separate human-reviewed correlation layer.
-    """
     visual_score, contributions = score_visible_surface(observation.signals)
     link_score, evidence = score_flight_links(observation.flight_links)
     combined = round(clamp01(visual_score + link_score), 4)
@@ -218,7 +196,6 @@ def score_patchwork_observation(observation: PatchworkObservation) -> PatchworkS
 
 
 def build_patchwork_poi_ledger(observations: list[PatchworkObservation]) -> list[dict[str, Any]]:
-    """Build SATIM_PATCHWORK_POI_LEDGER rows."""
     rows: list[dict[str, Any]] = []
     for obs in observations:
         score = score_patchwork_observation(obs)
@@ -246,7 +223,6 @@ def build_patchwork_poi_ledger(observations: list[PatchworkObservation]) -> list
 
 
 def build_p_route_confidence_patch(observations: list[PatchworkObservation]) -> list[dict[str, Any]]:
-    """Build P_ROUTE_CONFIDENCE_PATCH rows while keeping score provenance split."""
     rows: list[dict[str, Any]] = []
     for obs in observations:
         score = score_patchwork_observation(obs)
@@ -269,7 +245,6 @@ def build_p_route_confidence_patch(observations: list[PatchworkObservation]) -> 
 
 
 def patchwork_schema() -> dict[str, Any]:
-    """Frontend/documentation schema for SATIM patchwork detector outputs."""
     return {
         "detector": "SATIM_MAINTAINED_PATCHWORK_CLEARING_DETECTOR_v1",
         "guardrail": VISIBLE_SURFACE_ONLY_STATUS,
