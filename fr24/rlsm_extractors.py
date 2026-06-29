@@ -475,7 +475,7 @@ def build_review_queues(conn: sqlite3.Connection) -> dict:
     # 2) Labeled POI low confidence
     conn.execute("""
         INSERT INTO manual_review_queue (screenshot_id, item_kind, item_ref_table, item_ref_id, reason, severity, review_status, created_at)
-        SELECT screenshot_id, 'labeled_poi_low_conf', 'labeled_pois', poi_id,
+        SELECT screenshot_id, 'labeled_pin_low_conf', 'labeled_pois', poi_id,
                'label="' || raw_label || '" type_guess=' || poi_type_guess || ' conf=' || ROUND(COALESCE(confidence,0),1),
                'low', 'unreviewed', ?
         FROM labeled_pois WHERE confidence IS NOT NULL AND confidence < ?

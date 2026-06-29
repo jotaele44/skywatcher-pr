@@ -276,7 +276,7 @@ CREATE INDEX IF NOT EXISTS ix_reg_mfr  ON aircraft_registry(manufacturer);
 CREATE TABLE IF NOT EXISTS manual_review_queue (
     review_id        INTEGER PRIMARY KEY AUTOINCREMENT,
     screenshot_id    INTEGER REFERENCES screenshots(screenshot_id),
-    item_kind        TEXT NOT NULL,                         -- 'labeled_poi_low_conf'|'unlabeled_candidate'|'aircraft_identity_conflict'|'time_conflict'|'geo_anchor_fail'|'ocr_low_conf'
+    item_kind        TEXT NOT NULL,                         -- 'labeled_pin_low_conf'|'unlabeled_candidate'|'aircraft_identity_conflict'|'time_conflict'|'geo_anchor_fail'|'ocr_low_conf'
     item_ref_table   TEXT,
     item_ref_id      INTEGER,
     reason           TEXT,
