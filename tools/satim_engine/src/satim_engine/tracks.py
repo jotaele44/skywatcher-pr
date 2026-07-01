@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 import re
+import xml.etree.ElementTree as ET
 import pandas as pd
 
 LAT_NAMES = ["lat", "latitude", "y", "gps_lat", "position_lat"]
@@ -75,3 +76,50 @@ def parse_kml_coordinates(path: str) -> pd.DataFrame:
     df["heading"] = pd.NA
     df["source"] = str(path)
     return df
+
+def parse_gpx_coordinates(path: str) -> pd.DataFrame:
+    root = ET.parse(path).getroot()
+    coords = []
+    for elem in root.iter():
+        tag = elem.tag.split("}")[-1].lower()
+        if tag not in {"trkpt", "rtept", "wpt"}:
+            continue
+        lat_raw, lon_raw = elem.attrib.get("lat"), elem.attrib.get("lon")
+        if lat_raw is None or lon_raw is None:
+            continue
+        try:
+            lat, lon = float(lat_raw), float(lon_raw)
+        except ValueError:
+            continue
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            continue
+        ele = pd.NA
+        timestamp = pd.NaT
+        for child in elem:
+            child_tag = child.tag.split("}")[-1].lower()
+            text = (child.text or "").strip()
+            if child_tag == "ele" and text:
+                ele = pd.to_numeric(text, errors="coerce")
+            elif child_tag == "time" and text:
+                timestamp = pd.to_datetime(text, errors="coerce", utc=True)
+        coords.append({"latitude": lat, "longitude": lon, "altitude": ele, "timestamp": timestamp})
+    df = pd.DataFrame(coords)
+    if df.empty:
+        raise ValueError(f"No GPX coordinates in {path}")
+    df["speed"] = pd.NA
+    df["callsign"] = pd.NA
+    df["registration"] = pd.NA
+    df["aircraft_type"] = pd.NA
+    df["heading"] = pd.NA
+    df["source"] = str(path)
+    return df
+
+def parse_track_file(path: str) -> pd.DataFrame:
+    suffix = Path(path).suffix.lower()
+    if suffix == ".csv":
+        return parse_csv_track(path)
+    if suffix == ".kml":
+        return parse_kml_coordinates(path)
+    if suffix == ".gpx":
+        return parse_gpx_coordinates(path)
+    raise ValueError(f"Unsupported track extension: {suffix}")
