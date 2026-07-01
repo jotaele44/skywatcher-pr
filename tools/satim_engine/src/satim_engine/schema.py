@@ -1,0 +1,5 @@
+TRACK_COLUMNS = ["timestamp", "latitude", "longitude", "altitude", "speed", "callsign", "registration", "aircraft_type", "heading", "source"]
+MANIFEST_COLUMNS = ["file_id", "path", "sha256", "size_bytes", "extension", "source_zip", "role"]
+PAIRING_COLUMNS = ["pair_id", "track_file", "visual_file", "match_basis", "status", "confidence", "notes"]
+NODE_COLUMNS = ["node_id", "node_type", "label", "confidence", "source"]
+EDGE_COLUMNS = ["source", "target", "edge_type", "weight", "provenance"]
