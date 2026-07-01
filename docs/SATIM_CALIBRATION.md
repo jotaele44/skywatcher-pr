@@ -65,7 +65,12 @@ The scored summary also carries:
   human gates a `candidate` must clear; the engine never marks them satisfied.
 - **`repeatability`** — distinct-frame count per `feature_class`
   (`frame_to_frame_repeatability`). A **reported signal only**; it does not change
-  any score.
+  any score. This is deliberate: repeating across frames doesn't distinguish a
+  real ground feature from a repeating artifact (a tile seam or shadow can
+  recur just as reliably as a real feature), so folding recurrence into the
+  score would risk promoting repeat artifacts without genuine cross-source
+  evidence. It's left for the human reviewer to weigh alongside the
+  promotion gate, not treated as corroboration by itself.
 - **`provenance`** — `engine_version` + SHA-256 of each source file, for
   reproducibility/auditability.
 
