@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "satim-engine"
+version = "0.21.0rc1"
+description = "SATIM batch ingestion, track parsing, visual pairing, scoring, graph, and dashboard export pipeline."
+requires-python = ">=3.10"
+dependencies = ["pandas>=2.0", "numpy>=1.24"]
+
+[project.optional-dependencies]
+gis = ["geopandas>=0.14", "shapely>=2.0", "fiona>=1.9"]
+ocr = ["pillow>=10.0", "pytesseract>=0.3"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+satim = "satim_engine.cli:main"

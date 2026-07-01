@@ -1,0 +1,41 @@
+name: SATIM Engine CI
+
+on:
+  push:
+    paths:
+      - 'tools/satim_engine/**'
+      - '.github/workflows/satim-engine-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/satim_engine/**'
+      - '.github/workflows/satim-engine-ci.yml'
+
+jobs:
+  test-satim-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install package
+        working-directory: tools/satim_engine
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e '.[dev]'
+      - name: Run tests
+        working-directory: tools/satim_engine
+        run: pytest -q
+      - name: Smoke test CLI
+        working-directory: tools/satim_engine
+        run: |
+          mkdir -p /tmp/satim_input /tmp/satim_output
+          python - <<'PY2'
+          from pathlib import Path
+          import zipfile
+          p = Path('/tmp/satim_input/sample.zip')
+          with zipfile.ZipFile(p, 'w') as z:
+              z.writestr('track.csv', 'timestamp,latitude,longitude,altitude,speed,callsign\n2026-01-01T00:00:00Z,18.4,-66.1,1200,100,TEST1\n')
+          PY2
+          satim --input /tmp/satim_input --output /tmp/satim_output
+          test -f /tmp/satim_output/SATIM_TRACK_LEDGER.csv
