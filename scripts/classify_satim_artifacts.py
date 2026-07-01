@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Classify SATIM observations against artifact controls.
+"""Canonical SATIM artifact classifier CLI.
 
 Conservative rule: unknowns are held for review. The classifier must never
 promote a weak or unknown row directly to STRUCTURAL_SIGNAL.
@@ -24,48 +24,56 @@ ARTIFACT_CLASSES = {
 }
 
 
-def classify(description: str) -> tuple[str, str]:
-    text = description.lower()
-    if "fr24" in text or "route" in text or "playback" in text or "diagonal line" in text or "track" in text:
+def classify_text(text: str) -> tuple[str, str]:
+    value = text.lower()
+    if any(term in value for term in ["fr24", "route", "playback", "diagonal line", "track"]):
         return "TRACK_LINE", "high"
-    if "logo" in text or "player" in text or "label" in text or "overlay" in text:
+    if any(term in value for term in ["logo", "player", "label", "overlay"]):
         return "UI_OVERLAY", "high"
-    if "zoom" in text or "blur" in text or "smear" in text:
+    if any(term in value for term in ["zoom", "blur", "smear"]):
         return "ZOOM_BLUR", "high"
-    if "shadow" in text or "canopy" in text or "forest" in text:
+    if any(term in value for term in ["shadow", "canopy", "forest"]):
         return "SHADOW_CONFUSION", "medium"
-    if "tile" in text or "epoch" in text or "mosaic" in text or "seam" in text:
+    if any(term in value for term in ["tile", "epoch", "mosaic", "seam"]):
         return "TILE_SEAM", "medium"
-    if "compression" in text or "jpeg" in text or "artifact" in text:
+    if any(term in value for term in ["compression", "jpeg", "artifact"]):
         return "COMPRESSION", "medium"
     return "HOLD_REVIEW", "low"
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("input_csv", help="CSV with artifact_id,event_id,page,description columns")
-    parser.add_argument("--out", default="classified_tile_artifacts.csv")
-    args = parser.parse_args()
+def classify_row(row: dict[str, str]) -> dict[str, str]:
+    joined = " ".join(str(value) for value in row.values())
+    artifact_class, risk = classify_text(joined)
 
-    with Path(args.input_csv).open(newline="", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
+    if not row.get("artifact_class") or row.get("artifact_class") == "STRUCTURAL_SIGNAL":
+        row["artifact_class"] = artifact_class
+    if not row.get("artifact_risk"):
+        row["artifact_risk"] = risk
+    row.setdefault("impact_on_analysis", "Requires analyst review before promotion.")
+    row.setdefault("promotion_status", "hold_artifact_control")
+    row.setdefault("promotion_rule", "No STRUCTURAL_SIGNAL promotion without georeference and independent corroboration.")
+    return row
 
-    for row in rows:
-        artifact_class, risk = classify(row.get("description", ""))
-        if not row.get("artifact_class") or row.get("artifact_class") == "STRUCTURAL_SIGNAL":
-            row["artifact_class"] = artifact_class
-        if not row.get("artifact_risk"):
-            row["artifact_risk"] = risk
-        row.setdefault("impact_on_analysis", "Requires analyst review before promotion.")
-        row.setdefault("promotion_status", "hold_artifact_control")
-        row.setdefault("promotion_rule", "No STRUCTURAL_SIGNAL promotion without georeference and independent corroboration.")
+
+def classify_csv(input_csv: Path, output_csv: Path) -> None:
+    with input_csv.open(newline="", encoding="utf-8") as f:
+        rows = [classify_row(dict(row)) for row in csv.DictReader(f)]
 
     fieldnames = sorted({key for row in rows for key in row.keys()})
-    with Path(args.out).open("w", newline="", encoding="utf-8") as f:
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    with output_csv.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
 
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Classify SATIM artifact rows conservatively")
+    parser.add_argument("input_csv", help="CSV containing artifact/visual observation rows")
+    parser.add_argument("--out", default="classified_tile_artifacts.csv")
+    args = parser.parse_args()
+
+    classify_csv(Path(args.input_csv), Path(args.out))
     print(f"wrote {args.out}")
 
 
