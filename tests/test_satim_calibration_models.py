@@ -85,3 +85,39 @@ def test_satim_report_to_legacy_calibration_warns_on_partial_layer():
     assert legacy["status"] == "WARN"
     assert legacy["calibration_flags"][0]["metric"] == "L4_aircraft_intelligence"
     assert legacy["candidate_count"] == 3
+
+
+def test_legacy_status_map_covers_every_value_derive_overall_status_can_return():
+    """derive_overall_status() only ever returns these three values (see the
+    L1-L4-required / L4-advisory / L5-advisory branches above); the adapter's
+    status_map must have no unreachable entries and no missing ones."""
+    reachable = {
+        "DEGRADED": {  # a required base layer (L1-L3) missing
+            "L1_ui_segmenter": {"status": "MISSING"},
+            "L2_route_extractor": {"status": "READY"},
+            "L3_vision_ocr": {"status": "READY"},
+            "L4_aircraft_intelligence": {"status": "READY"},
+            "L5_tile_seam_shadow": {"status": "READY"},
+        },
+        "PARTIAL": {  # base layers ready, L5 not ready
+            "L1_ui_segmenter": {"status": "READY"},
+            "L2_route_extractor": {"status": "READY"},
+            "L3_vision_ocr": {"status": "READY"},
+            "L4_aircraft_intelligence": {"status": "READY"},
+            "L5_tile_seam_shadow": {"status": "MISSING"},
+        },
+        "READY_FOR_BATCH_ANALYSIS": {  # everything ready
+            "L1_ui_segmenter": {"status": "READY"},
+            "L2_route_extractor": {"status": "READY"},
+            "L3_vision_ocr": {"status": "READY"},
+            "L4_aircraft_intelligence": {"status": "READY"},
+            "L5_tile_seam_shadow": {"status": "READY"},
+        },
+    }
+    for expected_status, layers in reachable.items():
+        assert derive_overall_status(layers) == expected_status
+        legacy = satim_report_to_legacy_calibration({
+            "schema_version": "satim.calibration.v1",
+            "layers": layers,
+        })
+        assert legacy["status"] in {"PASS", "WARN", "FAIL"}

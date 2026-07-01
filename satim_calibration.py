@@ -326,7 +326,14 @@ def score_label(
     """Apply the false-positive scoring adjustment and a promotion decision.
 
     ``frame_recurrence`` is a reported signal (how many distinct frames the
-    feature_class appears in); it does not change the adjusted score.
+    feature_class appears in); it does not change the adjusted score. This is
+    deliberate, not an oversight: recurrence alone doesn't distinguish a real
+    feature from a repeating artifact (an FR24 tile seam or a shadow can
+    recur across frames just as reliably as a real ground feature), so
+    folding it into the score would risk promoting repeat artifacts without
+    any actual cross-source evidence. It is surfaced to the reviewer
+    (``repeatability`` in ``score_calibration_set``) as one more fact to weigh,
+    not as a scoring input.
     """
     original = label.false_positive_class
     resolved, status = resolve_false_positive_class(original, scoring_adjustments, aliases)

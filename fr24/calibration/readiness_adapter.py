@@ -17,11 +17,13 @@ def satim_report_to_legacy_calibration(report: Mapping[str, Any]) -> Dict[str, A
     """
     layers = report.get("layers", {}) if isinstance(report.get("layers"), Mapping) else {}
     overall = str(report.get("overall_status") or derive_overall_status(layers))
+    # Keys mirror the exact set of values derive_overall_status() can return
+    # (READY_FOR_BATCH_ANALYSIS / PARTIAL / DEGRADED); anything else falls
+    # through to layer_status_to_readiness() below.
     status_map = {
         "READY_FOR_BATCH_ANALYSIS": "PASS",
         "PARTIAL": "WARN",
         "DEGRADED": "FAIL",
-        "DEGRADED_FOR_IMAGERY_ARTIFACT_ANALYSIS": "FAIL",
     }
     flags = []
     for name, payload in layers.items():
