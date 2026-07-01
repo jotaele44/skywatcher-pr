@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 import re
+import xml.etree.ElementTree as ET
 import pandas as pd
 
 LAT_NAMES = ["lat", "latitude", "y", "gps_lat", "position_lat"]
@@ -50,6 +51,23 @@ def parse_csv_track(path: str) -> pd.DataFrame:
         raise NonTrackCSV(f"Non-track CSV: no valid coordinate rows in {path}")
     return out
 
+def _empty_track_frame(rows: list[dict], path: str) -> pd.DataFrame:
+    df = pd.DataFrame(rows)
+    if df.empty:
+        raise ValueError(f"No coordinates in {path}")
+    for col, default in {
+        "timestamp": pd.NaT,
+        "speed": pd.NA,
+        "callsign": pd.NA,
+        "registration": pd.NA,
+        "aircraft_type": pd.NA,
+        "heading": pd.NA,
+    }.items():
+        if col not in df.columns:
+            df[col] = default
+    df["source"] = str(path)
+    return df
+
 def parse_kml_coordinates(path: str) -> pd.DataFrame:
     text = Path(path).read_text(errors="ignore")
     coords = []
@@ -64,14 +82,29 @@ def parse_kml_coordinates(path: str) -> pd.DataFrame:
                         coords.append({"latitude": lat, "longitude": lon, "altitude": alt})
                 except ValueError:
                     continue
-    df = pd.DataFrame(coords)
-    if df.empty:
-        raise ValueError(f"No KML coordinates in {path}")
-    df["timestamp"] = pd.NaT
-    df["speed"] = pd.NA
-    df["callsign"] = pd.NA
-    df["registration"] = pd.NA
-    df["aircraft_type"] = pd.NA
-    df["heading"] = pd.NA
-    df["source"] = str(path)
-    return df
+    return _empty_track_frame(coords, path)
+
+def parse_gpx_coordinates(path: str) -> pd.DataFrame:
+    rows = []
+    tree = ET.parse(path)
+    root = tree.getroot()
+    for elem in root.iter():
+        tag = elem.tag.split("}")[-1].lower()
+        if tag not in {"trkpt", "rtept", "wpt"}:
+            continue
+        try:
+            lat = float(elem.attrib["lat"])
+            lon = float(elem.attrib["lon"])
+        except (KeyError, ValueError):
+            continue
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            continue
+        row = {"latitude": lat, "longitude": lon, "altitude": pd.NA, "timestamp": pd.NaT}
+        for child in elem:
+            ctag = child.tag.split("}")[-1].lower()
+            if ctag == "ele" and child.text:
+                row["altitude"] = pd.to_numeric(child.text, errors="coerce")
+            elif ctag == "time" and child.text:
+                row["timestamp"] = pd.to_datetime(child.text, errors="coerce", utc=True)
+        rows.append(row)
+    return _empty_track_frame(rows, path)
