@@ -3,11 +3,21 @@ import argparse
 from pathlib import Path
 import pandas as pd
 from .inventory import extract_zips, build_manifest
-from .tracks import parse_csv_track, parse_kml_coordinates, NonTrackCSV
+from .tracks import parse_csv_track, parse_kml_coordinates, parse_gpx_coordinates, NonTrackCSV
 from .scoring import score_tracks
 from .graph import build_graph_from_ledgers
 from .plugins.visual_ocr import extract_visual_metadata
 from .plugins.gis_join import bbox_context_join
+
+def parse_track_file(path: Path) -> pd.DataFrame:
+    suffix = path.suffix.lower()
+    if suffix == ".csv":
+        return parse_csv_track(str(path))
+    if suffix == ".kml":
+        return parse_kml_coordinates(str(path))
+    if suffix == ".gpx":
+        return parse_gpx_coordinates(str(path))
+    raise ValueError(f"Unsupported track extension: {suffix}")
 
 def run(input_dir: str, output_dir: str) -> None:
     out = Path(output_dir); out.mkdir(parents=True, exist_ok=True)
@@ -18,7 +28,7 @@ def run(input_dir: str, output_dir: str) -> None:
     for _, r in manifest[manifest.role == "track_candidate"].iterrows():
         p = Path(r.path)
         try:
-            df = parse_csv_track(str(p)) if p.suffix.lower()==".csv" else parse_kml_coordinates(str(p))
+            df = parse_track_file(p)
             track_dfs.append(df)
         except NonTrackCSV as e:
             skipped.append({"path": str(p), "reason": str(e)})
