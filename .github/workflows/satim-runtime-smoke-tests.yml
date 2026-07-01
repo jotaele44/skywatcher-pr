@@ -1,0 +1,31 @@
+name: SATIM Runtime Smoke Tests
+
+on:
+  pull_request:
+    paths:
+      - "scripts/**"
+      - "tests/**"
+      - "requirements.txt"
+      - ".github/workflows/satim-runtime-smoke-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  satim-runtime-smoke-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run SATIM runtime smoke tests
+        run: |
+          pytest tests/test_satim_media_decoder.py tests/test_satim_artifact_classifier.py
