@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/air_event.schema.json",
+  "title": "Skywatcher Air Event",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "event_id",
+    "source",
+    "source_tier",
+    "mode",
+    "observed_at",
+    "lat",
+    "lon",
+    "aircraft_id",
+    "callsign",
+    "altitude_ft",
+    "speed_kt",
+    "heading_deg",
+    "event_type",
+    "confidence",
+    "tactical_public_tracking"
+  ],
+  "properties": {
+    "event_id": {"type": "string", "minLength": 1},
+    "source": {"type": "string", "minLength": 1},
+    "source_tier": {"enum": ["T1", "T2", "T3", "T4"]},
+    "mode": {"enum": ["delayed_or_rate_limited", "batch_file", "historical_baseline", "periodic"]},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "lat": {"type": "number", "minimum": -90, "maximum": 90},
+    "lon": {"type": "number", "minimum": -180, "maximum": 180},
+    "aircraft_id": {"type": "string"},
+    "callsign": {"type": "string"},
+    "altitude_ft": {"type": "number"},
+    "speed_kt": {"type": "number"},
+    "heading_deg": {"type": "number", "minimum": 0, "maximum": 360},
+    "event_type": {"type": "string", "minLength": 1},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "tactical_public_tracking": {"const": false}
+  }
+}

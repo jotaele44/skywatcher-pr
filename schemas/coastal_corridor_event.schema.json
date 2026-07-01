@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/coastal_corridor_event.schema.json",
+  "title": "Skywatcher Coastal Corridor Event",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["corridor_id", "name", "domain", "event_count", "window_start", "window_end", "baseline_delta", "confidence"],
+  "properties": {
+    "corridor_id": {"type": "string"},
+    "name": {"type": "string"},
+    "geometry_ref": {"type": "string"},
+    "domain": {"enum": ["air", "maritime", "air_maritime"]},
+    "event_count": {"type": "integer", "minimum": 0},
+    "window_start": {"type": "string", "format": "date-time"},
+    "window_end": {"type": "string", "format": "date-time"},
+    "baseline_delta": {"type": "number"},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+  }
+}

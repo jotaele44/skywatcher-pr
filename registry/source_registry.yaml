@@ -1,0 +1,22 @@
+airspace:
+  - id: adsb_exchange
+    tier: T1
+    mode: delayed_or_rate_limited
+    use: aircraft event ingestion
+    tactical_public_tracking: false
+  - id: fr24_exports
+    tier: T2
+    mode: batch_file
+    use: aircraft pattern enrichment
+    tactical_public_tracking: false
+maritime:
+  - id: noaa_marinecadastre_baseline
+    tier: T1
+    mode: historical_baseline
+    use: maritime baseline context
+    tactical_public_tracking: false
+  - id: public_port_authority_updates
+    tier: T2
+    mode: periodic_context
+    use: port context enrichment
+    tactical_public_tracking: false
