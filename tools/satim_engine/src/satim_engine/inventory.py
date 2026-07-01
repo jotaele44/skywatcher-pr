@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib, zipfile
+import hashlib, shutil, zipfile
 from pathlib import Path
 import pandas as pd
 
@@ -25,10 +25,14 @@ def classify(path: Path) -> str:
 def extract_zips(input_dir: str, out_dir: str) -> Path:
     input_dir, out_dir = Path(input_dir), Path(out_dir)
     extract_dir = out_dir / "extracted"
+    if extract_dir.exists():
+        shutil.rmtree(extract_dir)
     extract_dir.mkdir(parents=True, exist_ok=True)
-    for z in input_dir.glob("*.zip"):
+    for z in sorted(input_dir.glob("*.zip")):
         target = extract_dir / z.stem.replace(" ", "_")
-        target.mkdir(exist_ok=True)
+        if target.exists():
+            shutil.rmtree(target)
+        target.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(z) as zf:
             zf.extractall(target)
     return extract_dir

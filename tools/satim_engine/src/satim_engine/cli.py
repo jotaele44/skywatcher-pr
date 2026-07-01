@@ -3,7 +3,7 @@ import argparse
 from pathlib import Path
 import pandas as pd
 from .inventory import extract_zips, build_manifest
-from .tracks import parse_csv_track, parse_kml_coordinates, NonTrackCSV
+from .tracks import parse_track_file, NonTrackCSV
 from .scoring import score_tracks
 from .graph import build_graph_from_ledgers
 from .plugins.visual_ocr import extract_visual_metadata
@@ -18,7 +18,7 @@ def run(input_dir: str, output_dir: str) -> None:
     for _, r in manifest[manifest.role == "track_candidate"].iterrows():
         p = Path(r.path)
         try:
-            df = parse_csv_track(str(p)) if p.suffix.lower()==".csv" else parse_kml_coordinates(str(p))
+            df = parse_track_file(str(p))
             track_dfs.append(df)
         except NonTrackCSV as e:
             skipped.append({"path": str(p), "reason": str(e)})
