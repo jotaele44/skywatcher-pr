@@ -1,0 +1,73 @@
+schema_version: satim.aoi_registry.v1
+purpose: Real AOI fixture registry for SATIM Phase 2 validation.
+aois:
+  - aoi_id: PR_AIRPORT_BQN_APRON
+    municipality: Aguadilla
+    fixture_class: airport_apron
+    expected_risks:
+      - airport_alignment_false_tile_seam
+      - rectilinear_infrastructure
+    required_layers:
+      - airport_footprints
+      - roads
+      - buildings
+      - multi_date_imagery
+
+  - aoi_id: PR_COAST_AGUADILLA_REEF
+    municipality: Aguadilla
+    fixture_class: coastal_crossing
+    expected_risks:
+      - coastal_tile_transition
+      - reef_water_land_boundary
+    required_layers:
+      - coastline
+      - reef_or_benthic
+      - landcover
+      - multi_date_imagery
+
+  - aoi_id: PR_URBAN_SAN_JUAN_GRID
+    municipality: San Juan
+    fixture_class: urban_grid
+    expected_risks:
+      - road_parcel_false_positive
+      - building_edge_false_positive
+    required_layers:
+      - roads
+      - parcels
+      - buildings
+      - multi_date_imagery
+
+  - aoi_id: PR_MOUNTAIN_CAYEY_TERRAIN
+    municipality: Cayey
+    fixture_class: mountain_terrain
+    expected_risks:
+      - terrain_shadow
+      - hillshade_alignment
+    required_layers:
+      - dem
+      - hillshade
+      - landcover
+      - multi_date_imagery
+
+  - aoi_id: PR_PORT_SAN_JUAN_CONTAINER
+    municipality: San Juan
+    fixture_class: port_industrial
+    expected_risks:
+      - container_yard_rectilinear_false_positive
+      - industrial_surface_tonal_boundary
+    required_layers:
+      - ports
+      - roads
+      - buildings
+      - parcels
+      - multi_date_imagery
+
+  - aoi_id: PR_TILE_SEAM_CONTROL
+    municipality: Unknown
+    fixture_class: known_tile_seam_control
+    expected_risks:
+      - non_persistent_tile_boundary
+      - mixed_epoch_artifact
+    required_layers:
+      - multi_date_imagery
+      - provider_metadata
