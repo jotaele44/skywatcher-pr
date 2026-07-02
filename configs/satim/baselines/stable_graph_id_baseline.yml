@@ -1,0 +1,24 @@
+baseline_name: stable_graph_id_baseline
+repo: jotaele44/skywatcher-pr
+baseline_ref: baseline/stable-graph-id-baseline
+baseline_commit: 95ce71a56a2930dbd3f7d7fefd39246b591127e2
+engine_status: closed
+posture: no_patch_without_new_defect
+post_baseline_rerun:
+  status: PASS
+  input_zip_count: 6
+  manifest_files: 377
+  track_files_parsed: 52
+  track_rows: 119307
+  graph_nodes: 7783
+  graph_edges: 7731
+  parser_errors: 0
+  duplicate_node_ids: 0
+  duplicate_edge_rows: 0
+  report_package_sha256: 8eb2686d8fd7b161e9c97abc0170e9b243d910cb409180c1e421ae839282e8e6
+  rerun_report_sha256: b9d982e29c675ba36bdfb5809251448cc4721f31ae4f108cf60305c4b43e76de
+stable_id_rules:
+  python_hash_allowed: false
+  global_dataframe_index_allowed: false
+  vertex_ordinal_scope: source_local
+  repeat_run_sha_required: true

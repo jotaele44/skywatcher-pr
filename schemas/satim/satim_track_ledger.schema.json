@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/satim_track_ledger.schema.json",
+  "title": "SATIM track ledger row",
+  "type": "object",
+  "required": ["latitude", "longitude", "source", "verification_score", "provenance_level"],
+  "properties": {
+    "latitude": {"type": "number", "minimum": -90, "maximum": 90},
+    "longitude": {"type": "number", "minimum": -180, "maximum": 180},
+    "source": {"type": "string"},
+    "altitude": {"type": ["number", "null"]},
+    "heading": {"type": ["number", "null"]},
+    "verification_score": {"type": "number", "minimum": 0, "maximum": 100},
+    "provenance_level": {"type": "string"}
+  },
+  "additionalProperties": true
+}

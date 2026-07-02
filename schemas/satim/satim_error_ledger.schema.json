@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/satim_error_ledger.schema.json",
+  "title": "SATIM error ledger row",
+  "type": "object",
+  "properties": {
+    "source": {"type": "string"},
+    "stage": {"type": "string"},
+    "error_type": {"type": "string"},
+    "message": {"type": "string"}
+  },
+  "additionalProperties": true
+}
