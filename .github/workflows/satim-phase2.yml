@@ -1,0 +1,37 @@
+name: SATIM Phase 2 Contracts
+
+on:
+  pull_request:
+    paths:
+      - 'fr24/calibration/satim_*.py'
+      - 'schemas/*.json'
+      - 'tests/test_satim_*.py'
+      - 'data/satim_fixtures/**'
+      - 'docs/SATIM_*.md'
+      - '.github/workflows/satim-phase2.yml'
+  workflow_dispatch:
+
+jobs:
+  satim-phase2-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+
+      - name: Run SATIM Phase 1 and Phase 2 contract tests
+        run: |
+          python -m pytest \
+            tests/test_satim_operationalization_phase1_contracts.py \
+            tests/test_satim_phase2_raster_extraction.py \
+            tests/test_satim_phase2_multidate_validation.py \
+            tests/test_satim_phase2_gis_overlay.py
