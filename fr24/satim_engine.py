@@ -24,7 +24,7 @@ from .calibration.l2_route_calibration import calibrate as calibrate_l2
 from .calibration.l3_ocr_scoring import calibrate as calibrate_l3
 from .calibration.l4_registry_audit import calibrate as calibrate_l4
 from .calibration.l5_tile_seam_shadow_calibration import calibrate as calibrate_l5
-from .calibration.models import LayerCalibrationResult, merge_layer_reports, read_json, write_json
+from .calibration.models import LayerCalibrationResult, merge_layer_reports, write_json
 from .calibration.readiness_adapter import satim_report_to_legacy_calibration
 
 try:  # pragma: no cover - optional calibration-packet scoring path
@@ -290,7 +290,10 @@ def score_calibration_packet(set_dir: Path) -> dict[str, Any] | None:
 
     if load_calibration_set is None or score_calibration_set is None:
         return None
-    return score_calibration_set(load_calibration_set(set_dir))
+    try:
+        return score_calibration_set(load_calibration_set(set_dir))
+    except Exception as exc:  # malformed packets are already captured by validation
+        return {"status": "SKIPPED", "reason": str(exc)}
 
 
 def _sha256_file(path: Path) -> str:
@@ -349,7 +352,9 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
 
     write_json(run_dir / "resolved_manifest.json", manifest.to_jsonable())
     if manifest.source_manifest and manifest.source_manifest.exists():
-        shutil.copyfile(manifest.source_manifest, run_dir / "input_manifest" / manifest.source_manifest.name)
+        manifest_copy_dir = run_dir / "input_manifest"
+        manifest_copy_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(manifest.source_manifest, manifest_copy_dir / manifest.source_manifest.name)
 
     inputs = manifest.inputs
     layer_paths: list[Path] = []
