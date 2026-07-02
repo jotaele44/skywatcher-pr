@@ -1,0 +1,13 @@
+{
+  "title": "SATIM Engine Manifest",
+  "type": "object",
+  "required": ["schema_version", "run_id", "inputs"],
+  "properties": {
+    "schema_version": {"const": "satim.engine.input.v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "input_profile": {"type": "string"},
+    "inputs": {"type": "object"},
+    "options": {"type": "object"},
+    "outputs": {"type": "object"}
+  }
+}

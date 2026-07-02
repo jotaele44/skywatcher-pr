@@ -47,6 +47,28 @@ Drive the pipeline with:
 python scripts/fr24_vision_ingest.py
 ```
 
+## SATIM engine protocol interface
+
+SATIM can run against a new manifest, directory, or zip bundle through the repo-native protocol runner:
+
+```bash
+python -m fr24.satim_engine run \
+  --manifest path/to/satim_manifest.yaml \
+  --output reports/satim/runs/<run_id>
+```
+
+Autodetect mode accepts a directory or zip with standard SATIM names:
+
+```bash
+python -m fr24.satim_engine run \
+  --input path/to/input_dir_or_zip \
+  --output reports/satim/runs/<run_id>
+```
+
+The protocol emits `resolved_manifest.json`, per-layer reports under `layers/`, merged `calibration_report.json`, `legacy_readiness.json`, `provenance.json`, and `run_summary.json`. L1-L3 are required base layers. L4-L5 are advisory layers and become recommended next actions when missing.
+
+See `docs/SATIM_ENGINE_PROTOCOL_INTERFACE.md` for the manifest contract and run-bundle layout.
+
 ## Federation export contract
 
 Skywatcher emits airspace observation packages validated against:
