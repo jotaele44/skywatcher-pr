@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/satim_gis_join_ledger.schema.json",
+  "title": "SATIM GIS join ledger row",
+  "type": "object",
+  "required": ["source", "latitude", "longitude", "gis_join_status", "gis_layer_count"],
+  "properties": {
+    "source": {"type": "string"},
+    "latitude": {"type": "number", "minimum": -90, "maximum": 90},
+    "longitude": {"type": "number", "minimum": -180, "maximum": 180},
+    "gis_join_status": {"type": "string"},
+    "gis_layer_count": {"type": "integer", "minimum": 0}
+  },
+  "additionalProperties": true
+}
