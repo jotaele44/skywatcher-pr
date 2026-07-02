@@ -1,0 +1,39 @@
+=== SKYWATCHER gate 2026-07-02T23:18:55Z ===
+--- validate_airspace_export (test mode) ---
+VALIDATION PASSED
+airspace rc=0
+--- validate_satim_calibration ---
+Validated 2 calibration set(s) under data/satim_calibration
+
+VALIDATION PASSED
+satim rc=0
+--- pytest -q ---
+........................................................................ [ 14%]
+........................................................................ [ 29%]
+........................................................................ [ 44%]
+........................................................................ [ 59%]
+...............ssssssssssss.....................sss..ssssss............. [ 74%]
+........................................................................ [ 89%]
+....................................................                     [100%]
+463 passed, 22 skipped in 3.89s
+pytest rc=0
+--- npm ci ---
+Run `npm audit` for details.
+npm notice
+npm notice New major version of npm available! 10.9.7 -> 11.18.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.18.0
+npm notice To update run: npm install -g npm@11.18.0
+npm notice
+npm ci rc=0
+--- npm run lint ---
+
+> skywatcher-pr-ui@0.0.0 lint
+> eslint . --quiet
+
+lint rc=0
+--- npm run build ---
+
+> skywatcher-pr-ui@0.0.0 build
+> vite build
+
+build rc=0
