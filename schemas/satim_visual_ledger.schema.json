@@ -78,6 +78,7 @@
         "probable_ground_feature",
         "probable_track_line",
         "probable_ui_overlay",
+        "explainable_infrastructure",
         "mixed_epoch_artifact",
         "indeterminate"
       ]
