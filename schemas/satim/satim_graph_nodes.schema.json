@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/satim_graph_nodes.schema.json",
+  "title": "SATIM graph node row",
+  "type": "object",
+  "required": ["node_id", "node_type", "label", "confidence", "source"],
+  "properties": {
+    "node_id": {"type": "string", "pattern": "^(track|vertex):[a-f0-9]+$"},
+    "node_type": {"type": "string", "enum": ["TRACK", "VERTEX"]},
+    "label": {"type": "string"},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 100},
+    "source": {"type": "string"}
+  },
+  "additionalProperties": true
+}
