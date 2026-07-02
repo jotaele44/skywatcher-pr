@@ -17,6 +17,25 @@ def test_multidate_validation_blocks_single_still_promotion():
     assert "single_still_seam_claim" in result["contradiction_flags"]
 
 
+def test_multidate_validation_keeps_near_epoch_review_only():
+    result = validate_candidate_across_dates(
+        BASE_CANDIDATE,
+        [
+            {
+                "imagery_epoch": "2024-02",
+                "capture_datetime_utc": "2024-02-01T00:00:00Z",
+                "geometry_match_score": 0.95,
+                "radiometric_match_score": 0.95,
+            }
+        ],
+    )
+
+    assert result["epoch_class"] == "near_epoch"
+    assert result["classification_hint"] == "probable_tile_seam"
+    assert result["decision"] == "review"
+    assert result["review_state"] == "needs_review"
+
+
 def test_multidate_validation_marks_disappearing_cross_epoch_boundary():
     result = validate_candidate_across_dates(
         BASE_CANDIDATE,
