@@ -1,0 +1,5 @@
+source,target,edge_type,weight,provenance
+track:alpha,vertex:a1,HAS_VERTEX,1,fixture
+track:alpha,vertex:a2,HAS_VERTEX,1,fixture
+track:beta,vertex:b1,HAS_VERTEX,1,fixture
+track:visual,vertex:v1,HAS_VERTEX,1,fixture
