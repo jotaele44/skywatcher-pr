@@ -16,6 +16,12 @@ def test_satim_visual_ledger_schema_loads():
     assert "feature_scores" in payload["required"]
 
 
+def test_satim_visual_ledger_allows_explainable_infrastructure_classification():
+    schema_path = ROOT / "schemas" / "satim_visual_ledger.schema.json"
+    payload = json.loads(schema_path.read_text(encoding="utf-8"))
+    assert "explainable_infrastructure" in payload["properties"]["classification"]["enum"]
+
+
 def test_tile_artifact_ledger_schema_loads():
     schema_path = ROOT / "schemas" / "tile_artifact_ledger.schema.json"
     payload = json.loads(schema_path.read_text(encoding="utf-8"))
