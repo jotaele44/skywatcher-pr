@@ -50,8 +50,8 @@ def _conn() -> sqlite3.Connection:
 def test_screema_tables_exist():
     c = _conn()
     expected = {"screenshots", "processing_runs", "ocr_observations",
-                "aircraft_observations", "flight_track_features", "labeled_pois",
-                "unlabeled_poi_candidates", "geo_anchors", "manual_review_queue"}
+                "aircraft_observations", "flight_track_features", "labeled_pins",
+                "unlabeled_pin_candidates", "geo_anchors", "manual_review_queue"}
     existing = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     missing = expected - existing
     assert not missing, f"missing tables: {missing}"
@@ -121,15 +121,15 @@ def test_raw_ocr_is_never_overwritten():
 
 
 def test_labeled_vs_unlabeled_separated():
-    """Invariant 4: labeled_pois and unlabeled_poi_candidates are separate tables."""
+    """Invariant 4: labeled_pins and unlabeled_pin_candidates are separate tables."""
     c = _conn()
     # Each must have its own dedicated columns
-    cols_labeled = {row[1] for row in c.execute("PRAGMA table_info(labeled_pois)")}
-    cols_unlabeled = {row[1] for row in c.execute("PRAGMA table_info(unlabeled_poi_candidates)")}
-    assert "raw_label" in cols_labeled, "labeled_pois must have raw_label"
-    assert "raw_label" not in cols_unlabeled, "unlabeled_poi_candidates must NOT have raw_label"
-    assert "candidate_type" in cols_unlabeled, "unlabeled_poi_candidates must have candidate_type"
-    assert "candidate_type" not in cols_labeled, "labeled_pois must NOT have candidate_type"
+    cols_labeled = {row[1] for row in c.execute("PRAGMA table_info(labeled_pins)")}
+    cols_unlabeled = {row[1] for row in c.execute("PRAGMA table_info(unlabeled_pin_candidates)")}
+    assert "raw_label" in cols_labeled, "labeled_pins must have raw_label"
+    assert "raw_label" not in cols_unlabeled, "unlabeled_pin_candidates must NOT have raw_label"
+    assert "candidate_type" in cols_unlabeled, "unlabeled_pin_candidates must have candidate_type"
+    assert "candidate_type" not in cols_labeled, "labeled_pins must NOT have candidate_type"
 
 
 def test_failed_files_recorded():

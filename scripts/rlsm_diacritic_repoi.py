@@ -6,19 +6,19 @@ Two things to fix:
 
   (a) The spatial map join failed for BAYAMÓN / AÑASCO / etc. because
       places.geojson stores names WITH diacritics (BAYAMÓN) while
-      labeled_pois stores ASCII (BAYAMON). Both should normalize the same way.
+      labeled_pins stores ASCII (BAYAMON). Both should normalize the same way.
 
   (b) The POI extractor missed entries where Tesseract garbled the
       diacritic (e.g. MAYAGUEZ vs MAYAGIIEZ, ANASCO vs ANASCO with the ñ
       mis-OCR'd as ll/n/u). Re-mine label_layer OCR text with an expanded
-      OCR-alias dictionary, write any newly-found rows into labeled_pois
+      OCR-alias dictionary, write any newly-found rows into labeled_pins
       with extraction_method='diacritic_repoi'.
 
 Then re-run spatial-map join with strip-diacritics canonicalization so
 unvisited-municipality count is honest.
 
 Output:
-  - new labeled_pois rows with extraction_method='diacritic_repoi'
+  - new labeled_pins rows with extraction_method='diacritic_repoi'
   - outputs/intel_diacritic_recovery_report.md (what changed)
 
 CLI: python3 scripts/rlsm_diacritic_repoi.py
@@ -99,19 +99,19 @@ def main():
         WHERE zone='label_layer' AND raw_text IS NOT NULL
     """).fetchall()
 
-    # Existing labeled_pois (so we don't double-insert)
+    # Existing labeled_pins (so we don't double-insert)
     existing = set()
-    for sid, lbl in cur.execute("SELECT screenshot_id, normalized_label FROM labeled_pois"):
+    for sid, lbl in cur.execute("SELECT screenshot_id, normalized_label FROM labeled_pins"):
         existing.add((sid, lbl))
 
     inserted = 0
     insert_by_label = Counter()
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-    # Ensure poi_id column exists for INSERT
-    cols = {r[1] for r in cur.execute("PRAGMA table_info(labeled_pois)")}
+    # Ensure pin_id column exists for INSERT
+    cols = {r[1] for r in cur.execute("PRAGMA table_info(labeled_pins)")}
     if "extraction_method" not in cols:
-        cur.execute("ALTER TABLE labeled_pois ADD COLUMN extraction_method TEXT")
+        cur.execute("ALTER TABLE labeled_pins ADD COLUMN extraction_method TEXT")
         conn.commit()
 
     for sid, text in rows:
@@ -124,8 +124,8 @@ def main():
                 if v.upper() in text_upper:
                     # Insert row
                     cur.execute("""
-                        INSERT INTO labeled_pois
-                          (screenshot_id, raw_label, normalized_label, poi_type_guess,
+                        INSERT INTO labeled_pins
+                          (screenshot_id, raw_label, normalized_label, pin_type_guess,
                            confidence, observed_at, extraction_method)
                         VALUES (?, ?, ?, 'municipality_or_anchor', 0.6, ?, 'diacritic_repoi')
                     """, (sid, v, canonical, now))
@@ -146,7 +146,7 @@ def main():
 
     visited_ascii = {
         strip_diacritics(r[0]).upper()
-        for r in cur.execute("SELECT DISTINCT normalized_label FROM labeled_pois")
+        for r in cur.execute("SELECT DISTINCT normalized_label FROM labeled_pins")
         if r[0]
     }
     visited_munis = {pr_munis_ascii_to_orig[n] for n in visited_ascii
@@ -156,7 +156,7 @@ def main():
     OUTS.mkdir(parents=True, exist_ok=True)
     md = [f"# Diacritic-aware POI recovery report\n",
           f"Generated: {now}\n",
-          f"\n## New labeled_pois rows inserted: **{inserted}**\n",
+          f"\n## New labeled_pins rows inserted: **{inserted}**\n",
           "\n### By canonical label\n",
           "| Label | New rows |", "|---|---|"]
     for lbl, n in insert_by_label.most_common():
@@ -171,7 +171,7 @@ def main():
 
     conn.close()
     print(json.dumps({
-        "new_labeled_pois_rows": inserted,
+        "new_labeled_pins_rows": inserted,
         "by_canonical": dict(insert_by_label.most_common(20)),
         "municipalities_visited_after_fix": len(visited_munis),
         "municipalities_unvisited_after_fix": len(unvisited_after),

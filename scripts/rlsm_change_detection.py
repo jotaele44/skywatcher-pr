@@ -53,9 +53,9 @@ def main():
 
     poi_rows = conn.execute(f"""
         SELECT lp.normalized_label, substr({ts_expr},1,7) AS yyyymm
-        FROM labeled_pois lp
+        FROM labeled_pins lp
         JOIN screenshots s ON s.screenshot_id = lp.screenshot_id
-        WHERE lp.poi_type_guess != 'unknown_label_candidate'
+        WHERE lp.pin_type_guess != 'unknown_label_candidate'
           AND {ts_expr} IS NOT NULL
     """).fetchall()
 

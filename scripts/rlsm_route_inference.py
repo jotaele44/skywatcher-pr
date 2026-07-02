@@ -87,9 +87,9 @@ def main():
 
     poi_idx = defaultdict(list)
     for r in conn.execute("""
-        SELECT screenshot_id, normalized_label, poi_type_guess
-        FROM labeled_pois
-        WHERE poi_type_guess != 'unknown_label_candidate'
+        SELECT screenshot_id, normalized_label, pin_type_guess
+        FROM labeled_pins
+        WHERE pin_type_guess != 'unknown_label_candidate'
     """):
         poi_idx[r[0]].append(r[1])
 

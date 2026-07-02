@@ -66,8 +66,8 @@ watch -n 5 'sqlite3 ~/Documents/GitHub/spiderweb-pr/data/rlsm/rlsm_screenshot_an
 - **`screenshots`** (11,926 rows) with `ocr_status='ok'` on every present-on-disk file
 - **`ocr_observations`** — ~35,772 rows (3 zones × 11,924 ok files), raw text immutable
 - **`aircraft_observations`** — one row per screenshot where we extracted a registration / type / altitude / speed
-- **`labeled_pois`** — every map label found (dedup'd per screenshot)
-- **`unlabeled_poi_candidates`** — visual features without labels, ~40-50 per image average → ~500,000 candidates total. All flagged unreviewed.
+- **`labeled_pins`** — every map label found (dedup'd per screenshot)
+- **`unlabeled_pin_candidates`** — visual features without labels, ~40-50 per image average → ~500,000 candidates total. All flagged unreviewed.
 - **`manual_review_queue`** — auto-derived review items spanning all 5 spec categories
 
 ## Resume / rollback

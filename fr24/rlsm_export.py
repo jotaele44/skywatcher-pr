@@ -98,34 +98,34 @@ def export_all() -> dict:
 
     # ocr_normalized_labels.csv — flattened normalized labels with provenance
     _write_csv(OUTS / "ocr_normalized_labels.csv",
-               ["poi_id","screenshot_id","filename","raw_label","normalized_label","poi_type_guess","confidence","review_status","observed_at"],
+               ["pin_id","screenshot_id","filename","raw_label","normalized_label","pin_type_guess","confidence","review_status","observed_at"],
                conn.execute("""
-                   SELECT p.poi_id, p.screenshot_id, s.filename,
-                          p.raw_label, p.normalized_label, p.poi_type_guess,
+                   SELECT p.pin_id, p.screenshot_id, s.filename,
+                          p.raw_label, p.normalized_label, p.pin_type_guess,
                           p.confidence, p.review_status, p.observed_at
-                   FROM labeled_pois p JOIN screenshots s USING(screenshot_id)
-                   ORDER BY p.screenshot_id, p.poi_id
+                   FROM labeled_pins p JOIN screenshots s USING(screenshot_id)
+                   ORDER BY p.screenshot_id, p.pin_id
                """))
     written["ocr_normalized_labels.csv"] = "ok"
 
-    # labeled_pois.csv (canonical)
-    _write_csv(OUTS / "labeled_pois.csv",
-               ["poi_id","screenshot_id","filename","raw_label","normalized_label",
+    # labeled_pins.csv (canonical)
+    _write_csv(OUTS / "labeled_pins.csv",
+               ["pin_id","screenshot_id","filename","raw_label","normalized_label",
                 "bbox_x","bbox_y","bbox_w","bbox_h","centroid_x","centroid_y",
-                "poi_type_guess","confidence","review_status","observed_at"],
+                "pin_type_guess","confidence","review_status","observed_at"],
                conn.execute("""
-                   SELECT p.poi_id, p.screenshot_id, s.filename,
+                   SELECT p.pin_id, p.screenshot_id, s.filename,
                           p.raw_label, p.normalized_label,
                           p.bbox_x, p.bbox_y, p.bbox_w, p.bbox_h,
                           p.centroid_x, p.centroid_y,
-                          p.poi_type_guess, p.confidence, p.review_status, p.observed_at
-                   FROM labeled_pois p JOIN screenshots s USING(screenshot_id)
-                   ORDER BY p.screenshot_id, p.poi_id
+                          p.pin_type_guess, p.confidence, p.review_status, p.observed_at
+                   FROM labeled_pins p JOIN screenshots s USING(screenshot_id)
+                   ORDER BY p.screenshot_id, p.pin_id
                """))
-    written["labeled_pois.csv"] = "ok"
+    written["labeled_pins.csv"] = "ok"
 
-    # unlabeled_poi_candidates.csv
-    _write_csv(OUTS / "unlabeled_poi_candidates.csv",
+    # unlabeled_pin_candidates.csv
+    _write_csv(OUTS / "unlabeled_pin_candidates.csv",
                ["candidate_id","screenshot_id","filename","candidate_type",
                 "bbox_x","bbox_y","bbox_w","bbox_h","centroid_x","centroid_y",
                 "evidence_features","confidence","review_status","observed_at"],
@@ -133,10 +133,10 @@ def export_all() -> dict:
                    SELECT u.candidate_id, u.screenshot_id, s.filename, u.candidate_type,
                           u.bbox_x, u.bbox_y, u.bbox_w, u.bbox_h, u.centroid_x, u.centroid_y,
                           u.evidence_features, u.confidence, u.review_status, u.observed_at
-                   FROM unlabeled_poi_candidates u JOIN screenshots s USING(screenshot_id)
+                   FROM unlabeled_pin_candidates u JOIN screenshots s USING(screenshot_id)
                    ORDER BY u.screenshot_id, u.candidate_id
                """))
-    written["unlabeled_poi_candidates.csv"] = "ok"
+    written["unlabeled_pin_candidates.csv"] = "ok"
 
     # aircraft_observations.csv
     _write_csv(OUTS / "aircraft_observations.csv",
@@ -171,7 +171,7 @@ def export_all() -> dict:
 
     # Manual review queue CSVs (one per item_kind for the spec)
     review_kinds = {
-        "labeled_poi_low_conf":       "manual_review_labeled_pois.csv",
+        "labeled_pin_low_conf":       "manual_review_labeled_pins.csv",
         "unlabeled_candidate":        "manual_review_unlabeled_candidates.csv",
         "aircraft_identity_conflict": "manual_review_aircraft_identity.csv",
         "time_conflict":              "manual_review_time_conflicts.csv",

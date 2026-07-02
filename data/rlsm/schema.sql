@@ -123,8 +123,8 @@ CREATE TABLE IF NOT EXISTS flight_track_features (
 CREATE INDEX IF NOT EXISTS ix_track_screenshot ON flight_track_features(screenshot_id);
 
 -- Labeled POIs (text labels found on the map layer).
-CREATE TABLE IF NOT EXISTS labeled_pois (
-    poi_id           INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE IF NOT EXISTS labeled_pins (
+    pin_id           INTEGER PRIMARY KEY AUTOINCREMENT,
     screenshot_id    INTEGER NOT NULL REFERENCES screenshots(screenshot_id),
     run_id           INTEGER REFERENCES processing_runs(run_id),
     raw_label        TEXT NOT NULL,
@@ -135,16 +135,16 @@ CREATE TABLE IF NOT EXISTS labeled_pois (
     bbox_h           INTEGER,
     centroid_x       INTEGER,
     centroid_y       INTEGER,
-    poi_type_guess   TEXT,                                  -- 'city'|'airport'|'water'|'mountain'|'highway'|'neighborhood'|'unknown'
+    pin_type_guess   TEXT,                                  -- 'city'|'airport'|'water'|'mountain'|'highway'|'neighborhood'|'unknown'
     confidence       REAL,
     review_status    TEXT NOT NULL DEFAULT 'unreviewed',
     observed_at      TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS ix_lpoi_screenshot ON labeled_pois(screenshot_id);
-CREATE INDEX IF NOT EXISTS ix_lpoi_normalized ON labeled_pois(normalized_label);
+CREATE INDEX IF NOT EXISTS ix_lpin_screenshot ON labeled_pins(screenshot_id);
+CREATE INDEX IF NOT EXISTS ix_lpin_normalized ON labeled_pins(normalized_label);
 
 -- Unlabeled POI candidates (visual features WITHOUT labels). Separate table by design.
-CREATE TABLE IF NOT EXISTS unlabeled_poi_candidates (
+CREATE TABLE IF NOT EXISTS unlabeled_pin_candidates (
     candidate_id      INTEGER PRIMARY KEY AUTOINCREMENT,
     screenshot_id     INTEGER NOT NULL REFERENCES screenshots(screenshot_id),
     run_id            INTEGER REFERENCES processing_runs(run_id),
@@ -161,8 +161,8 @@ CREATE TABLE IF NOT EXISTS unlabeled_poi_candidates (
     notes             TEXT,
     observed_at       TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS ix_upoi_screenshot ON unlabeled_poi_candidates(screenshot_id);
-CREATE INDEX IF NOT EXISTS ix_upoi_type       ON unlabeled_poi_candidates(candidate_type);
+CREATE INDEX IF NOT EXISTS ix_upin_screenshot ON unlabeled_pin_candidates(screenshot_id);
+CREATE INDEX IF NOT EXISTS ix_upin_type       ON unlabeled_pin_candidates(candidate_type);
 
 -- Georeferencing anchors.
 CREATE TABLE IF NOT EXISTS geo_anchors (
@@ -276,7 +276,7 @@ CREATE INDEX IF NOT EXISTS ix_reg_mfr  ON aircraft_registry(manufacturer);
 CREATE TABLE IF NOT EXISTS manual_review_queue (
     review_id        INTEGER PRIMARY KEY AUTOINCREMENT,
     screenshot_id    INTEGER REFERENCES screenshots(screenshot_id),
-    item_kind        TEXT NOT NULL,                         -- 'labeled_poi_low_conf'|'unlabeled_candidate'|'aircraft_identity_conflict'|'time_conflict'|'geo_anchor_fail'|'ocr_low_conf'
+    item_kind        TEXT NOT NULL,                         -- 'labeled_pin_low_conf'|'unlabeled_candidate'|'aircraft_identity_conflict'|'time_conflict'|'geo_anchor_fail'|'ocr_low_conf'
     item_ref_table   TEXT,
     item_ref_id      INTEGER,
     reason           TEXT,

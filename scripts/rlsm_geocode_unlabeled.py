@@ -120,8 +120,8 @@ def main():
     anchors_by_sid = defaultdict(list)
     for sid, label, cx, cy in conn.execute("""
         SELECT screenshot_id, normalized_label, centroid_x, centroid_y
-        FROM labeled_pois
-        WHERE centroid_x IS NOT NULL AND poi_type_guess != 'unknown_label_candidate'
+        FROM labeled_pins
+        WHERE centroid_x IS NOT NULL AND pin_type_guess != 'unknown_label_candidate'
     """):
         latlon = geo_lookup.get(_ascii_up(label))
         if latlon and cx and cy:
@@ -183,7 +183,7 @@ def main():
     geocoded = dropped_outside_pr = no_affine = 0
     for cid, sid, ctype, cx, cy, conf in conn.execute("""
         SELECT candidate_id, screenshot_id, candidate_type, centroid_x, centroid_y, confidence
-        FROM unlabeled_poi_candidates
+        FROM unlabeled_pin_candidates
         WHERE centroid_x IS NOT NULL
     """):
         af = affines.get(sid)

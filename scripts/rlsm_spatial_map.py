@@ -103,9 +103,9 @@ def main():
                                      "operators": Counter()})
     for r in conn.execute("""
         SELECT lp.normalized_label, a.registration, a.operator_text_manual
-        FROM labeled_pois lp
+        FROM labeled_pins lp
         JOIN aircraft_observations a ON a.screenshot_id = lp.screenshot_id
-        WHERE lp.poi_type_guess != 'unknown_label_candidate'
+        WHERE lp.pin_type_guess != 'unknown_label_candidate'
     """):
         norm, reg, op = r
         d = poi_data[_ascii_up(norm)]
