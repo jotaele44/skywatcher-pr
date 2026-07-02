@@ -1,0 +1,2 @@
+python -m fr24.satim_engine run --input <input_dir_or_zip> --output <output_dir>
+python -m fr24.satim_engine run --manifest <manifest_yaml_or_json> --output <output_dir>
