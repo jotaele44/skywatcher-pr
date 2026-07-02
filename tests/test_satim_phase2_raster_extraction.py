@@ -27,6 +27,31 @@ def test_detect_raster_candidates_emits_visual_ledger_rows():
     assert rows[0]["feature_scores"]["radiometric_delta"] == 0.72
 
 
+def test_detect_raster_candidates_preserves_legacy_score_aliases():
+    rows = detect_raster_candidates(
+        [
+            {
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[-66.0, 18.0], [-66.1, 18.1]],
+                },
+                "boundary_length_px": 80,
+                "straight_boundary_score": 0.93,
+                "radiometric_discontinuity_score": 0.77,
+            }
+        ],
+        source_image_id="IMG_PHASE2_ALIAS",
+        source_uri="fixtures://satim/phase2/IMG_PHASE2_ALIAS.png",
+        capture_datetime_utc="2026-07-01T00:00:00Z",
+        aoi_id="PR_TILE_SEAM_CONTROL",
+    )
+
+    assert len(rows) == 1
+    assert rows[0]["feature_scores"]["straightness"] == 0.93
+    assert rows[0]["feature_scores"]["radiometric_delta"] == 0.77
+    assert rows[0]["confidence"] == 0.93
+
+
 def test_detect_raster_candidates_filters_short_low_signal_boundaries():
     rows = detect_raster_candidates(
         [
