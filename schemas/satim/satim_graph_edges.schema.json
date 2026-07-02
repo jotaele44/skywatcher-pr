@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/satim_graph_edges.schema.json",
+  "title": "SATIM graph edge row",
+  "type": "object",
+  "required": ["source", "target", "edge_type", "weight", "provenance"],
+  "properties": {
+    "source": {"type": "string"},
+    "target": {"type": "string"},
+    "edge_type": {"type": "string"},
+    "weight": {"type": "number", "minimum": 0},
+    "provenance": {"type": "string"}
+  },
+  "additionalProperties": true
+}
