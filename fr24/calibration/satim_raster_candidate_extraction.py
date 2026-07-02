@@ -32,6 +32,13 @@ def _score(value: Any, default: float = 0.0) -> float:
         return default
 
 
+def _value_with_alias(detection: Mapping[str, Any], primary: str, alias: str) -> Any:
+    """Return the primary score value, falling back to a legacy alias."""
+    if primary in detection:
+        return detection[primary]
+    return detection.get(alias)
+
+
 def candidate_from_detection(
     detection: Mapping[str, Any],
     *,
@@ -49,7 +56,15 @@ def candidate_from_detection(
     future raster extractors.
     """
     feature_scores = dict(DEFAULT_FEATURE_SCORES)
+    feature_scores["straightness"] = _score(
+        _value_with_alias(detection, "straightness", "straight_boundary_score")
+    )
+    feature_scores["radiometric_delta"] = _score(
+        _value_with_alias(detection, "radiometric_delta", "radiometric_discontinuity_score")
+    )
     for key in feature_scores:
+        if key in {"straightness", "radiometric_delta"}:
+            continue
         if key in detection:
             feature_scores[key] = _score(detection[key])
 
@@ -93,8 +108,8 @@ def detect_raster_candidates(
     rows: list[dict[str, Any]] = []
     for index, detection in enumerate(detections, start=1):
         length_px = float(detection.get("boundary_length_px", detection.get("boundary_length", 0.0)) or 0.0)
-        straightness = _score(detection.get("straightness", detection.get("straight_boundary_score")))
-        radiometric = _score(detection.get("radiometric_delta", detection.get("radiometric_discontinuity_score")))
+        straightness = _score(_value_with_alias(detection, "straightness", "straight_boundary_score"))
+        radiometric = _score(_value_with_alias(detection, "radiometric_delta", "radiometric_discontinuity_score"))
         if length_px < cfg.min_boundary_length_px:
             continue
         if straightness < cfg.straightness_min and radiometric < cfg.radiometric_delta_min:
