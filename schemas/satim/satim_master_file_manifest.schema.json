@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/satim_master_file_manifest.schema.json",
+  "title": "SATIM master file manifest row",
+  "type": "object",
+  "required": ["file_id", "path", "sha256", "size_bytes", "extension", "source_zip", "role"],
+  "properties": {
+    "file_id": {"type": "string"},
+    "path": {"type": "string"},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "size_bytes": {"type": "integer", "minimum": 0},
+    "extension": {"type": "string"},
+    "source_zip": {"type": "string"},
+    "role": {"type": "string", "enum": ["track_candidate", "repo_or_config", "other", "visual_candidate", "gis_context"]}
+  },
+  "additionalProperties": true
+}
