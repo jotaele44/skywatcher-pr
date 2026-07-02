@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/tile_artifact.schema.json",
+  "title": "Tile Artifact Classification",
+  "type": "object",
+  "required": [
+    "artifact_id",
+    "event_id",
+    "page",
+    "artifact_class",
+    "description",
+    "artifact_risk",
+    "impact_on_analysis"
+  ],
+  "properties": {
+    "artifact_id": {"type": "string"},
+    "event_id": {"type": "string"},
+    "page": {"type": "integer"},
+    "artifact_class": {"enum": ["TRACK_LINE", "TILE_SEAM", "UI_OVERLAY", "ZOOM_BLUR", "COMPRESSION", "MIXED_EPOCH", "SHADOW_CONFUSION", "LABEL_COLLISION", "HOLD_REVIEW", "STRUCTURAL_SIGNAL"]},
+    "description": {"type": "string"},
+    "artifact_risk": {"enum": ["low", "medium", "high"]},
+    "impact_on_analysis": {"type": "string"},
+    "promotion_status": {"enum": ["hold_artifact_control", "candidate_only", "validated"]},
+    "notes": {"type": ["string", "null"]}
+  }
+}
