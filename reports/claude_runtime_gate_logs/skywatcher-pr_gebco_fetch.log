@@ -1,0 +1,7 @@
+fetching GEBCOIceTopo (17.92, 18.65) x (-67.3, -65.2) from OpenTopography...
+wrote /home/user/skywatcher-pr/data/gebco/gebco_pr_subset.tif (139309 bytes)
+wrote /home/user/skywatcher-pr/data/gebco/gebco_pr_subset.nc
+verify: trench(18.60,-66.50)=-1105.0 m, cordillera(18.15,-66.59)=592.0 m
+verify: open_gebco + depth_at OK
+GEBCO_PATH=/home/user/skywatcher-pr/data/gebco/gebco_pr_subset.nc
+fetch rc=0
