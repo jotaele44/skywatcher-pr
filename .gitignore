@@ -44,3 +44,6 @@ data/ground_truth/
 
 # generated federation maintenance report (audit artifact, not committed)
 reports/maintenance/
+
+# Fetched GEBCO terrain layer (scripts/fetch_gebco_pr.py output) — data, not source
+data/gebco/
