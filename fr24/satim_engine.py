@@ -252,6 +252,24 @@ def missing_layer(layer: str, reason: str) -> dict[str, Any]:
     ).to_dict()
 
 
+def degraded_layer(layer: str, reason: str, error: Exception) -> dict[str, Any]:
+    severity = "blocker" if layer in BASE_REQUIRED_LAYERS else "warning"
+    return LayerCalibrationResult(
+        layer=layer,
+        status="DEGRADED",
+        metrics={},
+        thresholds={},
+        findings=[
+            {
+                "severity": severity,
+                "detail": reason,
+                "error_type": error.__class__.__name__,
+                "error": str(error),
+            }
+        ],
+    ).to_dict()
+
+
 def _write_layer(layer: str, payload: Mapping[str, Any], layers_dir: Path) -> Path:
     output_path = layers_dir / LAYER_OUTPUTS[layer]
     write_json(output_path, payload)
@@ -370,11 +388,18 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
     if missing:
         l2_payload = missing_layer("L2_route_extractor", missing)
     else:
-        l2_payload = calibrate_l2(
-            str(screenshots),
-            str(blanks) if _is_present(blanks) else None,
-            int(manifest.options.get("min_route_pixels", 8)),
-        )
+        try:
+            l2_payload = calibrate_l2(
+                str(screenshots),
+                str(blanks) if _is_present(blanks) else None,
+                int(manifest.options.get("min_route_pixels", 8)),
+            )
+        except Exception as exc:
+            l2_payload = degraded_layer(
+                "L2_route_extractor",
+                "adapter failure while running L2 route extraction",
+                exc,
+            )
     layer_paths.append(_write_layer("L2_route_extractor", l2_payload, layers_dir))
 
     ground_truth = inputs.get("ground_truth_csv")
