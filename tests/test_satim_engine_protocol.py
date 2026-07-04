@@ -144,6 +144,56 @@ def test_calibration_set_validator_writes_packet_result(tmp_path):
     assert packet["validation"]["errors"]
 
 
+def test_l2_malformed_image_degrades_instead_of_crashing(tmp_path):
+    screenshots = tmp_path / "screenshots"
+    screenshots.mkdir()
+    (screenshots / "corrupt.png").write_bytes(b"not a real png")
+    manifest = _manifest(tmp_path, {"screenshots_dir": str(screenshots)})
+
+    summary = satim_engine.run_satim_engine(manifest, tmp_path / "out")
+    report = read_json(tmp_path / "out" / "calibration_report.json")
+
+    l2 = report["layers"]["L2_route_extractor"]
+    assert l2["status"] == "DEGRADED"
+    assert l2["findings"][0]["error_type"] == "UnidentifiedImageError"
+    assert summary["status"] == "DEGRADED"
+
+
+def test_l5_disabled_by_operator_does_not_block_batch_ready(monkeypatch, tmp_path):
+    screenshots = tmp_path / "screenshots"
+    ground_truth = tmp_path / "ground_truth.csv"
+    predictions = tmp_path / "predictions.json"
+    fr24_csv = tmp_path / "fr24_export.csv"
+    screenshots.mkdir()
+    ground_truth.write_text("image_path,callsign\n", encoding="utf-8")
+    predictions.write_text("{}", encoding="utf-8")
+    fr24_csv.write_text("registration,callsign,operator,aircraft_type\n", encoding="utf-8")
+
+    monkeypatch.setattr(satim_engine, "calibrate_l1", lambda *_args, **_kwargs: _ready("L1_ui_segmenter"))
+    monkeypatch.setattr(satim_engine, "calibrate_l2", lambda *_args, **_kwargs: _ready("L2_route_extractor"))
+    monkeypatch.setattr(satim_engine, "calibrate_l3", lambda *_args, **_kwargs: _ready("L3_vision_ocr", record_count=1))
+    monkeypatch.setattr(satim_engine, "calibrate_l4", lambda *_args, **_kwargs: _ready("L4_aircraft_intelligence", record_count=1))
+
+    manifest = _manifest(
+        tmp_path,
+        {
+            "screenshots_dir": str(screenshots),
+            "ground_truth_csv": str(ground_truth),
+            "predictions_json": str(predictions),
+            "fr24_csv": str(fr24_csv),
+        },
+        options={"include_l5": False, "export_legacy_readiness": True},
+    )
+
+    summary = satim_engine.run_satim_engine(manifest, tmp_path / "out")
+    report = read_json(tmp_path / "out" / "calibration_report.json")
+
+    assert summary["status"] == "READY_FOR_BATCH_ANALYSIS"
+    assert summary["blocking_gaps"] == []
+    assert report["layers"]["L5_tile_seam_shadow"]["status"] == "READY"
+    assert report["layers"]["L5_tile_seam_shadow"]["metrics"]["skipped_by_operator"] is True
+
+
 def test_autodetect_inputs_standard_names(tmp_path):
     root = tmp_path / "input_root"
     (root / "screenshots").mkdir(parents=True)
