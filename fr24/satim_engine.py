@@ -422,7 +422,20 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
     if include_l5:
         missing = _require_or_missing(manifest, "L5_tile_seam_shadow", {"l5_candidates_csv": l5_candidates})
         l5_payload = missing_layer("L5_tile_seam_shadow", missing) if missing else calibrate_l5(str(l5_candidates))
-        layer_paths.append(_write_layer("L5_tile_seam_shadow", l5_payload, layers_dir))
+    else:
+        l5_payload = LayerCalibrationResult(
+            layer="L5_tile_seam_shadow",
+            status="READY",
+            metrics={"skipped_by_operator": True},
+            thresholds={},
+            findings=[
+                {
+                    "severity": "info",
+                    "detail": "L5 disabled via include_l5=false; layer intentionally not evaluated",
+                }
+            ],
+        ).to_dict()
+    layer_paths.append(_write_layer("L5_tile_seam_shadow", l5_payload, layers_dir))
 
     calibration_set_dir = inputs.get("calibration_set_dir")
     calibration_packet: dict[str, Any] | None = None
