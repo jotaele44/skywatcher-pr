@@ -123,7 +123,7 @@ def _flight_id(row: dict) -> str:
     if cid:
         return cid
     name = (row.get("image_name") or "").strip()
-    return f"fr24::{name}" if name else f"fr24::unknown"
+    return f"fr24::{name}" if name else "fr24::unknown"
 
 
 def is_intake_eligible(row: dict) -> bool:
@@ -148,7 +148,9 @@ def map_to_flight_event(row: dict) -> dict:
     out["max_altitude_ft"] = _as_int(row.get("barometric_altitude_ft"))
     out["avg_speed_mph"] = _as_float(row.get("ground_speed_mph"))
     out["takeoff_time"] = _make_takeoff_time(row)
-    out["num_screenshots"] = 1
+    # Fused multi-frame records (fr24/flight_fusion.py) carry their own frame
+    # count; plain single-frame export rows keep the historical default of 1.
+    out["num_screenshots"] = _as_int(row.get("num_screenshots")) or 1
 
     # ── Provenance ────────────────────────────────────────────────────────────
     out["confirmation_status"] = "not_confirmed"
