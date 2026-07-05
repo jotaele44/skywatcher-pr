@@ -89,11 +89,15 @@ review.
 
 ## Sequence summary
 
-| # | Investment | Type | Unlocks |
-|---|---|---|---|
-| 1 | Affine geocoder → shared calibration | wiring | `located` observations; production package from existing corpus |
-| 2 | Unify lanes on RLSM store | wiring | registry/ground-truth enrichment everywhere; targeted vision second-opinions |
-| 3 | Wave fusion + endpoint matching | modeling | multi-frame evidence; origin/destination semantics |
-| 4 | Track-polyline CV | research | loiter/orbit/gap detection feeding ILAP |
-| 5 | Cluster-first review + SATIM label growth | process | review throughput ×100s; calibration un-starved |
-| 6 | Quota/vision/compute allocation | process | every scarce unit ground-truths #1/#4 |
+All six investments are **code-landed** (fixture-tested; the RLSM corpus is
+operator-local, so corpus-side effects arrive with the operator's next local
+run of the named entry points).
+
+| # | Investment | Type | Unlocks | Status |
+|---|---|---|---|---|
+| 1 | Affine geocoder → shared calibration | wiring | `located` observations; production package from existing corpus | code landed — `GeoCalibration('per_screenshot_affine')`, `fr24/rlsm_anchors.py`, `scripts/sync_rlsm_calibration.py`; operator run pending |
+| 2 | Unify lanes on RLSM store | wiring | registry/ground-truth enrichment everywhere; targeted vision second-opinions | code landed — `scripts/ingest_vision_csv_to_rlsm.py`, `build_producer_package.py --rlsm-db`; operator run pending |
+| 3 | Wave fusion + endpoint matching | modeling | multi-frame evidence; origin/destination semantics | code landed — `fr24/flight_fusion.py`, `fr24/endpoint_matcher.py`, adapter honors `num_screenshots`; operator run pending |
+| 4 | Track-polyline CV | research | loiter/orbit/gap detection feeding ILAP | code landed — `fr24/track_vectorizer.py`, `rlsm_flight_track --image-root` (CV-first, heuristic fallback); operator run pending |
+| 5 | Cluster-first review + SATIM label growth | process | review throughput ×100s; calibration un-starved | code landed — `scripts/rlsm_review_worklist.py` (prints SATIM follow-through); operator review pending |
+| 6 | Quota/vision/compute allocation | process | every scarce unit ground-truths #1/#4 | code landed — `scripts/suggest_harvest_targets.py` (carryover-compatible); operator harvest pending |
