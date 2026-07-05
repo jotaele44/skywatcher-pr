@@ -75,6 +75,21 @@ def apply_affine(affine, px: float, py: float) -> Tuple[float, float]:
     return c + d * py, a + b * px
 
 
+def invert_fixed_pr_bounds(lat: float, lon: float,
+                           img_w: int, img_h: int) -> Tuple[float, float]:
+    """Recover the pixel that the fixed_pr_bounds mapping sent to (lat, lon).
+
+    Used by the RLSM calibration bridge to refit legacy fixed-bounds stamps
+    with a per-screenshot affine: invert the stamp back to its pixel, then
+    re-project that pixel through the better transform.
+    """
+    rel_y = (PR_BOUNDS["north"] - lat) / (PR_BOUNDS["north"] - PR_BOUNDS["south"])
+    rel_x = (lon - PR_BOUNDS["west"]) / (PR_BOUNDS["east"] - PR_BOUNDS["west"])
+    map_top_px = img_h * MAP_TOP_FRACTION
+    map_h = img_h * (MAP_BOTTOM_FRACTION - MAP_TOP_FRACTION)
+    return rel_x * img_w, map_top_px + rel_y * map_h
+
+
 def affine_median_residual_deg(affine,
                                pixel_xy: Sequence[Tuple[float, float]],
                                geo_latlon: Sequence[Tuple[float, float]]) -> float:

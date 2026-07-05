@@ -39,22 +39,11 @@ sys.path.insert(0, str(REPO))
 
 from fr24.rlsm_anchors import anchors_for_screenshot, build_geo_lookup  # noqa: E402
 from integration.geo_calibration import (  # noqa: E402
-    MAP_BOTTOM_FRACTION,
-    MAP_TOP_FRACTION,
-    PR_BOUNDS,
     GeoCalibration,
+    invert_fixed_pr_bounds,
 )
 
 UPDATABLE_METHODS = {None, "", "unknown", "fixed_pr_bounds"}
-
-
-def invert_fixed_pr_bounds(lat: float, lon: float, img_w: int, img_h: int):
-    """Recover the pixel that GeoCalibration._fixed_pr_bounds mapped to (lat, lon)."""
-    rel_y = (PR_BOUNDS["north"] - lat) / (PR_BOUNDS["north"] - PR_BOUNDS["south"])
-    rel_x = (lon - PR_BOUNDS["west"]) / (PR_BOUNDS["east"] - PR_BOUNDS["west"])
-    map_top_px = img_h * MAP_TOP_FRACTION
-    map_h = img_h * (MAP_BOTTOM_FRACTION - MAP_TOP_FRACTION)
-    return rel_x * img_w, map_top_px + rel_y * map_h
 
 
 def main(argv: Optional[List[str]] = None) -> int:
