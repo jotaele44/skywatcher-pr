@@ -28,9 +28,12 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 SCHEMA_VERSION = "priis.airspace_export.v0.1"
 PRODUCER = "skywatcher-pr"
@@ -71,6 +74,90 @@ def _blend_confidence(ocr: Optional[float], coord: Optional[float]) -> float:
     return round(max(0.0, min(1.0, sum(parts) / len(parts))), 3)
 
 
+class RlsmEnricher:
+    """Optional per-sha256 enrichment from the RLSM store (--rlsm-db).
+
+    Two independent signals per matched screenshot:
+      - a per-screenshot affine calibration (geo_anchors + backfilled labeled
+        pins) that can lift a fixed_pr_bounds stamp over the `located` floor;
+      - the FAA aircraft_registry row for the screenshot's observed
+        registration (owner / manufacturer / model into the description).
+    """
+
+    UPDATABLE_METHODS = {None, "", "unknown", "fixed_pr_bounds"}
+    MAX_RESIDUAL_DEG = 0.05  # mirrors scripts/sync_rlsm_calibration.py
+
+    def __init__(self, db_path: Path):
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        from fr24.rlsm_anchors import build_geo_lookup
+
+        self.conn = sqlite3.connect(str(db_path))
+        self.by_sha = {
+            sha: (sid, w, h)
+            for sid, sha, w, h in self.conn.execute(
+                "SELECT screenshot_id, sha256, width, height FROM screenshots"
+                " WHERE sha256 IS NOT NULL"
+            )
+        }
+        self.geo_lookup = build_geo_lookup(self.conn)
+        self._cache: Dict[str, Optional[Dict[str, Any]]] = {}
+
+    def for_sha(self, sha: Optional[str]) -> Optional[Dict[str, Any]]:
+        if not sha or sha not in self.by_sha:
+            return None
+        if sha in self._cache:
+            return self._cache[sha]
+        from fr24.rlsm_anchors import anchors_for_screenshot
+        from integration.geo_calibration import GeoCalibration
+
+        sid, img_w, img_h = self.by_sha[sha]
+        cal = None
+        if img_w and img_h:
+            anchors = anchors_for_screenshot(self.conn, sid, self.geo_lookup)
+            if len(anchors) >= 2:
+                candidate = GeoCalibration(mode="per_screenshot_affine", anchors=anchors)
+                if (candidate.affine is not None
+                        and candidate.affine_residual_deg <= self.MAX_RESIDUAL_DEG):
+                    cal = candidate
+
+        registration = None
+        row = self.conn.execute(
+            "SELECT registration FROM aircraft_observations"
+            " WHERE screenshot_id = ? AND registration IS NOT NULL"
+            " AND TRIM(registration) != ''"
+            " ORDER BY CASE identity_status WHEN 'confirmed' THEN 0 ELSE 1 END,"
+            " aircraft_obs_id LIMIT 1",
+            (sid,),
+        ).fetchone()
+        if row:
+            registration = str(row[0]).strip().upper()
+
+        registry = None
+        if registration:
+            reg_row = self.conn.execute(
+                "SELECT name, manufacturer, model FROM aircraft_registry"
+                " WHERE n_number = ?", (registration,),
+            ).fetchone()
+            if reg_row:
+                registry = {
+                    "registration": registration,
+                    "name": reg_row[0], "manufacturer": reg_row[1], "model": reg_row[2],
+                }
+
+        result = {"cal": cal, "img_w": img_w, "img_h": img_h, "registry": registry}
+        self._cache[sha] = result
+        return result
+
+    def refit(self, lat: float, lon: float, enrichment: Dict[str, Any]):
+        """Re-project a fixed_pr_bounds stamp through the per-screenshot affine."""
+        from integration.geo_calibration import invert_fixed_pr_bounds
+
+        img_w, img_h = enrichment["img_w"], enrichment["img_h"]
+        px, py = invert_fixed_pr_bounds(lat, lon, img_w, img_h)
+        return enrichment["cal"].pixel_to_coord(px, py, img_w, img_h)
+
+
 def read_screenshot_rows(db_path: Path) -> List[sqlite3.Row]:
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
@@ -84,7 +171,8 @@ def read_screenshot_rows(db_path: Path) -> List[sqlite3.Row]:
 
 
 def build_records(
-    rows: List[sqlite3.Row], *, mark_synthetic: bool = False
+    rows: List[sqlite3.Row], *, mark_synthetic: bool = False,
+    enricher: Optional[RlsmEnricher] = None,
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], List[str]]:
     observations: List[Dict[str, Any]] = []
     sources: List[Dict[str, Any]] = []
@@ -104,6 +192,31 @@ def build_records(
         source_id = f"src-{sid}"
         lineage_id = f"lin-{sid}"
         coord_conf = row["coordinate_confidence"]
+        coord_method = row["coordinate_method"] or "unknown"
+        registry_note = ""
+
+        enrichment = enricher.for_sha(row["sha256"]) if enricher else None
+        if enrichment:
+            if (enrichment["cal"] is not None
+                    and row["coordinate_method"] in RlsmEnricher.UPDATABLE_METHODS):
+                refit = enricher.refit(float(lat), float(lon), enrichment)
+                if (refit.coordinate_method == "per_screenshot_affine"
+                        and refit.coordinate_confidence > (coord_conf or 0.0)):
+                    lat, lon = refit.lat, refit.lon
+                    coord_conf = refit.coordinate_confidence
+                    coord_method = refit.coordinate_method
+            if enrichment["registry"]:
+                reg = enrichment["registry"]
+                details = " ".join(
+                    str(part).strip() for part in (reg["manufacturer"], reg["model"])
+                    if part and str(part).strip()
+                )
+                registry_note = (
+                    f"; FAA registry {reg['registration']}:"
+                    f" {reg['name'] or 'unknown owner'}"
+                    + (f" ({details})" if details else "")
+                )
+
         overall = _blend_confidence(row["ocr_confidence"], coord_conf)
         geometry_status = (
             "located"
@@ -124,7 +237,7 @@ def build_records(
             "signal_type": SIGNAL_TYPE,
             "description_summary": (
                 f"FR24 screenshot-derived observation (callsign {row['callsign'] or 'unknown'},"
-                f" flight {row['flight_id'] or 'unknown'})"
+                f" flight {row['flight_id'] or 'unknown'}){registry_note}"
             ),
             "source_id": source_id,
             "source_type": "screenshot",
@@ -149,7 +262,7 @@ def build_records(
             "source_id": source_id,
             "pipeline_stage": "fr24_screenshot_ocr",
             "extraction_method": "ensemble_ocr",
-            "coordinate_method": row["coordinate_method"] or "unknown",
+            "coordinate_method": coord_method,
             "notes": f"review_status={row['review_status'] or 'pending'}",
         })
         confidence.append({
@@ -238,6 +351,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="Flag every row synthetic=true (unit-test fixtures only; such a "
         "package can never pass a production-mode validation)",
     )
+    ap.add_argument(
+        "--rlsm-db",
+        default=None,
+        help="Optional RLSM sqlite: enrich records matched by sha256 with the "
+        "per-screenshot affine calibration and the FAA registry identity",
+    )
     args = ap.parse_args(argv)
 
     db_path = Path(args.db)
@@ -245,9 +364,17 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"FAIL — DB not found: {db_path}")
         return 1
 
+    enricher = None
+    if args.rlsm_db:
+        rlsm_path = Path(args.rlsm_db)
+        if not rlsm_path.exists():
+            print(f"FAIL — RLSM DB not found: {rlsm_path}")
+            return 1
+        enricher = RlsmEnricher(rlsm_path)
+
     rows = read_screenshot_rows(db_path)
     observations, sources, lineage, confidence, skipped = build_records(
-        rows, mark_synthetic=args.mark_synthetic
+        rows, mark_synthetic=args.mark_synthetic, enricher=enricher
     )
     if not observations:
         print("FAIL — no exportable screenshot rows (all missing coords/timestamp or rejected)")

@@ -33,12 +33,16 @@ import argparse
 import csv
 import json
 import sqlite3
+import sys
 import unicodedata
 from collections import Counter, defaultdict
 from pathlib import Path
 from statistics import median
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))
+
+from integration.geo_calibration import apply_affine, fit_affine  # noqa: E402
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 OUTS = REPO / "outputs"
 PR_BBOX = (17.7, 18.65, -67.55, -65.15)  # (lat_min, lat_max, lon_min, lon_max)
@@ -61,33 +65,8 @@ def _ascii_up(s: str) -> str:
                    if not unicodedata.combining(c)).upper().strip()
 
 
-def fit_affine(pixel_xy: list[tuple[float, float]],
-               geo_latlon: list[tuple[float, float]]):
-    """4-parameter affine fit: returns (lon0, dlon_dx, lat0, dlat_dy).
-    Uses least-squares via numpy. Requires ≥2 anchors."""
-    import numpy as np
-    n = len(pixel_xy)
-    if n < 2: return None
-    px = np.array([p[0] for p in pixel_xy], dtype=float)
-    py = np.array([p[1] for p in pixel_xy], dtype=float)
-    lats = np.array([g[0] for g in geo_latlon], dtype=float)
-    lons = np.array([g[1] for g in geo_latlon], dtype=float)
-    # lon = a + b*px      lat = c + d*py
-    A_lon = np.column_stack([np.ones(n), px])
-    A_lat = np.column_stack([np.ones(n), py])
-    try:
-        (a, b), *_ = np.linalg.lstsq(A_lon, lons, rcond=None)
-        (c, d), *_ = np.linalg.lstsq(A_lat, lats, rcond=None)
-        # Reasonable scale sanity (PR is ~250 km wide ≈ 2.5° lon at this latitude)
-        if abs(b) < 1e-7 or abs(d) < 1e-7: return None
-        return (a, b, c, d)
-    except Exception:
-        return None
-
-
-def apply_affine(affine, px: float, py: float):
-    a, b, c, d = affine
-    return c + d * py, a + b * px   # lat, lon
+# fit_affine / apply_affine now live in integration/geo_calibration.py (shared
+# with the calibration's per_screenshot_affine mode); imported above.
 
 
 def main():
