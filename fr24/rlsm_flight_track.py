@@ -10,13 +10,14 @@ on-screen track marker.
 
 Honest limits
 -------------
-- No pixel analysis → `track_length_px` and `bbox_*` columns stay NULL.
-- `has_loop` / `has_orbit` / `has_gap` cannot be derived without the actual
-  track pixels and are left at 0 (their meaning is "did we see one?", and the
-  answer here is "we couldn't look"). The full CV-based classifier remains
-  a deferred follow-up — see docs/NEXT_100_TASKS.md "B-flight-track".
-- `follows_coast` / `near_airport` are spatial-context fields the heuristic
-  doesn't compute; left at 0.
+- Heuristic rows: no pixel analysis → `track_length_px` and `bbox_*` stay
+  NULL and `has_loop` / `has_orbit` / `has_gap` stay 0 ("we couldn't look").
+- CV rows (fr24/track_vectorizer.py, used first whenever the screenshot image
+  is reachable via --image-root): the on-screen trail IS analyzed, filling
+  path_shape/has_loop/has_orbit/has_gap/track_length_px/bbox_* at
+  confidence 0.6. This closes the "B-flight-track" deferred follow-up.
+- `follows_coast` / `near_airport` are spatial-context fields neither pass
+  computes; left at 0.
 
 What this does ship
 -------------------
@@ -40,9 +41,10 @@ first.
 
 CLI
 ---
-    python3 -m fr24.rlsm_flight_track [--limit N] [--budget-sec S]
+    python3 -m fr24.rlsm_flight_track [--limit N] [--budget-sec S] \
+        [--image-root /path/to/corpus]
 
-Defaults: no limit, 35-second budget.
+Defaults: no limit, 35-second budget, no image root (heuristic only).
 """
 from __future__ import annotations
 
@@ -107,8 +109,14 @@ def _classify_screenshot(observations: list) -> tuple:
     return ("absent", 0)
 
 
-def run(budget_sec: float = 35.0, limit: int = 0) -> dict:
+def run(budget_sec: float = 35.0, limit: int = 0,
+        image_root: Optional[Path] = None) -> dict:
     """Classify path_shape for every 'ok' screenshot not yet in flight_track_features.
+
+    When *image_root* is given and the screenshot file exists under it, the
+    CV track vectorizer (fr24/track_vectorizer.py) runs first and fills the
+    pixel-derived columns at confidence 0.6; otherwise (or when CV finds no
+    trail) the speed/heading heuristic produces the same rows as before.
 
     Returns a snapshot dict identical in shape to the other rlsm runners
     (run_id, targets, processed, failed, elapsed_sec, classifications).
@@ -128,34 +136,60 @@ def run(budget_sec: float = 35.0, limit: int = 0) -> dict:
     run_id = cur.lastrowid
     conn.commit()
 
-    sql = ("SELECT s.screenshot_id FROM screenshots s "
+    sql = ("SELECT s.screenshot_id, s.rel_path FROM screenshots s "
            "WHERE s.ingest_status='ok' "
            "  AND NOT EXISTS (SELECT 1 FROM flight_track_features t WHERE t.screenshot_id = s.screenshot_id) "
            "ORDER BY s.screenshot_id")
     if limit:
         sql += f" LIMIT {int(limit)}"
-    targets = [row[0] for row in conn.execute(sql).fetchall()]
+    targets = conn.execute(sql).fetchall()
     n_targets = len(targets)
 
     start = time.time()
     n_processed = 0
+    n_cv = 0
     classifications: dict = {}
 
-    for sid in targets:
+    for sid, rel_path in targets:
         if time.time() - start > budget_sec:
             break
         obs_rows = conn.execute(
             "SELECT speed_kt, heading_deg FROM aircraft_observations WHERE screenshot_id = ?",
             (sid,),
         ).fetchall()
+        # has_hover is a speed signal in both passes; the CV sees geometry only.
         path_shape, has_hover = _classify_screenshot(obs_rows)
-        conn.execute(
-            "INSERT INTO flight_track_features "
-            "(screenshot_id, run_id, path_shape, has_loop, has_orbit, has_hover, "
-            " has_gap, follows_coast, near_airport, confidence, observed_at) "
-            "VALUES (?, ?, ?, 0, 0, ?, 0, 0, 0, ?, ?)",
-            (sid, run_id, path_shape, has_hover, HEURISTIC_CONFIDENCE, _iso_now()),
-        )
+
+        cv_features = None
+        if image_root is not None and rel_path:
+            image_path = Path(image_root) / rel_path
+            if image_path.exists():
+                from fr24.track_vectorizer import vectorize_image
+                cv_features = vectorize_image(str(image_path))
+
+        if cv_features is not None:
+            n_cv += 1
+            path_shape = cv_features.path_shape
+            bx, by, bw, bh = cv_features.bbox
+            conn.execute(
+                "INSERT INTO flight_track_features "
+                "(screenshot_id, run_id, path_shape, has_loop, has_orbit, has_hover, "
+                " has_gap, follows_coast, near_airport, track_length_px, "
+                " bbox_x, bbox_y, bbox_w, bbox_h, confidence, observed_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)",
+                (sid, run_id, path_shape, cv_features.has_loop,
+                 cv_features.has_orbit, has_hover, cv_features.has_gap,
+                 cv_features.track_length_px, bx, by, bw, bh,
+                 cv_features.confidence, _iso_now()),
+            )
+        else:
+            conn.execute(
+                "INSERT INTO flight_track_features "
+                "(screenshot_id, run_id, path_shape, has_loop, has_orbit, has_hover, "
+                " has_gap, follows_coast, near_airport, confidence, observed_at) "
+                "VALUES (?, ?, ?, 0, 0, ?, 0, 0, 0, ?, ?)",
+                (sid, run_id, path_shape, has_hover, HEURISTIC_CONFIDENCE, _iso_now()),
+            )
         conn.commit()
         n_processed += 1
         classifications[path_shape] = classifications.get(path_shape, 0) + 1
@@ -170,6 +204,7 @@ def run(budget_sec: float = 35.0, limit: int = 0) -> dict:
         "run_id": run_id,
         "targets": n_targets,
         "processed": n_processed,
+        "cv_classified": n_cv,
         "failed": 0,
         "classifications": classifications,
         "elapsed_sec": round(time.time() - start, 2),
@@ -182,8 +217,12 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--budget-sec", type=float, default=35.0)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--image-root", default=None,
+                    help="Corpus root containing the screenshots' rel_path files; "
+                    "enables the CV track vectorizer (falls back per-image)")
     args = ap.parse_args()
-    out = run(args.budget_sec, args.limit)
+    out = run(args.budget_sec, args.limit,
+              image_root=Path(args.image_root) if args.image_root else None)
     print(json.dumps(out, indent=2))
     sys.exit(0)
 
