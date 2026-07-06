@@ -114,6 +114,23 @@ def _extract_endpoints(text: str, gaz: Dict[str, str]) -> tuple[str, str, str, s
         source = "gazetteer"
         origin = seen[0]
         dest = seen[1] if len(seen) > 1 else ""
+        if not dest:
+            # A lone known code often has an unrecognised partner on the same
+            # route line (e.g. "PBI SJU" where PBI is missing from the
+            # registry). Preserve that token in positional order so the
+            # consumer downgrades the tier and surfaces it for gazetteer
+            # extension, instead of silently discarding it and flipping the
+            # route direction into a CONFIRMED origin_only row.
+            for line in upper.splitlines():
+                toks = [t for t in _CODE_RE.findall(line) if t not in _CODE_STOP]
+                if origin in toks and len(toks) >= 2:
+                    partner = next((t for t in toks if t != origin), "")
+                    if partner:
+                        if toks.index(origin) == 0:
+                            dest = partner
+                        else:
+                            origin, dest = partner, origin
+                    break
     else:
         # 2) fallback: the first line carrying two clean 3-letter tokens
         origin = dest = ""
@@ -462,10 +479,11 @@ def harvest_image(image_path: str, reg) -> dict:
         vcs = {vcl.get(c, "") for c in resolved}
         if "Candidate-Low" in vcs:
             tier, reason, src = "REVIEW", "candidate_low_needs_verification", "registry_candidate"
+        elif n_named < (bool(origin) + bool(dest)):
+            # never CONFIRM while a route token is unresolved
+            tier, reason, src = "PROBABLE", "partial_unresolved_code", "fr24_panel_partial"
         elif "Historic/Inactive" in vcs:
             tier, reason, src = "CONFIRMED", "historic_facility", "registry_historic"
-        elif n_named < (bool(origin) + bool(dest)):
-            tier, reason, src = "PROBABLE", "partial_unresolved_code", "fr24_panel_partial"
         else:
             tier, reason, src = "CONFIRMED", "", "registry_resolved"
         return _row(name, "fr24", ek, origin, o_name, dest, d_name,

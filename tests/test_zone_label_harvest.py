@@ -45,6 +45,22 @@ def test_extract_endpoints_gazetteer(reg):
     assert status == "departed"
 
 
+def test_extract_endpoints_mixed_known_unknown_preserves_partner(reg):
+    # QQZ is not in the registry; LAL is. The unknown partner on the same
+    # route line must be preserved in positional order (no direction flip,
+    # no silent discard) so the consumer downgrades the tier and surfaces
+    # the token for gazetteer extension.
+    names = reg["names"]
+    text = "QQZ LAL\nSOMEWHERE LAKELAND 44,975 ft\nDeparted 06:11 ago"
+    o, d, status, source = zlh._extract_endpoints(text, names)
+    assert (o, d) == ("QQZ", "LAL")
+    assert source == "gazetteer"
+    # known code first, unknown partner second keeps its slot too
+    o2, d2, _, source2 = zlh._extract_endpoints("LAL QQZ\nDeparted", names)
+    assert (o2, d2) == ("LAL", "QQZ")
+    assert source2 == "gazetteer"
+
+
 def test_extract_endpoints_not_available(reg):
     names = reg["names"]
     text = "N/A N/A NOT AVAILABLE NOT AVAILABLE BAROMETRIC ALT. 44,050 ft"
