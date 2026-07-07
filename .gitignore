@@ -47,3 +47,11 @@ reports/maintenance/
 
 # Fetched GEBCO terrain layer (scripts/fetch_gebco_pr.py output) — data, not source
 data/gebco/
+
+# Desktop wrapper (see desktop/README.md)
+.venv/
+frontend/node_modules/
+frontend/dist/
+desktop/.setup-complete
+dist-desktop/
+build/
