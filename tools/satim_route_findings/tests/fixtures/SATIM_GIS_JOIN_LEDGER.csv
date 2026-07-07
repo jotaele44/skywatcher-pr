@@ -1,0 +1,7 @@
+source,latitude,longitude,gis_join_status,gis_layer_count
+alpha.csv,18.4001,-66.1002,joined,2
+alpha.csv,18.4010,-66.0999,joined,2
+alpha.csv,18.4050,-66.1020,joined,1
+beta.csv,18.5000,-66.2000,joined,1
+beta.csv,18.5010,-66.2010,joined,1
+visual_frame.jpg,18.6000,-66.3000,not_joined,0
