@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SATIM GATIM Link v1",
+  "type": "object",
+  "required": ["gatim_id", "fn_id", "grid_id", "distance_m", "link_status", "confidence_delta", "link_note"],
+  "properties": {
+    "gatim_id": {"type": "string"},
+    "fn_id": {"type": "string"},
+    "grid_id": {"type": "string"},
+    "distance_m": {"type": "number"},
+    "link_status": {"enum": ["nearby_FN", "coordinate_overlap"]},
+    "confidence_delta": {"type": "number"},
+    "link_note": {"const": "proximity_only"}
+  },
+  "additionalProperties": false
+}
