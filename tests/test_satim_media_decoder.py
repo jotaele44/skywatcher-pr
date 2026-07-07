@@ -55,8 +55,13 @@ def test_image_decode_sanitizes_source_reference(tmp_path: Path) -> None:
 
 
 def test_pdf_decoder_declares_dependency_or_decodes(tmp_path: Path) -> None:
+    fitz = pytest.importorskip("fitz")
     pdf_path = tmp_path / "private_case_media_name.pdf"
-    pdf_path.write_bytes(b"%PDF-1.4\n% synthetic minimal placeholder\n")
+    doc = fitz.open()
+    doc.new_page(width=200, height=100)
+    doc.save(pdf_path)
+    doc.close()
+
     manifest_path = write_manifest(tmp_path, pdf_path)
     manifest = decoder.load_manifest(manifest_path)
 
@@ -64,11 +69,8 @@ def test_pdf_decoder_declares_dependency_or_decodes(tmp_path: Path) -> None:
         result = decoder.decode_media(manifest)
     except RuntimeError as exc:
         assert "PyMuPDF" in str(exc)
-    except Exception:
-        # Invalid synthetic PDF bytes can fail after dependency import. That is acceptable for
-        # this unit smoke test; the dependency path is still wired.
-        assert True
     else:
+        assert result["frame_count"] == 1
         assert result["source_reference"] == "runtime_input_not_committed"
         assert "private_case_media_name" not in json.dumps(result)
 
