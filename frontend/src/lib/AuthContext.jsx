@@ -29,7 +29,10 @@ export const AuthProvider = ({ children }) => {
         } else {
           // Public/diagnostic mode: a stale stored token must not trap the
           // session in a login redirect — drop it and continue anonymously.
+          // appParams.token is captured at module load and request() prefers
+          // it over storage, so clear the in-memory copy too.
           federation.auth.setToken(null);
+          appParams.token = null;
         }
       } else if (appParams.requireAuth) {
         setAuthError({ type: 'unknown', message: error.message || 'Authentication check failed' });
