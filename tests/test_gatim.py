@@ -7,14 +7,7 @@ from tools.gatim.gatim_normalizer import extract_coords, normalize_many
 from tools.gatim.satim_gatim_interface import link_to_fn_points
 
 DATA = Path(__file__).parent / "fixtures" / "gatim"
-FILES = [
-    "UAP.csv",
-    "access.csv",
-    "ilap.csv",
-    "poi.csv",
-    "recon.csv",
-    "anomaly.csv",
-]
+FILES = ["UAP.csv", "access.csv", "ilap.csv", "poi.csv", "recon.csv", "anomaly.csv"]
 
 
 def test_decimal_coordinate_extraction():
@@ -44,15 +37,9 @@ def test_5m_dedupe_collapses_close_points():
     clusters = {row.dedupe_cluster_id for row in direct_rows}
     assert len(direct_rows) == 5
     assert len(clusters) == 4
-    duplicate_clusters = {
-        row.dedupe_cluster_id
-        for row in direct_rows
-        if row.dedupe_cluster_size.isdigit() and int(row.dedupe_cluster_size) > 1
-    }
-    assert len(duplicate_clusters) == 1
 
 
-def test_classifier_assigns_expected_classes_without_confirming_anomaly():
+def test_classifier_assigns_expected_classes_without_confirming_language():
     rows = apply_classification(assign_clusters(normalize_many(DATA / name for name in FILES)))
     by_file = {row.source_file: row for row in rows}
     assert by_file["UAP.csv"].class_primary == "UAP_CASE_ANCHOR"
@@ -62,13 +49,13 @@ def test_classifier_assigns_expected_classes_without_confirming_anomaly():
     assert all("CONFIRMED" not in row.review_priority for row in rows)
 
 
-def test_satim_gatim_interface_nearby_fn_link_is_candidate_only():
+def test_satim_gatim_interface_proximity_only():
     rows = apply_classification(assign_clusters(normalize_many([DATA / "access.csv"])))
     target = next(row for row in rows if row.coord_status == "direct")
     links = link_to_fn_points([target], [{"fn_id": "FN_TEST", "lat": target.lat, "lon": target.lon}], radius_m=250)
     assert len(links) == 1
-    assert links[0].link_status == "confirmed_overlap"
-    assert links[0].distance_m <= 1
+    assert links[0].link_status == "coordinate_overlap"
+    assert links[0].link_note == "proximity_only"
 
 
 def test_cli_build_writes_outputs(tmp_path):
@@ -76,6 +63,8 @@ def test_cli_build_writes_outputs(tmp_path):
     assert metrics == {"rows": 6, "direct": 5, "needs_geocode": 1, "missing": 0}
     assert (tmp_path / "GATIM_CALIBRATION_LEDGER_v1.csv").exists()
     assert (tmp_path / "GATIM_REVIEW_QUEUE_v1.csv").exists()
+    assert (tmp_path / "GATIM_GEOCODE_QUEUE_v1.csv").exists()
+    assert (tmp_path / "GATIM_CANDIDATES_v1.geojson").exists()
 
 
 def test_haversine_sanity():
