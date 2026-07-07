@@ -2,10 +2,12 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import pandas as pd
+from .config import load_config
 from .inventory import extract_zips, build_manifest
 from .tracks import parse_csv_track, parse_kml_coordinates, parse_gpx_coordinates, NonTrackCSV
 from .scoring import score_tracks
 from .graph import build_graph_from_ledgers
+from .pairing import build_pairing_ledger
 from .plugins.visual_ocr import extract_visual_metadata
 from .plugins.gis_join import bbox_context_join
 
@@ -19,7 +21,8 @@ def parse_track_file(path: Path) -> pd.DataFrame:
         return parse_gpx_coordinates(str(path))
     raise ValueError(f"Unsupported track extension: {suffix}")
 
-def run(input_dir: str, output_dir: str) -> None:
+def run(input_dir: str, output_dir: str, config_path: str | None = None) -> None:
+    config = load_config(config_path)
     out = Path(output_dir); out.mkdir(parents=True, exist_ok=True)
     extracted = extract_zips(input_dir, output_dir)
     manifest = build_manifest(extracted)
@@ -42,7 +45,7 @@ def run(input_dir: str, output_dir: str) -> None:
             clean_track_dfs.append(frame.dropna(axis=1, how="all"))
     tracks = pd.concat(clean_track_dfs, ignore_index=True) if clean_track_dfs else pd.DataFrame()
     if not tracks.empty:
-        tracks = score_tracks(tracks)
+        tracks = score_tracks(tracks, config)
         tracks.to_csv(out / "SATIM_TRACK_LEDGER.csv", index=False)
         nodes, edges = build_graph_from_ledgers(tracks)
         nodes.to_csv(out / "SATIM_GRAPH_NODES.csv", index=False)
@@ -52,6 +55,8 @@ def run(input_dir: str, output_dir: str) -> None:
     for _, r in manifest[manifest.role == "visual_candidate"].iterrows():
         visual_rows.append(extract_visual_metadata(r.path))
     pd.DataFrame(visual_rows).to_csv(out / "SATIM_VISUAL_OCR_LEDGER.csv", index=False)
+    pairing = build_pairing_ledger(tracks, visual_rows, config)
+    pairing.to_csv(out / "SATIM_PAIRING_LEDGER.csv", index=False)
     pd.DataFrame(errors).to_csv(out / "SATIM_ERROR_LEDGER.csv", index=False)
     pd.DataFrame(skipped).to_csv(out / "SATIM_SKIPPED_NONTRACK_CSV_LEDGER.csv", index=False)
     (out / "SATIM_RUN_REPORT.md").write_text(
@@ -61,14 +66,16 @@ def run(input_dir: str, output_dir: str) -> None:
         f"Non-track CSV skipped: {len(skipped)}\n"
         f"Parser errors: {len(errors)}\n"
         f"Visual OCR rows: {len(visual_rows)}\n"
+        f"Pairing rows: {len(pairing)}\n"
     )
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Run SATIM production batch engine.")
     ap.add_argument("--input", required=True, help="Folder containing source zip files")
     ap.add_argument("--output", required=True, help="Output folder")
+    ap.add_argument("--config", default=None, help="Path to a SATIM protocol config YAML (defaults to config/satim_default.yml)")
     args = ap.parse_args(argv)
-    run(args.input, args.output)
+    run(args.input, args.output, args.config)
 
 if __name__ == "__main__":
     main()
