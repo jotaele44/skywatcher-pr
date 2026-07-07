@@ -104,7 +104,18 @@ def with_id(rows: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
 
 
 def load_airports() -> list[dict[str, Any]]:
-    return with_id(read_jsonl(AIRPORTS_PATH), "airport_id")
+    rows = with_id(read_jsonl(AIRPORTS_PATH), "airport_id")
+    # The registry schema names differ from the dashboard's native fields;
+    # alias without dropping the originals.
+    for row in rows:
+        row.setdefault("airport_name", row.get("name"))
+        row.setdefault("icao_code", row.get("icao"))
+        row.setdefault("faa_code", row.get("iata"))
+        row.setdefault("airport_type", row.get("landing_type"))
+        row.setdefault("latitude", row.get("lat"))
+        row.setdefault("longitude", row.get("lon"))
+        row.setdefault("synthetic_flag", False)
+    return rows
 
 
 def load_observations() -> list[dict[str, Any]]:
@@ -115,6 +126,9 @@ def load_observations() -> list[dict[str, Any]]:
         row.setdefault("synthetic_flag", row.get("synthetic"))
         row.setdefault("confidence_score", row.get("confidence"))
         row.setdefault("created_date", row.get("event_datetime"))
+        row.setdefault("observed_at", row.get("event_datetime"))
+        row.setdefault("latitude", row.get("lat"))
+        row.setdefault("longitude", row.get("lon"))
     return rows
 
 

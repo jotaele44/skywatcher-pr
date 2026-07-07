@@ -30,3 +30,11 @@ REQUIREMENT_FILES = [
 
 # Health endpoint used to detect that the backend is up.
 HEALTH_PATH = "/health"
+
+# The frontend reads its API base from these scoped vars (see
+# frontend/src/lib/app-params.js); blank them at build time so a developer
+# .env.local can't point the desktop build at an external backend.
+EXTRA_BUILD_ENV = {
+    "VITE_SKYWATCHER_API_BASE_URL": "",
+    "VITE_FEDERATION_API_BASE_URL": "",
+}
