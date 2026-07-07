@@ -19,8 +19,7 @@ def joined(row) -> str:
 
 def classify(row) -> str:
     text = joined(row)
-    source = row.source_dataset.lower()
-    if "uap" in source:
+    if "uap" in text:
         return "UAP_CASE_ANCHOR"
     if "road" in text or "camino" in text or "access" in text:
         return "ACCESS"
