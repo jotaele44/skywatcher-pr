@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GATIM Review Queue v1",
+  "type": "object",
+  "required": ["gatim_id", "queue_rank", "review_reason", "next_action"],
+  "properties": {
+    "gatim_id": {"type": "string"},
+    "queue_rank": {"type": ["integer", "string"]},
+    "review_reason": {"type": "string"},
+    "next_action": {"enum": ["manual_satellite_review", "geocode_or_hold", "resolve_coordinate_or_hold", ""]},
+    "review_priority": {"type": "string"},
+    "confidence": {"type": "string"},
+    "class_primary": {"type": "string"}
+  },
+  "additionalProperties": true
+}
