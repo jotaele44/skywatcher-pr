@@ -55,3 +55,6 @@ frontend/dist/
 desktop/.setup-complete
 dist-desktop/
 build/
+desktop/.running
+dist-smoke/
+!desktop/pyinstaller.spec
