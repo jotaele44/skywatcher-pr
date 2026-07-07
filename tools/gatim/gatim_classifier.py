@@ -21,7 +21,7 @@ def classify(row) -> str:
         return "UAP_CASE_ANCHOR"
     if "narnia" in text or "road" in text or "camino" in text:
         return "ACCESS"
-    if "confirmed ilap" in text or "dumb" in source or "bunker" in text or "subsurface" in text:
+    if "ilap" in text or "dumb" in source or "bunker" in text or "subsurface" in text:
         return "ILAP"
     if any(term in text for term in ["substation", "plant", "tower", "aerostato", "airport", "aeropuerto", "hangar"]):
         return "INFRASTRUCTURE"
