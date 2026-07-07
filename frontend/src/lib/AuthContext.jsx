@@ -13,7 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
 
-  const checkUserAuth = useCallback(async () => {
+  const checkUserAuth = useCallback(async (authRequired = true) => {
     try {
       setIsLoadingAuth(true);
       const currentUser = await federation.auth.me();
@@ -24,7 +24,13 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setIsAuthenticated(false);
       if (error.status === 401 || error.status === 403) {
-        setAuthError({ type: 'auth_required', message: 'Authentication required' });
+        if (authRequired) {
+          setAuthError({ type: 'auth_required', message: 'Authentication required' });
+        } else {
+          // Public/diagnostic mode: a stale stored token must not trap the
+          // session in a login redirect — drop it and continue anonymously.
+          federation.auth.setToken(null);
+        }
       } else if (appParams.requireAuth) {
         setAuthError({ type: 'unknown', message: error.message || 'Authentication check failed' });
       }
@@ -41,13 +47,16 @@ export const AuthProvider = ({ children }) => {
       const publicSettings = await federation.system.publicSettings();
       setAppPublicSettings(publicSettings);
 
+      const authRequired = Boolean(
+        publicSettings?.public_settings?.requires_auth || appParams.requireAuth
+      );
       if (federation.auth.isAuthenticated()) {
-        await checkUserAuth();
+        await checkUserAuth(authRequired);
       } else {
         setIsAuthenticated(false);
         setIsLoadingAuth(false);
         setAuthChecked(true);
-        if (publicSettings?.public_settings?.requires_auth || appParams.requireAuth) {
+        if (authRequired) {
           setAuthError({ type: 'auth_required', message: 'Authentication required' });
         }
       }
