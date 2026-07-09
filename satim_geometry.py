@@ -30,7 +30,7 @@ from typing import Any
 
 # Reuse the repo's haversine so callers can convert lat/lon marks to a metric
 # shift without a second geodesy implementation.
-from skywatcher.correlation.footprint_proximity import haversine_m  # noqa: F401
+from skywatcher.core.geo_utils import haversine_m  # noqa: F401
 
 MPH_TO_M_S = 0.44704
 FT_TO_M = 0.3048
