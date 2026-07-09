@@ -24,13 +24,22 @@ processed here:
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+
+# "src" is only on sys.path automatically under pytest (pyproject.toml's
+# pythonpath setting); bootstrap it here so this module resolves regardless
+# of the calling entry point (see docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md).
+_SRC_DIR = Path(__file__).resolve().parent / "src"
+if str(_SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(_SRC_DIR))
 
 # Reuse the repo's haversine so callers can convert lat/lon marks to a metric
 # shift without a second geodesy implementation.
-from skywatcher.correlation.footprint_proximity import haversine_m  # noqa: F401
+from skywatcher.core.geo_utils import haversine_m  # noqa: F401
 
 MPH_TO_M_S = 0.44704
 FT_TO_M = 0.3048

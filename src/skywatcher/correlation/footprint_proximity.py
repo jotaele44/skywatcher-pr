@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from math import asin, cos, radians, sin, sqrt
 from typing import Iterable
 
+from skywatcher.core.geo_utils import EARTH_RADIUS_M, haversine_m  # noqa: F401
 from skywatcher.registry.airspace_footprints import AirspaceFootprint
-
-EARTH_RADIUS_M = 6_371_000
 
 
 @dataclass(frozen=True)
@@ -22,15 +20,6 @@ class FootprintMatch:
     match_type: str
     score: float
     explanation: str
-
-
-def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    phi1 = radians(lat1)
-    phi2 = radians(lat2)
-    d_phi = radians(lat2 - lat1)
-    d_lambda = radians(lon2 - lon1)
-    a = sin(d_phi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(d_lambda / 2) ** 2
-    return 2 * EARTH_RADIUS_M * asin(sqrt(a))
 
 
 def score_match(distance_m: float, radius_m: int, facility_type: str) -> float:

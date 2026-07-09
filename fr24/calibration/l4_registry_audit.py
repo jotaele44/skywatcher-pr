@@ -11,7 +11,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Sequence
 from .models import LayerCalibrationResult, write_json
 
 try:  # pragma: no cover
-    from aircraft_intelligence import KNOWN_OPERATORS  # type: ignore
+    from skywatcher.core.known_operators import KNOWN_OPERATORS
 except Exception:
     KNOWN_OPERATORS = {}
 

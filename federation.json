@@ -40,7 +40,11 @@
     "synthetic_example_package": "exports/examples/synthetic_airspace_package",
     "export_target_contract": "docs/AIRSPACE_PRODUCER_EXPORT_TARGET.md",
     "canonical_export_dir": "exports/federation",
-    "maintenance_report": "reports/maintenance/latest.json"
+    "maintenance_report": "reports/maintenance/latest.json",
+    "satim_output_contract_schema": "schemas/satim_output_contract.schema.json",
+    "fpim_output_contract_schema": "schemas/fpim_output_contract.schema.json",
+    "corrim_correlation_output_schema": "schemas/corrim_correlation_output.schema.json",
+    "module_boundary_adr": "docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md"
   },
   "federation_readiness_gate": {
     "ready_for_hub_discovery": true,

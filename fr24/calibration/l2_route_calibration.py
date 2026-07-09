@@ -8,14 +8,7 @@ from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
 
 from .models import LayerCalibrationResult, write_json
 
-try:  # pragma: no cover
-    from fr24.route_extractor import COLOR_RANGES, MIN_ROUTE_PIXELS
-except Exception:
-    COLOR_RANGES = {
-        "orange": {"r": (190, 255), "g": (80, 180), "b": (0, 80)},
-        "yellow": {"r": (200, 255), "g": (190, 255), "b": (0, 80)},
-    }
-    MIN_ROUTE_PIXELS = 8
+from skywatcher.core.route_visual_constants import COLOR_RANGES, MIN_ROUTE_PIXELS
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 

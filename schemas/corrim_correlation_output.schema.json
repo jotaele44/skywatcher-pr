@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/corrim_correlation_output.schema.json",
+  "title": "CORRIM Correlation Output",
+  "description": "The combination contract: CORRIM is the only module permitted to combine SATIM and FPIM outputs. contributing_poi_ids traces which of the referenced FPIM output's pois_along_path were scored against SATIM evidence. Matches the existing fusion-output posture (review_context_only, live_tracking=false). See docs/MODULE_SPEC_CORRIM.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "correlation_id",
+    "satim_output_ids",
+    "fpim_output_ids",
+    "correlation_score",
+    "explanation",
+    "operator_action",
+    "live_tracking"
+  ],
+  "properties": {
+    "correlation_id": {"type": "string", "minLength": 1},
+    "satim_output_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "fpim_output_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "contributing_poi_ids": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "footprint_id values drawn from the referenced FPIM output's pois_along_path that this correlation scored against SATIM evidence."
+    },
+    "correlation_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "explanation": {"type": "string", "minLength": 1},
+    "operator_action": {"const": "review_context_only"},
+    "live_tracking": {"const": false}
+  }
+}

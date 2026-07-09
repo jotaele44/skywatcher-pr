@@ -1,0 +1,227 @@
+"""Known-operator ground-truth registry, shared by SATIM and FPIM.
+
+KNOWN_OPERATORS maps callsign substrings to operator-provided metadata
+(owner, operator, aircraft type, mission labels as declared by the operator,
+and typical operational patterns). This is reference data supplied by
+operators themselves, not a heuristic inference — it belongs in Core
+alongside the other shared static registries (airspace footprints, geometry
+helpers, visual-detection constants). See
+docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md.
+"""
+
+from __future__ import annotations
+
+# Maps callsign substrings → operator metadata
+KNOWN_OPERATORS = {
+    "N5854Z": {
+        "owner": "Puerto Rico Electric Power Authority",
+        "operator": "PREPA",
+        "aircraft_type": "Airbus H125",
+        "primary_mission": "Power Line Inspection",
+        "secondary_missions": ["Emergency Response", "Disaster Response / Damage Assessment"],
+        "confidence_level": 0.98,
+        "operational_patterns": {
+            "typical_altitude": "500-3000 ft AGL",
+            "typical_airspeed": "40-120 mph",
+            "operating_hours": "Daytime (07:00-18:00 local)",
+            "high_activity_regions": ["South Coast Corridor", "Central Interior Grid"],
+            "typical_duration_hours": "2-8",
+        },
+    },
+    "C6062": {
+        "owner": "United States Coast Guard",
+        "operator": "USCG Air Station Borinquen",
+        "aircraft_type": "Sikorsky MH-60T Jayhawk",
+        "primary_mission": "Search & Rescue",
+        "secondary_missions": ["Maritime Patrol", "Anti-Smuggling / Interdiction", "Emergency Response"],
+        "confidence_level": 0.97,
+        "operational_patterns": {
+            "typical_altitude": "200-8000 ft AGL",
+            "typical_airspeed": "100-160 mph",
+            "operating_hours": "24/7",
+            "high_activity_regions": ["Mona Passage", "Caribbean Sea", "Puerto Rico coastline"],
+            "typical_duration_hours": "2-6",
+        },
+    },
+    "N767PD": {
+        "owner": "Puerto Rico Police Department",
+        "operator": "FURA (Fuerzas Unidas de Rápida Acción)",
+        "aircraft_type": "Bell 429 GlobalRanger",
+        "primary_mission": "Law Enforcement",
+        "secondary_missions": ["Emergency Response", "Anti-Smuggling / Interdiction"],
+        "confidence_level": 0.96,
+        "operational_patterns": {
+            "typical_altitude": "300-4000 ft AGL",
+            "typical_airspeed": "30-140 mph",
+            "operating_hours": "24/7",
+            "high_activity_regions": ["San Juan Metro", "Bayamon", "Carolina"],
+            "typical_duration_hours": "1-4",
+        },
+    },
+    "N684JB": {
+        "owner": "Private owner",
+        "operator": "Private/Charter",
+        "aircraft_type": "Airbus H130",
+        "primary_mission": "Private Charter",
+        "secondary_missions": ["Training Flight"],
+        "confidence_level": 0.88,
+        "operational_patterns": {
+            "typical_altitude": "2000-8000 ft AGL",
+            "typical_airspeed": "90-160 mph",
+            "operating_hours": "Daytime",
+            "high_activity_regions": ["San Juan", "Ponce", "Aguadilla"],
+            "typical_duration_hours": "0.5-2",
+        },
+    },
+    # --- Additional known profiles ---
+    "N911PR": {
+        "owner": "Puerto Rico Department of Health",
+        "operator": "Puerto Rico Emergency Medical Services",
+        "aircraft_type": "Airbus H145",
+        "primary_mission": "Medical/Emergency Transport",
+        "secondary_missions": ["Emergency Response", "Disaster Response / Damage Assessment"],
+        "confidence_level": 0.95,
+        "operational_patterns": {
+            "typical_altitude": "500-6000 ft AGL",
+            "typical_airspeed": "80-170 mph",
+            "operating_hours": "24/7",
+            "high_activity_regions": ["San Juan", "Ponce", "Mayaguez", "Arecibo"],
+            "typical_duration_hours": "0.5-3",
+        },
+    },
+    "N304NG": {
+        "owner": "National Guard Bureau",
+        "operator": "Puerto Rico Army National Guard",
+        "aircraft_type": "Sikorsky UH-60 Black Hawk",
+        "primary_mission": "Military / National Guard Operations",
+        "secondary_missions": ["Disaster Response / Damage Assessment", "Search & Rescue", "Emergency Response"],
+        "confidence_level": 0.93,
+        "operational_patterns": {
+            "typical_altitude": "500-10000 ft AGL",
+            "typical_airspeed": "100-180 mph",
+            "operating_hours": "Daytime (06:00-22:00 local)",
+            "high_activity_regions": ["Salinas Army Base", "Muñiz Air Base", "Aguadilla"],
+            "typical_duration_hours": "1-5",
+        },
+    },
+    "N448CB": {
+        "owner": "U.S. Customs and Border Protection",
+        "operator": "CBP Air and Marine Operations",
+        "aircraft_type": "Sikorsky UH-60 Black Hawk",
+        "primary_mission": "Anti-Smuggling / Interdiction",
+        "secondary_missions": ["Maritime Patrol", "Law Enforcement"],
+        "confidence_level": 0.94,
+        "operational_patterns": {
+            "typical_altitude": "200-8000 ft AGL",
+            "typical_airspeed": "100-180 mph",
+            "operating_hours": "24/7",
+            "high_activity_regions": ["Mona Passage", "Vieques", "Culebra", "North Coast"],
+            "typical_duration_hours": "2-6",
+        },
+    },
+    "N229AE": {
+        "owner": "AeroMed Puerto Rico LLC",
+        "operator": "AeroMed",
+        "aircraft_type": "Bell 429 GlobalRanger",
+        "primary_mission": "Medical/Emergency Transport",
+        "secondary_missions": ["Emergency Response"],
+        "confidence_level": 0.91,
+        "operational_patterns": {
+            "typical_altitude": "1000-7000 ft AGL",
+            "typical_airspeed": "100-160 mph",
+            "operating_hours": "24/7",
+            "high_activity_regions": ["San Juan Metro", "Ponce", "Arecibo", "Mayaguez"],
+            "typical_duration_hours": "0.3-2",
+        },
+    },
+    "N87TV": {
+        "owner": "Telemundo Puerto Rico",
+        "operator": "Telemundo / WKAQ-TV",
+        "aircraft_type": "Robinson R44",
+        "primary_mission": "News / Media Aerial Coverage",
+        "secondary_missions": ["Traffic Monitoring"],
+        "confidence_level": 0.89,
+        "operational_patterns": {
+            "typical_altitude": "1000-4000 ft AGL",
+            "typical_airspeed": "80-130 mph",
+            "operating_hours": "Daytime (06:00-21:00 local)",
+            "high_activity_regions": ["San Juan Metro", "Bayamon", "Carolina", "Guaynabo"],
+            "typical_duration_hours": "0.5-3",
+        },
+    },
+    "N521PR": {
+        "owner": "Puerto Rico Port Authority",
+        "operator": "PRPA / Port Security",
+        "aircraft_type": "Airbus H125",
+        "primary_mission": "Port and Maritime Surveillance",
+        "secondary_missions": ["Anti-Smuggling / Interdiction", "Emergency Response"],
+        "confidence_level": 0.87,
+        "operational_patterns": {
+            "typical_altitude": "200-3000 ft AGL",
+            "typical_airspeed": "40-120 mph",
+            "operating_hours": "Daytime (06:00-20:00 local)",
+            "high_activity_regions": ["San Juan Bay", "Ponce Harbor", "Mayaguez Port"],
+            "typical_duration_hours": "1-4",
+        },
+    },
+    "N172FA": {
+        "owner": "Federal Aviation Administration",
+        "operator": "FAA Flight Standards District Office",
+        "aircraft_type": "Cessna 172",
+        "primary_mission": "Aviation Regulatory / Inspection",
+        "secondary_missions": ["Training Flight"],
+        "confidence_level": 0.85,
+        "operational_patterns": {
+            "typical_altitude": "2000-9000 ft AGL",
+            "typical_airspeed": "100-140 mph",
+            "operating_hours": "Daytime (08:00-17:00 local)",
+            "high_activity_regions": ["Luis Munoz Marin Intl", "Rafael Hernandez Airport", "Mercedita Airport"],
+            "typical_duration_hours": "1-4",
+        },
+    },
+    "N388DR": {
+        "owner": "DroneUp LLC",
+        "operator": "DroneUp / Commercial UAS Operations",
+        "aircraft_type": "DJI Matrice 300 RTK",
+        "primary_mission": "Commercial UAS / Survey",
+        "secondary_missions": ["Disaster Response / Damage Assessment", "Power Line Inspection"],
+        "confidence_level": 0.82,
+        "operational_patterns": {
+            "typical_altitude": "100-400 ft AGL",
+            "typical_airspeed": "10-50 mph",
+            "operating_hours": "Daytime (07:00-19:00 local)",
+            "high_activity_regions": ["Humacao", "Caguas", "San Juan Industrial Zones"],
+            "typical_duration_hours": "0.5-2",
+        },
+    },
+    "N960PR": {
+        "owner": "Puerto Rico Forestry Service",
+        "operator": "DRNA Recursos Naturales",
+        "aircraft_type": "Airbus AS350 B3",
+        "primary_mission": "Environmental / Forestry Patrol",
+        "secondary_missions": ["Disaster Response / Damage Assessment", "Search & Rescue"],
+        "confidence_level": 0.86,
+        "operational_patterns": {
+            "typical_altitude": "300-5000 ft AGL",
+            "typical_airspeed": "60-140 mph",
+            "operating_hours": "Daytime (07:00-17:00 local)",
+            "high_activity_regions": ["El Yunque", "Toro Negro Forest", "Maricao"],
+            "typical_duration_hours": "1-5",
+        },
+    },
+    "N741LE": {
+        "owner": "Puerto Rico Department of Justice",
+        "operator": "PR DOJ / Criminal Investigations Bureau",
+        "aircraft_type": "Bell 407",
+        "primary_mission": "Law Enforcement",
+        "secondary_missions": ["Anti-Smuggling / Interdiction", "Emergency Response"],
+        "confidence_level": 0.90,
+        "operational_patterns": {
+            "typical_altitude": "500-5000 ft AGL",
+            "typical_airspeed": "80-160 mph",
+            "operating_hours": "24/7",
+            "high_activity_regions": ["San Juan", "Bayamon", "Ponce", "Caguas"],
+            "typical_duration_hours": "1-4",
+        },
+    },
+}
