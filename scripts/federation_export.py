@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from prii_export_utils import fid as _fid, norm as _norm, sha256 as _sha256
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PRODUCER = "skywatcher-pr"
 CONTRACT_VERSION = "1.0.0"
@@ -33,14 +35,6 @@ STREAM_SCHEMA = {
     "entities": "federation_entity.schema.json",
     "relationships": "federation_relationship.schema.json",
 }
-
-
-def _fid(prefix: str, *parts: Any) -> str:
-    return f"{prefix}_{hashlib.sha256('|'.join(str(p) for p in parts).encode()).hexdigest()[:32]}"
-
-
-def _norm(name: str) -> str:
-    return " ".join(str(name).strip().upper().split())
 
 
 def _bool(v: Any) -> bool:
@@ -285,10 +279,6 @@ def _rel(rid, sid, src_ent, tgt_ent, rtype, confidence, synthetic, created, now)
         "confidence": confidence, "lineage": _lineage("RELATIONSHIP", ["observations.csv"]),
         "synthetic": synthetic, "created_at": created, "extracted_at": now,
     }
-
-
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def write_package(streams: Dict[str, List[Dict[str, Any]]], out_dir: Path, mode: str, now: str) -> Path:
