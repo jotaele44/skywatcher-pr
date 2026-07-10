@@ -26,6 +26,9 @@ class ProviderProfileRegistry:
     def get(self, profile_id: str) -> dict[str, Any]:
         return dict(self._profiles[profile_id])
 
+    def profile_ids(self) -> list[str]:
+        return list(self._profiles)
+
     def compatible(self, profile_id: str, source: Mapping[str, Any]) -> bool:
         p = self._profiles[profile_id]
         # Provider / product scalars (schema field is ``product_or_sensor``;
