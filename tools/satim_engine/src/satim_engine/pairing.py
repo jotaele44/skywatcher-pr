@@ -27,11 +27,13 @@ def build_pairing_ledger(tracks: pd.DataFrame, visual_rows: list[dict], config: 
     track_times: dict[str, pd.Series] = {}
     track_confidence: dict[str, float] = {}
     if not tracks.empty and "source" in tracks.columns:
+        has_timestamp = "timestamp" in tracks.columns
         for source, group in tracks.groupby("source", dropna=False, sort=True):
             track_file = str(source)
-            parsed = pd.to_datetime(group.get("timestamp"), errors="coerce", utc=True).dropna()
-            if not parsed.empty:
-                track_times[track_file] = parsed
+            if has_timestamp:
+                parsed = pd.to_datetime(group["timestamp"], errors="coerce", utc=True).dropna()
+                if not parsed.empty:
+                    track_times[track_file] = parsed
             track_confidence[track_file] = float(group.get("verification_score", pd.Series([0.0])).mean())
 
     rows: list[dict] = []
