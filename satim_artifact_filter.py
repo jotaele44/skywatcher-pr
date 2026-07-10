@@ -72,6 +72,14 @@ SIGNAL_DEFINITIONS: dict[str, dict[str, str]] = {
         "definition": "Apparent displacement caused by viewing geometry.",
         "visual_cue": "Misaligned roads, roofs, poles, slopes, or tall features.",
     },
+    "CROSSES_UNRELATED_TERRAIN": {
+        "definition": "Candidate boundary continues across unrelated terrain or land-cover types.",
+        "visual_cue": "A straight discontinuity persists through features that do not share a surface boundary.",
+    },
+    "CANDIDATE_BOUNDARY_COINCIDENCE": {
+        "definition": "Detector candidate lies on or closely follows an imagery-boundary signal.",
+        "visual_cue": "The candidate geometry coincides with a seam, mosaic edge, or radiometric break.",
+    },
 }
 
 
