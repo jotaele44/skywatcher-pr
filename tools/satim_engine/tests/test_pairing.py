@@ -72,6 +72,22 @@ def test_low_confidence_match_is_candidate_not_promoted():
     assert row["confidence"] < CONFIG["pairing"]["confidence_threshold_promote"]
 
 
+def test_tracks_without_timestamp_column_do_not_crash():
+    # cli.run() drops all-NA columns, so a KML/GPX-only batch can reach pairing
+    # with a `source` column but no `timestamp` column at all.
+    tracks = pd.DataFrame([
+        {"source": "route.kml", "latitude": 18.1, "longitude": -66.1, "verification_score": 30},
+    ])
+    assert "timestamp" not in tracks.columns
+    visual_rows = [{"visual_path": "photo.jpg", "timestamp_hint": "2026-01-01T12:00:00Z"}]
+    out = build_pairing_ledger(tracks, visual_rows, CONFIG)
+
+    assert len(out) == 1
+    row = out.iloc[0]
+    assert row["match_basis"] == "NO_TRACK_IN_WINDOW"
+    assert row["status"] == "UNMATCHED"
+
+
 def test_pair_id_is_deterministic():
     visual_rows = [{"visual_path": "photo1.jpg", "timestamp_hint": "2026-01-01T12:02:00Z"}]
     out1 = build_pairing_ledger(_tracks(), visual_rows, CONFIG)
