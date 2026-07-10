@@ -17,7 +17,9 @@ class GoldFixtureLoader:
     def assert_no_scene_leakage(self, fixtures: list[dict[str, Any]]) -> None:
         seen: dict[str, Any] = {}
         for f in fixtures:
-            scene = f.get("source", {}).get("scene_id")
+            # The gold-fixture schema stores scene_id at the top level; fall
+            # back to a nested source.scene_id for legacy fixtures.
+            scene = f.get("scene_id") or f.get("source", {}).get("scene_id")
             split = f.get("split")
             if scene and scene in seen and seen[scene] != split:
                 raise ValueError(f"scene leakage: {scene}")

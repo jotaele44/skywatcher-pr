@@ -8,6 +8,8 @@ from .compound_artifacts import select_primary
 from .models import AssessmentResult, confidence_level
 from .restriction_gate import InterpretationRestrictionGate
 
+ENGINE_VERSION = "1.0.0"
+RULESET_VERSION = "satim-artifact-protocol-v1"
 SCREENSHOT_TYPES = {"screenshot", "pdf_frame"}
 
 

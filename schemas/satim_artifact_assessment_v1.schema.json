@@ -184,6 +184,10 @@
     },
     "analyst_notes": {
       "type": "string"
+    },
+    "raw_source_compared": {
+      "type": "boolean",
+      "description": "True when a screenshot/pdf_frame assessment was compared against the raw upstream source; lifts the screenshot-only origin-confidence cap."
     }
   },
   "$defs": {

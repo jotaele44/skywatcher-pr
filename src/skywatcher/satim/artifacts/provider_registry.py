@@ -28,8 +28,22 @@ class ProviderProfileRegistry:
 
     def compatible(self, profile_id: str, source: Mapping[str, Any]) -> bool:
         p = self._profiles[profile_id]
-        for key in ("source_type", "provider", "product"):
-            expected = p.get(key)
-            if expected not in (None, "*", "") and source.get(key) != expected:
+        # Provider / product scalars (schema field is ``product_or_sensor``;
+        # legacy ``product`` is accepted for backward compatibility).
+        for source_key, profile_keys in (
+            ("provider", ("provider",)),
+            ("product", ("product_or_sensor", "product")),
+        ):
+            expected = next(
+                (p[k] for k in profile_keys if p.get(k) not in (None, "*", "")), None
+            )
+            if expected is not None and source.get(source_key) != expected:
                 return False
+        # Source type: the schema uses the ``source_types`` array; a singular
+        # ``source_type`` string is accepted for backward compatibility.
+        allowed = p.get("source_types")
+        if allowed is None and p.get("source_type") not in (None, "*", ""):
+            allowed = [p["source_type"]]
+        if allowed and "*" not in allowed and source.get("source_type") not in allowed:
+            return False
         return True
