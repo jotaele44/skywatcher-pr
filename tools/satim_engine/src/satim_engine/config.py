@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 import yaml
 
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "satim_default.yml"
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "config" / "satim_default.yml"
 
 
 def load_config(path: str | Path | None = None) -> dict:
