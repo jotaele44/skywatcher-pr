@@ -1,0 +1,22 @@
+{
+  "profile_id": "generic_screenshot_v1",
+  "version": "1.0.0",
+  "provider": "generic",
+  "product_or_sensor": null,
+  "source_types": ["screenshot", "pdf_frame"],
+  "gsd_min_m": null,
+  "gsd_max_m": null,
+  "zoom_min": null,
+  "zoom_max": null,
+  "measurement_definitions": {
+    "gradient_anisotropy": {"direction": "higher_supports_directional_artifact"},
+    "edge_orientation_coherence": {"direction": "higher_supports_directional_artifact"},
+    "laplacian_variance_ratio": {"direction": "lower_target_vs_control_supports_blur"},
+    "adjacent_column_similarity": {"direction": "higher_supports_vertical_smear"}
+  },
+  "class_thresholds": {},
+  "calibration_dataset_ids": [],
+  "status": "experimental",
+  "created_at": null,
+  "checksum_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+}

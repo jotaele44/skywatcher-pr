@@ -1,0 +1,449 @@
+{
+  "version": "1.0",
+  "classes": [
+    {
+      "id": "SATIM-A01",
+      "name": "Tile and mosaic seam",
+      "priority": 1,
+      "definition": "Boundary where adjacent source scenes or rendered tiles differ radiometrically, temporally, geometrically, or texturally.",
+      "signatures": [
+        "Linear or gently curved boundary",
+        "Brightness/color shift across boundary",
+        "Possible continuation across multiple land-cover types",
+        "Feature alignment may remain intact"
+      ],
+      "false_positives": [
+        "Road or utility corridor",
+        "Forest edge",
+        "Shadow boundary",
+        "Administrative or agricultural boundary"
+      ],
+      "measurements": [
+        "Cross-boundary histogram distance",
+        "Edge continuity",
+        "Feature displacement",
+        "Gradient step magnitude"
+      ],
+      "contradictions": [
+        "Boundary follows real terrain or parcel geometry",
+        "No radiometric or geometric discontinuity",
+        "Feature persists identically across independent providers"
+      ],
+      "restriction": "Object interpretation allowed only if geometric continuity is verified.",
+      "origin_layers": [
+        "Mosaic",
+        "Tile renderer",
+        "Temporal composite"
+      ]
+    },
+    {
+      "id": "SATIM-A02",
+      "name": "Radiometric balancing mismatch",
+      "priority": 7,
+      "definition": "Localized or scene-wide color, brightness, contrast, or white-balance difference introduced during image normalization.",
+      "signatures": [
+        "Color cast shift",
+        "Brightness step without displacement",
+        "Uniform tonal change across varied terrain"
+      ],
+      "false_positives": [
+        "Natural illumination",
+        "Slope aspect",
+        "Wet/dry soil",
+        "Vegetation type"
+      ],
+      "measurements": [
+        "Channel mean/variance",
+        "Histogram overlap",
+        "Local normalized difference",
+        "Illumination-model residual"
+      ],
+      "contradictions": [
+        "Change follows material boundary",
+        "Consistent shadow geometry explains shift"
+      ],
+      "restriction": "Spectral/land-cover inference degraded; geometry may remain usable.",
+      "origin_layers": [
+        "Mosaic",
+        "Atmospheric correction",
+        "Renderer"
+      ]
+    },
+    {
+      "id": "SATIM-A03",
+      "name": "Localized directional smear",
+      "priority": 2,
+      "definition": "Small-area image deformation where texture is dragged predominantly along one direction.",
+      "signatures": [
+        "Vertical or horizontal streaks",
+        "Loss of discrete object geometry",
+        "Elevated directional coherence",
+        "Repeated adjacent rows or columns"
+      ],
+      "false_positives": [
+        "Rows of crops",
+        "Reeds or palms",
+        "Rain streaks",
+        "Aligned shadows"
+      ],
+      "measurements": [
+        "Gradient anisotropy",
+        "Edge-orientation coherence",
+        "Laplacian variance",
+        "Repeated-column/row similarity"
+      ],
+      "contradictions": [
+        "Objects resolve coherently in raw imagery",
+        "Shadows and crowns maintain independent geometry"
+      ],
+      "restriction": "Object-level interpretation prohibited within affected ROI.",
+      "origin_layers": [
+        "Sensor/source",
+        "Orthorectification",
+        "Mosaic",
+        "Resampling",
+        "Screenshot scaling"
+      ]
+    },
+    {
+      "id": "SATIM-A04",
+      "name": "Motion blur and scan-line distortion",
+      "priority": 8,
+      "definition": "Directional blur or banding introduced by platform motion, sensor readout, or scan geometry.",
+      "signatures": [
+        "Consistent directional blur over a strip",
+        "Repeated scan lines",
+        "Band-wise displacement",
+        "Uniform blur kernel"
+      ],
+      "false_positives": [
+        "Wind-aligned vegetation",
+        "Linear haze",
+        "Water texture"
+      ],
+      "measurements": [
+        "Blur-kernel orientation",
+        "Strip autocorrelation",
+        "Band displacement",
+        "MTF proxy"
+      ],
+      "contradictions": [
+        "Blur limited to semantic object class",
+        "Sharp independent provider image shows same forms"
+      ],
+      "restriction": "Fine-object interpretation degraded or prohibited depending on severity.",
+      "origin_layers": [
+        "Sensor/source acquisition"
+      ]
+    },
+    {
+      "id": "SATIM-A05",
+      "name": "Resampling and interpolation artifact",
+      "priority": 3,
+      "definition": "Blur, ringing, stair-stepping, aliasing, or invented texture caused by scale transformation or reprojection.",
+      "signatures": [
+        "Scale-dependent geometry",
+        "Jagged diagonals",
+        "Haloing",
+        "Texture collapse or repetition"
+      ],
+      "false_positives": [
+        "Regular rooftops",
+        "Terracing",
+        "Agricultural rows"
+      ],
+      "measurements": [
+        "Multi-scale persistence",
+        "Edge spread",
+        "Frequency-domain aliasing",
+        "Pixel-neighbor correlation"
+      ],
+      "contradictions": [
+        "Artifact unchanged in native-resolution raw tile",
+        "Independent source reproduces geometry"
+      ],
+      "restriction": "Do not infer subpixel objects or exact boundaries.",
+      "origin_layers": [
+        "Reprojection",
+        "Tile renderer",
+        "Client display",
+        "Screenshot scaling"
+      ]
+    },
+    {
+      "id": "SATIM-A06",
+      "name": "Compression, ringing, and blocking",
+      "priority": 6,
+      "definition": "Lossy encoding artifacts that create block boundaries, halos, mosquito noise, or false texture.",
+      "signatures": [
+        "8x8/16x16 blocks",
+        "Edge halos",
+        "Noise around high-contrast objects",
+        "Color smearing"
+      ],
+      "false_positives": [
+        "Roof grids",
+        "Field plots",
+        "Regular paving"
+      ],
+      "measurements": [
+        "Block-boundary energy",
+        "Ringing amplitude",
+        "High-frequency residual",
+        "Chroma-luma mismatch"
+      ],
+      "contradictions": [
+        "Patterns align with actual structures across sources"
+      ],
+      "restriction": "Small-object and edge interpretation degraded.",
+      "origin_layers": [
+        "Tile encoding",
+        "Web delivery",
+        "Screenshot/export"
+      ]
+    },
+    {
+      "id": "SATIM-A07",
+      "name": "Orthorectification and relief displacement",
+      "priority": 4,
+      "definition": "Geometric error caused by terrain-model limitations, off-nadir viewing, or incorrect elevation correction.",
+      "signatures": [
+        "Feature bending near relief",
+        "Road/river offset",
+        "Terrain-edge stretching",
+        "Duplicated or missing slopes"
+      ],
+      "false_positives": [
+        "Curved roads",
+        "Landslides",
+        "Natural ridge morphology"
+      ],
+      "measurements": [
+        "Control-point residual",
+        "DEM correlation",
+        "Cross-source displacement",
+        "Slope-dependent error"
+      ],
+      "contradictions": [
+        "No displacement against authoritative control",
+        "Same geometry across epochs/providers"
+      ],
+      "restriction": "Position and shape measurements prohibited until registered.",
+      "origin_layers": [
+        "Orthorectification",
+        "DEM",
+        "Mosaic"
+      ]
+    },
+    {
+      "id": "SATIM-A08",
+      "name": "Parallax and tall-object lean",
+      "priority": 9,
+      "definition": "Apparent displacement or leaning of tall objects due to off-nadir imaging geometry.",
+      "signatures": [
+        "Buildings/trees lean radially",
+        "Roof-base separation",
+        "Direction varies with scene center"
+      ],
+      "false_positives": [
+        "Actual leaning structures",
+        "Sloped roofs",
+        "Windthrow"
+      ],
+      "measurements": [
+        "Top-base displacement",
+        "Radial orientation",
+        "Height-angle consistency"
+      ],
+      "contradictions": [
+        "No relationship to viewing geometry",
+        "Object remains displaced in orthogonal imagery"
+      ],
+      "restriction": "Footprint interpretation must use object bases, not tops.",
+      "origin_layers": [
+        "Sensor geometry",
+        "Orthorectification"
+      ]
+    },
+    {
+      "id": "SATIM-A09",
+      "name": "Cloud, haze, shadow, and atmospheric masking",
+      "priority": 8,
+      "definition": "Obscuration or replacement associated with clouds, haze, cloud shadow, atmospheric correction, or masking.",
+      "signatures": [
+        "Diffuse bright veil",
+        "Low-contrast region",
+        "Dark cloud-correlated patch",
+        "Mask boundary"
+      ],
+      "false_positives": [
+        "Smoke",
+        "Dust",
+        "Water glare",
+        "Terrain shadow"
+      ],
+      "measurements": [
+        "Spectral brightness",
+        "Contrast attenuation",
+        "Cloud-shadow geometry",
+        "Mask-edge test"
+      ],
+      "contradictions": [
+        "Persistent land-cover boundary across clear imagery"
+      ],
+      "restriction": "Feature absence cannot be inferred inside obscured/masked regions.",
+      "origin_layers": [
+        "Atmosphere",
+        "Cloud mask",
+        "Composite generation"
+      ]
+    },
+    {
+      "id": "SATIM-A10",
+      "name": "Temporal mismatch and seasonal discontinuity",
+      "priority": 5,
+      "definition": "Adjacent portions of a composite represent different acquisition dates or seasons.",
+      "signatures": [
+        "Abrupt phenology change",
+        "Construction appears/disappears across boundary",
+        "Different shadow/sun geometry"
+      ],
+      "false_positives": [
+        "Irrigation boundaries",
+        "Species differences",
+        "Recent localized disturbance"
+      ],
+      "measurements": [
+        "Cross-epoch feature inventory",
+        "Shadow azimuth",
+        "Vegetation index contrast",
+        "Metadata date comparison"
+      ],
+      "contradictions": [
+        "Same discontinuity in single-date source imagery"
+      ],
+      "restriction": "No single-date event inference across the boundary.",
+      "origin_layers": [
+        "Temporal composite",
+        "Mosaic"
+      ]
+    },
+    {
+      "id": "SATIM-A11",
+      "name": "Duplicate imagery and clone patch",
+      "priority": 7,
+      "definition": "Repeated terrain or object texture caused by copy-fill, mosaicking error, or duplicated tiles.",
+      "signatures": [
+        "Near-identical texture patches",
+        "Repeated object constellation",
+        "Impossible repetition across terrain"
+      ],
+      "false_positives": [
+        "Planned housing",
+        "Agricultural grids",
+        "Repetitive forest canopy"
+      ],
+      "measurements": [
+        "Template matching",
+        "Feature-descriptor similarity",
+        "Phase correlation",
+        "Geometric transform consistency"
+      ],
+      "contradictions": [
+        "Independent imagery confirms both repeated structures"
+      ],
+      "restriction": "All object counts and spatial relationships inside candidate patches suspended.",
+      "origin_layers": [
+        "Mosaic",
+        "Gap filling",
+        "Tile cache"
+      ]
+    },
+    {
+      "id": "SATIM-A12",
+      "name": "Missing-data fill or synthetic reconstruction",
+      "priority": 10,
+      "definition": "Region filled, inpainted, synthesized, or substituted because valid observations were unavailable.",
+      "signatures": [
+        "Over-smooth or context-inconsistent texture",
+        "Mask-shaped footprint",
+        "Repeated/invented detail",
+        "Abrupt provenance change"
+      ],
+      "false_positives": [
+        "Uniform crops",
+        "Water",
+        "Bare soil",
+        "Low-texture roofs"
+      ],
+      "measurements": [
+        "Texture entropy discontinuity",
+        "Provenance metadata",
+        "Model residual",
+        "Cross-source absence"
+      ],
+      "contradictions": [
+        "Raw source contains matching observed detail"
+      ],
+      "restriction": "Treat all object-level content as non-observational until provenance is resolved.",
+      "origin_layers": [
+        "Gap fill",
+        "Composite",
+        "Generative reconstruction",
+        "Provider post-processing"
+      ]
+    }
+  ],
+  "shared_contract": {
+    "required_sections": [
+      "artifact_id",
+      "artifact_name",
+      "definition",
+      "observable_signatures",
+      "common_false_positives",
+      "roi_requirements",
+      "measurements",
+      "multi_scale_tests",
+      "cross_source_tests",
+      "contradiction_tests",
+      "origin_layer_candidates",
+      "interpretation_restriction",
+      "confidence",
+      "evidence_tiers",
+      "analyst_notes"
+    ],
+    "roi_roles": {
+      "ROI_TARGET": "Suspected artifact footprint.",
+      "ROI_LOCAL_CONTROL": "Nearby region with comparable land cover and illumination.",
+      "ROI_BOUNDARY_CONTROL": "Comparable natural edge without the suspected defect.",
+      "ROI_REMOTE_CONTROL": "Same semantic class elsewhere in the frame or source."
+    }
+  },
+  "confidence_rubric": [
+    {
+      "level": "CONFIRMED",
+      "score_min": 0.9,
+      "criteria": "Independent raw/source corroboration plus diagnostic measurements; contradictions resolved."
+    },
+    {
+      "level": "HIGH",
+      "score_min": 0.75,
+      "criteria": "Multiple diagnostic signatures and matched controls; no major unresolved contradiction."
+    },
+    {
+      "level": "MODERATE",
+      "score_min": 0.5,
+      "criteria": "Some diagnostic evidence, but source provenance or cross-source validation is incomplete."
+    },
+    {
+      "level": "LOW",
+      "score_min": 0.25,
+      "criteria": "Weak or ambiguous signatures; viable real-world false positives remain."
+    },
+    {
+      "level": "UNRESOLVED",
+      "score_min": 0.0,
+      "criteria": "Evidence is insufficient or contradictory."
+    }
+  ]
+}

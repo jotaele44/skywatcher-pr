@@ -2,3 +2,4 @@ Pillow>=10.0
 PyMuPDF>=1.23
 pytest>=8.0
 pillow-heif>=0.16; platform_system != "Windows"
+jsonschema>=4.20

@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://satim.local/schemas/artifact_assessment_v1.schema.json",
+  "title": "SATIM Artifact Assessment v1",
+  "type": "object",
+  "required": [
+    "assessment_id",
+    "source",
+    "roi",
+    "candidate_artifacts",
+    "final_classification",
+    "confidence",
+    "interpretation_restriction"
+  ],
+  "properties": {
+    "assessment_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "source_type",
+        "provenance_status"
+      ],
+      "properties": {
+        "source_type": {
+          "enum": [
+            "raw_scene",
+            "orthophoto",
+            "web_tile",
+            "screenshot",
+            "pdf_frame",
+            "unknown"
+          ]
+        },
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "acquisition_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "zoom_level": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "tile_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provenance_status": {
+          "enum": [
+            "verified",
+            "partial",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "roi": {
+      "type": "object",
+      "required": [
+        "target"
+      ],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/roi"
+        },
+        "local_control": {
+          "$ref": "#/$defs/roi"
+        },
+        "boundary_control": {
+          "$ref": "#/$defs/roi"
+        },
+        "remote_control": {
+          "$ref": "#/$defs/roi"
+        }
+      }
+    },
+    "candidate_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^SATIM-A(0[1-9]|1[0-2])$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "measurements": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "number",
+          "string",
+          "boolean",
+          "null"
+        ]
+      }
+    },
+    "contradictions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "final_classification": {
+      "type": "string",
+      "pattern": "^SATIM-A(0[1-9]|1[0-2])$"
+    },
+    "origin_layer": {
+      "enum": [
+        "ground_scene",
+        "atmosphere",
+        "sensor_source",
+        "orthorectification",
+        "mosaic",
+        "temporal_composite",
+        "gap_fill",
+        "tile_renderer",
+        "client_display",
+        "screenshot_export",
+        "compound",
+        "unresolved"
+      ]
+    },
+    "confidence": {
+      "type": "object",
+      "required": [
+        "score",
+        "level"
+      ],
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "level": {
+          "enum": [
+            "CONFIRMED",
+            "HIGH",
+            "MODERATE",
+            "LOW",
+            "UNRESOLVED"
+          ]
+        },
+        "rationale": {
+          "type": "string"
+        }
+      }
+    },
+    "interpretation_restriction": {
+      "enum": [
+        "NONE",
+        "SPECTRAL_ONLY_DEGRADED",
+        "GEOMETRY_DEGRADED",
+        "OBJECT_LEVEL_PROHIBITED",
+        "ALL_INFERENCE_SUSPENDED"
+      ]
+    },
+    "evidence_tiers": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "T1_TECHNICAL",
+          "T2_OPERATIONAL",
+          "T3_EYEWITNESS",
+          "T4_SECONDARY"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "analyst_notes": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "roi": {
+      "type": "object",
+      "required": [
+        "description"
+      ],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "pixel_bounds": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "geometry_wkt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

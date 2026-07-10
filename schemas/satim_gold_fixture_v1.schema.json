@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://satim.local/schemas/satim_gold_fixture_v1.schema.json",
+  "title": "SATIM Gold Fixture v1",
+  "type": "object",
+  "required": ["fixture_id", "fixture_type", "artifact_class", "split", "scene_id", "roi", "expected_decision", "adjudication_status"],
+  "properties": {
+    "fixture_id": {"type": "string", "minLength": 1},
+    "fixture_type": {"enum": ["positive", "hard_negative", "challenge"]},
+    "artifact_class": {"type": "string", "pattern": "^SATIM-A(0[1-9]|1[0-2])$"},
+    "split": {"enum": ["train", "validation", "test", "challenge"]},
+    "scene_id": {"type": "string", "minLength": 1},
+    "site_id": {"type": ["string", "null"]},
+    "source_reference": {"type": ["string", "null"]},
+    "source_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "runnable": {"type": "boolean", "default": true},
+    "roi": {"type": "object"},
+    "measurements": {"type": "object"},
+    "expected_decision": {"type": "object"},
+    "adjudication_status": {"enum": ["adjudicated", "provisional", "unresolved"]},
+    "analyst_labels": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": false
+}
