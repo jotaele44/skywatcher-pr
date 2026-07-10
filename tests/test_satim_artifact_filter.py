@@ -52,6 +52,10 @@ def test_schema_contains_required_signals_and_guardrail():
     assert "EPOCH_MISMATCH" in schema["signals"]
     assert "COLOR_BALANCE_SHIFT" in schema["signals"]
     assert "PARALLAX_OFFSET" in schema["signals"]
+    assert "CROSSES_UNRELATED_TERRAIN" in schema["signals"]
+    assert "CANDIDATE_BOUNDARY_COINCIDENCE" in schema["signals"]
+    assert set(schema["signals"]) == {signal.value for signal in ArtifactSignal}
+    assert set(schema["signal_weights"]) == set(schema["signals"])
     assert "REVIEW_REQUIRED" in schema["classes"]
 
 
