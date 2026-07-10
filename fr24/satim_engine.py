@@ -24,6 +24,7 @@ from .calibration.l2_route_calibration import calibrate as calibrate_l2
 from .calibration.l3_ocr_scoring import calibrate as calibrate_l3
 from .calibration.l4_registry_audit import calibrate as calibrate_l4
 from .calibration.l5_tile_seam_shadow_calibration import calibrate as calibrate_l5
+from .calibration.l5_tile_seam_shadow_calibration import classify_candidate, load_candidates
 from .calibration.models import LayerCalibrationResult, merge_layer_reports, write_json
 from .calibration.readiness_adapter import satim_report_to_legacy_calibration
 
@@ -440,15 +441,20 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
 
     artifact_input = inputs.get("artifact_assessment_json")
     artifact_output: Path | None = None
+    artifact_auto_derived = False
+    ledger_output: Path | None = None
+    provider_compatibility: list[dict[str, Any]] | None = None
+    artifact_error: str | None = None
+    artifact_schema = (
+        Path(__file__).resolve().parents[1]
+        / "schemas"
+        / "satim_artifact_assessment_v1.schema.json"
+    )
     if _is_present(artifact_input):
+        # Analyst-supplied assessment: fail-loud per the failure contract.
         from skywatcher.satim.artifacts.engine import ArtifactAssessmentEngine
         from skywatcher.satim.artifacts.schema_validator import ArtifactSchemaValidator
 
-        artifact_schema = (
-            Path(__file__).resolve().parents[1]
-            / "schemas"
-            / "satim_artifact_assessment_v1.schema.json"
-        )
         artifact_payload = json.loads(artifact_input.read_text(encoding="utf-8"))
         ArtifactSchemaValidator(artifact_schema).require_valid(artifact_payload)
         artifact_output = run_dir / "artifact_assessment_result.json"
@@ -456,6 +462,58 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
             artifact_output,
             ArtifactAssessmentEngine().assess(artifact_payload).to_dict(),
         )
+    elif manifest.options.get("auto_artifact_assessment", True) and include_l5 and _is_present(
+        l5_candidates
+    ):
+        # Best-effort auto-derivation from L5 candidate classification. This
+        # path is purely additive: any failure is recorded but never breaks
+        # the run or changes its status.
+        try:
+            from skywatcher.satim.artifacts.confidence_ledger import ConfidenceLedger
+            from skywatcher.satim.artifacts.engine import ArtifactAssessmentEngine
+            from skywatcher.satim.artifacts.pipeline_chain import (
+                build_assessment_from_l5,
+                build_ledger_entry,
+            )
+            from skywatcher.satim.artifacts.provider_registry import ProviderProfileRegistry
+            from skywatcher.satim.artifacts.schema_validator import ArtifactSchemaValidator
+
+            scored = [classify_candidate(row) for row in load_candidates(l5_candidates)]
+            source_type = str(manifest.options.get("artifact_source_type", "screenshot"))
+            payload = build_assessment_from_l5(scored, source_type=source_type)
+            if payload is not None:
+                ArtifactSchemaValidator(artifact_schema).require_valid(payload)
+                result = ArtifactAssessmentEngine().assess(payload).to_dict()
+                artifact_output = run_dir / "artifact_assessment_result.json"
+                write_json(artifact_output, {"auto_derived": True, **result})
+                artifact_auto_derived = True
+
+                profiles_dir = Path(__file__).resolve().parents[1] / "profiles"
+                if profiles_dir.is_dir():
+                    registry = ProviderProfileRegistry()
+                    registry.load_dir(profiles_dir)
+                    provider_compatibility = [
+                        {
+                            "profile_id": profile_id,
+                            "compatible": registry.compatible(profile_id, payload["source"]),
+                        }
+                        for profile_id in registry.profile_ids()
+                    ]
+                    write_json(
+                        run_dir / "artifact_provider_compatibility.json",
+                        provider_compatibility,
+                    )
+
+                ledger_output = run_dir / "confidence_ledger.jsonl"
+                ConfidenceLedger(ledger_output).append(build_ledger_entry(payload, result))
+        except Exception as exc:
+            # Additive enrichment must never fail an otherwise-valid run.
+            artifact_error = f"{type(exc).__name__}: {exc}"
+            artifact_output = None
+            artifact_auto_derived = False
+            ledger_output = None
+            provider_compatibility = None
+            write_json(run_dir / "artifact_assessment_error.json", {"error": artifact_error})
 
     calibration_set_dir = inputs.get("calibration_set_dir")
     calibration_packet: dict[str, Any] | None = None
@@ -493,6 +551,10 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
             "provenance": str(run_dir / "provenance.json"),
             "calibration_set_validation": str(run_dir / "calibration_set_validation.json") if calibration_packet else None,
             "artifact_assessment": str(artifact_output) if artifact_output else None,
+            "artifact_assessment_auto_derived": artifact_auto_derived,
+            "confidence_ledger": str(ledger_output) if ledger_output else None,
+            "artifact_provider_compatibility": provider_compatibility,
+            "artifact_assessment_error": artifact_error,
         },
     }
     write_json(run_dir / "run_summary.json", summary)
