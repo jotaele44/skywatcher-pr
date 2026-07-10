@@ -41,6 +41,19 @@ L5_CLASS_ORIGIN_LAYER = {
     "SATIM-A09": "atmosphere",
 }
 
+# Interpretation restriction requested for each auto-derived class, from the
+# taxonomy's restriction text. These are *requests* on top of the gate's
+# mandatory minima (the gate only rejects weaker-than-minimum requests):
+# - SATIM-A01: "Object interpretation allowed only if geometric continuity is
+#   verified" -- auto-derivation performs no such verification, so geometry is
+#   treated as degraded across the seam.
+# - SATIM-A09: "Feature absence cannot be inferred inside obscured/masked
+#   regions" -- object-level presence/absence claims are prohibited in the ROI.
+L5_CLASS_RESTRICTION = {
+    "SATIM-A01": "GEOMETRY_DEGRADED",
+    "SATIM-A09": "OBJECT_LEVEL_PROHIBITED",
+}
+
 # Numeric fields copied from a scored L5 candidate into measurements.
 _MEASUREMENT_KEYS = (
     "tile_seam_likelihood",
@@ -107,7 +120,7 @@ def build_assessment_from_l5(
         "final_classification": artifact_class,
         "confidence": {"score": score, "level": confidence_level(score)},
         "origin_layer": L5_CLASS_ORIGIN_LAYER[artifact_class],
-        "interpretation_restriction": "NONE",
+        "interpretation_restriction": L5_CLASS_RESTRICTION[artifact_class],
         "measurements": measurements,
         "analyst_notes": "Auto-derived from L5 tile-seam/shadow candidate classification.",
         "raw_source_compared": False,

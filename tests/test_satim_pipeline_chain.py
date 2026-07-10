@@ -39,6 +39,9 @@ def test_build_assessment_maps_tile_seam_to_a01():
     assert payload["candidate_artifacts"] == ["SATIM-A01"]
     assert payload["confidence"]["score"] == 0.82
     assert payload["origin_layer"] == "mosaic"
+    # Taxonomy: object interpretation across a seam requires verified
+    # geometric continuity, which auto-derivation cannot provide.
+    assert payload["interpretation_restriction"] == "GEOMETRY_DEGRADED"
     _assessment_validator().require_valid(payload)
 
 
@@ -48,6 +51,9 @@ def test_build_assessment_maps_cloud_shadow_to_a09():
     assert payload is not None
     assert payload["candidate_artifacts"] == ["SATIM-A09"]
     assert payload["origin_layer"] == "atmosphere"
+    # Taxonomy: feature absence cannot be inferred inside obscured/masked
+    # regions, so object-level interpretation is prohibited in the ROI.
+    assert payload["interpretation_restriction"] == "OBJECT_LEVEL_PROHIBITED"
     _assessment_validator().require_valid(payload)
 
 
@@ -99,6 +105,8 @@ def test_engine_auto_derives_assessment_and_ledger(tmp_path):
     # screenshot source -> origin confidence capped at 0.74
     assert result["origin_confidence"] == 0.74
     assert "SCREENSHOT_ORIGIN_CAP_0_74" in result["rules_triggered"]
+    # Class-derived restriction survives the gate into the persisted result.
+    assert result["interpretation_restriction"] == "GEOMETRY_DEGRADED"
 
     ledger_path = Path(outputs["confidence_ledger"])
     assert ledger_path.exists()
