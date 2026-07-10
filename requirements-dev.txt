@@ -1,4 +1,4 @@
-pytest>=7.0
+pytest>=8.0
 Pillow>=10.0
 # Shared maintenance core (ADR 0001 Phase 3, thehub-pr). Pinned to a commit
 # SHA, not a branch — bump deliberately, one line, one PR.

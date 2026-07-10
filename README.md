@@ -69,6 +69,12 @@ The protocol emits `resolved_manifest.json`, per-layer reports under `layers/`, 
 
 See `docs/SATIM_ENGINE_PROTOCOL_INTERFACE.md` for the manifest contract and run-bundle layout.
 
+> Note: the repo-native runner above (`python -m fr24.satim_engine`) is distinct
+> from the standalone packaged engine under `tools/satim_engine/` (installed with
+> `pip install -e '.[dev]'`, exposing the `satim` console script), which is what
+> `satim-engine-ci.yml` builds and exercises. Use the repo-native runner for
+> in-tree runs; the packaged `satim` CLI is the distributable interface.
+
 ## Federation export contract
 
 Skywatcher emits airspace observation packages validated against:
@@ -97,8 +103,14 @@ pip install -r requirements-geo.txt
 
 ## Develop
 
+Requires **Python 3.10+** (CI tests 3.10–3.12). This is a flat-layout
+application — modules run in place, nothing is pip-installed as a package.
+
+Install the same dependency set CI uses (`.github/workflows/ci.yml`) — the dev
+requirements plus `httpx` and the backend requirements the tests import:
+
 ```bash
-python -m pip install -r requirements-dev.txt
+python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt
 pytest -q
 python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
 ```
