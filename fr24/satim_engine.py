@@ -66,6 +66,7 @@ FILE_INPUT_NAMES = {
     "predictions_json": ("predictions.json", "l3_predictions.json"),
     "fr24_csv": ("fr24_export.csv", "fr24.csv", "observations.csv"),
     "l5_candidates_csv": ("l5_candidates.csv", "tile_seam_candidates.csv", "artifact_candidates.csv"),
+    "artifact_assessment_json": ("artifact_assessment.json", "satim_artifact_assessment.json"),
 }
 
 
@@ -437,6 +438,25 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
         ).to_dict()
     layer_paths.append(_write_layer("L5_tile_seam_shadow", l5_payload, layers_dir))
 
+    artifact_input = inputs.get("artifact_assessment_json")
+    artifact_output: Path | None = None
+    if _is_present(artifact_input):
+        from skywatcher.satim.artifacts.engine import ArtifactAssessmentEngine
+        from skywatcher.satim.artifacts.schema_validator import ArtifactSchemaValidator
+
+        artifact_schema = (
+            Path(__file__).resolve().parents[1]
+            / "schemas"
+            / "satim_artifact_assessment_v1.schema.json"
+        )
+        artifact_payload = json.loads(artifact_input.read_text(encoding="utf-8"))
+        ArtifactSchemaValidator(artifact_schema).require_valid(artifact_payload)
+        artifact_output = run_dir / "artifact_assessment_result.json"
+        write_json(
+            artifact_output,
+            ArtifactAssessmentEngine().assess(artifact_payload).to_dict(),
+        )
+
     calibration_set_dir = inputs.get("calibration_set_dir")
     calibration_packet: dict[str, Any] | None = None
     if _is_present(calibration_set_dir):
@@ -472,6 +492,7 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
             "legacy_readiness": str(legacy_path) if legacy_path else None,
             "provenance": str(run_dir / "provenance.json"),
             "calibration_set_validation": str(run_dir / "calibration_set_validation.json") if calibration_packet else None,
+            "artifact_assessment": str(artifact_output) if artifact_output else None,
         },
     }
     write_json(run_dir / "run_summary.json", summary)

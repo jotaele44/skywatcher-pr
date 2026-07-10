@@ -1,5 +1,11 @@
 # Skywatcher PR Frontend
 
+> **Diagnostic-only surface (ADR 0001, Phase 2).** This repo's dashboard is a
+> development and diagnostic tool for this producer only. The supported product
+> surface for the PRII federation is the hub app
+> (`thehub-pr/server/frontend`), which renders this producer's data alongside
+> the other engines. See `thehub-pr/docs/adr/0001-federated-engines-single-hub.md`.
+
 This frontend has been detached from the proprietary app-builder runtime and now targets the PRII federation backend layer.
 
 ## Backend target
