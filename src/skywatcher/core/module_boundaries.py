@@ -36,6 +36,7 @@ MODULE_BOUNDARIES: dict[str, list[str]] = {
         "src/skywatcher/registry/**/*.py",
     ],
     "satim": [
+        "src/skywatcher/satim/**/*.py",
         "satim_calibration.py",
         "satim_cut_fill.py",
         "satim_fit.py",
