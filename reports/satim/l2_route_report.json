@@ -1,0 +1,23 @@
+{
+  "findings": [],
+  "layer": "L2_route_extractor",
+  "metrics": {
+    "blank_false_positive_rate": 0.0,
+    "blank_image_count": 0,
+    "image_count": 30,
+    "min_route_pixels": 8,
+    "route_positive_images": 30,
+    "threshold_sweep": {
+      "4": 30,
+      "6": 30,
+      "8": 30,
+      "12": 30,
+      "20": 30
+    }
+  },
+  "status": "READY",
+  "thresholds": {
+    "blank_false_positive_rate_max": 0.05,
+    "min_route_pixels": 8
+  }
+}

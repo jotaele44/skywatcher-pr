@@ -1,0 +1,14 @@
+{
+  "findings": [],
+  "layer": "L1_ui_segmenter",
+  "metrics": {
+    "image_count": 11928,
+    "panel_text_overlap_pixels": 0.0,
+    "route_pixel_coverage": 0.0
+  },
+  "status": "READY",
+  "thresholds": {
+    "panel_text_overlap_max": 0,
+    "route_pixel_coverage_min": 0.9
+  }
+}

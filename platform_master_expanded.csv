@@ -1,0 +1,37 @@
+tail,source,category,make_model,owner
+N42RF,OCR,federal,Lockheed WP-3D Orion,US Dept of Commerce / NOAA
+N43RF,OCR,federal,(NOAA RF series),US Dept of Commerce / NOAA
+N49RF,OCR,federal,Gulfstream G-IV,US Dept of Commerce / NOAA
+N56RF,OCR,federal,DHC-6-300 Twin Otter,US Dept of Commerce / NOAA
+N255PD,OCR,government,Bell 429,San Juan; cert in question
+N516PR,OCR,government,Cessna 208B Caravan,PR Dept Natural & Env Resources (DRNA)
+N5854Z,telemetry+OCR,government,Eurocopter AS350 B2,PREPA
+N5855Z,OCR,government,Eurocopter AS350 B2,PREPA Air Operations Dept
+N767PD,telemetry+OCR,government,Bell 429,ASG (PR govt)
+N26370,telemetry+OCR,survey,Cessna 310R,GV Air
+N2JJ,telemetry+OCR,survey,Cessna 401,Aerial Surveys Intl
+N79036,telemetry+OCR,survey,Cessna 172K,Buiqui Aerospace
+N811NA,OCR,survey,Cessna 421C,"Digital Aerial Solutions, FL"
+N90JF,telemetry+OCR,survey,Cessna 208 Caravan,ISR Aviation
+N999DM,telemetry+OCR,survey,Cessna 421C,JR605DC LLC
+N13VL,telemetry+OCR,resident-civil,Eurocopter EC145,Heli Transport
+N150F,telemetry+OCR,resident-civil,Bell 206B,11 11 Enterprises
+N196DM,telemetry+OCR,resident-civil,Robinson R44 II,Benitez Aviation
+N26DP,OCR,resident-civil,Cirrus SR22,"COLIBRI VENTURES LLC, Dorado PR"
+N292BA,OCR,resident-civil,Robinson R22,"PIC LLC, Cataño PR"
+N407PR,telemetry+OCR,resident-civil,Bell 407,Windsock Management
+N409TD,telemetry+OCR,resident-civil,Bell 407,Castle Black Aviation
+N411PR,OCR,resident-civil,Bell 407,"WINDSOCK MANAGEMENT LLC, AR"
+N413LP,telemetry+OCR,resident-civil,Eurocopter AS350 B3,Camape SE
+N540DB,OCR,resident-civil,Eurocopter AS350 B2,"MASTER LINK CORP, Barceloneta PR"
+N600UH,telemetry+OCR,resident-civil,Robinson R44 II,N600UH LLC (1666 Ave PdL)
+N620GG,OCR,resident-civil,Robinson R44 II,"HSGR SKY RENTAL LLC, San Juan PR"
+N684JB,telemetry+OCR,resident-civil,Airbus EC130 T2,FL Jet LLC
+N750CK,OCR,resident-civil,Cessna 650 Citation III,"MN AIRCRAFT LLC, San Juan PR"
+N888EV,OCR,resident-civil,MD/Hughes 369E (MD500),TOP FLIGHT AVIATION OF MISSISSIPPI LLC
+N936DM,OCR,resident-civil,Eurocopter AS350 B2,"SOTO ALEX MEDINA, San Sebastian PR"
+N961HL,OCR,resident-civil,Cessna 208B Caravan,"CARAVAN INTERNATIONAL LEASING INC, NV"
+N963HL,OCR,resident-civil,Cessna 208B Caravan,"CARAVAN INTERNATIONAL LEASING INC, NV"
+N999ZY,telemetry+OCR,resident-civil,Eurocopter AS350 B2,179 Cayey LLC (1666 Ave PdL)
+N237CM,OCR,airline/cargo,Boeing 767-333F,CARGO AIRCRAFT MANAGEMENT (ABX/Amazon Air)
+N429LE,telemetry+OCR,REJECT,(reserved),Evans

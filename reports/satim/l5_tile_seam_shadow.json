@@ -1,0 +1,25 @@
+{
+  "findings": [
+    {
+      "detail": "no tile seam/shadow calibration candidates found",
+      "severity": "warning"
+    }
+  ],
+  "layer": "L5_tile_seam_shadow",
+  "metrics": {
+    "candidate_count": 0,
+    "decision_counts": {
+      "indeterminate": 0,
+      "probable_cloud_shadow": 0,
+      "probable_ground_feature": 0,
+      "probable_terrain_shadow": 0,
+      "probable_tile_seam": 0
+    }
+  },
+  "status": "MISSING",
+  "thresholds": {
+    "ground_feature_rule": "multi-date persistence + infrastructure/landcover alignment + low cloud/shadow intersection",
+    "promotion_min_likelihood": 0.55,
+    "tile_seam_rule": "straight boundary + radiometric discontinuity + non-persistence + no terrain alignment"
+  }
+}

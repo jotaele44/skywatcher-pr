@@ -1,0 +1,178 @@
+{
+  "blocking_gaps": [
+    {
+      "detail": "L3_vision_ocr is required for SATIM batch readiness and is not READY.",
+      "layer": "L3_vision_ocr",
+      "severity": "blocker",
+      "status": "DEGRADED"
+    }
+  ],
+  "generated_at": "2026-06-29T16:28:09.737636Z",
+  "layers": {
+    "L1_ui_segmenter": {
+      "findings": [],
+      "metrics": {
+        "image_count": 11928,
+        "panel_text_overlap_pixels": 0.0,
+        "route_pixel_coverage": 0.0
+      },
+      "status": "READY",
+      "thresholds": {
+        "panel_text_overlap_max": 0,
+        "route_pixel_coverage_min": 0.9
+      }
+    },
+    "L2_route_extractor": {
+      "findings": [],
+      "metrics": {
+        "blank_false_positive_rate": 0.0,
+        "blank_image_count": 0,
+        "image_count": 30,
+        "min_route_pixels": 8,
+        "route_positive_images": 30,
+        "threshold_sweep": {
+          "12": 30,
+          "20": 30,
+          "4": 30,
+          "6": 30,
+          "8": 30
+        }
+      },
+      "status": "READY",
+      "thresholds": {
+        "blank_false_positive_rate_max": 0.05,
+        "min_route_pixels": 8
+      }
+    },
+    "L3_vision_ocr": {
+      "findings": [
+        {
+          "detail": "no nonblank ground-truth values available for field",
+          "field": "callsign",
+          "severity": "warning"
+        },
+        {
+          "detail": "field score below calibration threshold",
+          "field": "altitude_ft",
+          "severity": "blocker"
+        },
+        {
+          "detail": "no nonblank ground-truth values available for field",
+          "field": "aircraft_type",
+          "severity": "warning"
+        },
+        {
+          "detail": "no nonblank ground-truth values available for field",
+          "field": "origin_code",
+          "severity": "warning"
+        },
+        {
+          "detail": "no nonblank ground-truth values available for field",
+          "field": "destination_code",
+          "severity": "warning"
+        },
+        {
+          "detail": "no nonblank ground-truth values available for field",
+          "field": "nearest_location",
+          "severity": "warning"
+        }
+      ],
+      "metrics": {
+        "blank_truth_skips": {
+          "aircraft_type": 63,
+          "altitude_ft": 0,
+          "callsign": 63,
+          "destination_code": 63,
+          "nearest_location": 63,
+          "origin_code": 63
+        },
+        "field_observation_counts": {
+          "aircraft_type": 0,
+          "altitude_ft": 63,
+          "callsign": 0,
+          "destination_code": 0,
+          "nearest_location": 0,
+          "origin_code": 0
+        },
+        "field_scores": {
+          "aircraft_type": null,
+          "altitude_ft": 0.0,
+          "callsign": null,
+          "destination_code": null,
+          "nearest_location": null,
+          "origin_code": null
+        },
+        "missing_predictions": 0,
+        "record_count": 63,
+        "scored_value_count": 63
+      },
+      "status": "DEGRADED",
+      "thresholds": {
+        "aircraft_type": 0.9,
+        "altitude_ft": 0.9,
+        "callsign": 0.9,
+        "destination_code": 0.8,
+        "nearest_location": 0.7,
+        "origin_code": 0.8
+      }
+    },
+    "L4_aircraft_intelligence": {
+      "findings": [
+        {
+          "detail": "registry coverage below 50%",
+          "severity": "warning"
+        },
+        {
+          "detail": "FR24 export contains keywords for known registry gaps",
+          "severity": "warning"
+        }
+      ],
+      "metrics": {
+        "known_gap_hit_count": 1,
+        "matched_known_operator_count": 4,
+        "onboarding_candidates": [],
+        "record_count": 289,
+        "registry_coverage": 0.01384083044982699,
+        "registry_token_count": 28
+      },
+      "status": "PARTIAL",
+      "thresholds": {
+        "minimum_sightings": 3,
+        "registry_coverage_min": 0.5,
+        "requires_faa_confirmation": true,
+        "requires_operational_source": true
+      }
+    },
+    "L5_tile_seam_shadow": {
+      "findings": [
+        {
+          "detail": "no tile seam/shadow calibration candidates found",
+          "severity": "warning"
+        }
+      ],
+      "metrics": {
+        "candidate_count": 0,
+        "decision_counts": {
+          "indeterminate": 0,
+          "probable_cloud_shadow": 0,
+          "probable_ground_feature": 0,
+          "probable_terrain_shadow": 0,
+          "probable_tile_seam": 0
+        }
+      },
+      "status": "MISSING",
+      "thresholds": {
+        "ground_feature_rule": "multi-date persistence + infrastructure/landcover alignment + low cloud/shadow intersection",
+        "promotion_min_likelihood": 0.55,
+        "tile_seam_rule": "straight boundary + radiometric discontinuity + non-persistence + no terrain alignment"
+      }
+    }
+  },
+  "overall_status": "DEGRADED",
+  "recommended_next_actions": [
+    "Resolve L4_aircraft_intelligence status PARTIAL before production promotion.",
+    "Resolve L5_tile_seam_shadow status MISSING before production promotion."
+  ],
+  "repo": "skywatcher-pr",
+  "schema_version": "satim.calibration.v1"
+}
