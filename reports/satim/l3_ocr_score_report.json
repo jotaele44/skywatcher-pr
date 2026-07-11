@@ -1,0 +1,73 @@
+{
+  "findings": [
+    {
+      "detail": "no nonblank ground-truth values available for field",
+      "field": "callsign",
+      "severity": "warning"
+    },
+    {
+      "detail": "field score below calibration threshold",
+      "field": "altitude_ft",
+      "severity": "blocker"
+    },
+    {
+      "detail": "no nonblank ground-truth values available for field",
+      "field": "aircraft_type",
+      "severity": "warning"
+    },
+    {
+      "detail": "no nonblank ground-truth values available for field",
+      "field": "origin_code",
+      "severity": "warning"
+    },
+    {
+      "detail": "no nonblank ground-truth values available for field",
+      "field": "destination_code",
+      "severity": "warning"
+    },
+    {
+      "detail": "no nonblank ground-truth values available for field",
+      "field": "nearest_location",
+      "severity": "warning"
+    }
+  ],
+  "layer": "L3_vision_ocr",
+  "metrics": {
+    "blank_truth_skips": {
+      "aircraft_type": 63,
+      "altitude_ft": 0,
+      "callsign": 63,
+      "destination_code": 63,
+      "nearest_location": 63,
+      "origin_code": 63
+    },
+    "field_observation_counts": {
+      "aircraft_type": 0,
+      "altitude_ft": 63,
+      "callsign": 0,
+      "destination_code": 0,
+      "nearest_location": 0,
+      "origin_code": 0
+    },
+    "field_scores": {
+      "aircraft_type": null,
+      "altitude_ft": 0.0,
+      "callsign": null,
+      "destination_code": null,
+      "nearest_location": null,
+      "origin_code": null
+    },
+    "missing_predictions": 0,
+    "record_count": 63,
+    "scored_value_count": 63
+  },
+  "status": "DEGRADED",
+  "thresholds": {
+    "aircraft_type": 0.9,
+    "altitude_ft": 0.9,
+    "callsign": 0.9,
+    "destination_code": 0.8,
+    "nearest_location": 0.7,
+    "origin_code": 0.8
+  }
+}

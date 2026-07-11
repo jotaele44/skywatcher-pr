@@ -1,0 +1,28 @@
+{
+  "findings": [
+    {
+      "detail": "registry coverage below 50%",
+      "severity": "warning"
+    },
+    {
+      "detail": "FR24 export contains keywords for known registry gaps",
+      "severity": "warning"
+    }
+  ],
+  "layer": "L4_aircraft_intelligence",
+  "metrics": {
+    "known_gap_hit_count": 1,
+    "matched_known_operator_count": 4,
+    "onboarding_candidates": [],
+    "record_count": 289,
+    "registry_coverage": 0.01384083044982699,
+    "registry_token_count": 28
+  },
+  "status": "PARTIAL",
+  "thresholds": {
+    "minimum_sightings": 3,
+    "registry_coverage_min": 0.5,
+    "requires_faa_confirmation": true,
+    "requires_operational_source": true
+  }
+}
