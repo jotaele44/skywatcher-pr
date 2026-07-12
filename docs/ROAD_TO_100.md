@@ -72,32 +72,58 @@ rewriting them (rewriting correct, tested code would only risk regressions):
   flag). **9/9 Phase-2 contract tests pass offline.**
 - **RLSM `flight_track_features`** — `fr24/rlsm_flight_track.py`: offline
   speed/heading heuristic (`_classify_screenshot`) at `confidence=0.3`, with an
-  optional CV vectorizer pass when an image root is supplied. The
-  `rlsm_extractors.py` docstring still calls it "deferred"; that comment is stale
-  — the table is populated by `rlsm_flight_track.py`.
+  optional CV vectorizer pass when an image root is supplied. (The stale
+  "deferred" docstring in `rlsm_extractors.py` has since been corrected — see the
+  audit increment below.)
 - **Geo-anchor guard** — `fr24/rlsm_extractors.py::seed_geo_anchors` already
   guards cleanly on missing `data/rlsm/georef_anchors.csv`
   (`{"seeded": 0, "reason": "georef_anchors.csv not found"}`). Supplying that CSV
   is a **data** task, not a code task.
 
+## Closed in the multi-repo federation audit increment
+
+Pure, offline-computable logic — no network, no new heavy dependency. These
+close three of the four "Remaining — offline code" items below.
+
+1. **Phase-2 calibration modules wired into a runnable pipeline stage.**
+   `fr24/calibration/run_phase2.py` is a thin driver (with a
+   `python3 -m fr24.calibration.run_phase2` entry point) that reads an AOI
+   detection fixture → `detect_raster_candidates` → `patch_candidate_with_gis_scores`
+   → `validate_candidate_across_dates` → a `satim.visual_ledger.v1` CSV. It
+   **reuses** the three proven Phase-2 functions verbatim (no reimplementation),
+   does no image IO / network, and produces calibration-candidate rows — not a
+   production airspace export. Fixture: `tests/fixtures/satim_phase2/aoi_detections.json`
+   (precomputed detections / GIS metrics / multi-date records only). End-to-end
+   test: `tests/test_satim_phase2_run_phase2.py` (added to the `satim-phase2` CI
+   job).
+   - **Extension point:** swap the fixture loader for a real detection / GIS /
+     imagery backend; the driver's input mapping shape and CSV columns stay stable.
+
+2. **Deterministic filename-hint `VisualOcrBackend` (bundled, opt-in).**
+   `tools/satim_engine/src/satim_engine/plugins/visual_ocr_filename_backend.py`
+   parses callsign / tail / timestamp tokens from the file *name* with tight,
+   boundary-anchored regexes and merges through the existing `backend` seam in
+   `visual_ocr.py`. It is **not** in the default path: the no-backend
+   `extract_visual_metadata` `FILENAME_ONLY` / `None`-hints contract is unchanged
+   byte-for-byte (test-pinned). Tests:
+   `tools/satim_engine/tests/test_visual_ocr_filename_backend.py`.
+
+3. **Stale "deferred" docstring retired.** `fr24/rlsm_extractors.py` no longer
+   claims `flight_track_features` is "deferred pending route_extractor
+   integration" — it documents that the table is populated by
+   `fr24/rlsm_flight_track.py`. A golden-row fixture test
+   (`tests/test_rlsm_flight_track.py::test_golden_rows_per_screenshot`) pins the
+   exact per-screenshot row the runner writes against a tiny seeded SQLite DB
+   (offline, no network).
+
 ## Remaining — offline code (leverage-ordered checklist)
 
 Highest leverage first. All offline-computable; none require network.
 
-1. **Wire the Phase-2 calibration modules into a runnable pipeline stage.** They
-   are currently exercised only by contract tests. A thin driver that reads AOI
-   fixtures → `detect_raster_candidates` → `patch_candidate_with_gis_scores` →
-   `validate_candidate_across_dates` → visual-ledger CSV would turn three proven
-   contracts into one shippable command.
-2. **Real geometry backend behind `gis_geometry`.** Polygon containment and
+1. **Real geometry backend behind `gis_geometry`.** Polygon containment and
    projected distances (geopandas/shapely/rtree) behind the stable helper
-   signatures. Gated on the `requirements-geo.txt` optional stack.
-3. **Deterministic filename-hint parser for `visual_ocr`.** A conservative,
-   opt-in parser (callsign/tail/timestamp tokens) exposed as a bundled backend —
-   kept out of the default path so the `FILENAME_ONLY` contract stays exact.
-4. **Retire the stale "deferred" docstring** in `rlsm_extractors.py` and add a
-   golden-row fixture test that runs `rlsm_flight_track` against a tiny seeded
-   SQLite DB end-to-end.
+   signatures. Gated on the `requirements-geo.txt` optional stack. Left as a
+   documented extension point.
 
 ## Remaining — data / network-blocked (`ready_for_hub_live_execution: false`)
 

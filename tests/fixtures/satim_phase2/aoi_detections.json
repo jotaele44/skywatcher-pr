@@ -1,0 +1,93 @@
+{
+  "schema_version": "satim.phase2_aoi_detections.v1",
+  "purpose": "Offline AOI control fixture for the SATIM Phase-2 driver. Precomputed detections / GIS metrics / multi-date comparison records only. NOT airspace or observation data; produces calibration-candidate ledger rows, never a production export.",
+  "aois": [
+    {
+      "aoi_id": "PR_TILE_SEAM_CONTROL",
+      "source_image_id": "IMG_TILE_SEAM_CONTROL_2024_01",
+      "source_uri": "fixtures://satim/phase2/PR_TILE_SEAM_CONTROL_2024_01.png",
+      "capture_datetime_utc": "2024-01-15T00:00:00Z",
+      "imagery_epoch": "2024-01",
+      "imagery_provider": "fixture_provider",
+      "municipality": "Unknown",
+      "detections": [
+        {
+          "geometry": {"type": "LineString", "coordinates": [[-66.10, 18.20], [-66.05, 18.20]]},
+          "boundary_length_px": 96,
+          "straightness": 0.92,
+          "radiometric_delta": 0.71,
+          "classification": "probable_tile_seam",
+          "imagery_epoch": "2024-01"
+        }
+      ],
+      "overlay_scores": {
+        "road_alignment": 1.0,
+        "building_alignment": 1.0,
+        "airport_alignment": 1.0,
+        "parcel_alignment": 1.0
+      },
+      "multidate_comparisons": [
+        {
+          "imagery_epoch": "2022-01",
+          "capture_datetime_utc": "2022-01-10T00:00:00Z",
+          "geometry_match_score": 0.10,
+          "radiometric_match_score": 0.10
+        }
+      ]
+    },
+    {
+      "aoi_id": "PR_TILE_SEAM_CONTROL",
+      "source_image_id": "IMG_TILE_SEAM_CONTROL_SINGLE_STILL",
+      "source_uri": "fixtures://satim/phase2/PR_TILE_SEAM_CONTROL_SINGLE_STILL.png",
+      "capture_datetime_utc": "2024-02-01T00:00:00Z",
+      "imagery_epoch": "2024-02",
+      "imagery_provider": "fixture_provider",
+      "municipality": "Unknown",
+      "detections": [
+        {
+          "geometry": {"type": "LineString", "coordinates": [[-66.12, 18.22], [-66.08, 18.22]]},
+          "boundary_length_px": 72,
+          "straightness": 0.90,
+          "radiometric_delta": 0.60,
+          "classification": "probable_tile_seam",
+          "imagery_epoch": "2024-02"
+        }
+      ],
+      "overlay_scores": {},
+      "multidate_comparisons": []
+    },
+    {
+      "aoi_id": "PR_AIRPORT_BQN_APRON",
+      "source_image_id": "IMG_BQN_APRON_2024_03",
+      "source_uri": "fixtures://satim/phase2/PR_AIRPORT_BQN_APRON_2024_03.png",
+      "capture_datetime_utc": "2024-03-20T00:00:00Z",
+      "imagery_epoch": "2024-03",
+      "imagery_provider": "fixture_provider",
+      "municipality": "Aguadilla",
+      "detections": [
+        {
+          "geometry": {"type": "LineString", "coordinates": [[-67.13, 18.49], [-67.11, 18.49]]},
+          "boundary_length_px": 120,
+          "straightness": 0.88,
+          "radiometric_delta": 0.60,
+          "classification": "indeterminate",
+          "imagery_epoch": "2024-03"
+        }
+      ],
+      "gis_metrics": {
+        "road_overlap_fraction": 0.90,
+        "airport_overlap_fraction": 0.95,
+        "building_overlap_fraction": 0.40,
+        "parcel_edge_alignment": 0.50
+      },
+      "multidate_comparisons": [
+        {
+          "imagery_epoch": "2022-03",
+          "capture_datetime_utc": "2022-03-05T00:00:00Z",
+          "geometry_match_score": 0.90,
+          "radiometric_match_score": 0.85
+        }
+      ]
+    }
+  ]
+}

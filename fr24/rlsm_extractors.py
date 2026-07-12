@@ -4,7 +4,9 @@ tables:
 
   - aircraft_observations  (from aircraft_card + top_bar zones)
   - labeled_pins           (from label_layer + map_center zones)
-  - flight_track_features  (placeholder; deferred pending route_extractor integration)
+  - flight_track_features  (populated by fr24/rlsm_flight_track.py — the
+                            speed/heading heuristic, plus an optional CV
+                            track-vectorizer pass; NOT produced by this module)
   - manual_review_queue    (low-conf rows, conflicts)
 
 Idempotent: re-running on already-processed screenshots replaces only the

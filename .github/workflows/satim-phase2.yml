@@ -4,8 +4,10 @@ on:
   pull_request:
     paths:
       - 'fr24/calibration/satim_*.py'
+      - 'fr24/calibration/run_phase2.py'
       - 'schemas/*.json'
       - 'tests/test_satim_*.py'
+      - 'tests/fixtures/satim_phase2/**'
       - 'data/satim_fixtures/**'
       - 'docs/SATIM_*.md'
       - '.github/workflows/satim-phase2.yml'
@@ -34,4 +36,5 @@ jobs:
             tests/test_satim_operationalization_phase1_contracts.py \
             tests/test_satim_phase2_raster_extraction.py \
             tests/test_satim_phase2_multidate_validation.py \
-            tests/test_satim_phase2_gis_overlay.py
+            tests/test_satim_phase2_gis_overlay.py \
+            tests/test_satim_phase2_run_phase2.py
