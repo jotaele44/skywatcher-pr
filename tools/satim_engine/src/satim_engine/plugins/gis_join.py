@@ -52,13 +52,20 @@ def bbox_context_join(track_df: pd.DataFrame, layers: dict | None = None) -> pd.
         return pd.DataFrame(columns=["source", "latitude", "longitude", "gis_join_status"])
 
     out = track_df[["source", "latitude", "longitude"]].copy()
-    out["gis_layer_count"] = 0 if layers is None else len(layers)
+    layer_count = 0 if layers is None else len(layers)
 
     geom_layers = resolve_geometry_layers(layers)
     if not geom_layers:
-        # Context-only: no usable geometry (or opaque layer handles).
+        # Context-only (the default path exercised by the production baseline):
+        # preserve the historical column order exactly —
+        # source, latitude, longitude, gis_join_status, gis_layer_count — so the
+        # committed manifests/satim/post_baseline_output_sha256.csv still matches
+        # when no geometry backend is active.
         out["gis_join_status"] = CONTEXT_ONLY_STATUS
+        out["gis_layer_count"] = layer_count
         return out
+
+    out["gis_layer_count"] = layer_count
 
     statuses: list[str] = []
     matched_col: list[str] = []
