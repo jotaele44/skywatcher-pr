@@ -40,15 +40,35 @@ def test_hyphen_separated_tokens_and_compact_date():
     assert hints["timestamp_hint"] == "20260101"
 
 
-def test_canada_tail_and_bare_clock_time():
+def test_canada_tail_and_callsign():
     assert parse_filename_hints("C-GXYZ_2026-01-01.jpg")["tail_hint"] == "C-GXYZ"
-    assert parse_filename_hints("screenshot_18:42Z_FURA1.png")["timestamp_hint"] == "18:42Z"
     assert parse_filename_hints("screenshot_18:42Z_FURA1.png")["callsign_hint"] == "FURA1"
+
+
+def test_clock_only_token_never_populates_timestamp_hint():
+    """A date-less clock token must NOT become timestamp_hint (pairing reads that
+    as an absolute time and would resolve it against a wrong/default date). It is
+    surfaced under the non-authoritative clock_hint field instead."""
+    hints = parse_filename_hints("screenshot_18:42Z_FURA1.png")
+    assert hints["timestamp_hint"] is None
+    assert hints["clock_hint"] == "18:42Z"
+
+
+def test_date_present_wins_and_suppresses_clock_hint():
+    hints = parse_filename_hints("frame_20260101_18:42Z.png")
+    assert hints["timestamp_hint"] == "20260101"
+    # A real date is authoritative; the clock token is not separately surfaced.
+    assert hints["clock_hint"] is None
 
 
 def test_no_tokens_returns_all_none():
     hints = parse_filename_hints("random_file_name.png")
-    assert hints == {"callsign_hint": None, "tail_hint": None, "timestamp_hint": None}
+    assert hints == {
+        "callsign_hint": None,
+        "tail_hint": None,
+        "timestamp_hint": None,
+        "clock_hint": None,
+    }
 
 
 # ── merge through the extract_visual_metadata backend seam ───────────────────

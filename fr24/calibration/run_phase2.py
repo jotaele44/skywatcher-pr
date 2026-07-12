@@ -108,9 +108,16 @@ LEDGER_COLUMNS = (
     "multidate_persistence",
     "multidate_decision",
     "multidate_classification_hint",
+    "source_dates_compared",
 )
 
-_JSON_COLUMNS = {"geometry", "feature_scores", "contradiction_flags", "cross_source_refs"}
+_JSON_COLUMNS = {
+    "geometry",
+    "feature_scores",
+    "contradiction_flags",
+    "cross_source_refs",
+    "source_dates_compared",
+}
 
 
 def _resolve_overlay_scores(block: Mapping[str, Any]) -> dict[str, float]:
@@ -181,6 +188,10 @@ def process_aoi_block(
         row["multidate_persistence"] = validation["multi_date_persistence"]
         row["multidate_decision"] = validation["decision"]
         row["multidate_classification_hint"] = validation["classification_hint"]
+        # Required ledger field (docs/SATIM_MIXED_EPOCH_VALIDATION_SPEC.md): the
+        # cross-epoch capture dates that supported the decision — so a reviewer
+        # can audit which comparison imagery drove each candidate's outcome.
+        row["source_dates_compared"] = validation["source_dates_compared"]
         rows.append(row)
     return rows
 

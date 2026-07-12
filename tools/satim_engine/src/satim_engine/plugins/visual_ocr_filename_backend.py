@@ -45,50 +45,67 @@ _RE_TAIL_C = re.compile(_BEFORE + r"C-[A-Z]{4}" + _AFTER)
 # letter (AAL123, DAL45, FURA1).
 _RE_CALLSIGN = re.compile(_BEFORE + r"[A-Z]{2,4}[0-9]{1,4}[A-Z]?" + _AFTER)
 
-# Timestamp forms, most specific first. Each is bounded so it is not a fragment
-# of a longer alphanumeric run:
+# DATE-BEARING timestamp forms, most specific first. Each is bounded so it is
+# not a fragment of a longer alphanumeric run. Only these populate
+# ``timestamp_hint``, because downstream pairing (pairing.build_pairing_ledger)
+# parses ``timestamp_hint`` as an ABSOLUTE visual time — a token without a date
+# would be resolved against a wrong/default date, so it must never land there:
 #   2026-01-01T18:42:05Z / 2026-01-01T18-42 / 2026-01-01_18:42
 #   2026-01-01
 #   20260101T184205Z / 20260101
-#   18:42:05Z / 18:42Z (bare clock time)
-_TIMESTAMP_PATTERNS = tuple(
+_DATE_TIMESTAMP_PATTERNS = tuple(
     re.compile(_BEFORE + body + _AFTER)
     for body in (
         r"\d{4}-\d{2}-\d{2}[T_]\d{2}[:\-]\d{2}(?:[:\-]\d{2})?Z?",
         r"\d{4}-\d{2}-\d{2}",
         r"\d{8}T\d{4,6}Z?",
         r"\d{8}",
-        r"\d{2}:\d{2}(?::\d{2})?Z?",
     )
 )
+
+# CLOCK-ONLY (date-less) time, e.g. 18:42:05Z / 18:42Z. Surfaced under the
+# non-authoritative ``clock_hint`` field only — never ``timestamp_hint`` — so it
+# cannot be mistaken for an absolute capture time downstream.
+_CLOCK_ONLY_PATTERN = re.compile(_BEFORE + r"\d{2}:\d{2}(?::\d{2})?Z?" + _AFTER)
 
 # Source/app tags that are structurally callsign-shaped but are never real
 # callsigns. Kept tiny and explicit so the parser stays conservative.
 _CALLSIGN_STOPWORDS = frozenset({"FR24", "FLIGHTRADAR24"})
 
 
-def _first_timestamp(stem: str) -> Optional[str]:
-    for pat in _TIMESTAMP_PATTERNS:
+def _first_date_timestamp(stem: str) -> Optional[str]:
+    for pat in _DATE_TIMESTAMP_PATTERNS:
         match = pat.search(stem)
         if match:
             return match.group(0)
     return None
 
 
+def _first_clock_only(stem: str) -> Optional[str]:
+    match = _CLOCK_ONLY_PATTERN.search(stem)
+    return match.group(0) if match else None
+
+
 def parse_filename_hints(name: str) -> Dict[str, Optional[str]]:
     """Parse callsign / tail / timestamp hints out of a filename (or stem).
 
     Returns a mapping with exactly ``callsign_hint`` / ``tail_hint`` /
-    ``timestamp_hint`` keys; each is the first confident match or ``None``.
-    Deterministic and side-effect free — the unit of behavior under test.
+    ``timestamp_hint`` / ``clock_hint`` keys; each is the first confident match
+    or ``None``. ``timestamp_hint`` is populated **only** by a date-bearing token
+    (a date, or a full date+time); a bare date-less clock token goes to the
+    non-authoritative ``clock_hint`` instead, so it is never consumed as an
+    absolute capture time. Deterministic and side-effect free.
     """
     stem = Path(name).stem if ("/" in name or "\\" in name or "." in name) else name
     upper = stem.upper()
 
+    timestamp_hint = _first_date_timestamp(stem)
     hints: Dict[str, Optional[str]] = {
         "callsign_hint": None,
         "tail_hint": None,
-        "timestamp_hint": _first_timestamp(stem),
+        "timestamp_hint": timestamp_hint,
+        # Only surface a clock-only token when there is no authoritative date.
+        "clock_hint": None if timestamp_hint else _first_clock_only(stem),
     }
 
     tail_match = _RE_TAIL_N.search(upper) or _RE_TAIL_C.search(upper)
