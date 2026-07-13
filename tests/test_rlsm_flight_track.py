@@ -152,3 +152,39 @@ def test_processing_runs_row_recorded(tmp_rlsm_db):
     assert kind == "flight_track"
     assert status == "completed"
     assert n_processed == 4
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Golden-row test — pins the exact per-screenshot row rlsm_flight_track writes
+# against the seeded DB (offline, no network, no image root -> heuristic pass).
+# Complements the aggregate tests above by asserting the full column tuple for
+# each of the four canonical screenshots, so a regression in the heuristic or
+# the INSERT column mapping is caught row-by-row.
+# ──────────────────────────────────────────────────────────────────────────
+
+def test_golden_rows_per_screenshot(tmp_rlsm_db):
+    from fr24.rlsm_flight_track import run, HEURISTIC_CONFIDENCE
+    run(budget_sec=10.0)
+    conn = sqlite3.connect(str(tmp_rlsm_db))
+    rows = conn.execute(
+        "SELECT screenshot_id, path_shape, has_loop, has_orbit, has_hover, has_gap, "
+        "follows_coast, near_airport, track_length_px, bbox_x, bbox_y, bbox_w, bbox_h, "
+        "confidence FROM flight_track_features ORDER BY screenshot_id"
+    ).fetchall()
+    conn.close()
+
+    C = HEURISTIC_CONFIDENCE
+    # screenshot_id -> golden row. The heuristic (no --image-root) leaves every
+    # pixel-derived column NULL and holds confidence at the LOW constant.
+    golden = {
+        # sid: (path_shape, loop, orbit, hover, gap, coast, airport,
+        #        len_px, bx, by, bw, bh, confidence)
+        1: ("hover", 0, 0, 1, 0, 0, 0, None, None, None, None, None, C),
+        2: ("linear", 0, 0, 0, 0, 0, 0, None, None, None, None, None, C),
+        3: ("multi", 0, 0, 0, 0, 0, 0, None, None, None, None, None, C),
+        4: ("absent", 0, 0, 0, 0, 0, 0, None, None, None, None, None, C),
+    }
+    assert len(rows) == len(golden)
+    for row in rows:
+        sid = row[0]
+        assert row[1:] == golden[sid], f"screenshot {sid}: {row[1:]} != {golden[sid]}"
