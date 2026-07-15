@@ -1,0 +1,12 @@
+# Imagery MCP server — fetch/search/compare satellite imagery over MCP.
+#
+#   pip install -r requirements-imagery.txt
+#
+# Package: imagery/   Entry point: python -m imagery.server
+# Providers: NASA GIBS (no auth), Sentinel Hub, Copernicus/CDSE (OAuth2).
+fastmcp>=2.9,<3
+requests>=2.31
+python-dotenv>=1.0
+Pillow>=10.0
+numpy
+jsonschema>=4.17

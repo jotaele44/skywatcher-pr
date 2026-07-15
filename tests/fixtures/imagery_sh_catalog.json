@@ -1,0 +1,35 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "S2A_MSIL2A_20240115T150000_PR_0",
+      "bbox": [-66.45, 18.15, -66.35, 18.25],
+      "properties": {
+        "datetime": "2024-01-15T15:00:00Z",
+        "platform": "sentinel-2a",
+        "eo:cloud_cover": 12.4
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "S2B_MSIL2A_20240120T150000_PR_0",
+      "bbox": [-66.45, 18.15, -66.35, 18.25],
+      "properties": {
+        "datetime": "2024-01-20T15:00:00Z",
+        "platform": "sentinel-2b",
+        "eo:cloud_cover": 3.1
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "S2A_MSIL2A_20240125T150000_PR_0",
+      "bbox": [-66.45, 18.15, -66.35, 18.25],
+      "properties": {
+        "datetime": "2024-01-25T15:00:00Z",
+        "platform": "sentinel-2a",
+        "eo:cloud_cover": 45.8
+      }
+    }
+  ]
+}

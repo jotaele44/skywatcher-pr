@@ -6,3 +6,9 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [".", "src"]
+# Integration tests hit live external services (e.g. NASA GIBS); excluded from
+# default runs. Run them explicitly with:  pytest -m integration
+addopts = "-m 'not integration'"
+markers = [
+    "integration: tests that hit live external services. Excluded from default runs.",
+]
