@@ -62,6 +62,25 @@ jobs:
       - name: Tests
         run: pytest -q
 
+  test-imagery:
+    # Imagery MCP server has its own optional dependency set (requirements-imagery.txt);
+    # install it here and run the imagery suite so those tests are exercised in CI.
+    # The base `test` job skips them cleanly when the extra is absent.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install imagery deps
+        run: python -m pip install -r requirements-imagery.txt pytest
+      - name: Imagery tests (mocked; live providers excluded)
+        run: pytest tests/test_imagery_*.py -q
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
