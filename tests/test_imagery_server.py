@@ -9,6 +9,11 @@ import io
 
 import pytest
 
+# Skip cleanly when the optional `imagery` extra is not installed.
+pytest.importorskip("requests")
+pytest.importorskip("PIL")
+pytest.importorskip("numpy")
+
 from imagery import server
 from imagery.models import ImageryResult
 

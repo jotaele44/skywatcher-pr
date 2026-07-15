@@ -13,6 +13,11 @@ from pathlib import Path
 
 import pytest
 
+# Skip cleanly when the optional `imagery` extra is not installed (e.g. a minimal
+# base test environment), mirroring the importorskip guards elsewhere.
+pytest.importorskip("requests")
+pytest.importorskip("PIL")
+
 from imagery import geo
 from imagery.providers import get_provider
 from imagery.providers.base import ProviderError, parse_date_range

@@ -8,6 +8,12 @@ spiderweb-pr enforces) via the imagery.sink validator.
 
 import io
 
+import pytest
+
+# Skip cleanly when the optional `imagery` extra is not installed.
+pytest.importorskip("PIL")
+pytest.importorskip("jsonschema")
+
 from imagery import sink
 from imagery.manifest import build_manifest
 from imagery.models import ImageryResult
