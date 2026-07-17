@@ -1,6 +1,7 @@
 Pillow>=10.0
 PyMuPDF>=1.23
 pytest>=8.0
+defusedxml>=0.7.1,<1
 pillow-heif>=0.16; platform_system != "Windows"
 # Draft 2020-12 JSON Schema validation for the SATIM artifact-assessment protocol
 # (src/skywatcher/satim/artifacts) and the federation contract-compat tests.
