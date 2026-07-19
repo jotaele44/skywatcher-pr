@@ -47,14 +47,21 @@ def test_accent_folding_resolves_ascii_and_spanish_forms():
     assert accented["normalized_id"] == ascii_form["normalized_id"]
 
 
-def test_every_record_indexed():
+def test_unique_names_resolve():
     index = build_natural_feature_index(CONFIGS)
-    # Each record's canonical_name resolves (barring intra-gazetteer name collisions).
     resolved = sum(
         1 for r in _records()
         if index.resolve(r["canonical_name"])["resolution_status"] == "resolved"
     )
-    assert resolved >= 900  # the vast majority resolve cleanly
+    assert resolved >= 850  # the vast majority of names are unique
+
+
+def test_duplicate_name_requires_review():
+    # Distinct features share the name "Arrecife Algarrobo" (Mayagüez, Guayama);
+    # resolving it must return collision_review_required, not silently pick one.
+    res = normalize_natural_feature("Arrecife Algarrobo", config_dir=CONFIGS)
+    assert res["resolution_status"] == "collision_review_required", res
+    assert res["candidate_count"] >= 2
 
 
 def test_gazetteer_does_not_pollute_location_index():
