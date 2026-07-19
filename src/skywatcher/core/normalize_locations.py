@@ -266,6 +266,54 @@ def normalize_location(raw_text: str, config_dir: Path = Path("configs"), namesp
     return build_location_index(config_dir).resolve(raw_text, namespace=namespace)
 
 
+# ── Shared PR natural-features gazetteer (terrain + coastal slice) ─────────────
+# The federation's canonical natural-features gazetteer is owned by spiderweb-pr;
+# skywatcher/ovnis consume the terrain+coastal slice (mountains, peaks, ridges,
+# valleys, capes, bays, beaches, islands …). It is loaded from a JSON registry —
+# not the restricted-YAML subset — because the 991 free-text GNIS names carry
+# commas/accents that the minimal YAML parser cannot represent. It is kept in a
+# SEPARATE index from build_location_index() so a gazetteer name never collides
+# with an airport/place alias the ontology gate depends on (e.g. the island
+# "Isla Verde" vs the SJU alias "Isla Verde").
+NATURAL_FEATURES_REGISTRY = "natural_features_registry.json"
+
+
+def build_natural_feature_index(config_dir: Path = Path("configs")) -> AliasIndex:
+    index = AliasIndex()
+    path = config_dir / NATURAL_FEATURES_REGISTRY
+    if not path.exists():
+        return index
+    data = json.loads(path.read_text(encoding="utf-8"))
+    # Unlike the airport/place index, distinct features legitimately share a name
+    # (e.g. "Arrecife Algarrobo" in Mayagüez and Guayama). AliasIndex.add() would
+    # dedup same-name/different-id as one record and silently keep the first; here
+    # we group by normalized key and flag any key mapping to >1 canonical_id as a
+    # collision so resolve() returns collision_review_required instead of guessing.
+    key_to_records: Dict[str, Dict[str, Dict[str, Any]]] = {}
+    for record in data.get("natural_features", []) or []:
+        cid = record.get("canonical_id")
+        for alias in [record.get("canonical_name"), *(record.get("aliases", []) or [])]:
+            key = _norm(alias)
+            if key:
+                key_to_records.setdefault(key, {})[cid] = record
+    for key, by_id in key_to_records.items():
+        if len(by_id) == 1:
+            index.alias_to_record[key] = next(iter(by_id.values()))
+        else:
+            index.collisions[key] = list(by_id.values())
+    return index
+
+
+def normalize_natural_feature(
+    raw_text: str,
+    config_dir: Path = Path("configs"),
+    namespace: str = "natural_feature",
+) -> Dict[str, Any]:
+    """Resolve a raw place string to a canonical PR natural feature. Returns the
+    same shape as normalize_location(); normalized_id is the feature canonical_id."""
+    return build_natural_feature_index(config_dir).resolve(raw_text, namespace=namespace)
+
+
 def normalize_flight_locations(event: Dict[str, Any], config_dir: Path = Path("configs")) -> Dict[str, Any]:
     result = dict(event)
     for raw_field, normalized_field in [
