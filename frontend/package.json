@@ -15,6 +15,7 @@
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",
     "security:console": "node scripts/scan-console-security.mjs",
+    "audit:production": "node scripts/npm-audit-report.mjs",
     "assurance:console": "node scripts/generate-console-assurance.mjs",
     "preview": "vite preview"
   },
