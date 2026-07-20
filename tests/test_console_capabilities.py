@@ -42,3 +42,15 @@ def test_capabilities_endpoint_returns_contract():
     assert payload["capability_count"] == 24
     assert len(payload["capabilities"]) == 24
     assert payload["policy"]["row_level_provenance_required"] is True
+
+
+def test_phase3_map_capabilities_and_offline_policy_are_explicit(tmp_path: Path):
+    result = build_capabilities(tmp_path)
+    capabilities = {item["id"]: item for item in result["capabilities"]}
+    assert capabilities["map_navigation"]["status"] == "available"
+    assert capabilities["geolocation"]["status"] == "available"
+    assert capabilities["basemap_controls"]["status"] == "available"
+    assert result["policy"]["local_blank_style_available"] is True
+    assert result["policy"]["external_basemap_configured"] is False
+    assert result["policy"]["provider_keys_required"] is False
+    assert result["policy"]["offline_console_startup"] is True
