@@ -105,7 +105,7 @@ jobs:
       - name: Console source security gate
         run: npm run security:console
       - name: Production dependency audit
-        run: npm audit --omit=dev --audit-level=high
+        run: npm run audit:production
       - name: Build
         run: npm run build
       - name: Performance and license assurance
