@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
-    "typecheck": "tsc -p ./jsconfig.json",
+    "typecheck": "node scripts/typecheck-report.mjs",
     "verify:resolution": "node scripts/verify-phase3-resolution.mjs",
     "test": "vitest run --coverage",
     "test:unit": "vitest run --coverage",
