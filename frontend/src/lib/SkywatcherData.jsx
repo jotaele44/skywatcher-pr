@@ -18,20 +18,20 @@ const ENTITIES = {
   syncs: 'FederationSyncEvents',
 };
 
-const EMPTY_DATA = Object.freeze({
+const EMPTY_DATA = {
   observations: [], aircraft: [], captures: [], routes: [], assets: [],
   links: [], airports: [], reviews: [], exports: [], readiness: [], syncs: [],
-});
+};
 
 export function SkywatcherDataProvider({ children }) {
   const { pathname } = useLocation();
   const consoleMode = pathname.startsWith('/console');
-  const [data, setData] = useState(EMPTY_DATA);
+  const [data, setData] = useState(() => ({ ...EMPTY_DATA }));
   const [loading, setLoading] = useState(!consoleMode);
 
   const loadAll = useCallback(async () => {
     if (consoleMode) {
-      setData(EMPTY_DATA);
+      setData({ ...EMPTY_DATA });
       setLoading(false);
       return;
     }
@@ -41,7 +41,7 @@ export function SkywatcherDataProvider({ children }) {
       const results = await Promise.allSettled(
         keys.map((key) => federation.entities[ENTITIES[key]].list('-created_date', 500)),
       );
-      const next = {};
+      const next = { ...EMPTY_DATA };
       keys.forEach((key, index) => {
         next[key] = results[index].status === 'fulfilled' ? (results[index].value || []) : [];
       });
@@ -63,7 +63,8 @@ export function SkywatcherDataProvider({ children }) {
   }, []);
 
   const createReview = useCallback(async (payload) => {
-    const created = await federation.entities.ManualReviewItems.create(payload);
+    const reviewEntity = /** @type {any} */ (federation.entities).ManualReviewItems;
+    const created = await reviewEntity.create(payload);
     setData((previous) => ({ ...previous, reviews: [created, ...previous.reviews] }));
     return created;
   }, []);
