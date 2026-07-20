@@ -89,11 +89,11 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: frontend/package-lock.phase3.json.gz
-      - name: Restore and verify exact Phase 3 dependency lock
-        run: node scripts/restore-phase3-lock.mjs
-      - name: Install
-        run: npm ci
+          cache-dependency-path: frontend/package-lock.json
+      - name: Resolve Phase 3 dependencies
+        run: npm install --no-audit
+      - name: Verify exact certified dependency resolution
+        run: npm run verify:resolution
       - name: Lint
         run: npm run lint
       - name: Typecheck
@@ -128,18 +128,18 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: frontend/package-lock.phase3.json.gz
+          cache-dependency-path: frontend/package-lock.json
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Install backend dependencies
         run: python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt
-      - name: Restore and verify exact Phase 3 dependency lock
+      - name: Resolve Phase 3 dependencies
         working-directory: frontend
-        run: node scripts/restore-phase3-lock.mjs
-      - name: Install frontend dependencies
+        run: npm install --no-audit
+      - name: Verify exact certified dependency resolution
         working-directory: frontend
-        run: npm ci
+        run: npm run verify:resolution
       - name: Install Playwright browsers
         working-directory: frontend
         run: npx playwright install --with-deps chromium firefox webkit
@@ -179,7 +179,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: frontend/package-lock.phase3.json.gz
+          cache-dependency-path: frontend/package-lock.json
       - name: Install native GTK/WebKit and software WebGL dependencies
         run: |
           sudo apt-get update
@@ -191,14 +191,15 @@ jobs:
         run: |
           sudo /usr/bin/python3 -m pip install --break-system-packages \
             -r requirements-dev.txt httpx -r server/backend/requirements.txt "pywebview>=5.0"
-      - name: Restore and verify exact Phase 3 dependency lock
+      - name: Resolve Phase 3 dependencies
         working-directory: frontend
-        run: node scripts/restore-phase3-lock.mjs
-      - name: Install and build frontend
+        run: npm install --no-audit
+      - name: Verify exact certified dependency resolution
         working-directory: frontend
-        run: |
-          npm ci
-          npm run build
+        run: npm run verify:resolution
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
       - name: Native pywebview WebGL probe
         env:
           GDK_BACKEND: x11

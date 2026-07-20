@@ -9,7 +9,7 @@
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
-    "restore:lock": "node scripts/restore-phase3-lock.mjs",
+    "verify:resolution": "node scripts/verify-phase3-resolution.mjs",
     "test": "vitest run --coverage",
     "test:unit": "vitest run --coverage",
     "test:e2e": "playwright test",
