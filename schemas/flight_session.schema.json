@@ -1,1 +1,127 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://skywatcher-pr.local/schemas/flight_session.schema.json","title":"Skywatcher Flight Session","type":"object","additionalProperties":false,"required":["schema_version","flight_id","aircraft_id","first_seen_at_utc","last_seen_at_utc","status","provenance","synthetic"],"properties":{"schema_version":{"const":"0.1.0"},"flight_id":{"type":"string","minLength":1},"aircraft_id":{"type":"string","minLength":1},"icao24":{"type":["string","null"],"pattern":"^[0-9A-Fa-f]{6}$"},"registration":{"type":["string","null"]},"callsign":{"type":["string","null"]},"aircraft_type":{"type":["string","null"]},"operator":{"type":["string","null"]},"origin_airport_id":{"type":["string","null"]},"destination_airport_id":{"type":["string","null"]},"first_seen_at_utc":{"type":"string","format":"date-time"},"last_seen_at_utc":{"type":"string","format":"date-time"},"status":{"type":"string","enum":["active","departed","arrived","completed","unknown"]},"point_count":{"type":"integer","minimum":0},"max_altitude_ft":{"type":["number","null"]},"max_ground_speed_kt":{"type":["number","null"],"minimum":0},"track_quality":{"type":"string","enum":["continuous","gapped","sparse_evidence","single_point"]},"gap_count":{"type":"integer","minimum":0},"provenance":{"$ref":"source_taxonomy.schema.json"},"synthetic":{"type":"boolean"}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/flight_session.schema.json",
+  "title": "Skywatcher Flight Session",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "flight_id",
+    "aircraft_id",
+    "first_seen_at_utc",
+    "last_seen_at_utc",
+    "status",
+    "provenance",
+    "synthetic"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "flight_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "aircraft_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "icao24": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9A-Fa-f]{6}$"
+    },
+    "registration": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "callsign": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "aircraft_type": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "operator": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "origin_airport_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "destination_airport_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "first_seen_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_seen_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "departed",
+        "arrived",
+        "completed",
+        "unknown"
+      ]
+    },
+    "point_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "max_altitude_ft": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "max_ground_speed_kt": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "track_quality": {
+      "type": "string",
+      "enum": [
+        "continuous",
+        "gapped",
+        "sparse_evidence",
+        "single_point"
+      ]
+    },
+    "gap_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "provenance": {
+      "$ref": "source_taxonomy.schema.json"
+    },
+    "synthetic": {
+      "type": "boolean"
+    }
+  }
+}
