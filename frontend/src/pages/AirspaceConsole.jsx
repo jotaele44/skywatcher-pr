@@ -35,7 +35,8 @@ function ConsoleBootstrap({ client = new ConsoleApiClient() }) {
   return <AirspaceConsoleShell />;
 }
 
-export function AirspaceConsole({ client }) {
+/** @param {{client?: any}} [props] */
+export function AirspaceConsole({ client } = {}) {
   const resolvedClient = useMemo(() => client || new ConsoleApiClient(), [client]);
   if (!isConsoleEnabled()) {
     return <RuntimeUnavailable title="Interactive console disabled" reason="The VITE_SKYWATCHER_CONSOLE_ENABLED kill switch is set to false." />;
