@@ -13,6 +13,7 @@
 | Version | Name | Direction | Objects | Data-loss posture | Status |
 |---:|---|---|---|---|---|
 | 1 | `phase1_console_contract_tables` | Up/down | `console_aircraft_states`, `console_track_points`, `console_flight_sessions`, `console_airport_operational_states`, indexes | Down blocked when populated unless explicitly overridden | Implemented |
+| 2 | `phase2_repository_artifact_ledgers` | Up/down | `console_source_artifacts`, `console_repository_sync_runs`, indexes | V2 → V1 supported; down blocked when populated unless explicitly overridden | Implemented |
 
 ## Apply
 
