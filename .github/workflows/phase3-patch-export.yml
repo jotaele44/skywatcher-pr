@@ -1,0 +1,37 @@
+name: Phase 3 Patch Export
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/phase3-patch-export.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  export-patch:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Retire exporter and generate final stacked patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          rm .github/workflows/phase3-patch-export.yml
+          git add .github/workflows/phase3-patch-export.yml
+          git commit -m "Retire Phase 3 patch exporter"
+          git diff --binary origin/${{ github.event.pull_request.base.ref }}...HEAD > /tmp/skywatcher_console_phase3.patch
+          test -s /tmp/skywatcher_console_phase3.patch
+      - name: Upload patch
+        uses: actions/upload-artifact@v4
+        with:
+          name: skywatcher-console-phase3-patch
+          path: /tmp/skywatcher_console_phase3.patch
+          if-no-files-found: error
+      - name: Push exporter retirement
+        run: git push origin HEAD:${{ github.event.pull_request.head.ref }}
