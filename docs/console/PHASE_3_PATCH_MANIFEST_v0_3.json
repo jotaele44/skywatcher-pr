@@ -1,0 +1,16 @@
+{
+  "schema_version": "skywatcher.phase3_patch_manifest.v0.3",
+  "generated_at_utc": "2026-07-20T20:07:00Z",
+  "repository": "jotaele44/skywatcher-pr",
+  "draft_pr": 89,
+  "base_branch": "agent/skywatcher-console-phase2",
+  "feature_branch": "agent/skywatcher-console-phase3-map-runtime",
+  "patch_filename": "skywatcher_console_phase3.patch",
+  "patch_sha256": "ecfbc638cb74217b03f94358969c2ddb95e58236ec4cf47c80a1643816e834ac",
+  "patch_size_bytes": 68527,
+  "workflow_artifact_id": 8474176183,
+  "workflow_artifact_digest": "sha256:4c4d03adbefd5924bfb148cfb589c6f7d5577ad470792f8ccad2b95c8141311e",
+  "patch_generation_head": "badafe2ce1585476ef8bb66e8d2f7e2c34e691e0",
+  "scope": "Net binary-capable diff from the Phase 2 base branch through the self-retired patch-export commit.",
+  "merge_authorized": false
+}

@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Plane, IdCard, Camera, Route as RouteIcon,
+  LayoutDashboard, Map, Plane, IdCard, Camera, Route as RouteIcon,
   Building2, TowerControl, ClipboardCheck, Share2, GaugeCircle, Satellite,
   ScanSearch,
 } from "lucide-react";
@@ -9,6 +9,7 @@ import { PROGRAM } from "@/lib/skywatcher";
 
 const NAV = [
   { to: "/", label: "Command Dashboard", icon: LayoutDashboard },
+  { to: "/console", label: "Interactive Console", icon: Map },
   { to: "/observations", label: "Airspace Observations", icon: Plane },
   { to: "/aircraft", label: "Aircraft Profiles", icon: IdCard },
   { to: "/fr24", label: "FR24 Intake", icon: Camera },
