@@ -1,0 +1,8 @@
+{
+  "viewport": { "width": 1440, "height": 900 },
+  "shell": { "minWidth": 900, "minHeight": 700 },
+  "map": { "minWidth": 600, "minHeight": 450 },
+  "toolbar": { "minHeight": 40, "maxHeight": 100 },
+  "attribution": { "minHeight": 24, "maxHeight": 72 },
+  "maxPageOverflowPixels": 2
+}

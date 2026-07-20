@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -10,7 +11,7 @@ from typing import Any
 from .repositories import RepositoryRegistry
 from .source_taxonomy import SOURCE_TAXONOMY_VERSION, build_provenance
 
-API_VERSION = "0.2.0"
+API_VERSION = "0.3.0"
 VALID_STATUSES = {
     "available",
     "available_synthetic_only",
@@ -30,12 +31,12 @@ CAPABILITY_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"id": "view_modes", "label": "Map/list/airport/fleet view modes", "phase": 4, "status": "degraded", "reason": "Separate pages and aircraft card/table views exist, but no synchronized console."},
     {"id": "aircraft_viewport_list", "label": "Viewport aircraft list", "phase": 4, "status": "unavailable_no_artifact", "reason": "No normalized aircraft-state collection is connected."},
     {"id": "configurable_columns", "label": "Configurable columns", "phase": 4, "status": "unavailable_no_adapter", "reason": "Column registry is not implemented yet."},
-    {"id": "map_navigation", "label": "Interactive map navigation", "phase": 3, "status": "unavailable_no_adapter", "reason": "The React surface currently uses a diagnostic SVG shell."},
-    {"id": "geolocation", "label": "Geolocation", "phase": 3, "status": "unavailable_no_adapter", "reason": "Browser geolocation control is not implemented yet."},
+    {"id": "map_navigation", "label": "Interactive map navigation", "phase": 3, "status": "available", "reason": "A local MapLibre diagnostic runtime with bounded viewport state is implemented at /console."},
+    {"id": "geolocation", "label": "Geolocation", "phase": 3, "status": "available", "reason": "Manual browser geolocation is implemented without automatic activation or persistence."},
     {"id": "playback_datetime", "label": "Playback date/time selection", "phase": 5, "status": "unavailable_no_artifact", "reason": "No UTC-valid time-indexed state repository is connected."},
     {"id": "playback_timeline", "label": "Playback timeline", "phase": 5, "status": "unavailable_no_artifact", "reason": "No normalized time-indexed track repository is connected."},
     {"id": "widgets", "label": "Console widgets", "phase": 6, "status": "degraded", "reason": "Diagnostic dashboard panels exist but are not dockable console widgets."},
-    {"id": "basemap_controls", "label": "Basemap controls", "phase": 3, "status": "unavailable_no_adapter", "reason": "Interactive map runtime and basemap registry are not implemented yet."},
+    {"id": "basemap_controls", "label": "Basemap controls", "phase": 3, "status": "available", "reason": "The basemap registry includes a provider-free local blank style with permanent attribution."},
     {"id": "map_brightness", "label": "Map brightness", "phase": 3, "status": "unavailable_no_adapter", "reason": "Interactive map style controls are not implemented yet."},
     {"id": "day_night_overlay", "label": "Day/night overlay", "phase": 6, "status": "unavailable_no_adapter", "reason": "Solar terminator layer is not implemented yet."},
     {"id": "atc_overlays", "label": "ATC overlays", "phase": 6, "status": "unavailable_no_artifact", "reason": "Authoritative display-ready ATC boundary layers are not connected."},
@@ -44,7 +45,7 @@ CAPABILITY_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"id": "aircraft_labels", "label": "Aircraft labels", "phase": 6, "status": "unavailable_no_artifact", "reason": "Aircraft profile outputs are not connected."},
     {"id": "aircraft_styling", "label": "Aircraft styling", "phase": 6, "status": "unavailable_no_adapter", "reason": "Interactive aircraft symbol renderer is not implemented yet."},
     {"id": "source_visibility", "label": "Source visibility", "phase": 1, "status": "degraded", "reason": "Canonical taxonomy exists, but source-backed repositories are incomplete."},
-    {"id": "unit_preferences", "label": "Unit preferences", "phase": 4, "status": "unavailable_no_adapter", "reason": "Unit provider and preference repository are not implemented yet."},
+    {"id": "unit_preferences", "label": "Unit preferences", "phase": 4, "status": "unavailable_no_adapter", "reason": "Unit provider and preference repository is not implemented yet."},
 )
 
 if len(CAPABILITY_DEFINITIONS) != 24:
@@ -203,5 +204,9 @@ def build_capabilities(root: Path) -> dict[str, Any]:
             "row_level_provenance_required": True,
             "bounded_artifact_discovery": True,
             "silent_empty_collections": False,
+            "local_blank_style_available": True,
+            "external_basemap_configured": False,
+            "provider_keys_required": False,
+            "offline_console_startup": True,
         },
     }
