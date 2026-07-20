@@ -16,6 +16,15 @@
     "resolveJsonModule": true,
     "types": []
   },
-  "include": ["src/components/**/*.js", "src/components/**/*.jsx", "src/pages/**/*.jsx", "src/Layout.jsx"],
-  "exclude": ["node_modules", "dist", "src/vite-plugins", "src/components/ui", "src/api", "src/lib", "tests", "e2e"]
+  "include": [
+    "src/components/**/*.js",
+    "src/components/console/**/*.jsx",
+    "src/components/skywatcher/Layout.jsx",
+    "src/components/skywatcher/Sidebar.jsx",
+    "src/pages/**/*.jsx",
+    "src/App.jsx",
+    "src/lib/SkywatcherData.jsx",
+    "src/Layout.jsx"
+  ],
+  "exclude": ["node_modules", "dist", "src/vite-plugins", "src/components/ui", "src/api", "tests", "e2e"]
 }
