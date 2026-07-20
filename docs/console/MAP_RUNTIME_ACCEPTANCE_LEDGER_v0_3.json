@@ -4,30 +4,43 @@
   "branch": "agent/skywatcher-console-phase3-map-runtime",
   "base_branch": "agent/skywatcher-console-phase2",
   "draft_pr": 89,
-  "generated_at_utc": "2026-07-20T20:00:00Z",
+  "generated_at_utc": "2026-07-20T20:05:00Z",
   "summary": {
     "requirements": 15,
     "implemented": 15,
     "static_pass": 15,
-    "ci_status": "pending",
+    "frontend_tests": "5 passed",
+    "frontend_lint": "passed",
+    "frontend_build": "passed",
+    "python_matrix": "passed on 3.10, 3.11, and 3.12",
+    "imagery_matrix": "passed on 3.11 and 3.12",
+    "satim_runtime_smoke": "passed",
+    "ci_status": "passed",
     "merge_authorized": false
   },
+  "ci_evidence": {
+    "verified_head_sha": "c7bece6294564cd38d01e6f6e8411865024daad0",
+    "skywatcher_ci_run_id": 29774461480,
+    "skywatcher_ci_conclusion": "success",
+    "satim_runtime_run_id": 29774462154,
+    "satim_runtime_conclusion": "success"
+  },
   "checks": [
-    {"id": "P3-001", "requirement": "MapLibre GL JS dependency", "status": "implemented", "evidence": ["frontend/package.json", "frontend/src/components/skywatcher/MapRuntime.jsx"]},
-    {"id": "P3-002", "requirement": "/console route", "status": "implemented", "evidence": ["frontend/src/App.jsx", "frontend/src/pages/Console.jsx"]},
-    {"id": "P3-003", "requirement": "Map runtime adapter", "status": "implemented", "evidence": ["frontend/src/console/mapRuntimeAdapter.js"]},
-    {"id": "P3-004", "requirement": "Basemap registry", "status": "implemented", "evidence": ["frontend/src/console/basemapRegistry.js"]},
-    {"id": "P3-005", "requirement": "Layer registry", "status": "implemented", "evidence": ["frontend/src/console/layerRegistry.js"]},
-    {"id": "P3-006", "requirement": "Viewport state", "status": "implemented", "evidence": ["frontend/src/console/viewportState.js"]},
-    {"id": "P3-007", "requirement": "Selection state", "status": "implemented", "evidence": ["frontend/src/console/selectionState.js"]},
-    {"id": "P3-008", "requirement": "Geolocation control", "status": "implemented", "evidence": ["frontend/src/console/mapRuntimeAdapter.js", "server/backend/console/capabilities.py"]},
-    {"id": "P3-009", "requirement": "Local blank offline style", "status": "implemented", "evidence": ["frontend/src/console/basemapRegistry.js", "frontend/src/console/tests/mapRuntime.test.mjs"]},
-    {"id": "P3-010", "requirement": "No provider keys committed", "status": "static_pass", "evidence": ["frontend/src/console/basemapRegistry.js"]},
-    {"id": "P3-011", "requirement": "Attribution always visible", "status": "implemented", "evidence": ["frontend/src/console/mapRuntimeAdapter.js", "frontend/src/pages/Console.jsx"]},
-    {"id": "P3-012", "requirement": "No FR24 asset copying", "status": "static_pass", "evidence": ["server/backend/console/capabilities.py", "docs/console/PHASE_3_IMPLEMENTATION.md"]},
-    {"id": "P3-013", "requirement": "Capability gating", "status": "implemented", "evidence": ["frontend/src/console/capabilityGate.js", "frontend/src/console/layerRegistry.js"]},
-    {"id": "P3-014", "requirement": "WebGL cleanup", "status": "implemented", "evidence": ["frontend/src/console/mapRuntimeAdapter.js", "frontend/src/console/tests/mapRuntime.test.mjs"]},
-    {"id": "P3-015", "requirement": "Existing surfaces preserved", "status": "static_pass", "evidence": ["frontend/src/pages/Console.jsx", "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx"]}
+    {"id": "P3-001", "requirement": "MapLibre GL JS dependency", "status": "passed", "evidence": ["frontend/package.json", "frontend/package-lock.json", "frontend/src/components/skywatcher/MapRuntime.jsx"]},
+    {"id": "P3-002", "requirement": "/console route", "status": "passed", "evidence": ["frontend/src/App.jsx", "frontend/src/pages/Console.jsx"]},
+    {"id": "P3-003", "requirement": "Map runtime adapter", "status": "passed", "evidence": ["frontend/src/console/mapRuntimeAdapter.js"]},
+    {"id": "P3-004", "requirement": "Basemap registry", "status": "passed", "evidence": ["frontend/src/console/basemapRegistry.js"]},
+    {"id": "P3-005", "requirement": "Layer registry", "status": "passed", "evidence": ["frontend/src/console/layerRegistry.js"]},
+    {"id": "P3-006", "requirement": "Viewport state", "status": "passed", "evidence": ["frontend/src/console/viewportState.js"]},
+    {"id": "P3-007", "requirement": "Selection state", "status": "passed", "evidence": ["frontend/src/console/selectionState.js"]},
+    {"id": "P3-008", "requirement": "Geolocation control", "status": "passed", "evidence": ["frontend/src/console/mapRuntimeAdapter.js", "server/backend/console/capabilities.py"]},
+    {"id": "P3-009", "requirement": "Local blank offline style", "status": "passed", "evidence": ["frontend/src/console/basemapRegistry.js", "frontend/src/console/tests/mapRuntime.test.mjs"]},
+    {"id": "P3-010", "requirement": "No provider keys committed", "status": "passed", "evidence": ["frontend/src/console/basemapRegistry.js"]},
+    {"id": "P3-011", "requirement": "Attribution always visible", "status": "passed", "evidence": ["frontend/src/console/mapRuntimeAdapter.js", "frontend/src/pages/Console.jsx"]},
+    {"id": "P3-012", "requirement": "No FR24 asset copying", "status": "passed", "evidence": ["server/backend/console/capabilities.py", "docs/console/PHASE_3_IMPLEMENTATION.md"]},
+    {"id": "P3-013", "requirement": "Capability gating", "status": "passed", "evidence": ["frontend/src/console/capabilityGate.js", "frontend/src/console/layerRegistry.js"]},
+    {"id": "P3-014", "requirement": "WebGL cleanup", "status": "passed", "evidence": ["frontend/src/console/mapRuntimeAdapter.js", "frontend/src/console/tests/mapRuntime.test.mjs"]},
+    {"id": "P3-015", "requirement": "Existing surfaces preserved", "status": "passed", "evidence": ["frontend/src/pages/Console.jsx", "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx"]}
   ],
   "validation_commands": [
     "npm run test:console",
@@ -36,7 +49,6 @@
     "pytest -q"
   ],
   "known_gaps": [
-    "CI results pending",
     "No live operational aircraft layer is enabled",
     "No playback UI is implemented",
     "No authoritative ATC or weather overlay is connected"
