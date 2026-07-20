@@ -1,0 +1,30 @@
+name: Phase 3 Lockfile Generator
+
+on:
+  pull_request:
+    paths:
+      - "frontend/package.json"
+      - ".github/workflows/phase3-lockfile.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  generate-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Generate npm lockfile
+        working-directory: frontend
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Upload generated lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase3-package-lock
+          path: frontend/package-lock.json
+          if-no-files-found: error
