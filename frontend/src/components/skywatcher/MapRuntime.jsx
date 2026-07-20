@@ -16,6 +16,13 @@ export default function MapRuntime({
 }) {
   const containerRef = useRef(null);
   const runtimeRef = useRef(null);
+  const viewportRef = useRef(viewport);
+  const selectionRef = useRef(selection);
+  const layerVisibilityRef = useRef(layerVisibility);
+
+  viewportRef.current = viewport;
+  selectionRef.current = selection;
+  layerVisibilityRef.current = layerVisibility;
 
   useEffect(() => {
     if (!containerRef.current) return undefined;
@@ -25,9 +32,9 @@ export default function MapRuntime({
         container: containerRef.current,
         capabilityIndex,
         basemapId,
-        viewport,
-        selection,
-        layerVisibility,
+        viewport: viewportRef.current,
+        selection: selectionRef.current,
+        layerVisibility: layerVisibilityRef.current,
         onViewportChange,
         onSelectionChange,
       });
@@ -44,11 +51,17 @@ export default function MapRuntime({
       runtimeRef.current?.destroy();
       runtimeRef.current = null;
     };
-  }, [basemapId, capabilityIndex, layerVisibility, onRuntimeError, onSelectionChange, onViewportChange]);
+  }, [basemapId, capabilityIndex, onRuntimeError, onSelectionChange, onViewportChange]);
 
   useEffect(() => {
     runtimeRef.current?.updateSelection(selection);
   }, [selection]);
+
+  useEffect(() => {
+    for (const [layerId, visible] of Object.entries(layerVisibility)) {
+      runtimeRef.current?.setLayerVisibility(layerId, visible);
+    }
+  }, [layerVisibility]);
 
   return (
     <div className="relative overflow-hidden rounded-lg border border-border bg-[hsl(220_34%_5%)]" style={{ height }}>
