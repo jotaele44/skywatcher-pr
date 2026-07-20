@@ -4,12 +4,12 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { AuthProvider } from '@/lib/AuthContext';
 import { SkywatcherDataProvider } from '@/lib/SkywatcherData';
 import { DrawerHubProvider } from '@/components/skywatcher/drawers/DrawerHub';
 import Layout from '@/components/skywatcher/Layout';
 import Dashboard from '@/pages/Dashboard';
+import Console from '@/pages/Console';
 import Observations from '@/pages/Observations';
 import Aircraft from '@/pages/Aircraft';
 import FR24Intake from '@/pages/FR24Intake';
@@ -32,6 +32,7 @@ const AuthenticatedApp = () => {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/console" element={<Console />} />
             <Route path="/observations" element={<Observations />} />
             <Route path="/aircraft" element={<Aircraft />} />
             <Route path="/fr24" element={<FR24Intake />} />
