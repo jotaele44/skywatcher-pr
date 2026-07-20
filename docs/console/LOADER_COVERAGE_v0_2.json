@@ -1,0 +1,154 @@
+{
+  "coverage_version": "0.2.0",
+  "base_branch": "agent/skywatcher-console-phase1",
+  "repository_count": 8,
+  "adapters_implemented": 8,
+  "adapter_coverage_percent": 100.0,
+  "baseline_available": 1,
+  "baseline_unavailable": 7,
+  "no_silent_empty_collections": true,
+  "row_level_provenance_required": true,
+  "utc_only": true,
+  "synthetic_separation": true,
+  "bounded_discovery_only": true,
+  "network_scraping": false,
+  "environment_overrides": {
+    "SKYWATCHER_FLIGHT_DB": "FlightDatabase-compatible SQLite database",
+    "SKYWATCHER_REVIEW_QUEUE": "Manual-review SQLite/CSV/JSON artifact",
+    "SKYWATCHER_FR24_CAPTURE_INVENTORY": "Screenshot inventory CSV/JSON artifact",
+    "SKYWATCHER_TRACK_ARTIFACT": "Fused-track or route artifact",
+    "SKYWATCHER_FLIGHT_SESSIONS": "Flight-session artifact",
+    "SKYWATCHER_AIRCRAFT_PROFILES": "Aircraft-profile SQLite/JSON/JSONL artifact",
+    "SKYWATCHER_AIRPORT_STATES": "Airport operational-state SQLite/JSON/JSONL artifact"
+  },
+  "repositories": [
+    {
+      "repository": "fr24_captures",
+      "adapter_implemented": true,
+      "baseline_status": "unavailable_no_artifact",
+      "baseline_reason": "No bounded screenshot inventory or FlightDatabase artifact is present. Configure SKYWATCHER_FR24_CAPTURE_INVENTORY or SKYWATCHER_FLIGHT_DB.",
+      "record_count": 0,
+      "synthetic_only": false,
+      "provenance_complete": true,
+      "source_methods": [],
+      "source_families": [],
+      "skipped_rows": 0,
+      "warnings": [],
+      "loaded_artifacts": []
+    },
+    {
+      "repository": "manual_review_items",
+      "adapter_implemented": true,
+      "baseline_status": "unavailable_no_artifact",
+      "baseline_reason": "No bounded manual-review database or export is present. Configure SKYWATCHER_REVIEW_QUEUE or generate the documented review artifacts.",
+      "record_count": 0,
+      "synthetic_only": false,
+      "provenance_complete": true,
+      "source_methods": [],
+      "source_families": [],
+      "skipped_rows": 0,
+      "warnings": [],
+      "loaded_artifacts": []
+    },
+    {
+      "repository": "aircraft_profiles",
+      "adapter_implemented": true,
+      "baseline_status": "unavailable_no_artifact",
+      "baseline_reason": "No bounded aircraft-profile database or export is present. Configure SKYWATCHER_AIRCRAFT_PROFILES or SKYWATCHER_FLIGHT_DB.",
+      "record_count": 0,
+      "synthetic_only": false,
+      "provenance_complete": true,
+      "source_methods": [],
+      "source_families": [],
+      "skipped_rows": 0,
+      "warnings": [],
+      "loaded_artifacts": []
+    },
+    {
+      "repository": "track_points",
+      "adapter_implemented": true,
+      "baseline_status": "unavailable_no_artifact",
+      "baseline_reason": "No bounded normalized-track database or fused-flight artifact is present. Configure SKYWATCHER_FLIGHT_DB or SKYWATCHER_TRACK_ARTIFACT.",
+      "record_count": 0,
+      "synthetic_only": false,
+      "provenance_complete": true,
+      "source_methods": [],
+      "source_families": [],
+      "skipped_rows": 0,
+      "warnings": [],
+      "loaded_artifacts": []
+    },
+    {
+      "repository": "route_segments",
+      "adapter_implemented": true,
+      "baseline_status": "unavailable_no_artifact",
+      "baseline_reason": "No bounded normalized-track database or fused-flight artifact is present. Configure SKYWATCHER_FLIGHT_DB or SKYWATCHER_TRACK_ARTIFACT.",
+      "record_count": 0,
+      "synthetic_only": false,
+      "provenance_complete": true,
+      "source_methods": [],
+      "source_families": [],
+      "skipped_rows": 0,
+      "warnings": [],
+      "loaded_artifacts": []
+    },
+    {
+      "repository": "flight_sessions",
+      "adapter_implemented": true,
+      "baseline_status": "unavailable_no_artifact",
+      "baseline_reason": "No bounded flight-session database or fused-flight artifact is present. Configure SKYWATCHER_FLIGHT_DB or SKYWATCHER_FLIGHT_SESSIONS.",
+      "record_count": 0,
+      "synthetic_only": false,
+      "provenance_complete": true,
+      "source_methods": [],
+      "source_families": [],
+      "skipped_rows": 0,
+      "warnings": [],
+      "loaded_artifacts": []
+    },
+    {
+      "repository": "aircraft_states",
+      "adapter_implemented": true,
+      "baseline_status": "available_synthetic_only",
+      "baseline_reason": "Only explicitly synthetic test records are available.",
+      "record_count": 2,
+      "synthetic_only": true,
+      "provenance_complete": true,
+      "source_methods": [
+        "database_import"
+      ],
+      "source_families": [
+        "synthetic_test"
+      ],
+      "skipped_rows": 0,
+      "warnings": [],
+      "loaded_artifacts": [
+        {
+          "path": "exports/examples/synthetic_airspace_package/observations.csv",
+          "kind": "synthetic_observations",
+          "exists": true,
+          "size_bytes": 749,
+          "sha256": "f059d0ce4b52a91ab543d0b6240348bcad66dd782060b5db0ca454df303f78c3",
+          "configured_by": null,
+          "record_count": 2,
+          "status": "loaded",
+          "error": null
+        }
+      ]
+    },
+    {
+      "repository": "airport_operational_states",
+      "adapter_implemented": true,
+      "baseline_status": "unavailable_no_artifact",
+      "baseline_reason": "No owned, licensed, or public-official airport operational-state artifact is configured. Configure SKYWATCHER_AIRPORT_STATES or populate console_airport_operational_states.",
+      "record_count": 0,
+      "synthetic_only": false,
+      "provenance_complete": true,
+      "source_methods": [],
+      "source_families": [],
+      "skipped_rows": 0,
+      "warnings": [],
+      "loaded_artifacts": []
+    }
+  ]
+}
