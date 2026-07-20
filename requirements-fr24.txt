@@ -1,0 +1,20 @@
+# FR24 screenshot-processing optional dependencies (skywatcher-pr owns FR24).
+#
+# Install with:  pip install -r requirements-fr24.txt
+#
+# These back the inherited FR24 OCR / image / telemetry / export code
+# (fr24/* and src/skywatcher/fr24/*), transferred from spiderweb-pr as part of
+# the repository-boundary correction. They are OPTIONAL: the consolidated
+# skywatcher.fr24 package imports them lazily, so unit tests that use synthetic
+# data do not require this stack.
+#
+# SYSTEM PREREQUISITE (not a pip package): the Tesseract OCR engine must be
+# installed out of band, e.g.  `apt-get install tesseract-ocr`  or  `brew install tesseract`.
+
+pytesseract>=0.3.10,<0.4     # Tesseract OCR bindings (fr24 OCR modules)
+opencv-python>=4.8,<5        # UI segmentation / route + track vectorization
+Pillow>=10.0                 # image open / dimensions / EXIF (screenshot inventory + metadata)
+pillow-heif>=0.16            # HEIC/HEIF screenshot support
+numpy>=1.24                  # affine coordinate fitting / vectorization
+jsonschema>=4.20             # schema validation (bridge + record contracts)
+pyarrow>=14.0                # columnar export (Parquet)

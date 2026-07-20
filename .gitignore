@@ -58,3 +58,21 @@ build/
 desktop/.running
 dist-smoke/
 !desktop/pyinstaller.spec
+
+# --- FR24 boundary correction: runtime artifact exclusions ---
+*.db-wal
+*.db-shm
+skywatcher.db
+data/skywatcher.db
+screenshots/
+!inputs/screenshots/
+inputs/screenshots/*
+!inputs/screenshots/.gitkeep
+# OCR caches / generated geospatial + columnar artifacts / operational exports
+ocr_cache/
+*.geojson
+*.parquet
+exports/spiderweb/
+# runtime logs, tokens, secrets
+*.log
+*.token

@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spiderweb_bridge",
+  "title": "Skywatcher -> Spiderweb validated flight bridge record",
+  "description": "Shared contract for a single validated flight record exported by Skywatcher (via the hub-canonical package) and consumed by Spiderweb's --ingest-skywatcher adapter. This file is maintained identically in skywatcher-pr and spiderweb-pr. It resolves the cross-repo semantic contradictions: confidence is an object {score, method} (C3); review_status uses the crosswalked Spiderweb vocabulary (C4); coordinate_method uses the widened enum (C5); mission_classification is OPTIONAL and gated 'speculative-until-evidence-gated' (C1); generated_at_utc is the canonical timestamp name (C7); terminal-accept labels such as 'confirmed' are prohibited (C2).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "export_id",
+    "generated_at_utc",
+    "source_snapshot_id",
+    "flight_id",
+    "confidence",
+    "review_status",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "MAJOR.MINOR contract version."
+    },
+    "export_id": {
+      "type": "string",
+      "pattern": "^pkg_[a-f0-9]{32}$",
+      "description": "Hub-canonical package id this record belongs to."
+    },
+    "generated_at_utc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC generation time."
+    },
+    "source_snapshot_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the Skywatcher source snapshot/package."
+    },
+    "flight_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "aircraft_id": {
+      "type": ["string", "null"],
+      "description": "Registration/tail or canonical aircraft id (may be null)."
+    },
+    "validated_time_interval": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": {"type": ["string", "null"], "format": "date-time"},
+        "end": {"type": ["string", "null"], "format": "date-time"}
+      }
+    },
+    "validated_track_geometry": {
+      "type": ["object", "null"],
+      "description": "GeoJSON LineString of the validated track (or null).",
+      "additionalProperties": false,
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": {"const": "LineString"},
+        "coordinates": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 3,
+            "items": {"type": "number"}
+          }
+        }
+      }
+    },
+    "mission_classification": {
+      "type": ["object", "null"],
+      "description": "OPTIONAL gated mission classification. Per revised policy it is never sourced as a Skywatcher-confirmed fact; status tops out at 'evidence_gated'.",
+      "additionalProperties": false,
+      "required": ["value", "status", "evidence_score", "threshold"],
+      "properties": {
+        "value": {"type": ["string", "null"]},
+        "status": {"enum": ["highly_speculative", "evidence_gated"]},
+        "evidence_score": {"type": "number", "minimum": 0, "maximum": 1},
+        "threshold": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "anomaly_flags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "severity"],
+        "properties": {
+          "category": {"type": "string"},
+          "severity": {"enum": ["info", "low", "medium", "high", "critical"]},
+          "description": {"type": ["string", "null"]}
+        }
+      },
+      "default": []
+    },
+    "confidence": {
+      "type": "object",
+      "description": "Confidence as an object (C3): a 0..1 score plus the method that produced it.",
+      "additionalProperties": false,
+      "required": ["score", "method"],
+      "properties": {
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "method": {"type": "string", "minLength": 1}
+      }
+    },
+    "review_status": {
+      "description": "Spiderweb review vocabulary (crosswalked from Skywatcher, C4). Terminal-accept 'confirmed' is intentionally absent (C2).",
+      "enum": ["unreviewed", "reviewing", "approved", "rejected"]
+    },
+    "coordinate_method": {
+      "description": "Widened coordinate-method enum (C5).",
+      "type": ["string", "null"],
+      "enum": [
+        "fixed_pr_bounds",
+        "airport_anchor",
+        "manual_anchor_csv",
+        "per_screenshot_affine",
+        "synthetic_wgs84_point",
+        "unknown",
+        null
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id"],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "lineage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["step"],
+            "properties": {
+              "step": {"type": "string"},
+              "actor": {"type": ["string", "null"]},
+              "ts": {"type": ["string", "null"]}
+            }
+          },
+          "default": []
+        }
+      }
+    }
+  }
+}
