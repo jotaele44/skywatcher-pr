@@ -1,7 +1,7 @@
 
 # ADR-0002: Interactive Airspace Console Architecture
 
-- **Status:** Proposed; design complete, implementation not authorized
+- **Status:** Accepted for phased implementation; Phase 1 and Phase 2 are in draft review
 - **Repository:** `jotaele44/skywatcher-pr`
 - **Audited commit:** `4be54a0de5022a8fd18ecff25d938287b90080b8`
 - **Decision scope:** Diagnostic interactive airspace console and producer-side APIs
@@ -187,4 +187,4 @@ Rejected for v0.1. It would turn a read-only diagnostic app into a multi-user st
 
 ## Implementation gate
 
-No implementation begins until this ADR, schemas, API contract, and phase order are approved.
+Phase 1 and Phase 2 implement the approved contracts. Later phases remain gated by separate review and authorization.
