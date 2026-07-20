@@ -20,10 +20,13 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from server.backend.console import router as console_router
+from server.backend.console.repositories import RepositoryRegistry, row_has_complete_provenance
+from server.backend.console.repositories.normalize import attach_provenance
+from server.backend.console.source_taxonomy import build_provenance, normalize_observation
 
 ROOT = Path(__file__).resolve().parents[2]
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
@@ -34,7 +37,7 @@ EVIDENCE_PATH = ROOT / "reports" / "federation" / "evidence_skywatcher-pr.jsonl"
 app = FastAPI(
     title="Skywatcher-PR Dashboard API",
     description="Read-only federation entity API over committed Skywatcher artifacts.",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -108,8 +111,7 @@ def with_id(rows: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
 
 def load_airports() -> list[dict[str, Any]]:
     rows = with_id(read_jsonl(AIRPORTS_PATH), "airport_id")
-    # The registry schema names differ from the dashboard's native fields;
-    # alias without dropping the originals.
+    output: list[dict[str, Any]] = []
     for row in rows:
         row.setdefault("airport_name", row.get("name"))
         row.setdefault("icao_code", row.get("icao"))
@@ -118,13 +120,27 @@ def load_airports() -> list[dict[str, Any]]:
         row.setdefault("latitude", row.get("lat"))
         row.setdefault("longitude", row.get("lon"))
         row.setdefault("synthetic_flag", False)
-    return rows
+        source_id = str(row.get("airport_id") or row.get("id"))
+        output.append(attach_provenance(
+            row,
+            path=AIRPORTS_PATH,
+            adapter="dashboard:PRAirports",
+            source_record_id=source_id,
+            source_family="official_record",
+            source_provider="skywatcher-pr-airport-registry",
+            source_method="official_feed",
+            data_rights="derived",
+            operational_mode="batch",
+            artifact_kind="airport_registry",
+            synthetic=False,
+        ))
+    return output
 
 
 def load_observations() -> list[dict[str, Any]]:
-    rows = with_id(read_csv(SYNTHETIC_PACKAGE / "observations.csv"), "observation_id")
-    # The export package schema names differ from the dashboard's native
-    # fields; alias without dropping the originals.
+    observation_path = SYNTHETIC_PACKAGE / "observations.csv"
+    rows = with_id(read_csv(observation_path), "observation_id")
+    output: list[dict[str, Any]] = []
     for row in rows:
         row.setdefault("synthetic_flag", row.get("synthetic"))
         row.setdefault("confidence_score", row.get("confidence"))
@@ -132,7 +148,16 @@ def load_observations() -> list[dict[str, Any]]:
         row.setdefault("observed_at", row.get("event_datetime"))
         row.setdefault("latitude", row.get("lat"))
         row.setdefault("longitude", row.get("lon"))
-    return rows
+        row["synthetic"] = bool(row.get("synthetic") or row.get("synthetic_flag"))
+        row["artifact_path"] = str(observation_path)
+        row["artifact_sha256"] = None
+        row["ingest_adapter"] = "dashboard:AirspaceObservations"
+        row = normalize_observation(row)
+        provenance, qa_flags = build_provenance(row)
+        row["provenance"] = provenance
+        row["qa_flags"] = sorted(set(list(row.get("qa_flags") or []) + qa_flags))
+        output.append(row)
+    return output
 
 
 def load_export_packages() -> list[dict[str, Any]]:
@@ -155,11 +180,49 @@ def load_export_packages() -> list[dict[str, Any]]:
                 data.setdefault("path", str(summary.parent.relative_to(ROOT)))
                 data.setdefault("package_kind", "satim_calibration")
                 rows.append(data)
-    return with_id(rows, "package_id")
+    rows = with_id(rows, "package_id")
+    output: list[dict[str, Any]] = []
+    for row in rows:
+        source_id = str(row.get("package_id") or row.get("id"))
+        path_value = ROOT / str(row.get("path") or "exports")
+        output.append(attach_provenance(
+            row,
+            path=path_value,
+            adapter="dashboard:ExportPackages",
+            source_record_id=source_id,
+            source_family="secondary_reference",
+            source_provider="skywatcher-export-pipeline",
+            source_method="derived_fusion",
+            data_rights="derived",
+            operational_mode="batch",
+            artifact_kind="export_package",
+            synthetic=bool(row.get("synthetic")),
+        ))
+    return output
 
 
 def load_readiness() -> list[dict[str, Any]]:
-    return with_id(read_jsonl(EVIDENCE_PATH), "path")
+    rows = with_id(read_jsonl(EVIDENCE_PATH), "path")
+    return [
+        attach_provenance(
+            row,
+            path=EVIDENCE_PATH,
+            adapter="dashboard:ReadinessReports",
+            source_record_id=str(row.get("id") or row.get("path")),
+            source_family="secondary_reference",
+            source_provider="skywatcher-readiness-engine",
+            source_method="secondary_report",
+            data_rights="derived",
+            operational_mode="batch",
+            artifact_kind="readiness_report",
+            synthetic=bool(row.get("synthetic")),
+        )
+        for row in rows
+    ]
+
+
+def load_repository_entity(repository_name: str) -> list[dict[str, Any]]:
+    return RepositoryRegistry(ROOT).snapshot(repository_name).rows
 
 
 LOADERS = {
@@ -167,16 +230,61 @@ LOADERS = {
     "AirspaceObservations": load_observations,
     "ExportPackages": load_export_packages,
     "ReadinessReports": load_readiness,
-    # Declared by the dashboard but with no committed source yet; empty until
-    # the corresponding pipelines emit repo artifacts.
-    "AircraftProfiles": list,
-    "FR24Captures": list,
-    "RouteSegments": list,
+    "AircraftProfiles": lambda: load_repository_entity("aircraft_profiles"),
+    "FR24Captures": lambda: load_repository_entity("fr24_captures"),
+    "RouteSegments": lambda: load_repository_entity("route_segments"),
+    "ManualReviewItems": lambda: load_repository_entity("manual_review_items"),
     "InfrastructureAssets": list,
     "AirspaceAssetLinks": list,
-    "ManualReviewItems": list,
     "FederationSyncEvents": list,
 }
+
+STATIC_EMPTY_REASONS = {
+    "InfrastructureAssets": "No infrastructure-asset artifact is connected in Phase 2.",
+    "AirspaceAssetLinks": "No airspace-asset link artifact is connected in Phase 2.",
+    "FederationSyncEvents": "No federation-sync event artifact is connected in Phase 2.",
+}
+
+
+def entity_availability(name: str) -> dict[str, Any]:
+    snapshot = RepositoryRegistry(ROOT).entity_snapshot(name)
+    if snapshot is not None:
+        return snapshot.as_status()
+    loader = LOADERS.get(name)
+    if loader is None:
+        return {
+            "repository": name,
+            "status": "unavailable_no_adapter",
+            "reason": "No entity loader or Phase 2 repository adapter is registered.",
+            "record_count": 0,
+            "synthetic_only": False,
+            "provenance_complete": True,
+            "warnings": [],
+            "artifacts": [],
+        }
+    rows = loader()
+    return {
+        "repository": name,
+        "status": "available" if rows else "unavailable_no_artifact",
+        "reason": (
+            "Entity loader returned provenance-backed rows."
+            if rows
+            else STATIC_EMPTY_REASONS.get(name, "The configured entity artifact is absent or empty.")
+        ),
+        "record_count": len(rows),
+        "synthetic_only": bool(rows) and all(bool(row.get("synthetic") or row.get("synthetic_flag")) for row in rows),
+        "provenance_complete": all(row_has_complete_provenance(row) for row in rows),
+        "warnings": [],
+        "artifacts": [],
+    }
+
+
+def set_availability_headers(response: Response, availability: dict[str, Any]) -> None:
+    response.headers["X-Skywatcher-Availability"] = str(availability.get("status") or "unknown")
+    response.headers["X-Skywatcher-Record-Count"] = str(availability.get("record_count") or 0)
+    response.headers["X-Skywatcher-Provenance-Complete"] = str(bool(availability.get("provenance_complete"))).lower()
+    reason = str(availability.get("reason") or "").replace("\n", " ")
+    response.headers["X-Skywatcher-Availability-Reason"] = reason[:512]
 
 
 def entity_rows(name: str) -> list[dict[str, Any]]:
@@ -225,16 +333,21 @@ def auth_me() -> dict[str, Any]:
 @app.get("/api/entities/{entity_name}")
 def list_entities(
     entity_name: str,
+    response: Response,
     sort: str = Query("-created_date"),
     limit: int = Query(500),
 ) -> list[dict[str, Any]]:
+    availability = entity_availability(entity_name)
+    set_availability_headers(response, availability)
     return sort_rows(entity_rows(entity_name), sort)[: max(limit, 0)]
 
 
 @app.post("/api/entities/{entity_name}/filter")
 def filter_entities(
-    entity_name: str, payload: dict[str, Any] | None = None
+    entity_name: str, response: Response, payload: dict[str, Any] | None = None
 ) -> list[dict[str, Any]]:
+    availability = entity_availability(entity_name)
+    set_availability_headers(response, availability)
     payload = payload or {}
     filters = payload.get("filters") or {}
     rows = entity_rows(entity_name)
@@ -242,6 +355,11 @@ def filter_entities(
         rows = [row for row in rows if row.get(key) == expected]
     limit = int(payload.get("limit") or 500)
     return sort_rows(rows, str(payload.get("sort") or ""))[: max(limit, 0)]
+
+
+@app.get("/api/entities/{entity_name}/availability")
+def get_entity_availability(entity_name: str) -> dict[str, Any]:
+    return entity_availability(entity_name)
 
 
 @app.get("/api/entities/{entity_name}/{entity_id}")
@@ -257,6 +375,20 @@ def create_entity(entity_name: str, payload: dict[str, Any]) -> dict[str, Any]:
     row = dict(payload)
     row.setdefault("id", uuid.uuid4().hex)
     row.setdefault("_session_only", True)
+    if not row_has_complete_provenance(row):
+        row = attach_provenance(
+            row,
+            path=ROOT / ".diagnostic_session_overlay",
+            adapter="dashboard:session_overlay",
+            source_record_id=str(row["id"]),
+            source_family="manual_field",
+            source_provider="skywatcher-diagnostic-session",
+            source_method="manual_entry",
+            data_rights="user_supplied",
+            operational_mode="batch",
+            artifact_kind="session_overlay",
+            synthetic=bool(row.get("synthetic")),
+        )
     _created.setdefault(entity_name, []).append(row)
     return row
 
