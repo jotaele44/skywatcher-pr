@@ -2,6 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "@/api/federationClient": ["./types/console-federation-client.d.ts"],
       "@/*": ["./src/*"]
     },
     "jsx": "react-jsx",
@@ -20,7 +21,8 @@
   "include": [
     "src/components/console/**/*.js",
     "src/components/console/**/*.jsx",
-    "src/pages/AirspaceConsole.jsx"
+    "src/pages/AirspaceConsole.jsx",
+    "types/console-federation-client.d.ts"
   ],
   "exclude": ["node_modules", "dist", "tests", "e2e"]
 }
