@@ -116,6 +116,9 @@ Install the same dependency set CI uses (`.github/workflows/ci.yml`) — the dev
 requirements plus `httpx` and the backend requirements the tests import:
 
 ```bash
+# thehub-pr must be a sibling checkout — requirements install the shared prii-*
+# libraries as editable local paths (../thehub-pr/packages/*):
+[ -d ../thehub-pr ] || git clone https://github.com/jotaele44/thehub-pr.git ../thehub-pr
 python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt
 pytest -q
 python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
