@@ -26,7 +26,12 @@ def test_validate_only_reports_empty_db(tmp_path):
     dbp = tmp_path / "empty.db"
     result = migrations.initialize_database(dbp, validate_only=True)
     assert not result.ok
-    assert any("missing table" in p or "no migrations" in p for p in result.problems)
+    assert any(
+        "missing table" in p or "no migrations" in p or "not found" in p
+        for p in result.problems
+    )
+    # validate-only must NOT create the database file (read-only inspection).
+    assert not dbp.exists()
 
 
 def test_validate_only_passes_after_init(tmp_path):

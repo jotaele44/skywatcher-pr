@@ -73,7 +73,10 @@ def database_status(db_path: Union[str, Path]) -> dict:
     Does not write. If the DB/schema is absent, reports schema_version 0 and
     an empty counts map rather than raising.
     """
-    conn = db.connect(db_path, create_parent=False)
+    # Read-only: never create the DB file. Report gracefully if absent.
+    if not Path(db_path).is_file():
+        return {"db_path": str(db_path), "exists": False, "schema_version": 0, "row_counts": {}}
+    conn = db.connect(db_path, readonly=True)
     try:
         version = db.get_schema_version(conn)
         present = set(db.list_tables(conn))
@@ -84,6 +87,7 @@ def database_status(db_path: Union[str, Path]) -> dict:
                 counts[table] = int(row["n"] if hasattr(row, "keys") else row[0])
         return {
             "db_path": str(db_path),
+            "exists": True,
             "schema_version": version,
             "row_counts": counts,
         }

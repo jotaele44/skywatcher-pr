@@ -113,13 +113,20 @@ def build_bridge_record(
     if flight.get("takeoff_time") or flight.get("landing_time"):
         interval = {"start": flight.get("takeoff_time"), "end": flight.get("landing_time")}
 
+    # Bridge `aircraft_id` is a string|null (registration preferred). `flights`
+    # links to the canonical `aircraft` table via an INTEGER FK, so coerce any
+    # numeric id to a string to satisfy the schema (contradiction: FK int vs
+    # bridge string).
+    _aid = flight.get("registration") or flight.get("aircraft_id")
+    aircraft_id = str(_aid) if _aid is not None and str(_aid) != "" else None
+
     record: Dict[str, Any] = {
         "schema_version": schema_version,
         "export_id": export_id,
         "generated_at_utc": generated_at_utc,
         "source_snapshot_id": source_snapshot_id,
         "flight_id": str(flight.get("flight_id")),
-        "aircraft_id": flight.get("registration") or flight.get("aircraft_id") or None,
+        "aircraft_id": aircraft_id,
         "validated_time_interval": interval,
         "validated_track_geometry": _line_string(track_points),
         "mission_classification": mission,
@@ -135,9 +142,35 @@ def build_bridge_record(
     return record
 
 
+def _iso_ok(value: Any) -> bool:
+    if value is None:
+        return True
+    if not isinstance(value, str):
+        return False
+    try:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return True
+    except ValueError:
+        return False
+
+
+def _datetime_problems(record: Dict[str, Any]) -> List[str]:
+    """Deterministic ISO-8601 checks for the date-time fields (jsonschema's
+    `format` assertions are advisory and need a backing lib, so we verify here)."""
+    problems: List[str] = []
+    if not _iso_ok(record.get("generated_at_utc")):
+        problems.append("generated_at_utc: not an ISO-8601 datetime")
+    interval = record.get("validated_time_interval") or {}
+    for k in ("start", "end"):
+        if not _iso_ok(interval.get(k)):
+            problems.append(f"validated_time_interval.{k}: not an ISO-8601 datetime")
+    return problems
+
+
 def validate_bridge_record(record: Dict[str, Any]) -> List[str]:
-    """Validate a bridge record against the shared schema (empty == valid)."""
-    return tv.validate_against_schema(record, load_bridge_schema())
+    """Validate a bridge record against the shared schema + datetime formats
+    (empty == valid)."""
+    return tv.validate_against_schema(record, load_bridge_schema()) + _datetime_problems(record)
 
 
 def export_package(
@@ -164,7 +197,12 @@ def export_package(
     conn = db.connect(db_path, create_parent=False)
     records: List[Dict[str, Any]] = []
     try:
-        flight_rows = conn.execute("SELECT * FROM flights").fetchall()
+        # LEFT JOIN aircraft so the bridge can carry the registration string
+        # rather than the integer FK (see build_bridge_record).
+        flight_rows = conn.execute(
+            "SELECT f.*, a.registration AS registration "
+            "FROM flights f LEFT JOIN aircraft a ON a.aircraft_id = f.aircraft_id"
+        ).fetchall()
         for fr in flight_rows:
             flight = dict(fr)
             tps = [

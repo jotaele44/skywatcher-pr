@@ -74,6 +74,30 @@ def test_export_package_roundtrip(tmp_path):
     assert rec["validated_track_geometry"]["type"] == "LineString"
 
 
+def test_integer_aircraft_id_is_stringified():
+    rec = se.build_bridge_record(
+        {"flight_id": "F", "aircraft_id": 7, "confidence": 0.5, "review_status": "promoted"},
+        [],
+        export_id="pkg_" + "a" * 32,
+        source_snapshot_id="s",
+        generated_at_utc="2026-01-01T00:00:00Z",
+    )
+    assert rec["aircraft_id"] == "7"  # string, satisfies schema
+    assert se.validate_bridge_record(rec) == []
+
+
+def test_bad_datetime_is_rejected():
+    rec = se.build_bridge_record(
+        {"flight_id": "F", "confidence": 0.5, "review_status": "promoted"},
+        [],
+        export_id="pkg_" + "a" * 32,
+        source_snapshot_id="s",
+        generated_at_utc="not-a-date",
+    )
+    problems = se.validate_bridge_record(rec)
+    assert any("generated_at_utc" in p for p in problems)
+
+
 def test_empty_export_reports_zero(tmp_path):
     dbp = tmp_path / "s.db"
     migrations.initialize_database(dbp)

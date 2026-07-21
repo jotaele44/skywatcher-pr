@@ -84,14 +84,28 @@ def connect(
     db_path: Union[str, Path],
     *,
     create_parent: bool = True,
+    readonly: bool = False,
 ) -> sqlite3.Connection:
-    """Open a SQLite connection with foreign keys ON and WAL journaling.
+    """Open a SQLite connection with foreign keys ON.
 
-    ``create_parent`` makes the parent directory if needed (the DB file itself is
-    created lazily by SQLite on first write). Raises :class:`DatabaseError` on
-    failure with an explicit message.
+    Write mode (default): creates the parent dir if needed, opens read-write, and
+    enables WAL journaling. ``readonly=True`` opens an existing DB with a
+    ``mode=ro`` URI — it never creates the file and never writes WAL/SHM
+    sidecars, so validation/status/export inspection paths cannot mutate disk.
+    Raises :class:`DatabaseError` on failure (including a missing file in
+    read-only mode).
     """
     p = Path(db_path)
+    if readonly:
+        if not p.is_file():
+            raise DatabaseError(f"database not found: {p}")
+        try:
+            conn = sqlite3.connect(f"file:{p}?mode=ro", uri=True)
+        except sqlite3.Error as exc:  # noqa: BLE001
+            raise DatabaseError(f"cannot open database read-only {p}: {exc}") from exc
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON;")  # harmless in read-only
+        return conn
     if create_parent and p.parent and not p.parent.exists():
         try:
             p.parent.mkdir(parents=True, exist_ok=True)

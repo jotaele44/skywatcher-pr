@@ -46,13 +46,11 @@ def parse_telemetry(record: dict) -> dict:
     return parse_region_record(record)
 
 
-class CoordResult:  # re-exported lazily; see coordinate_from_pixel
-    """Placeholder re-export marker. The real class is
-    ``integration.geo_calibration.CoordResult`` (imported lazily to avoid a hard
-    numpy dependency at package import time)."""
-
-
 def __getattr__(name: str) -> Any:  # PEP 562 lazy attribute
+    # ``CoordResult`` is re-exported lazily (its real home is
+    # ``integration.geo_calibration.CoordResult``) so importing this module does
+    # not pull in numpy. No placeholder class is defined for the name, otherwise
+    # module __getattr__ would never fire for it.
     if name == "CoordResult":
         from integration.geo_calibration import CoordResult as _CoordResult  # noqa: WPS433
 

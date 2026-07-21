@@ -75,5 +75,6 @@ def validate_against_schema(instance: Any, schema: Dict[str, Any]) -> List[str]:
 
     dialect = str(schema.get("$schema", ""))
     validator_cls = Draft202012Validator if "2020-12" in dialect else Draft7Validator
-    validator = validator_cls(schema)
+    # Enable `format` assertions (e.g. date-time) — off by default in jsonschema.
+    validator = validator_cls(schema, format_checker=validator_cls.FORMAT_CHECKER)
     return [f"{list(e.path)}: {e.message}" for e in validator.iter_errors(instance)]

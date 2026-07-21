@@ -143,15 +143,22 @@ def initialize_database(
     reports schema problems (including "no schema applied yet"). Otherwise it
     applies pending migrations idempotently and then validates.
     """
-    conn = db.connect(db_path, create_parent=create_parent)
-    try:
-        if validate_only:
+    if validate_only:
+        # Read-only inspection: never create or mutate the database file.
+        if not Path(db_path).is_file():
+            return InitResult(str(db_path), True, 0, [], [f"database not found: {db_path}"])
+        conn = db.connect(db_path, readonly=True)
+        try:
             problems = list(db.validate_schema(conn))
             version = db.get_schema_version(conn)
             if version == 0 and "missing table: schema_version" not in problems:
                 problems.append("no migrations applied (schema_version is empty)")
             return InitResult(str(db_path), True, version, [], problems)
+        finally:
+            conn.close()
 
+    conn = db.connect(db_path, create_parent=create_parent)
+    try:
         applied = apply_migrations(conn)
         problems = list(db.validate_schema(conn))
         version = db.get_schema_version(conn)
