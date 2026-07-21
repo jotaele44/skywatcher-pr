@@ -18,7 +18,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dev deps
-        run: python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt
+        run: |
+          # PRII_FETCH_HUB: ensure shared federation libs resolve
+          if [ ! -d ../thehub-pr ]; then git clone --depth 1 --branch "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" https://github.com/jotaele44/thehub-pr.git ../thehub-pr || git clone --depth 1 https://github.com/jotaele44/thehub-pr.git ../thehub-pr; fi
+          python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt
       - name: Federation manifest gate
         run: |
           python - <<'PY'
@@ -77,7 +80,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install imagery deps
-        run: python -m pip install -r requirements-imagery.txt pytest
+        run: |
+          # PRII_FETCH_HUB: ensure shared federation libs resolve
+          if [ ! -d ../thehub-pr ]; then git clone --depth 1 --branch "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" https://github.com/jotaele44/thehub-pr.git ../thehub-pr || git clone --depth 1 https://github.com/jotaele44/thehub-pr.git ../thehub-pr; fi
+          python -m pip install -r requirements-imagery.txt pytest
       - name: Imagery tests (mocked; live providers excluded)
         run: pytest tests/test_imagery_*.py -q
 

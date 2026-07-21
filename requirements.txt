@@ -5,9 +5,10 @@ pillow-heif>=0.16; platform_system != "Windows"
 # Draft 2020-12 JSON Schema validation for the SATIM artifact-assessment protocol
 # (src/skywatcher/satim/artifacts) and the federation contract-compat tests.
 jsonschema>=4.20
-# Shared maintenance core (ADR 0001 Phase 3, thehub-pr). Pinned to a commit
-# SHA, not a branch — bump deliberately, one line, one PR.
-prii-maintenance @ git+https://github.com/jotaele44/thehub-pr.git@3c9e51e3de406f8455605a06fabd4823452d9b63#subdirectory=packages/prii_maintenance
-# Shared envelope-id/hash helpers (ADR 0001 Phase 3 follow-up, thehub-pr). Pinned to a commit
-# SHA, not a branch — bump deliberately, one line, one PR.
-prii-export-utils @ git+https://github.com/jotaele44/thehub-pr.git@c007a728910128efebcda79bdbe6b9b33212551e#subdirectory=packages/prii_export_utils
+# Shared federation libraries from thehub-pr, resolved via a local editable path
+# instead of a pinned commit SHA: edit the package once in thehub-pr/packages and
+# every consumer picks it up with no per-repo bump. Requires thehub-pr checked out
+# as a sibling of this repo (paths are relative to the repo root, where
+# `pip install -r requirements.txt` runs).
+-e ../thehub-pr/packages/prii_maintenance
+-e ../thehub-pr/packages/prii_export_utils
