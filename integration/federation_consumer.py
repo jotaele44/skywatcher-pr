@@ -211,16 +211,31 @@ def read_package(package_dir: Path) -> Dict[str, Any]:
             raise FederationConsumerError(
                 f"manifest lists {filename!r} but it is missing from {package_dir}"
             )
+        # The canonical manifest contract (federation_export_manifest.schema.json)
+        # requires both sha256 and record_count on every file entry. Enforce their
+        # PRESENCE for modeled streams before trusting the bytes — otherwise a
+        # hand-assembled partial manifest that simply omits the integrity fields
+        # would skip verification and get schema-valid records ingested as if
+        # canonical. Missing integrity metadata == not a canonical package.
         declared_sha = entry.get("sha256")
+        declared_count = entry.get("record_count")
+        if not declared_sha or declared_count is None:
+            missing = [
+                name for name, val in (("sha256", declared_sha), ("record_count", declared_count))
+                if val in (None, "")
+            ]
+            raise FederationConsumerError(
+                f"{filename}: manifest entry missing required integrity field(s) "
+                f"{missing}; a canonical package must declare sha256 and record_count."
+            )
         actual_sha = hashlib.sha256(fpath.read_bytes()).hexdigest()
-        if declared_sha and declared_sha != actual_sha:
+        if declared_sha != actual_sha:
             raise FederationConsumerError(
                 f"{filename}: sha256 mismatch "
                 f"(manifest {declared_sha[:12]}… != file {actual_sha[:12]}…)"
             )
         rows = _read_jsonl(fpath)
-        declared_count = entry.get("record_count")
-        if declared_count is not None and declared_count != len(rows):
+        if declared_count != len(rows):
             raise FederationConsumerError(
                 f"{filename}: manifest record_count={declared_count} != {len(rows)} rows present"
             )

@@ -141,6 +141,26 @@ def test_record_count_mismatch_rejected(tmp_path):
         read_package(pkg)
 
 
+def test_missing_sha256_in_manifest_rejected(tmp_path):
+    # A partial/hand-assembled manifest that omits sha256 on a modeled stream must
+    # NOT bypass integrity verification (canonical contract requires it present).
+    pkg = _write_package(tmp_path / "pkg", {"observations": [_obs()]})
+    man = json.loads((pkg / "manifest.json").read_text())
+    del man["files"][0]["sha256"]
+    (pkg / "manifest.json").write_text(json.dumps(man))
+    with pytest.raises(FederationConsumerError, match="integrity field"):
+        read_package(pkg)
+
+
+def test_missing_record_count_in_manifest_rejected(tmp_path):
+    pkg = _write_package(tmp_path / "pkg", {"observations": [_obs()]})
+    man = json.loads((pkg / "manifest.json").read_text())
+    del man["files"][0]["record_count"]
+    (pkg / "manifest.json").write_text(json.dumps(man))
+    with pytest.raises(FederationConsumerError, match="integrity field"):
+        read_package(pkg)
+
+
 def test_invalid_record_held_not_ingested(tmp_path):
     bad = _obs(oid="not_a_valid_obs_id")  # violates ^obs_[a-f0-9]{32}$
     pkg = _write_package(tmp_path / "pkg", {"observations": [_obs(), bad]})
