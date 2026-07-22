@@ -237,7 +237,8 @@ def manifest_from_input(input_path: str | Path, output_dir: str | Path) -> SATIM
         run_id=run_id,
         input_profile="autodetected_fr24_screenshot_batch",
         inputs=autodetect_inputs(root),
-        options={"strict": False, "include_l5": True, "export_legacy_readiness": True},
+        options={"strict": False, "include_l5": True, "export_legacy_readiness": True,
+                 "l5_mode": "tile_seam_shadow", "l3_fuzzy": False},
         outputs={"run_dir": Path(output_dir).expanduser().resolve()},
         source_manifest=None,
     )
@@ -270,6 +271,33 @@ def degraded_layer(layer: str, reason: str, error: Exception) -> dict[str, Any]:
             }
         ],
     ).to_dict()
+
+
+L5_MODES = ("tile_seam_shadow", "synthetic_boundary")
+
+
+def run_l5(l5_mode: str, candidates_csv: str) -> dict[str, Any]:
+    """Run the selected L5 classifier and return a payload keyed to the canonical
+    ``L5_tile_seam_shadow`` layer slot (so readiness aggregation recognizes it).
+
+    ``tile_seam_shadow`` (default) is the rule+corroboration classifier;
+    ``synthetic_boundary`` is the explicit-weight feature classifier. The
+    documented ``strict`` AND-gate is intentionally not offered — it needs a
+    ``screen_locked_score`` feature the engine does not yet produce (deferred;
+    see docs/SATIM_TRACK_LINE_VS_TILE_SEAM_RULES.md).
+    """
+    if l5_mode not in L5_MODES:
+        raise ValueError(f"unknown l5_mode {l5_mode!r}; expected one of {L5_MODES}")
+    if l5_mode == "synthetic_boundary":
+        from .calibration.l5_synthetic_boundary_classifier import calibrate as calibrate_l5_synthetic
+
+        payload = calibrate_l5_synthetic(candidates_csv)
+    else:
+        payload = calibrate_l5(candidates_csv)
+    if isinstance(payload, dict):
+        payload["layer"] = "L5_tile_seam_shadow"
+        payload.setdefault("metrics", {})["l5_mode"] = l5_mode
+    return payload
 
 
 def _write_layer(layer: str, payload: Mapping[str, Any], layers_dir: Path) -> Path:
@@ -411,7 +439,8 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
         "L3_vision_ocr",
         {"ground_truth_csv": ground_truth, "predictions_json": predictions},
     )
-    l3_payload = missing_layer("L3_vision_ocr", missing) if missing else calibrate_l3(str(ground_truth), str(predictions))
+    l3_fuzzy = bool(manifest.options.get("l3_fuzzy", False))
+    l3_payload = missing_layer("L3_vision_ocr", missing) if missing else calibrate_l3(str(ground_truth), str(predictions), fuzzy=l3_fuzzy)
     layer_paths.append(_write_layer("L3_vision_ocr", l3_payload, layers_dir))
 
     fr24_csv = inputs.get("fr24_csv")
@@ -421,9 +450,16 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
 
     l5_candidates = inputs.get("l5_candidates_csv")
     include_l5 = bool(manifest.options.get("include_l5", True))
+    # L5 classifier selection (flag-gated; default preserves historical behaviour).
+    #   tile_seam_shadow (default) — rule + corroboration classifier
+    #   synthetic_boundary         — explicit-weight feature classifier (soft infra penalty)
+    # The `strict` documented AND-gate is intentionally NOT offered here: it
+    # requires a `screen_locked_score` feature that the feature engine does not
+    # yet produce (see docs/SATIM_TRACK_LINE_VS_TILE_SEAM_RULES.md — deferred).
+    l5_mode = str(manifest.options.get("l5_mode", "tile_seam_shadow"))
     if include_l5:
         missing = _require_or_missing(manifest, "L5_tile_seam_shadow", {"l5_candidates_csv": l5_candidates})
-        l5_payload = missing_layer("L5_tile_seam_shadow", missing) if missing else calibrate_l5(str(l5_candidates))
+        l5_payload = missing_layer("L5_tile_seam_shadow", missing) if missing else run_l5(l5_mode, str(l5_candidates))
     else:
         l5_payload = LayerCalibrationResult(
             layer="L5_tile_seam_shadow",

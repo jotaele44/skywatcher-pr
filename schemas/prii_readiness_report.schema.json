@@ -8,6 +8,8 @@
     "generated_at":      {"type": "string", "minLength": 1},
     "calibration_ready": {"type": "boolean"},
     "status":            {"type": "string", "enum": ["READY", "NOT_READY", "DEGRADED"]},
+    "final_status":      {"type": "string", "enum": ["READY", "NOT_READY", "DEGRADED", "READY_FOR_OPERATIONS"]},
+    "candidate_count":   {"type": ["integer", "null"], "minimum": 0},
     "gates": {
       "type": "object",
       "properties": {

@@ -55,8 +55,12 @@ class PRIIReadinessEngine:
         print(report["readiness_status"])   # READY | DEGRADED | NOT_READY
     """
 
-    def __init__(self, export_dir: str):
+    def __init__(self, export_dir: str, min_operational_candidates: Optional[int] = None):
         self.export_dir = Path(export_dir)
+        # Optional operational-candidate floor for PRODUCTION_READY. Default
+        # None preserves historical behaviour (candidate_count is reported, not
+        # gated). Set e.g. 50 to require >= that many operational candidates.
+        self.min_operational_candidates = min_operational_candidates
 
     def assess(self) -> Dict[str, Any]:
         integration = self._load_json("integration_report.json")
@@ -421,22 +425,31 @@ class PRIIReadinessEngine:
 
     @property
     def PRODUCTION_READY(self) -> bool:
-        """Return True when all PRII gates PASS, calibration is operational,
-        and the readiness status is READY.
+        """Return True when the readiness report reaches READY_FOR_OPERATIONS,
+        calibration is operational (calibration_ready=True), and there are no
+        blockers.
 
-        This is the final completion criterion for Task 200: all 6+ integration
-        gates must pass on real data with ≥50 operational candidates
-        (calibration_ready=True), producing status=READY in the readiness report.
+        By default the operational ``candidate_count`` is *reported but not
+        gated*. To additionally require a minimum number of operational
+        candidates (e.g. the historical "≥50" target), construct the engine with
+        ``min_operational_candidates=50`` — the count is then enforced here. The
+        default (None) preserves prior behaviour.
         """
         try:
             report = self.assess()
         except Exception:
             return False
-        return (
-            report.get("final_status") == READINESS_STATUS_READY_FOR_OPS
-            and report.get("calibration_ready") is True
-            and not report.get("blockers")
-        )
+        if (
+            report.get("final_status") != READINESS_STATUS_READY_FOR_OPS
+            or report.get("calibration_ready") is not True
+            or report.get("blockers")
+        ):
+            return False
+        if self.min_operational_candidates is not None:
+            count = report.get("candidate_count")
+            if not isinstance(count, int) or count < self.min_operational_candidates:
+                return False
+        return True
 
     def _write_report(self, report: Dict[str, Any]) -> None:
         self.export_dir.mkdir(parents=True, exist_ok=True)

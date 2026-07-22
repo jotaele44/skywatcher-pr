@@ -146,9 +146,12 @@ def score_water_observation(observation: WaterObservation) -> WaterScore:
     artifact = round(clamp01(observation.artifact_confidence), 4)
     adjusted = round(clamp01(pre_filter * (1.0 - 0.5 * artifact)), 4)
 
-    if adjusted >= 0.75:
+    # Confidence bands aligned to the SATIM detector-family standard
+    # (HIGH >=0.70, MEDIUM >=0.40) — previously 0.75/0.45, an unexplained
+    # divergence from satim_artifact_filter/cut_fill/road_end/etc.
+    if adjusted >= 0.70:
         band = "HIGH"
-    elif adjusted >= 0.45:
+    elif adjusted >= 0.40:
         band = "MEDIUM"
     else:
         band = "LOW"
@@ -156,7 +159,7 @@ def score_water_observation(observation: WaterObservation) -> WaterScore:
     reasons: list[str] = []
     if artifact >= 0.7:
         reasons.append("HIGH_ARTIFACT_CONFIDENCE")
-    if adjusted < 0.45:
+    if adjusted < 0.40:
         reasons.append("LOW_ADJUSTED_CONFIDENCE")
     if _class_names(observation.classes) == (WaterClass.UNKNOWN_WATER.value,):
         reasons.append("UNKNOWN_WATER_CLASS")
