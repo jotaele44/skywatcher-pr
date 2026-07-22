@@ -3,14 +3,23 @@
 
 Maps the airspace_observation model onto the Hub's canonical contract:
   * each observation        -> one `entities` row (entity_type=airspace_observation)
+                            -> one canonical `observations` row (obs_<32hex>)
   * each distinct source    -> one `sources` row  + a `sensor_source` entity
   * each distinct municipality -> one `entities` row (entity_type=municipality)
   * observation -> source       -> `relationships` row (detected_by)
   * observation -> municipality -> `relationships` row (located_in)
+  * each declared airspace anomaly (optional alerts.json)
+                            -> one canonical `alerts` row (alrt_<32hex>)
 
-Reads `observations.csv` + `sources.json` from an airspace package dir and writes
-`exports/federation/{sources,entities,relationships}.jsonl` + a Hub-conformant
-`manifest.json`. Deterministic `src_/ent_/rel_` ids (sha256). Stdlib only.
+The `observations` and `alerts` streams give the Hub's correlate_observations /
+correlate_alerts stages first-class Skywatcher rows to consume (joined to sibling
+producers by location.municipality), rather than only the flattened entity view.
+
+Reads `observations.csv` + `sources.json` (+ optional airfields/hangar_zones/
+endpoint_events/alerts json) from an airspace package dir and writes
+`exports/federation/{sources,entities,relationships,observations,alerts}.jsonl`
++ a Hub-conformant `manifest.json`. Deterministic `src_/ent_/rel_/obs_/alrt_`
+ids (sha256). Stdlib + prii_export_utils only.
 """
 from __future__ import annotations
 
@@ -34,11 +43,80 @@ STREAM_SCHEMA = {
     "sources": "federation_source.schema.json",
     "entities": "federation_entity.schema.json",
     "relationships": "federation_relationship.schema.json",
+    "observations": "federation_observation.schema.json",
+    "alerts": "federation_alert.schema.json",
+}
+
+# Canonical write order — matches the Hub's stream enum. Sources/entities/
+# relationships were the original three; observations and alerts extend the
+# producer's federation reach so the Hub's correlate_observations /
+# correlate_alerts stages have Skywatcher rows to consume.
+STREAM_ORDER = ("sources", "entities", "relationships", "observations", "alerts")
+
+# Canonical alert lifecycle / gap vocab (mirrors federation_alert.schema.json).
+ALERT_STATUS = {"draft", "validated", "active", "closed", "rejected"}
+ALERT_GAP_STATUS = {"none", "minor", "major", "blocking"}
+
+# Guardrail posture stamped onto every emitted alert. Skywatcher airspace
+# anomalies are analytical review candidates, never operational cues — this is
+# defense-in-depth so a downstream consumer can never read an emitted alert as
+# a tasking/tracking signal.
+ALERT_GUARDRAILS = {
+    "operator_action": "review_context_only",
+    "tactical_public_tracking": False,
+    "live_tracking": False,
+    "operational_cueing": False,
+    "confirmation_status": "not_confirmed",
 }
 
 
 def _bool(v: Any) -> bool:
     return str(v).strip().lower() in ("true", "1", "yes")
+
+
+def _slug(v: Any) -> str:
+    """Lowercase a free-string category (e.g. signal_type) into a stable slug."""
+    return "_".join(str(v).strip().lower().split()) if v else ""
+
+
+def _num(v: Any) -> Optional[float]:
+    try:
+        if v in (None, ""):
+            return None
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _obs_attributes(obs: Dict[str, Any]) -> Dict[str, Any]:
+    """Producer-specific observation payload for the canonical observation row.
+
+    Carries the airspace-specific fields the Hub has no column for (signal type,
+    evidence posture, kinematics, free-text summary) without dropping them. Only
+    populated keys are emitted so the payload stays compact and deterministic.
+    """
+    attrs: Dict[str, Any] = {}
+    for key in ("signal_type", "evidence_tier", "geometry_status", "temporal_status",
+                "location_name", "description_summary", "callsign", "operator"):
+        val = obs.get(key)
+        if val not in (None, ""):
+            attrs[key] = val
+    for key in ("altitude_ft", "bearing", "duration_seconds"):
+        num = _num(obs.get(key))
+        if num is not None:
+            attrs[key] = num
+    return attrs
+
+
+def _alert_attributes(al: Dict[str, Any]) -> Dict[str, Any]:
+    """Producer-specific alert payload + the review-only guardrail posture."""
+    attrs: Dict[str, Any] = dict(ALERT_GUARDRAILS)
+    for key in ("evidence_tier", "anomaly_kind", "description_summary",
+                "location_name", "review_status", "observation_id"):
+        val = al.get(key)
+        if val not in (None, ""):
+            attrs[key] = val
+    return attrs
 
 
 def _lineage(phase: str, inputs: List[str]) -> Dict[str, Any]:
@@ -57,12 +135,15 @@ def build_streams(
     airfields: Optional[List[Dict[str, Any]]] = None,
     hangar_zones: Optional[List[Dict[str, Any]]] = None,
     endpoint_events: Optional[List[Dict[str, Any]]] = None,
+    alerts: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, List[Dict[str, Any]]]:
     inputs = ["observations.csv", "sources.json"]
     src_rows: Dict[str, Dict[str, Any]] = {}
     src_entity_id: Dict[str, str] = {}
     entities: Dict[str, Dict[str, Any]] = {}
     relationships: Dict[str, Dict[str, Any]] = {}
+    observation_rows: Dict[str, Dict[str, Any]] = {}
+    alert_rows: Dict[str, Dict[str, Any]] = {}
 
     # sources -> sources rows + sensor_source entities
     for s in sources:
@@ -127,11 +208,40 @@ def build_streams(
             lon = float(obs.get("lon"))
         except (TypeError, ValueError):
             lat = lon = None
+        obs_loc: Optional[Dict[str, Any]] = None
         if lat is not None and -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
             loc: Dict[str, Any] = {"lat": round(lat, 6), "lon": round(lon, 6)}
             if obs.get("municipality"):
                 loc["municipality"] = obs["municipality"]
             entities[ent_id]["location"] = loc
+            obs_loc = dict(loc)
+            try:
+                alt = obs.get("altitude_ft")
+                if alt not in (None, ""):
+                    obs_loc["altitude_ft"] = float(alt)
+            except (TypeError, ValueError):
+                pass
+
+        # FE1: canonical `observations` row. The Hub's correlate_observations
+        # stage joins these to sibling entities by location.municipality, so the
+        # airspace event travels the federation as a first-class observation (not
+        # only flattened into an entity). obs_<32hex> id per the Hub contract.
+        canon_obs_id = _fid("obs", obs_id)
+        observation_rows[canon_obs_id] = {
+            "observation_id": canon_obs_id,
+            "source_id": sid,
+            "entity_id": ent_id,
+            "observation_type": _slug(obs.get("signal_type")) or "airspace_observation",
+            "observed_at": when,
+            "confidence": confidence,
+            "attributes": _obs_attributes(obs),
+            "lineage": _lineage("OBSERVATION_STREAM", inputs),
+            "synthetic": synthetic,
+            "created_at": when,
+            "extracted_at": now,
+        }
+        if obs_loc is not None:
+            observation_rows[canon_obs_id]["location"] = obs_loc
 
         # detected_by (observation -> source entity)
         tgt = src_entity_id.get(raw_sid) or _fid("ent", "source", raw_sid)
@@ -264,10 +374,74 @@ def build_streams(
                 "extracted_at": now,
             }
 
+    # FE2: canonical `alerts` stream. Airspace anomaly alerts arrive as an
+    # optional package input (alerts.json) — the same optional-input pattern as
+    # airfields / hangar_zones / endpoint_events — so the exporter never
+    # fabricates an anomaly; it only projects producer-declared ones onto the
+    # Hub contract. The Hub's correlate_alerts stage links these to entities by
+    # location.municipality (alert_affects_entity edges).
+    for al in alerts or []:
+        raw_alid = al.get("alert_id")
+        if not raw_alid:
+            continue
+        raw_sid = al.get("source_id")
+        sid = src_rows.get(raw_sid, {}).get("source_id") or _fid("src", raw_sid)
+        synthetic = _bool(al.get("synthetic"))
+        confidence = float(al.get("confidence") or TIER_CONFIDENCE.get(al.get("evidence_tier"), 0.5))
+        when = al.get("event_datetime") or now
+        alid = _fid("alrt", raw_alid)
+
+        status = al.get("status") if al.get("status") in ALERT_STATUS else "draft"
+        try:
+            severity = max(0, min(5, int(al.get("severity", 1))))
+        except (TypeError, ValueError):
+            severity = 1
+
+        row: Dict[str, Any] = {
+            "alert_id": alid,
+            "source_id": sid,
+            "module": al.get("module") or "AIRSPACE_OPS",
+            "alert_type": al.get("alert_type") or "airspace_anomaly",
+            "severity": severity,
+            "status": status,
+            "observed_at": when,
+            "confidence": confidence,
+            "attributes": _alert_attributes(al),
+            "lineage": _lineage("ALERT_STREAM", ["alerts.json"]),
+            "synthetic": synthetic,
+            "created_at": when,
+            "extracted_at": now,
+        }
+        # Optional anchor to the airspace_observation entity this alert is about.
+        obs_ref = al.get("observation_id")
+        if obs_ref:
+            row["entity_id"] = _fid("ent", "observation", obs_ref)
+        if al.get("gap_status") in ALERT_GAP_STATUS:
+            row["gap_status"] = al["gap_status"]
+        if al.get("start_at"):
+            row["start_at"] = al["start_at"]
+        if al.get("end_at"):
+            row["end_at"] = al["end_at"]
+
+        try:
+            lat = float(al.get("lat"))
+            lon = float(al.get("lon"))
+        except (TypeError, ValueError):
+            lat = lon = None
+        if lat is not None and -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
+            aloc: Dict[str, Any] = {"lat": round(lat, 6), "lon": round(lon, 6)}
+            if al.get("municipality"):
+                aloc["municipality"] = al["municipality"]
+            row["location"] = aloc
+
+        alert_rows[alid] = row
+
     return {
         "sources": list(src_rows.values()),
         "entities": list(entities.values()),
         "relationships": list(relationships.values()),
+        "observations": list(observation_rows.values()),
+        "alerts": list(alert_rows.values()),
     }
 
 
@@ -284,8 +458,8 @@ def _rel(rid, sid, src_ent, tgt_ent, rtype, confidence, synthetic, created, now)
 def write_package(streams: Dict[str, List[Dict[str, Any]]], out_dir: Path, mode: str, now: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     files = []
-    for stream in ("sources", "entities", "relationships"):
-        rows = streams[stream]
+    for stream in STREAM_ORDER:
+        rows = streams.get(stream) or []
         if not rows:
             continue
         fpath = out_dir / f"{stream}.jsonl"
@@ -325,8 +499,9 @@ def main() -> int:
     airfields = _load_optional_json(pkg, "airfields.json")
     hangar_zones = _load_optional_json(pkg, "hangar_zones.json")
     endpoint_events = _load_optional_json(pkg, "endpoint_events.json")
+    alerts = _load_optional_json(pkg, "alerts.json")
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    streams = build_streams(observations, sources, now, airfields, hangar_zones, endpoint_events)
+    streams = build_streams(observations, sources, now, airfields, hangar_zones, endpoint_events, alerts)
 
     if args.mode == "production":
         # Check 1: Reject synthetic rows
