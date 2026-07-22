@@ -273,18 +273,20 @@ def degraded_layer(layer: str, reason: str, error: Exception) -> dict[str, Any]:
     ).to_dict()
 
 
-L5_MODES = ("tile_seam_shadow", "synthetic_boundary")
+L5_MODES = ("tile_seam_shadow", "synthetic_boundary", "strict")
 
 
 def run_l5(l5_mode: str, candidates_csv: str) -> dict[str, Any]:
     """Run the selected L5 classifier and return a payload keyed to the canonical
     ``L5_tile_seam_shadow`` layer slot (so readiness aggregation recognizes it).
 
-    ``tile_seam_shadow`` (default) is the rule+corroboration classifier;
-    ``synthetic_boundary`` is the explicit-weight feature classifier. The
-    documented ``strict`` AND-gate is intentionally not offered — it needs a
-    ``screen_locked_score`` feature the engine does not yet produce (deferred;
-    see docs/SATIM_TRACK_LINE_VS_TILE_SEAM_RULES.md).
+    - ``tile_seam_shadow`` (default): rule + corroboration classifier.
+    - ``synthetic_boundary``: explicit-weight feature classifier (soft infra penalty).
+    - ``strict``: spec-faithful conjunctive AND-gate
+      (docs/SATIM_TRACK_LINE_VS_TILE_SEAM_RULES.md). Honest caveat: it requires a
+      ``screen_locked_score`` feature the engine does not yet produce, so under
+      strict rules nothing is promoted in production until that extractor exists
+      (calibrate_strict emits a finding when screen_locked is all-zero).
     """
     if l5_mode not in L5_MODES:
         raise ValueError(f"unknown l5_mode {l5_mode!r}; expected one of {L5_MODES}")
@@ -292,6 +294,10 @@ def run_l5(l5_mode: str, candidates_csv: str) -> dict[str, Any]:
         from .calibration.l5_synthetic_boundary_classifier import calibrate as calibrate_l5_synthetic
 
         payload = calibrate_l5_synthetic(candidates_csv)
+    elif l5_mode == "strict":
+        from .calibration.l5_tile_seam_shadow_calibration import calibrate_strict
+
+        payload = calibrate_strict(candidates_csv)
     else:
         payload = calibrate_l5(candidates_csv)
     if isinstance(payload, dict):

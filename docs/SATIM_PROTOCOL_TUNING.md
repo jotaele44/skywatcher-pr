@@ -39,12 +39,23 @@ altering default detection behaviour.
   credit for text fields; integers are never fuzzy. Default path is
   byte-identical to today.
 
+## Follow-up upgrades (now landed)
+
+- **Strict tile-seam AND-gate** is now offered as `l5_mode="strict"`
+  (`fr24/calibration/l5_tile_seam_shadow_calibration.py::classify_candidate_strict`/
+  `calibrate_strict`), implementing the conjunctive spec rule. Honest caveat: the
+  `screen_locked_score` feature has no extractor yet (candidate rows default it to
+  0.0), so in production strict promotes nothing until that feature lands —
+  `calibrate_strict` emits an explicit "inert" finding when screen-lock is all-zero.
+  Building the extractor remains the only imagery-gated piece.
+- **Multidate hardening** — `min_cross_epoch_comparisons` default raised 1→2 so a
+  single still can't drive a persistence verdict (overridable per config).
+- **Detector-weights rationale** — documented in `SATIM_DETECTOR_WEIGHTS_RATIONALE.md`
+  (magnitude weights, intentionally non-convex) + a defensible test
+  (`tests/test_satim_detector_weights.py`, weights ∈ (0,1]).
+
 ## Deferred (recorded, not invented)
 
-- **Strict tile-seam AND-gate** (`SATIM_TRACK_LINE_VS_TILE_SEAM_RULES.md`) is
-  *not* offered as an `l5_mode`: it requires a `screen_locked_score` feature the
-  feature engine does not yet produce. Implementing that feature is the
-  prerequisite; a broken `strict` mode was deliberately not shipped.
 - **Empirical thresholds.** The fit harness exists and is CI-tested, but the
   production `scoring_adjustments`/`promotion_thresholds` are still the hand-set
   v1 values — deriving measured ones needs an expanded, sanitized ground-truth
