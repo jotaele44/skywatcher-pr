@@ -8,11 +8,12 @@ from skywatcher.core.readiness_engine import PRIIReadinessEngine
 
 
 def _ops_report(candidate_count):
+    # Mirror the real assess() shape: candidate_count lives under gate_summary.
     return {
         "final_status": "READY_FOR_OPERATIONS",
         "calibration_ready": True,
         "blockers": [],
-        "candidate_count": candidate_count,
+        "gate_summary": {"candidate_count": candidate_count},
     }
 
 

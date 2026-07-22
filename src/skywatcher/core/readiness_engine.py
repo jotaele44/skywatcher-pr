@@ -446,7 +446,8 @@ class PRIIReadinessEngine:
         ):
             return False
         if self.min_operational_candidates is not None:
-            count = report.get("candidate_count")
+            # candidate_count is emitted under gate_summary (see assess()).
+            count = (report.get("gate_summary") or {}).get("candidate_count")
             if not isinstance(count, int) or count < self.min_operational_candidates:
                 return False
         return True
