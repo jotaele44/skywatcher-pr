@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "skywatcher_export",
+  "title": "Skywatcher -> Spiderweb bridge export package manifest",
+  "description": "Manifest for the package emitted by `run_all.py --export-spiderweb`. The package contains a JSONL stream of spiderweb_bridge records plus this manifest. Aligns with the hub-canonical federation package contract (producer=skywatcher-pr).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "export_id",
+    "producer",
+    "generated_at_utc",
+    "mode",
+    "source_snapshot_id",
+    "files",
+    "record_counts"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^\\d+\\.\\d+$"},
+    "export_id": {"type": "string", "pattern": "^pkg_[a-f0-9]{32}$"},
+    "producer": {"const": "skywatcher-pr"},
+    "generated_at_utc": {"type": "string", "format": "date-time"},
+    "mode": {"enum": ["test", "production"]},
+    "source_snapshot_id": {"type": "string", "minLength": 1},
+    "bridge_schema": {"const": "spiderweb_bridge"},
+    "files": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bridge_records"],
+      "properties": {
+        "bridge_records": {"type": "string", "description": "Relative path to the JSONL of spiderweb_bridge records."}
+      }
+    },
+    "record_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["flights"],
+      "properties": {
+        "flights": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}
