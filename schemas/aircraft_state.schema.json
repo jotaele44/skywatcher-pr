@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/aircraft_state.schema.json",
+  "title": "Skywatcher Aircraft State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "state_id",
+    "aircraft_id",
+    "observed_at_utc",
+    "lat",
+    "lon",
+    "on_ground",
+    "position_status",
+    "provenance",
+    "synthetic"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "state_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "aircraft_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "flight_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "observed_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lat": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 90
+    },
+    "lon": {
+      "type": "number",
+      "minimum": -180,
+      "maximum": 180
+    },
+    "barometric_altitude_ft": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "geometric_altitude_ft": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ground_speed_kt": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "vertical_rate_fpm": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "track_deg": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 360
+    },
+    "heading_deg": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 360
+    },
+    "squawk": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-7]{4}$"
+    },
+    "on_ground": {
+      "type": "boolean"
+    },
+    "position_status": {
+      "type": "string",
+      "enum": [
+        "measured",
+        "stale_hold",
+        "interpolated",
+        "approximate"
+      ]
+    },
+    "state_age_seconds": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "uncertainty_m": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "qa_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "provenance": {
+      "$ref": "source_taxonomy.schema.json"
+    },
+    "synthetic": {
+      "type": "boolean"
+    }
+  }
+}

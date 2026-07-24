@@ -1,0 +1,61 @@
+{
+  "mapping_version": "0.1.0",
+  "migration_policy": "additive_reversible_no_forced_classification",
+  "legacy_to_canonical": {
+    "screenshot": {
+      "source_family": "screenshot_evidence",
+      "source_method": "screenshot_ocr",
+      "data_rights": "user_supplied",
+      "operational_mode": "evidence_only"
+    },
+    "adsb": {
+      "source_family": "operational_position",
+      "source_method": "adsb",
+      "data_rights": "unknown",
+      "operational_mode": "historical"
+    },
+    "radar": {
+      "source_family": "operational_position",
+      "source_method": "radar",
+      "data_rights": "unknown",
+      "operational_mode": "historical"
+    },
+    "official": {
+      "source_family": "official_record",
+      "source_method": "official_feed",
+      "data_rights": "public_official",
+      "operational_mode": "batch"
+    },
+    "field_note": {
+      "source_family": "manual_field",
+      "source_method": "manual_entry",
+      "data_rights": "user_supplied",
+      "operational_mode": "evidence_only"
+    },
+    "secondary": {
+      "source_family": "secondary_reference",
+      "source_method": "secondary_report",
+      "data_rights": "unknown",
+      "operational_mode": "evidence_only"
+    }
+  },
+  "frontend_legacy_aliases": {
+    "fr24_screenshot": "screenshot_ocr",
+    "fr24_track": "derived_fusion",
+    "manual_entry": "manual_entry",
+    "registry_match": "registry_match"
+  },
+  "unknown_policy": {
+    "source_family": "unknown",
+    "source_method": "unknown",
+    "data_rights": "unknown",
+    "qa_flag": "unknown_source_type",
+    "operational_mode": "unknown"
+  },
+  "synthetic_override": {
+    "source_family": "synthetic_test",
+    "data_rights": "synthetic",
+    "operational_mode": "batch",
+    "production_eligible": false
+  }
+}
