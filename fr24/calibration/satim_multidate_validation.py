@@ -16,7 +16,10 @@ from typing import Any, Iterable, Mapping
 class MultiDateValidationConfig:
     persistence_min: float = 0.65
     disappearance_max: float = 0.35
-    min_cross_epoch_comparisons: int = 1
+    # Require >=2 cross-epoch comparisons before a multi-date persistence verdict:
+    # a single still cannot drive a persistence/seam decision (audit hardening).
+    # Overridable per call via MultiDateValidationConfig for looser workflows.
+    min_cross_epoch_comparisons: int = 2
     near_epoch_month_window: int = 3
 
 

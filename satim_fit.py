@@ -200,3 +200,65 @@ def emit_fp_classes_yaml(
             continue  # drop the original body of a rewritten block
         out.append(line)
     return "\n".join(out) + "\n"
+
+
+# ---------------------------------------------------------------------------
+# CLI — reproducible fit harness (measure thresholds instead of hand-setting)
+# ---------------------------------------------------------------------------
+
+def _read_ground_truth_csv(path: "Path") -> list[dict[str, Any]]:
+    import csv
+
+    with open(path, newline="", encoding="utf-8") as fh:
+        return list(csv.DictReader(fh))
+
+
+def fit_result_to_dict(result: "FitResult") -> dict[str, Any]:
+    """Deterministic, JSON-serializable view of a FitResult."""
+    return {
+        "n_rows": result.n_rows,
+        "scoring_adjustments": {k: result.scoring_adjustments[k] for k in sorted(result.scoring_adjustments)},
+        "promotion_thresholds": {band: result.promotion_thresholds[band] for band in THRESHOLD_ORDER},
+        "class_precision": {
+            k: round(result.class_stats[k].precision, 4) for k in sorted(result.class_stats)
+        },
+    }
+
+
+def build_arg_parser() -> "argparse.ArgumentParser":
+    import argparse
+
+    p = argparse.ArgumentParser(
+        description="Fit SATIM scoring adjustments + promotion thresholds from a labeled ground_truth.csv."
+    )
+    p.add_argument("--ground-truth", required=True, help="Path to ground_truth.csv (image_id,false_positive_class,confidence,is_false_positive,source)")
+    p.add_argument("--fp-classes", default=None, help="Optional false_positive_classes.yaml to rewrite with fitted constants")
+    p.add_argument("--calibration-id", default="SATIM-FIT", help="calibration_id to stamp into the rewritten YAML")
+    p.add_argument("--out", default=None, help="Where to write the rewritten YAML (defaults to stdout note only)")
+    return p
+
+
+def main(argv: "list[str] | None" = None) -> int:
+    import json
+    from pathlib import Path
+
+    args = build_arg_parser().parse_args(argv)
+    rows = _read_ground_truth_csv(Path(args.ground_truth))
+    result = fit_calibration(rows)
+    print(json.dumps(fit_result_to_dict(result), indent=2, sort_keys=True))
+
+    if args.fp_classes:
+        original = Path(args.fp_classes).read_text(encoding="utf-8")
+        rewritten = emit_fp_classes_yaml(
+            original, args.calibration_id, result.scoring_adjustments, result.promotion_thresholds
+        )
+        if args.out:
+            Path(args.out).write_text(rewritten, encoding="utf-8")
+            print(f"# wrote fitted fp-classes → {args.out}")
+        else:
+            print(rewritten)
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

@@ -69,15 +69,55 @@ def load_predictions(path: str | Path) -> Dict[str, Dict[str, Any]]:
     return {}
 
 
-def compare_field(field: str, truth: Mapping[str, Any], pred: Mapping[str, Any]) -> bool:
+# Common OCR confusables — folded together only in fuzzy mode.
+_CONFUSABLE_MAP = str.maketrans({"O": "0", "I": "1", "L": "1", "S": "5", "B": "8", "Z": "2", "G": "6"})
+
+
+def _levenshtein(a: str, b: str) -> int:
+    if a == b:
+        return 0
+    if not a:
+        return len(b)
+    if not b:
+        return len(a)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def _fuzzy_equal(a: str, b: str) -> bool:
+    """True if two normalized field values match allowing OCR confusables and a
+    single-character edit on tokens of length >= 4 (e.g. 'N1O5' vs 'N105')."""
+    if a == b:
+        return True
+    if not a or not b:
+        return False
+    if a.translate(_CONFUSABLE_MAP) == b.translate(_CONFUSABLE_MAP):
+        return True
+    if max(len(a), len(b)) >= 4 and _levenshtein(a, b) <= 1:
+        return True
+    return False
+
+
+def compare_field(
+    field: str, truth: Mapping[str, Any], pred: Mapping[str, Any], *, fuzzy: bool = False
+) -> bool:
     if field == "altitude_ft":
+        # Integers: fuzzy credit does not apply (a wrong digit is a wrong number).
         return normalize_int(truth.get(field)) == normalize_int(pred.get(field))
-    return normalize(truth.get(field)) == normalize(pred.get(field))
+    t, p = normalize(truth.get(field)), normalize(pred.get(field))
+    return _fuzzy_equal(t, p) if fuzzy else (t == p)
 
 
 def score_records(
     truth_rows: Iterable[Mapping[str, Any]],
     predictions: Mapping[str, Mapping[str, Any]],
+    *,
+    fuzzy: bool = False,
 ) -> Dict[str, Any]:
     rows = list(truth_rows)
 
@@ -100,7 +140,7 @@ def score_records(
             row_has_scored_truth = True
             totals[field] += 1
 
-            if pred and compare_field(field, row, pred):
+            if pred and compare_field(field, row, pred, fuzzy=fuzzy):
                 matches[field] += 1
 
         if row_has_scored_truth and not pred:
@@ -121,10 +161,11 @@ def score_records(
     }
 
 
-def calibrate(ground_truth: str, predictions: str) -> Dict[str, Any]:
+def calibrate(ground_truth: str, predictions: str, *, fuzzy: bool = False) -> Dict[str, Any]:
     rows = load_ground_truth(ground_truth)
     preds = load_predictions(predictions)
-    metrics = score_records(rows, preds)
+    metrics = score_records(rows, preds, fuzzy=fuzzy)
+    metrics["scoring_mode"] = "fuzzy" if fuzzy else "exact"
 
     findings = []
 
