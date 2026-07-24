@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 import re
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 import pandas as pd
 
 LAT_NAMES = ["lat", "latitude", "y", "gps_lat", "position_lat"]
