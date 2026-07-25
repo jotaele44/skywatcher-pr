@@ -23,6 +23,7 @@ class RouteCandidate:
     bbox: Tuple[int, int, int, int] = (0, 0, 0, 0)  # x, y, w, h
     pixel_length: float = 0.0
     pixel_count: int = 0
+    visual_render_state: str = "UNKNOWN"
 
     def centroid(self) -> Tuple[float, float]:
         if not self.points:
@@ -30,6 +31,16 @@ class RouteCandidate:
         xs = [p[0] for p in self.points]
         ys = [p[1] for p in self.points]
         return (sum(xs) / len(xs), sum(ys) / len(ys))
+
+    def provenance_visual_observation(self) -> Dict[str, object]:
+        """Return visual-only evidence without inferring ADS-B continuity."""
+        return {
+            "route_color": self.color,
+            "visual_render_state": self.visual_render_state,
+            "route_candidate_confidence": self.confidence,
+            "pixel_count": self.pixel_count,
+            "pixel_length": self.pixel_length,
+        }
 
 
 class RouteExtractor:
@@ -136,6 +147,7 @@ class RouteExtractor:
                 bbox = _bbox_of_points(global_pts)
                 plen = _polyline_length(global_pts)
                 conf = min(1.0, len(global_pts) / 100.0)
+                render_state = "DARK_ROUTE" if color_name == "dark" else "BRIGHT_ROUTE"
                 candidates.append(RouteCandidate(
                     color=color_name,
                     points=global_pts,
@@ -143,6 +155,7 @@ class RouteExtractor:
                     bbox=bbox,
                     pixel_length=plen,
                     pixel_count=len(global_pts),
+                    visual_render_state=render_state,
                 ))
 
         # Sort by pixel count descending (most prominent routes first)
