@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from fr24_image_skill.orchestrator import (
     AnalysisMode,
@@ -18,10 +19,7 @@ from fr24_image_skill.orchestrator import (
 
 
 def _tiny_png(path: Path) -> None:
-    path.write_bytes(bytes.fromhex(
-        "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
-        "0000000d49444154789c6360000000020001e221bc330000000049454e44ae426082"
-    ))
+    Image.new("RGB", (32, 32), (20, 40, 60)).save(path)
 
 
 def test_inventory_has_full_hash_coverage(tmp_path: Path) -> None:
