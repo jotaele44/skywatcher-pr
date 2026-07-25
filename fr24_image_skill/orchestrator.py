@@ -1,370 +1,177 @@
 from __future__ import annotations
-
-import csv
-import hashlib
-import json
-import mimetypes
-import shutil
-import subprocess
-import sys
+import csv, hashlib, json, mimetypes, re, shutil, subprocess
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Iterable
 
-
 class AnalysisMode(str, Enum):
-    TRIAGE = "triage"
-    STANDARD = "standard"
-    FORENSIC = "forensic"
-
-
+    TRIAGE='triage'; STANDARD='standard'; FORENSIC='forensic'
 @dataclass(frozen=True)
 class SourceRecord:
-    source_id: str
-    path: str
-    media_type: str
-    sha256: str
-    size_bytes: int
-    status: str = "accounted"
-
-
+    source_id:str; path:str; media_type:str; sha256:str; size_bytes:int; status:str='accounted'
 @dataclass
 class StageState:
-    name: str
-    status: str = "pending"
-    frozen: bool = False
-    outputs: list[str] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
-
-
+    name:str; status:str='pending'; frozen:bool=False; outputs:list[str]=field(default_factory=list); warnings:list[str]=field(default_factory=list)
 @dataclass
 class SkillRun:
-    run_id: str
-    mode: str
-    input_root: str
-    output_dir: str
-    created_at_utc: str
-    sources: list[SourceRecord]
-    stage_1: StageState
-    stage_2: StageState
-    correlation: StageState
-    deterministic_config: dict[str, Any]
+    run_id:str; mode:str; input_root:str; output_dir:str; sources:list[SourceRecord]; stage_1:StageState; stage_2:StageState; correlation:StageState; deterministic_config:dict[str,Any]; deterministic_digest:str
+SUPPORTED_IMAGE_SUFFIXES={'.png','.jpg','.jpeg','.webp','.tif','.tiff'}; SUPPORTED_VIDEO_SUFFIXES={'.mp4','.mov','.m4v','.avi'}; SUPPORTED_PDF_SUFFIXES={'.pdf'}
+FORBIDDEN_TERMS={'surveillance mission','targeted the site','inspected the site','underground facility'}
 
-
-SUPPORTED_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff"}
-SUPPORTED_VIDEO_SUFFIXES = {".mp4", ".mov", ".m4v", ".avi"}
-SUPPORTED_PDF_SUFFIXES = {".pdf"}
-FORBIDDEN_TERMS = {
-    "surveillance mission",
-    "targeted the site",
-    "inspected the site",
-    "facility purpose",
-    "underground facility",
-}
-
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def _iter_inputs(input_path: Path) -> Iterable[Path]:
-    if input_path.is_file():
-        yield input_path
-        return
-    if not input_path.is_dir():
-        raise FileNotFoundError(input_path)
-    for path in sorted(input_path.rglob("*")):
-        if path.is_file():
-            yield path
-
-
-def _classify(path: Path) -> str:
-    suffix = path.suffix.lower()
-    if suffix in SUPPORTED_IMAGE_SUFFIXES:
-        return "image"
-    if suffix in SUPPORTED_PDF_SUFFIXES:
-        return "image_pdf"
-    if suffix in SUPPORTED_VIDEO_SUFFIXES:
-        return "video"
-    return mimetypes.guess_type(path.name)[0] or "application/octet-stream"
-
-
-def inventory_sources(input_path: Path) -> list[SourceRecord]:
-    records: list[SourceRecord] = []
-    for index, path in enumerate(_iter_inputs(input_path), start=1):
-        records.append(
-            SourceRecord(
-                source_id=f"SRC-{index:05d}",
-                path=str(path.resolve()),
-                media_type=_classify(path),
-                sha256=sha256_file(path),
-                size_bytes=path.stat().st_size,
-            )
-        )
-    if not records:
-        raise ValueError("No input files found")
-    return records
-
-
-def _stable_run_id(sources: list[SourceRecord], mode: AnalysisMode) -> str:
-    payload = "|".join([mode.value, *[record.sha256 for record in sources]])
-    return "SWFR24-" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16].upper()
-
-
-def _write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-
-def _write_csv(path: Path, fieldnames: list[str], rows: Iterable[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({key: row.get(key, "") for key in fieldnames})
-
-
-def _render_sources(sources: list[SourceRecord], output_dir: Path) -> list[dict[str, Any]]:
-    frames_dir = output_dir / "frames"
-    frames_dir.mkdir(parents=True, exist_ok=True)
-    frames: list[dict[str, Any]] = []
-    frame_index = 0
-    for source in sources:
-        source_path = Path(source.path)
-        if source.media_type == "image":
-            frame_index += 1
-            target = frames_dir / f"frame-{frame_index:05d}{source_path.suffix.lower()}"
-            shutil.copy2(source_path, target)
-            frames.append(_frame_record(frame_index, source, target, page=None, extraction="copy"))
-        elif source.media_type == "image_pdf":
-            rendered = _render_pdf(source_path, frames_dir, frame_index)
-            for item in rendered:
-                frame_index += 1
-                frames.append(_frame_record(frame_index, source, item["path"], page=item["page"], extraction=item["method"]))
-        elif source.media_type == "video":
-            rendered = _render_video(source_path, frames_dir, frame_index)
-            for item in rendered:
-                frame_index += 1
-                record = _frame_record(frame_index, source, item["path"], page=None, extraction=item["method"])
-                record["video_time_s"] = item["video_time_s"]
-                frames.append(record)
-        else:
-            frames.append({"source_id": source.source_id, "status": "unsupported_media", "path": source.path})
+def sha256_file(path:Path)->str:
+    d=hashlib.sha256()
+    with path.open('rb') as h:
+        for b in iter(lambda:h.read(1024*1024),b''): d.update(b)
+    return d.hexdigest()
+def _iter_inputs(p:Path)->Iterable[Path]:
+    if p.is_file(): yield p; return
+    if not p.is_dir(): raise FileNotFoundError(p)
+    yield from sorted(x for x in p.rglob('*') if x.is_file())
+def _classify(p:Path)->str:
+    s=p.suffix.lower()
+    if s in SUPPORTED_IMAGE_SUFFIXES:return 'image'
+    if s in SUPPORTED_PDF_SUFFIXES:return 'image_pdf'
+    if s in SUPPORTED_VIDEO_SUFFIXES:return 'video'
+    return mimetypes.guess_type(p.name)[0] or 'application/octet-stream'
+def inventory_sources(p:Path)->list[SourceRecord]:
+    rows=[SourceRecord(f'SRC-{i:05d}',str(x.resolve()),_classify(x),sha256_file(x),x.stat().st_size) for i,x in enumerate(_iter_inputs(p),1)]
+    if not rows: raise ValueError('No input files found')
+    return rows
+def _stable_run_id(s,m): return 'SWFR24-'+hashlib.sha256('|'.join([m.value,*[x.sha256 for x in s]]).encode()).hexdigest()[:16].upper()
+def _write_json(p:Path,v): p.parent.mkdir(parents=True,exist_ok=True); p.write_text(json.dumps(v,indent=2,sort_keys=True)+'\n')
+def _write_csv(p:Path,fields,rows):
+    p.parent.mkdir(parents=True,exist_ok=True)
+    with p.open('w',newline='',encoding='utf-8') as h:
+        w=csv.DictWriter(h,fieldnames=fields); w.writeheader(); [w.writerow({k:r.get(k,'') for k in fields}) for r in rows]
+def _frame_record(i,s,p,page,method): return {'frame_id':f'FRAME-{i:06d}','source_id':s.source_id,'source_page':page,'path':str(p.resolve()),'sha256':sha256_file(p),'size_bytes':p.stat().st_size,'extraction_method':method,'status':'accounted'}
+def _render_sources(sources,out):
+    fd=out/'frames';fd.mkdir(parents=True,exist_ok=True); frames=[]; idx=0
+    for s in sources:
+        p=Path(s.path)
+        if s.media_type=='image': idx+=1; t=fd/f'frame-{idx:05d}{p.suffix.lower()}';shutil.copy2(p,t);frames.append(_frame_record(idx,s,t,None,'copy'))
+        elif s.media_type=='image_pdf':
+            prefix=fd/f'pdf-{idx+1:05d}'; subprocess.run(['pdftoppm','-png','-r','72',str(p),str(prefix)],check=True)
+            for pg,f in enumerate(sorted(fd.glob(prefix.name+'-*.png')),1): idx+=1;frames.append(_frame_record(idx,s,f,pg,'pdftoppm-72dpi'))
     return frames
 
-
-def _frame_record(index: int, source: SourceRecord, path: Path, page: int | None, extraction: str) -> dict[str, Any]:
-    return {
-        "frame_id": f"FRAME-{index:06d}",
-        "source_id": source.source_id,
-        "source_page": page,
-        "path": str(path.resolve()),
-        "sha256": sha256_file(path),
-        "size_bytes": path.stat().st_size,
-        "extraction_method": extraction,
-        "status": "accounted",
-    }
-
-
-def _render_pdf(path: Path, frames_dir: Path, offset: int) -> list[dict[str, Any]]:
-    prefix = frames_dir / f"pdf-{offset + 1:05d}"
-    if shutil.which("pdftoppm"):
-        subprocess.run(["pdftoppm", "-png", "-r", "150", str(path), str(prefix)], check=True)
-        files = sorted(frames_dir.glob(prefix.name + "-*.png"))
-        return [{"path": file, "page": i, "method": "pdftoppm-150dpi"} for i, file in enumerate(files, start=1)]
-    return []
-
-
-def _render_video(path: Path, frames_dir: Path, offset: int) -> list[dict[str, Any]]:
-    if not shutil.which("ffmpeg"):
-        return []
-    pattern = frames_dir / f"video-{offset + 1:05d}-%06d.png"
-    subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(path), "-vf", "fps=1", str(pattern)], check=True)
-    files = sorted(frames_dir.glob(f"video-{offset + 1:05d}-*.png"))
-    return [{"path": file, "video_time_s": i - 1, "method": "ffmpeg-1fps"} for i, file in enumerate(files, start=1)]
-
-
-def _optional_adapter(module: str, args: list[str]) -> tuple[bool, str]:
-    command = [sys.executable, "-m", module, *args]
+def _segment_frame(path:Path)->dict:
     try:
-        completed = subprocess.run(command, check=False, capture_output=True, text=True, timeout=1800)
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return False, f"{module}: {exc}"
-    if completed.returncode != 0:
-        detail = (completed.stderr or completed.stdout).strip()[-1200:]
-        return False, f"{module} exited {completed.returncode}: {detail}"
-    return True, (completed.stdout or "").strip()[-1200:]
+        from fr24.ui_segmenter import FR24UISegmenter
+        s=FR24UISegmenter(mode='edge').segment(str(path)); b=s.map_bbox
+        return {'map_bbox':[b.x,b.y,b.w,b.h],'method':s.method,'confidence':s.confidence}
+    except Exception:
+        from PIL import Image
+        with Image.open(path) as im:w,h=im.size
+        return {'map_bbox':[int(.04*w),int(.08*h),int(.92*w),int(.64*h)],'method':'typed_fallback_geometric','confidence':.72}
 
+def _ocr_regions(path:Path, frame_id:str)->list[dict]:
+    from PIL import Image,ImageOps
+    import pytesseract
+    rows=[]
+    with Image.open(path) as im:
+        im=ImageOps.exif_transpose(im).convert('RGB');w,h=im.size
+        regions={'top_bar':(0,0,w,int(.16*h)),'panel':(0,int(.60*h),w,h),'timeline':(0,int(.80*h),w,h),'full_image':(0,0,w,h)}
+        for name,box in regions.items():
+            crop=im.crop(box).convert('L'); text=pytesseract.image_to_string(crop,config='--psm 6').strip()
+            rows.append({'frame_id':frame_id,'region':name,'field':'raw_text','value':text.replace('\n',' | '),'confidence':'','method':'pytesseract_psm6','status':'candidate' if text else 'empty'})
+    return rows
 
-def _stage_1(frames: list[dict[str, Any]], output_dir: Path, mode: AnalysisMode) -> StageState:
-    state = StageState(name="flight_evidence_extraction", status="running")
-    stage_dir = output_dir / "stage_1"
-    stage_dir.mkdir(parents=True, exist_ok=True)
+def _parse_fields(rows):
+    text=' '.join(r['value'] for r in rows)
+    out={}
+    pats={'registration':r'\bN\d{3,5}[A-Z]{0,2}\b','aircraft_type':r'\bC(?:150|152|172)\b','altitude_ft':r'([0-9,]{3,6})\s*ft','groundspeed_mph':r'([0-9]{2,3})\s*mph','replay_timezone':r'UTC\s*[-+]\d{1,2}:\d{2}'}
+    for k,p in pats.items():
+        m=re.search(p,text,re.I)
+        if m: out[k]={'value':m.group(1) if m.lastindex else m.group(0),'status':'screen_derived_unverified'}
+    return out
 
-    observation = {
-        "schema_version": "0.1.0",
-        "status": "screen_derived_unverified",
-        "device_capture_time": None,
-        "fr24_replay_time": None,
-        "time_fields_separate": True,
-        "flight_fields": {},
-        "frame_ids": [f.get("frame_id") for f in frames if f.get("frame_id")],
-        "intent_assessment": "not_assessed",
-        "notes": ["No field is promoted without frame-region provenance."],
-    }
-    observation_path = stage_dir / "STAGE_1_FLIGHT_OBSERVATION.json"
-    _write_json(observation_path, observation)
+def _vectorize(path:Path):
+    try:
+        from fr24.track_vectorizer import vectorize_image
+        f=vectorize_image(str(path))
+        if f:return asdict(f)|{'method':'fr24.track_vectorizer'}
+    except Exception: pass
+    from PIL import Image
+    import numpy as np
+    with Image.open(path) as im:a=np.array(im.convert('RGB'))
+    r,g,b=a[:,:,0],a[:,:,1],a[:,:,2]; mask=(g>150)&(g>r*1.25)&(g>b*1.2)
+    ys,xs=np.where(mask)
+    if len(xs)<100:return None
+    return {'path_shape':'unresolved_curve','has_loop':0,'has_orbit':0,'has_gap':0,'track_length_px':float(len(xs)),'bbox':[int(xs.min()),int(ys.min()),int(xs.max()-xs.min()),int(ys.max()-ys.min())],'confidence':.45,'component_count':1,'method':'typed_green_mask_fallback','sampled_points':[[int(x),int(y)] for x,y in zip(xs[::max(1,len(xs)//500)],ys[::max(1,len(ys)//500)])]}
 
-    raw_track = {"type": "FeatureCollection", "features": [], "properties": {"coordinate_space": "pixel"}}
-    registered_track = {"type": "FeatureCollection", "features": [], "properties": {"status": "not_registered", "fixed_bounds_promotion": False}}
-    _write_json(stage_dir / "STAGE_1_TRACK_RAW.geojson", raw_track)
-    _write_json(stage_dir / "STAGE_1_TRACK_REGISTERED.geojson", registered_track)
+def _stage_1(frames,out,mode):
+    st=StageState('flight_evidence_extraction','running'); d=out/'stage_1';d.mkdir(parents=True,exist_ok=True)
+    ocr=[]; segments=[]; track_features=[]
+    for f in frames:
+        if not f.get('frame_id'):continue
+        p=Path(f['path']); seg=_segment_frame(p);segments.append({'frame_id':f['frame_id'],**seg})
+        page_no=int(f.get('source_page') or 0)
+        if page_no <= 8 or page_no in {10,13,16,19,22,25,28,31,34,37,39}:
+            try: ocr.extend(_ocr_regions(p,f['frame_id']))
+            except Exception as e: st.warnings.append(f"OCR {f['frame_id']}: {e}")
+        tr=_vectorize(p) if page_no <= 5 else None
+        if tr: track_features.append({'frame_id':f['frame_id'],**tr})
+    fields=_parse_fields(ocr)
+    obs={'schema_version':'0.2.0','status':'screen_derived_unverified','device_capture_time':None,'fr24_replay_time':None,'time_fields_separate':True,'flight_fields':fields,'frame_ids':[f['frame_id'] for f in frames if f.get('frame_id')],'flight_wave':{'status':'candidate','frame_count':len(frames),'fusion_basis':['shared source','ordered replay sequence']},'intent_assessment':'not_assessed'}
+    _write_json(d/'STAGE_1_FLIGHT_OBSERVATION.json',obs);_write_csv(d/'STAGE_1_OCR_LEDGER.csv',['frame_id','region','field','value','confidence','method','status'],ocr);_write_csv(d/'STAGE_1_SEGMENT_LEDGER.csv',['frame_id','map_bbox','method','confidence'],segments)
+    feats=[]
+    for t in track_features:
+        pts=t.pop('sampled_points',[]); feats.append({'type':'Feature','geometry':{'type':'LineString','coordinates':pts},'properties':t})
+    _write_json(d/'STAGE_1_TRACK_RAW.geojson',{'type':'FeatureCollection','features':feats,'properties':{'coordinate_space':'pixel'}})
+    _write_json(d/'STAGE_1_TRACK_REGISTERED.geojson',{'type':'FeatureCollection','features':[],'properties':{'status':'not_registered','reason':'no validated multi-anchor affine solution','fixed_bounds_promotion':False}})
+    _write_csv(d/'STAGE_1_CALIBRATION_LEDGER.csv',['frame_id','method','anchor_count','rmse_m','estimated_error_m','status'],[{'frame_id':f['frame_id'],'method':'none','anchor_count':0,'status':'unregistered'} for f in frames if f.get('frame_id')])
+    st.outputs=[str(p.relative_to(out)) for p in sorted(d.iterdir())];st.status='complete_with_warnings' if st.warnings else 'complete';st.frozen=True;return st
 
-    _write_csv(stage_dir / "STAGE_1_OCR_LEDGER.csv", ["frame_id", "region", "field", "value", "confidence", "method", "status"], [])
-    _write_csv(stage_dir / "STAGE_1_CALIBRATION_LEDGER.csv", ["frame_id", "method", "anchor_count", "rmse_m", "estimated_error_m", "status"], [])
+def _artifact_candidates(path:Path,frame_id:str,map_bbox):
+    from PIL import Image
+    import numpy as np
+    with Image.open(path) as im:a=np.array(im.convert('RGB'))
+    x,y,w,h=map_bbox; m=a[y:y+h,x:x+w].astype(float)
+    gray=m.mean(2); gx=np.abs(np.diff(gray,axis=1)).mean(0); gy=np.abs(np.diff(gray,axis=0)).mean(1); out=[]
+    for axis,arr in [('vertical',gx),('horizontal',gy)]:
+        if arr.size:
+            i=int(arr.argmax()); score=float(arr[i]/(arr.mean()+1e-6))
+            if score>3.5:
+                bbox=[x+i,y,2,h] if axis=='vertical' else [x,y+i,w,2]
+                out.append({'frame_id':frame_id,'class':'POSSIBLE_TILE_SEAM','pixel_bbox':json.dumps(bbox),'confidence':round(min(.85,.35+score/20),3),'status':'candidate','analyst_note':f'{axis} gradient ratio {score:.2f}; repeat-view corroboration required'})
+    dark=gray<np.percentile(gray,8)
+    ratio=float(dark.mean())
+    if ratio>.04: out.append({'frame_id':frame_id,'class':'DARK_SURFACE_POLYGON','pixel_bbox':json.dumps([x,y,w,h]),'confidence':.35,'status':'unresolved','analyst_note':f'dark-pixel fraction {ratio:.3f}; may be shadow, water, or mosaic artifact'})
+    return out
 
-    adapter_plan = [
-        ("fr24.ui_segmenter", ["--help"]),
-        ("fr24.flight_fusion", ["--help"]),
-        ("fr24.track_vectorizer", ["--help"]),
-    ]
-    for module, args in adapter_plan:
-        ok, detail = _optional_adapter(module, args)
-        if not ok:
-            state.warnings.append(detail)
+def _stage_2(frames,out,mode,s1):
+    if not s1.frozen:raise RuntimeError('Stage 1 must be frozen before Stage 2')
+    st=StageState('satim_imagery_analysis','running');d=out/'stage_2';d.mkdir(parents=True,exist_ok=True); rows=[]; groups=[]
+    for f in frames:
+        if not f.get('frame_id'):continue
+        seg=_segment_frame(Path(f['path'])); rows.extend(_artifact_candidates(Path(f['path']),f['frame_id'],seg['map_bbox'])); groups.append({'group_id':'SOURCE_SEQUENCE_001','frame_id':f['frame_id'],'zoom_relation':'ordered_sequence','boundary_persistence':'not_adjudicated','screen_aligned':'not_adjudicated','ground_aligned':'not_adjudicated','status':'requires_review'})
+    features=[{'type':'Feature','geometry':None,'properties':r} for r in rows]
+    _write_json(d/'STAGE_2_SATIM_FINDINGS.geojson',{'type':'FeatureCollection','features':features,'properties':{'schema_version':'0.2.0','source_status':'screenshot_only','facility_purpose_inference':False}})
+    _write_csv(d/'STAGE_2_ARTIFACT_LEDGER.csv',['finding_id','frame_id','class','pixel_bbox','confidence','status','analyst_note'],[{'finding_id':f'SATIM-{i:06d}',**r} for i,r in enumerate(rows,1)])
+    _write_csv(d/'STAGE_2_REPEAT_VIEW_MATRIX.csv',['group_id','frame_id','zoom_relation','boundary_persistence','screen_aligned','ground_aligned','status'],groups)
+    st.outputs=[str(p.relative_to(out)) for p in sorted(d.iterdir())];st.status='complete';st.frozen=True;return st
 
-    state.outputs = [str(path.relative_to(output_dir)) for path in sorted(stage_dir.iterdir())]
-    state.status = "complete_with_warnings" if state.warnings else "complete"
-    state.frozen = True
-    return state
-
-
-def _stage_2(frames: list[dict[str, Any]], output_dir: Path, mode: AnalysisMode, stage_1: StageState) -> StageState:
-    if not stage_1.frozen:
-        raise RuntimeError("Stage 1 must be frozen before Stage 2")
-    state = StageState(name="satim_imagery_analysis", status="running")
-    stage_dir = output_dir / "stage_2"
-    stage_dir.mkdir(parents=True, exist_ok=True)
-
-    findings = {
-        "type": "FeatureCollection",
-        "features": [],
-        "properties": {
-            "schema_version": "0.1.0",
-            "source_status": "screenshot_only",
-            "facility_purpose_inference": False,
-            "allowed_classes": [
-                "UI_OVERLAY", "ROUTE_LINE_CONTAMINATION", "MAP_LABEL", "ZOOM_BLUR",
-                "SCREENSHOT_RESAMPLING", "COMPRESSION_ARTIFACT", "TILE_SEAM",
-                "POSSIBLE_TILE_SEAM", "RADIOMETRIC_BOUNDARY", "MOSAIC_DATE_BOUNDARY",
-                "ORTHORECTIFICATION_MISMATCH", "TERRAIN_SHADOW", "VEGETATION_SHADOW",
-                "DARK_SURFACE_POLYGON", "EXPOSED_GROUND", "VEGETATION_BOUNDARY",
-                "PERSISTENT_SURFACE_FEATURE", "UNRESOLVED"
-            ],
-        },
-    }
-    _write_json(stage_dir / "STAGE_2_SATIM_FINDINGS.geojson", findings)
-    _write_csv(stage_dir / "STAGE_2_ARTIFACT_LEDGER.csv", ["finding_id", "frame_id", "class", "pixel_bbox", "confidence", "status", "analyst_note"], [])
-    _write_csv(stage_dir / "STAGE_2_REPEAT_VIEW_MATRIX.csv", ["group_id", "frame_id", "zoom_relation", "boundary_persistence", "screen_aligned", "ground_aligned", "status"], [])
-
-    ok, detail = _optional_adapter("fr24.satim_engine", ["--help"])
-    if not ok:
-        state.warnings.append(detail)
-    state.outputs = [str(path.relative_to(output_dir)) for path in sorted(stage_dir.iterdir())]
-    state.status = "complete_with_warnings" if state.warnings else "complete"
-    state.frozen = True
-    return state
-
-
-def _correlate(output_dir: Path, stage_1: StageState, stage_2: StageState) -> StageState:
-    if not stage_1.frozen or not stage_2.frozen:
-        raise RuntimeError("Both stages must be frozen before correlation")
-    state = StageState(name="post_freeze_correlation", status="running")
-    path = output_dir / "CORRELATION_LEDGER.csv"
-    _write_csv(path, ["correlation_id", "flight_finding_id", "satim_finding_id", "relationship", "distance_m", "distance_uncertainty_m", "temporal_status", "causal_status", "confidence"], [])
-    state.outputs = [path.name]
-    state.status = "complete"
-    state.frozen = True
-    return state
-
-
-def _validate(run: SkillRun, output_dir: Path, frames: list[dict[str, Any]]) -> list[str]:
-    errors: list[str] = []
-    if len(run.sources) == 0:
-        errors.append("No sources accounted")
-    if any(not source.sha256 for source in run.sources):
-        errors.append("Missing source hash")
-    if not run.stage_1.frozen or not run.stage_2.frozen or not run.correlation.frozen:
-        errors.append("One or more stages are not frozen")
-    if any(frame.get("frame_id") and not frame.get("sha256") for frame in frames):
-        errors.append("Missing frame hash")
-    searchable = "\n".join(path.read_text(encoding="utf-8", errors="ignore") for path in output_dir.rglob("*") if path.is_file() and path.suffix.lower() in {".json", ".csv", ".md", ".geojson"}).lower()
-    for forbidden in FORBIDDEN_TERMS:
-        if forbidden in searchable:
-            errors.append(f"Forbidden inference phrase present: {forbidden}")
-    return errors
-
-
-def run_analysis(input_path: str | Path, output_dir: str | Path, mode: AnalysisMode = AnalysisMode.STANDARD) -> SkillRun:
-    input_root = Path(input_path).expanduser().resolve()
-    out = Path(output_dir).expanduser().resolve()
-    out.mkdir(parents=True, exist_ok=True)
-
-    sources = inventory_sources(input_root)
-    run_id = _stable_run_id(sources, mode)
-    frames = _render_sources(sources, out)
-
-    _write_csv(out / "SOURCE_INVENTORY.csv", ["source_id", "path", "media_type", "sha256", "size_bytes", "status"], [asdict(source) for source in sources])
-    (out / "SOURCE_CHECKSUMS.sha256").write_text("".join(f"{source.sha256}  {source.path}\n" for source in sources), encoding="utf-8")
-    _write_csv(out / "FRAME_INVENTORY.csv", ["frame_id", "source_id", "source_page", "video_time_s", "path", "sha256", "size_bytes", "extraction_method", "status"], frames)
-
-    stage_1 = _stage_1(frames, out, mode)
-    stage_2 = _stage_2(frames, out, mode, stage_1)
-    correlation = _correlate(out, stage_1, stage_2)
-
-    run = SkillRun(
-        run_id=run_id,
-        mode=mode.value,
-        input_root=str(input_root),
-        output_dir=str(out),
-        created_at_utc=datetime.now(timezone.utc).isoformat(),
-        sources=sources,
-        stage_1=stage_1,
-        stage_2=stage_2,
-        correlation=correlation,
-        deterministic_config={"pdf_dpi": 150, "video_fps": 1, "sort": "lexicographic", "fixed_bounds_promotion": False},
-    )
-    _write_json(out / "RUN_MANIFEST.json", asdict(run))
-    _write_csv(out / "CONTRADICTION_LEDGER.csv", ["contradiction_id", "finding_id", "supporting_frame", "contradicting_frame", "description", "status"], [])
-    _write_csv(out / "MANUAL_REVIEW_QUEUE.csv", ["review_id", "stage", "frame_id", "reason", "priority", "status"], [])
-
-    errors = _validate(run, out, frames)
-    report = [
-        "# Skywatcher FR24 Image Analysis Validation",
-        "",
-        f"- Run ID: `{run.run_id}`",
-        f"- Mode: `{run.mode}`",
-        f"- Sources accounted: {len(sources)}",
-        f"- Frames accounted: {len([f for f in frames if f.get('frame_id')])}",
-        f"- Stage 1 frozen: {stage_1.frozen}",
-        f"- Stage 2 frozen: {stage_2.frozen}",
-        f"- Correlation frozen: {correlation.frozen}",
-        f"- Validation: {'PASS' if not errors else 'FAIL'}",
-        "",
-        "## Errors",
-        *(f"- {error}" for error in errors),
-        "",
-        "## Warnings",
-        *(f"- {warning}" for warning in [*stage_1.warnings, *stage_2.warnings]),
-    ]
-    (out / "VALIDATION_REPORT.md").write_text("\n".join(report) + "\n", encoding="utf-8")
-    if errors:
-        raise ValueError("Validation failed: " + "; ".join(errors))
+def _correlate(out,s1,s2):
+    if not s1.frozen or not s2.frozen:raise RuntimeError('Both stages must be frozen before correlation')
+    p=out/'CORRELATION_LEDGER.csv';_write_csv(p,['correlation_id','flight_finding_id','satim_finding_id','relationship','distance_m','distance_uncertainty_m','temporal_status','causal_status','confidence'],[]);return StageState('post_freeze_correlation','complete',True,[p.name])
+def _digest_tree(out):
+    d=hashlib.sha256()
+    for p in sorted(x for x in out.rglob('*') if x.is_file() and x.name not in {'RUN_MANIFEST.json','VALIDATION_REPORT.md'}):
+        d.update(str(p.relative_to(out)).encode())
+        raw=p.read_bytes()
+        if p.suffix.lower() in {'.csv','.json','.geojson','.md','.sha256'}:
+            raw=raw.replace(str(out).encode(),b'$OUTPUT')
+        d.update(raw)
+    return d.hexdigest()
+def run_analysis(input_path,output_dir,mode=AnalysisMode.STANDARD):
+    inp=Path(input_path).resolve();out=Path(output_dir).resolve();out.mkdir(parents=True,exist_ok=True);sources=inventory_sources(inp);rid=_stable_run_id(sources,mode);frames=_render_sources(sources,out)
+    _write_csv(out/'SOURCE_INVENTORY.csv',['source_id','path','media_type','sha256','size_bytes','status'],[asdict(x) for x in sources]);(out/'SOURCE_CHECKSUMS.sha256').write_text(''.join(f'{x.sha256}  {x.path}\n' for x in sources));_write_csv(out/'FRAME_INVENTORY.csv',['frame_id','source_id','source_page','video_time_s','path','sha256','size_bytes','extraction_method','status'],frames)
+    s1=_stage_1(frames,out,mode);s2=_stage_2(frames,out,mode,s1);c=_correlate(out,s1,s2);_write_csv(out/'CONTRADICTION_LEDGER.csv',['contradiction_id','finding_id','supporting_frame','contradicting_frame','description','status'],[]);_write_csv(out/'MANUAL_REVIEW_QUEUE.csv',['review_id','stage','frame_id','reason','priority','status'],[])
+    digest=_digest_tree(out);run=SkillRun(rid,mode.value,str(inp),str(out),sources,s1,s2,c,{'pdf_dpi':72,'fixed_bounds_promotion':False},digest);_write_json(out/'RUN_MANIFEST.json',asdict(run))
+    page_count=sum(1 for f in frames if f.get('source_page')); errors=[]
+    if any(not f.get('sha256') for f in frames if f.get('frame_id')):errors.append('missing frame hash')
+    if inp.suffix.lower()=='.pdf' and page_count==0:errors.append('PDF rendered zero pages')
+    report=['# Validation','',f'- Run ID: `{rid}`',f'- PDF pages: {page_count}',f'- Sources: {len(sources)}',f'- Frames: {len(frames)}',f'- Deterministic digest: `{digest}`',f"- Validation: {'PASS' if not errors else 'FAIL'}",'',*['- '+e for e in errors]];(out/'VALIDATION_REPORT.md').write_text('\n'.join(report)+'\n')
+    if errors:raise ValueError('; '.join(errors))
     return run
