@@ -83,9 +83,31 @@ def test_stage_outputs_and_real_ledgers(tmp_path: Path) -> None:
     assert run.stage_1.frozen and run.stage_2.frozen and run.correlation.frozen
     assert (output / "stage_1" / "STAGE_1_SEGMENT_LEDGER.csv").exists()
     assert (output / "stage_2" / "STAGE_2_REPEAT_VIEW_MATRIX.csv").exists()
+    assert (output / "CONTRADICTION_LEDGER.csv").exists()
     frames = list(csv.DictReader((output / "FRAME_INVENTORY.csv").open()))
     assert len(frames) == 1
     assert all(row["sha256"] for row in frames)
+
+
+def test_adapter_provenance_is_in_manifest_and_file(tmp_path: Path) -> None:
+    image = tmp_path / "frame.png"
+    _tiny_png(image)
+    output = tmp_path / "out"
+    run_analysis(image, output, AnalysisMode.STANDARD)
+    manifest = json.loads((output / "RUN_MANIFEST.json").read_text())
+    provenance = json.loads((output / "ADAPTER_PROVENANCE.json").read_text())
+    assert len(provenance) == 8
+    assert manifest["adapter_provenance"] == provenance
+    assert {row["name"] for row in provenance} == {
+        "ui_segmenter",
+        "region_ocr",
+        "rlsm_ocr",
+        "flight_fusion",
+        "track_vectorizer",
+        "affine_georegistration",
+        "satim_engine",
+        "tile_seam_classifier",
+    }
 
 
 def test_no_intent_or_purpose_inference(tmp_path: Path) -> None:
