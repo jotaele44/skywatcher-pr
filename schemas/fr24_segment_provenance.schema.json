@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/fr24_segment_provenance.schema.json",
+  "title": "FR24 Segment Provenance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "offline_score", "non_color_signal_count", "visual_render_state", "source_state", "transmission_state", "final_classification", "confidence", "review_required", "component_scores", "reasons"],
+  "properties": {
+    "schema_version": {"const": "fr24.segment.provenance.v1"},
+    "offline_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "non_color_signal_count": {"type": "integer", "minimum": 0},
+    "visual_render_state": {"enum": ["BRIGHT_ROUTE", "DARK_ROUTE", "MIXED_ROUTE", "NO_ROUTE", "UNKNOWN"]},
+    "source_state": {"enum": ["CONTINUOUS_ADSB", "CONTINUOUS_NON_ADSB", "MULTISOURCE_CONTINUOUS", "SOURCE_TRANSITION", "INTERPOLATED", "DISCONTINUOUS", "UNKNOWN"]},
+    "transmission_state": {"enum": ["OBSERVED_TRANSMITTING", "PROBABLE_SIGNAL_GAP", "CONFIRMED_SIGNAL_GAP", "NOT_ASSESSABLE"]},
+    "final_classification": {"enum": ["OBSERVED_TRACK", "MULTISOURCE_TRACK", "SOURCE_TRANSITION", "INTERPOLATED", "PROBABLE_OFFLINE", "CONFIRMED_OFFLINE", "UNKNOWN"]},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "review_required": {"type": "boolean"},
+    "component_scores": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}},
+    "reasons": {"type": "array", "items": {"type": "string"}}
+  }
+}
