@@ -1,0 +1,17 @@
+schema_version: fr24.segment.provenance.config.v1
+weights:
+  temporal_gap: 0.30
+  interpolation_geometry: 0.24
+  sampling_density_deficit: 0.16
+  endpoint_discontinuity: 0.12
+  telemetry_discontinuity: 0.10
+  source_transition: 0.05
+  dark_gap_rendering: 0.03
+thresholds:
+  interpolation_suspected: 0.40
+  probable_offline: 0.62
+guardrails:
+  minimum_non_color_signals: 2
+  color_may_not_veto_offline: true
+  screenshot_only_confidence_cap: 0.79
+  require_corroboration_for_confirmed: true
