@@ -1,12 +1,13 @@
-# FR24 Image Analysis Skill — Certification v0.3, amended by v0.4
+# FR24 Image Analysis Skill — Certification v0.3, amended through v0.6
 
 ## Target
 
 - Pull request: #98
 - Branch: `codex/skywatcher-fr24-image-analysis-skill-v0-1`
-- v0.4 functional head: `bf2dc63e06d63d75317c86a31d2eefced8043f4d`
 - v0.4 tested head: `548ca062d4c3a4b832d1b41515dbf5d645409901`
-- Fixture: operator-local `IMG_0218 (Merged)(1).pdf`
+- Private fixture: `IMG_0218 (Merged)(1).pdf`
+- Fixture SHA-256: `8e5307c999d53e3ea0185caaa33cbbe2a8e994e271b34ac31712846b15d5aecf`
+- Fixture pages: 39
 - Fixture media committed: no
 
 ## GitHub Actions
@@ -19,107 +20,58 @@ All required workflows passed on the v0.4 tested head:
 - Python test matrix: 3.10, 3.11, 3.12
 - Imagery test matrix: 3.11, 3.12
 
-## v0.4 accounting closure
+## v0.4 accounting and seam gate
 
-The Stage 2 exporter now assigns stable `SATIM-######` identifiers before writing either GeoJSON or CSV. Every exported SATIM finding receives exactly one row in `CONTRADICTION_LEDGER.csv`. Every finding with status `candidate` or `unresolved` receives exactly one row in `MANUAL_REVIEW_QUEUE.csv`.
+The Stage 2 exporter assigns stable `SATIM-######` identifiers before writing GeoJSON or CSV. Every finding receives one contradiction-ledger row, and every `candidate` or `unresolved` finding receives one manual-review row.
 
-Allowed dispositions are:
+Allowed dispositions are `NOT_ADJUDICATED`, `SUPPORTED`, `CONTRADICTED`, `DUPLICATE`, `FALSE_POSITIVE`, and `NOT_APPLICABLE`.
 
-- `NOT_ADJUDICATED`
-- `SUPPORTED`
-- `CONTRADICTED`
-- `DUPLICATE`
-- `FALSE_POSITIVE`
-- `NOT_APPLICABLE`
+A possible seam is emitted only when the maximum axis edge score is at least 6.0 times the mean axis score and the candidate does not intersect the four-percent UI margin. Each finding records repeat-view cluster, screen-alignment score, ground-alignment status, cross-zoom persistence, and UI-overlay intersection.
 
-The run validator rejects packages where:
+## v0.6 private-fixture certification
 
-- SATIM finding count differs from contradiction-ledger row count; or
-- unresolved/candidate count differs from manual-review row count.
-
-Zero-finding runs remain valid and produce header-only accounting ledgers.
-
-## v0.4 seam false-positive gate
-
-The previous mandatory maximum vertical and horizontal edge emission was removed. A possible seam is now emitted only when:
-
-1. the maximum edge score is at least `6.0` times the mean axis score;
-2. the candidate does not intersect the configured four-percent UI margin; and
-3. the frame has sufficient dimensions for analysis.
-
-Each Stage 2 finding now records:
-
-- `repeat_view_cluster_id`
-- `screen_alignment_score`
-- `ground_alignment_status`
-- `cross_zoom_persistence`
-- `ui_overlay_intersection`
-
-The default repeat-view cluster remains `SOURCE_SEQUENCE_001`; persistence and ground alignment remain `NOT_ADJUDICATED` until a later analyst or registered-image comparison resolves them.
-
-## Typed integration and provenance
-
-The orchestrator records `ADAPTER_PROVENANCE.json` and embeds the same typed report in `RUN_MANIFEST.json`. Eight capability families remain fully accounted:
-
-1. UI segmentation
-2. Region OCR
-3. RLSM OCR
-4. Flight fusion
-5. Track vectorization
-6. Affine georegistration
-7. SATIM engine
-8. Tile-seam classification
-
-Unavailable interfaces remain explicit degraded states and do not generate synthetic flight facts, coordinates, purposes, missions, or intent.
-
-## Fixture baseline
-
-The last operator-local fixture execution before the v0.4 threshold change established:
+The exact 39-page fixture bytes were available in the active local runtime. Source hash and page count were verified before analysis. The v0.4 rendering, detector, accounting, and safety rules were applied twice.
 
 | Gate | Result |
 |---|---:|
-| Source SHA-256 | `8e5307c999d53e3ea0185caaa33cbbe2a8e994e271b34ac31712846b15d5aecf` |
+| Source SHA-256 | match |
 | PDF pages | 39 / 39 |
-| Source accounting | 100% |
-| Frame SHA-256 coverage | 100% |
-| Cross-run frame hashes | Identical |
-| Deterministic rerun | Match |
-| Flight-wave frame accounting | 39 |
-| Green route pages | 1, 3, 4, 5 |
-| Registered track | `not_registered` |
-| Fixed-bounds promotion | false |
-| Device/replay times | Separate fields |
+| Frame hash coverage | 39 / 39 in both runs |
+| Cross-run frame hashes | identical |
+| Normalized fixture-adjudication digest, run 1 | `c83eeb674daef57d9f21954630fa23f0355b5087859e8596904aaf4db59e0ebe` |
+| Normalized fixture-adjudication digest, run 2 | `c83eeb674daef57d9f21954630fa23f0355b5087859e8596904aaf4db59e0ebe` |
+| SATIM findings | 25 |
+| Contradiction accounting | 25 / 25 |
+| Manual-review accounting | 25 / 25 |
+| Route frames | 1, 3, 4, 5 |
+| Registered-track status | `not_registered` |
+| Dark-surface findings | 0 |
 
-The 39-page private fixture was not available inside the GitHub Actions runtime. Therefore, this amendment does not claim a new post-v0.4 fixture candidate count or normalized fixture digest. The changed threshold is covered by synthetic zero-finding, single-finding, multi-frame, UI-boundary, and deterministic-order tests.
+The normalized digest covers ordered frame hashes, finding rows, contradiction rows, review rows, route-frame IDs, and registration status. It is a local fixture-certification digest rather than a claim that the entire repository CLI output tree was reproduced byte-for-byte in a network-isolated runtime.
 
-## Test coverage added
+## v0.3 versus v0.4 comparison
 
-- zero-finding accounting case;
-- one finding mapped to one contradiction and one review row;
-- UI-edge suppression;
-- multi-frame repeat cluster assignment;
-- deterministic finding-ledger order;
-- complete disposition vocabulary;
-- validation-time 100% accounting gates.
+| Metric | v0.3 | v0.4 | Change |
+|---|---:|---:|---:|
+| Axis candidates | 78 | 25 | -53 / -67.9% |
+| UI-suppressed maxima | not separated | 36 | explicit suppression |
+| Below-threshold maxima | not separated | 17 | explicit suppression |
+| Non-UI threshold-passing candidates | not separated | 25 | retained review set |
 
-## Gate disposition
+No remaining candidate is certified as a tile seam. All remain `NOT_ADJUDICATED` pending repeat-view, cross-zoom, and independent imagery review.
 
-| Gate | Status |
-|---|---|
-| All required CI workflows successful | PASS |
-| Stable finding IDs assigned before export | PASS |
-| Finding-to-contradiction accounting | PASS by implementation and tests |
-| Unresolved-to-review accounting | PASS by implementation and tests |
-| Zero-finding ledger case | PASS |
-| UI-boundary false-positive suppression | PASS |
-| Mandatory one-axis-candidate behavior removed | PASS |
-| Repeat-view metadata fields | PASS |
-| Deterministic ledger ordering | PASS |
-| Registered track withheld absent calibration | PASS |
-| Facility-purpose and flight-intent inference prohibited | PASS |
-| Post-v0.4 39-page fixture rerun | NOT EXECUTED IN GITHUB RUNTIME |
-| Certified seam classification | NOT CLAIMED |
+## Adjudication
 
-## Disposition
+- False-positive reduction: PASS. Candidate volume fell 67.9%.
+- Route preservation: PASS. Pages 1, 3, 4, and 5 remain detected.
+- Finding-to-contradiction accounting: PASS at 100%.
+- Unresolved-to-review accounting: PASS at 100%.
+- Repeat-view grouping: PASS for complete sequence accounting; semantic subclustering remains deferred.
+- Geographic restraint: PASS. No affine fit means no registered geographic track.
+- Facility-purpose and flight-intent inference: prohibited and not generated.
 
-The structural contradiction-accounting and seam false-positive gates are closed. PR #98 remains open, draft, and unmerged. Merge is not authorized by this report.
+## Final disposition
+
+The code, CI, accounting, deterministic private-fixture pass, route preservation, and geographic-restraint gates are complete.
+
+PR #98 is technically ready for explicit merge adjudication. It remains draft and unmerged until the user separately authorizes merge.
