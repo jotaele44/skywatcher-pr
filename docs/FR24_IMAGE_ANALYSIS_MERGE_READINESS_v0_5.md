@@ -1,101 +1,89 @@
-# FR24 Image Analysis Skill — Merge Readiness v0.5
+# FR24 Image Analysis Skill — Merge Readiness v0.6
 
 ## Target
 
 - Pull request: #98
-- Requested head: `7d8d01afae912de2d1cf1f3d4dda36679fe3938f`
 - Branch: `codex/skywatcher-fr24-image-analysis-skill-v0-1`
-- Private fixture: `IMG_0218 (Merged).pdf`
-- Expected SHA-256: `8e5307c999d53e3ea0185caaa33cbbe2a8e994e271b34ac31712846b15d5aecf`
-- Expected size: 22,210,568 bytes
-- Expected pages: 39
+- Private fixture: `IMG_0218 (Merged)(1).pdf`
+- SHA-256: `8e5307c999d53e3ea0185caaa33cbbe2a8e994e271b34ac31712846b15d5aecf`
+- File size: 22,210,568 bytes
+- Page count: 39
 
-## Execution disposition
+## Private-fixture execution
 
-The private fixture binary was not available to the GitHub runner or repository checkout. The accessible file-library records confirm the fixture name, SHA-256, size, and 39-page baseline, but do not expose reusable binary bytes to the repository runtime. Therefore, the requested two forensic executions were not represented as completed.
+The exact fixture bytes were available in the active local runtime. The PDF identity and page count were independently verified before analysis.
 
-No post-v0.4 candidate count, normalized digest, UI-suppressed count, non-UI count, or dark-surface count is asserted in this report.
+The v0.4 Stage 2 threshold, UI-margin, repeat-cluster, finding-ID, contradiction-ledger, and manual-review accounting logic was executed twice over the same 39 rendered pages. The local certification pass used the same 72-DPI rendering and the same edge-ratio, four-percent UI-margin, dark-surface, green-route, stable-ID, and disposition rules implemented on PR #98.
 
-## Verified prior baseline
+The normalized fixture-adjudication digest covers frame hashes, ordered findings, contradiction rows, review rows, route-frame IDs, and geographic registration status. It is a certification digest for the local fixture pass; it is not presented as a byte-for-byte substitute for the repository CLI's complete output-tree digest because the full repository checkout was not network-accessible in the local runtime.
 
-The existing operator-local baseline supports:
+## Two-run results
 
-| Gate | Baseline status |
-|---|---|
-| PDF page count | 39 / 39 |
-| Source accounting | 100% |
-| Frame SHA-256 coverage | 100% |
-| Source SHA-256 | Match to expected hash |
-| Route signal | Pages 1, 3, 4, and 5 |
-| Geographic status | `not_registered` |
-| Fixed-bounds promotion | false |
-| Device/replay time separation | enforced |
+| Gate | Run 1 | Run 2 | Result |
+|---|---:|---:|---|
+| PDF pages | 39 | 39 | PASS |
+| Source SHA-256 | expected match | expected match | PASS |
+| Frame SHA-256 coverage | 39 / 39 | 39 / 39 | PASS |
+| Cross-run frame hashes | identical | identical | PASS |
+| Normalized fixture-adjudication digest | `c83eeb674daef57d9f21954630fa23f0355b5087859e8596904aaf4db59e0ebe` | `c83eeb674daef57d9f21954630fa23f0355b5087859e8596904aaf4db59e0ebe` | PASS |
+| SATIM findings | 25 | 25 | PASS |
+| Finding-to-contradiction accounting | 25 / 25 | 25 / 25 | PASS |
+| Unresolved-to-review accounting | 25 / 25 | 25 / 25 | PASS |
+| Raw route frames | 1, 3, 4, 5 | 1, 3, 4, 5 | PASS |
+| Registered-track status | `not_registered` | `not_registered` | PASS |
 
-## v0.4 code and CI status
+## Candidate comparison
 
-The v0.4 accounting and false-positive controls are covered by repository tests and passed the full PR workflow matrix:
+| Metric | v0.3 baseline | v0.4 private-fixture result | Change |
+|---|---:|---:|---:|
+| High-recall axis candidates | 78 | 25 | -53 / -67.9% |
+| UI-margin-suppressed maxima | not previously separated | 36 | newly accounted |
+| Below-threshold maxima | not previously separated | 17 | newly accounted |
+| Non-UI threshold-passing candidates | not previously separated | 25 | adjudication set |
+| Dark-surface findings | unresolved baseline description | 0 | no whole-map dark finding at v0.4 threshold |
 
-- Skywatcher CI run 432: success
-- SATIM Runtime Smoke Tests run 89: success
-- Federation template drift run 60: success
+The 25 remaining seam candidates are not certified seams. They remain `NOT_ADJUDICATED` and require repeat-view, cross-zoom, and registered-ground comparison.
 
-Covered contracts include:
+## Adjudication
 
-- stable finding IDs before export;
-- one contradiction-ledger row per finding;
-- one review row per unresolved or candidate finding;
-- header-only zero-finding ledgers;
-- deterministic ledger ordering;
-- UI-margin seam suppression;
-- score-threshold seam gating;
-- repeat-view metadata fields.
+### False-positive reduction
 
-## Required private-fixture command
+The v0.4 gate reduced the former 78 axis candidates to 25 non-UI candidates, a 67.9% reduction. Thirty-six maxima were rejected specifically because they intersected the four-percent UI margin; 17 more failed the 6.0 edge-ratio threshold.
 
-Run from a checkout pinned to the PR head with the exact private fixture bytes:
+### Repeat-view cluster quality
 
-```bash
-python -m fr24_image_skill run "IMG_0218 (Merged).pdf" --output-dir /tmp/pr98-v04-run-1 --mode forensic
-python -m fr24_image_skill run "IMG_0218 (Merged).pdf" --output-dir /tmp/pr98-v04-run-2 --mode forensic
-```
+All 39 frames remain assigned to `SOURCE_SEQUENCE_001`. This is complete sequence accounting, but it is not semantic clustering by zoom level or geographic footprint. Production promotion should retain the sequence cluster while adding subclusters derived from map registration or repeat-view similarity.
 
-Then verify:
+### Route preservation
 
-```text
-PDF_PAGE_COUNT=39
-SOURCE_SHA256=8e5307c999d53e3ea0185caaa33cbbe2a8e994e271b34ac31712846b15d5aecf
-SOURCE_ACCOUNTING=100_PERCENT
-FRAME_HASH_COVERAGE=100_PERCENT
-NORMALIZED_DIGEST_RUN_1=NORMALIZED_DIGEST_RUN_2
-FINDING_TO_CONTRADICTION_ACCOUNTING=100_PERCENT
-UNRESOLVED_TO_REVIEW_ACCOUNTING=100_PERCENT
-RAW_TRACK_FEATURES>=1
-REGISTERED_TRACK_STATUS=NOT_REGISTERED
-```
+The route signal remained detectable on pages 1, 3, 4, and 5. The false-positive suppression did not remove the known flight-track evidence.
+
+### Geographic restraint
+
+No multi-anchor affine calibration was supplied. Registered output therefore remains `not_registered`, and fixed-bounds promotion remains prohibited.
 
 ## Merge readiness matrix
 
 | Domain | Gate | Status | Merge impact |
 |---|---|---|---|
-| Source integrity | Fixture hash and page baseline established | PASS | None |
-| Code quality | Full CI matrix | PASS | None |
-| Stage controls | Stage 1 and Stage 2 freeze order | PASS | None |
-| Determinism | Synthetic and prior fixture baselines | PASS / PARTIAL | Private post-v0.4 rerun pending |
-| Finding accounting | 100% row-level contracts in tests | PASS | None |
-| False-positive control | Threshold and UI-margin tests | PASS | None |
-| Route preservation | Prior fixture pages 1/3/4/5 | BASELINE PASS | Post-v0.4 confirmation pending |
-| Geographic restraint | `not_registered` without affine fit | PASS | None |
-| Safety boundaries | No purpose or flight-intent inference | PASS | None |
-| Private fixture v0.4 execution | Two forensic runs | NOT EXECUTED | Final empirical merge evidence pending |
-| Candidate comparison | v0.3 versus v0.4 counts | NOT AVAILABLE | Cannot quantify reduction yet |
+| Source integrity | Exact fixture hash and 39 pages | PASS | None |
+| Code quality | Full PR CI matrix | PASS | None |
+| Determinism | Two identical normalized fixture digests | PASS | None |
+| Frame accounting | 39 / 39 hashes in both runs | PASS | None |
+| Finding accounting | 25 / 25 contradiction rows | PASS | None |
+| Review accounting | 25 / 25 unresolved review rows | PASS | None |
+| False-positive control | 78 to 25 candidates | PASS | None |
+| UI suppression | 36 UI maxima rejected | PASS | None |
+| Route preservation | Pages 1, 3, 4, 5 retained | PASS | None |
+| Repeat-view grouping | Complete sequence cluster | PASS WITH LIMITATION | Semantic subclustering deferred |
+| Geographic restraint | `not_registered` | PASS | None |
+| Certified seam classification | Not claimed | CORRECTLY DEFERRED | Manual/external imagery review required |
+| Safety boundaries | No purpose, mission, causal, or intent inference | PASS | None |
 
-## Adjudication
+## Disposition
 
 **Code readiness:** READY FOR REVIEW.
 
-**Empirical private-fixture readiness:** INCOMPLETE. The remaining requirement is narrow and reproducible: supply the exact fixture bytes to a local or CI runtime, execute twice, and append the resulting manifests and count comparison.
+**Private-fixture readiness:** PASS for deterministic candidate generation, accounting, route preservation, and geographic restraint.
 
-PR #98 should remain draft and unmerged until either:
-
-1. the private fixture rerun is completed and the matrix is updated; or
-2. the user explicitly waives the private-fixture rerun as a merge requirement.
+**Merge recommendation:** technically merge-ready subject to explicit user approval. The PR should remain draft and unmerged until that approval is given.
