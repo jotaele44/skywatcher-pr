@@ -1,3 +1,17 @@
+# Adjacent FR24 segment provenance
+
+SATIM may preserve an optional `fr24_segment_provenance.json` artifact beside
+its run outputs. This artifact remains in the FR24 track/source-integrity
+domain and is not merged into `satim_output_contract.schema.json`.
+
+The provenance classifier separates route rendering from continuity inference:
+
+- bright route color does not prove continuous ADS-B reception;
+- dark route color is weak supporting evidence only;
+- source fusion is represented as a source transition;
+- confirmed offline state requires structured or independent corroboration;
+- screenshot-only assessments are confidence-capped and reviewable.
+
 # Skywatcher SATIM Integrated Test Run
 
 Vector: `SKYWATCHER_SATIM_INTEGRATED_TEST_RUN`
