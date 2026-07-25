@@ -4,25 +4,26 @@
 
 - Pull request: #98
 - Branch: `codex/skywatcher-fr24-image-analysis-skill-v0-1`
-- Certified head: `629ed228b64a689bf7f3fd1cb049e8f5369b7da4`
+- Functional hardening commit: `629ed228b64a689bf7f3fd1cb049e8f5369b7da4`
+- Final tested head: `12d15e29cdf988a5fcc6d0c6185389bbc072bcdd`
 - Fixture: operator-local `IMG_0218 (Merged)(1).pdf`
 - Fixture media committed: no
 
 ## GitHub Actions
 
-All required workflows passed on the certified head:
+All required workflows passed on the final tested head:
 
-- Federation template drift, run 50: success
-- SATIM Runtime Smoke Tests, run 84: success
-- Skywatcher CI, run 427: success
+- Federation template drift, run 54: success
+- SATIM Runtime Smoke Tests, run 86: success
+- Skywatcher CI, run 429: success
 - Python test matrix: 3.10, 3.11, 3.12
 - Imagery test matrix: 3.11, 3.12
 
-The prior head failed the standard Python test matrix because the orchestration fallback implicitly required imagery dependencies. Head `629ed228...` removes that hidden dependency by providing Pillow-only route and artifact fallbacks while retaining repository-native adapters when available.
+The earlier hardening head failed the standard Python matrix because the orchestration fallback implicitly required imagery dependencies. Commit `629ed228...` removed that hidden dependency by adding Pillow-only route and artifact fallbacks while retaining repository-native adapters when available. The final test increment additionally verifies adapter provenance in both `ADAPTER_PROVENANCE.json` and `RUN_MANIFEST.json`.
 
 ## Typed integration and provenance
 
-The orchestrator now records `ADAPTER_PROVENANCE.json` and embeds the typed capability report in `RUN_MANIFEST.json`. Eight capabilities are accounted:
+The orchestrator records `ADAPTER_PROVENANCE.json` and embeds the typed capability report in `RUN_MANIFEST.json`. Eight capabilities are accounted:
 
 1. UI segmentation
 2. Region OCR
@@ -43,7 +44,7 @@ The 39-page fixture was rendered twice with the same pinned command used by the 
 pdftoppm -png -r 72 INPUT.pdf OUTPUT_PREFIX
 ```
 
-The current dependency-safe Pillow route and edge-classification logic was then applied identically to both rendered sets.
+The current dependency-safe Pillow route and edge-classification logic was applied identically to both rendered sets.
 
 | Gate | Result |
 |---|---:|
@@ -86,6 +87,7 @@ Required production interpretation remains:
 | Raw route signal present | PASS |
 | Registered track withheld absent calibration | PASS |
 | SATIM candidates grouped for repeat review | PASS |
+| Adapter provenance recorded and tested | PASS |
 | Contradiction-ledger row accounting for every SATIM candidate | NOT YET CERTIFIED |
 | Certified seam classification | NOT CLAIMED |
 
