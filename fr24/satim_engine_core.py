@@ -54,6 +54,7 @@ FILE_INPUT_NAMES = {
     "ground_truth_csv": ("ground_truth.csv", "truth.csv", "l3_ground_truth.csv"),
     "predictions_json": ("predictions.json", "l3_predictions.json"),
     "fr24_csv": ("fr24_export.csv", "fr24.csv", "observations.csv"),
+    "segment_provenance_json": ("segment_provenance.json", "fr24_segment_provenance.json"),
     "l5_candidates_csv": ("l5_candidates.csv", "tile_seam_candidates.csv", "artifact_candidates.csv"),
 }
 
@@ -400,6 +401,14 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
         write_json(legacy_path, satim_report_to_legacy_calibration(report))
 
     write_json(run_dir / "provenance.json", build_provenance(manifest))
+    segment_provenance_output: Path | None = None
+    segment_provenance_input = inputs.get("segment_provenance_json")
+    if _is_present(segment_provenance_input):
+        # Adjacent FR24 provenance artifact only. It is not merged into the
+        # SATIM terrain/imagery output contract.
+        segment_provenance_output = run_dir / "fr24_segment_provenance.json"
+        shutil.copyfile(segment_provenance_input, segment_provenance_output)  # type: ignore[arg-type]
+
     summary = {
         "schema_version": RUN_SCHEMA_VERSION,
         "run_id": manifest.run_id,
@@ -411,6 +420,7 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
             "calibration_report": str(calibration_report_path),
             "legacy_readiness": str(legacy_path) if legacy_path else None,
             "provenance": str(run_dir / "provenance.json"),
+            "fr24_segment_provenance": str(segment_provenance_output) if segment_provenance_output else None,
             "calibration_set_validation": str(run_dir / "calibration_set_validation.json") if calibration_packet else None,
         },
     }
