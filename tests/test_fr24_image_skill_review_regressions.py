@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import sys
+from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from PIL import Image, ImageDraw
@@ -17,17 +20,35 @@ from fr24_image_skill.orchestrator import (
 )
 
 
-def test_native_vectorizer_preserves_sampled_route_coordinates(tmp_path: Path) -> None:
+def test_native_vectorizer_preserves_sampled_route_coordinates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    @dataclass
+    class NativeResult:
+        path_shape: str = "linear"
+        has_loop: int = 0
+        has_orbit: int = 0
+        has_gap: int = 0
+        track_length_px: float = 42.0
+        bbox: tuple[int, int, int, int] = (1, 2, 40, 3)
+        confidence: float = 0.6
+        component_count: int = 1
+        sampled_points: list[tuple[int, int]] | None = None
+
+    native = NativeResult(sampled_points=[(1, 2), (20, 2), (41, 2)])
+    monkeypatch.setitem(
+        sys.modules,
+        "fr24.track_vectorizer",
+        SimpleNamespace(vectorize_image=lambda path: native),
+    )
     image = tmp_path / "route.png"
-    canvas = Image.new("RGB", (400, 400), (30, 32, 36))
-    ImageDraw.Draw(canvas).line((50, 200, 350, 200), fill=(230, 130, 40), width=3)
-    canvas.save(image)
+    Image.new("RGB", (64, 32), "gray").save(image)
 
     result = _vectorize(image)
 
     assert result is not None
     assert result["method"] == "fr24.track_vectorizer"
-    assert len(result["sampled_points"]) >= 2
+    assert result["sampled_points"] == [(1, 2), (20, 2), (41, 2)]
 
 
 def test_overlay_route_is_masked_before_artifact_classification(tmp_path: Path) -> None:
