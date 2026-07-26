@@ -322,7 +322,7 @@ def _artifact_candidates(
         rgb = source.convert("RGB")
         x, y, width, height = map_bbox
         crop_rgb = rgb.crop((x, y, x + width, y + height))
-        replacement = crop_rgb.filter(ImageFilter.MedianFilter(size=5))
+        replacement = crop_rgb.filter(ImageFilter.MedianFilter(size=9))
         clean = crop_rgb.copy()
         clean_pixels, replacement_pixels = clean.load(), replacement.load()
         # Mask chromatic route/UI pixels and bright map-label pixels before any
