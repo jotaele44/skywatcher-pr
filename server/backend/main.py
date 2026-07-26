@@ -16,11 +16,14 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
+import os
+import secrets
 import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,6 +49,52 @@ app.add_middleware(
 # Session-scoped mutations from the review UI; never written to disk.
 _overlay: dict[str, dict[str, dict[str, Any]]] = {}
 _created: dict[str, list[dict[str, Any]]] = {}
+
+log = logging.getLogger("skywatcher.backend")
+
+# ── Write authorization ────────────────────────────────────────────────────────
+# Diagnostic mode ships without authentication: /api/auth/me always 401s and
+# public-settings reports requires_auth=false, so nothing else stands between a
+# caller and the mutating routes. The overlay above is in-memory and never
+# reaches disk, so the blast radius is one process — but every reader of this
+# server still sees another client's unauthenticated edits until restart.
+#
+#   PRII_WRITE_TOKEN set    -> mutating routes require Authorization: Bearer <token>
+#   PRII_WRITE_TOKEN unset  -> mutating routes are served only to loopback clients
+#
+# Reads are unaffected in both cases.
+_WRITE_TOKEN = os.environ.get("PRII_WRITE_TOKEN", "")
+_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
+
+
+def require_write_access(request: Request) -> None:
+    """Authorize a mutating request, by bearer token or by loopback origin."""
+    if _WRITE_TOKEN:
+        scheme, _, presented = request.headers.get("authorization", "").partition(" ")
+        if scheme.lower() != "bearer" or not secrets.compare_digest(
+            presented, _WRITE_TOKEN
+        ):
+            raise HTTPException(status_code=401, detail="Missing or invalid write token")
+        return
+
+    client_host = request.client.host if request.client else ""
+    if client_host not in _LOOPBACK_HOSTS:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Writes from non-loopback clients are refused while "
+                "PRII_WRITE_TOKEN is unset. Set it to enable remote writes."
+            ),
+        )
+
+
+_WRITE_GUARD = [Depends(require_write_access)]
+
+if not _WRITE_TOKEN:
+    log.warning(
+        "PRII_WRITE_TOKEN is unset — mutating /api routes will be refused for "
+        "any client that is not on loopback."
+    )
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -249,7 +298,7 @@ def get_entity(entity_name: str, entity_id: str) -> dict[str, Any]:
     raise HTTPException(status_code=404, detail=f"{entity_name} not found: {entity_id}")
 
 
-@app.post("/api/entities/{entity_name}")
+@app.post("/api/entities/{entity_name}", dependencies=_WRITE_GUARD)
 def create_entity(entity_name: str, payload: dict[str, Any]) -> dict[str, Any]:
     row = dict(payload)
     row.setdefault("id", uuid.uuid4().hex)
@@ -258,7 +307,7 @@ def create_entity(entity_name: str, payload: dict[str, Any]) -> dict[str, Any]:
     return row
 
 
-@app.patch("/api/entities/{entity_name}/{entity_id}")
+@app.patch("/api/entities/{entity_name}/{entity_id}", dependencies=_WRITE_GUARD)
 def update_entity(
     entity_name: str, entity_id: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
