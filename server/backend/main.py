@@ -15,6 +15,7 @@ Start with:
 from __future__ import annotations
 
 import csv
+import ipaddress
 import json
 import logging
 import os
@@ -60,15 +61,37 @@ log = logging.getLogger("skywatcher.backend")
 # server still sees another client's unauthenticated edits until restart.
 #
 #   PRII_WRITE_TOKEN set    -> mutating routes require Authorization: Bearer <token>
-#   PRII_WRITE_TOKEN unset  -> mutating routes are served only to loopback clients
+#   PRII_WRITE_TOKEN unset  -> mutating routes are served to clients on a local
+#                              network (loopback, RFC1918 private, link-local)
+#                              and refused for public addresses
 #
-# Reads are unaffected in both cases.
+# The private-range allowance is deliberate: containerized or LAN deployments see
+# a bridge address (typically 172.17.0.1) rather than 127.0.0.1, and a strict
+# loopback-only rule would 403 every write from the shipped UI in those setups.
+# Refusing public addresses still closes the case this is meant to close.
+#
+# Caveat when the token IS set: the browser UI has no write-credential input
+# (federationClient sources only the federation access token, and AuthContext
+# drops that when /api/auth/me 401s), so token mode currently suits API/CLI
+# callers rather than the shipped UI. Tracked in docs/MATURITY_AUDIT.md.
+#
+# Reads are unaffected in every case.
 _WRITE_TOKEN = os.environ.get("PRII_WRITE_TOKEN", "")
-_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
+
+
+def _is_local_network(host: str) -> bool:
+    """True for loopback, RFC1918 private, and link-local client addresses."""
+    if host in ("localhost", ""):
+        return host == "localhost"
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return ip.is_loopback or ip.is_private or ip.is_link_local
 
 
 def require_write_access(request: Request) -> None:
-    """Authorize a mutating request, by bearer token or by loopback origin."""
+    """Authorize a mutating request, by bearer token or by local-network origin."""
     if _WRITE_TOKEN:
         scheme, _, presented = request.headers.get("authorization", "").partition(" ")
         if scheme.lower() != "bearer" or not secrets.compare_digest(
@@ -77,13 +100,12 @@ def require_write_access(request: Request) -> None:
             raise HTTPException(status_code=401, detail="Missing or invalid write token")
         return
 
-    client_host = request.client.host if request.client else ""
-    if client_host not in _LOOPBACK_HOSTS:
+    if not _is_local_network(request.client.host if request.client else ""):
         raise HTTPException(
             status_code=403,
             detail=(
-                "Writes from non-loopback clients are refused while "
-                "PRII_WRITE_TOKEN is unset. Set it to enable remote writes."
+                "Writes from public addresses are refused while PRII_WRITE_TOKEN "
+                "is unset. Set it to enable authenticated writes from anywhere."
             ),
         )
 
@@ -92,8 +114,9 @@ _WRITE_GUARD = [Depends(require_write_access)]
 
 if not _WRITE_TOKEN:
     log.warning(
-        "PRII_WRITE_TOKEN is unset — mutating /api routes will be refused for "
-        "any client that is not on loopback."
+        "PRII_WRITE_TOKEN is unset — mutating /api routes accept any client on "
+        "a local network and are refused for public addresses. Set the token "
+        "before exposing this server beyond a trusted network."
     )
 
 

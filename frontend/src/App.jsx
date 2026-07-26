@@ -24,10 +24,20 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import LoadingState from '@/components/skywatcher/LoadingState';
 import { appParams } from '@/lib/app-params';
 
 const AuthenticatedApp = () => {
-  const { appPublicSettings } = useAuth();
+  const { appPublicSettings, isLoadingPublicSettings } = useAuth();
+
+  // Wait for public settings before routing. appPublicSettings is null until
+  // AuthContext.checkAppState() resolves, so routing on it early would treat a
+  // backend that reports requires_auth=true as diagnostic mode for one render —
+  // long enough to redirect a direct visit to /login away to /, after which the
+  // login page is unreachable because the URL has already changed.
+  if (isLoadingPublicSettings) {
+    return <LoadingState />;
+  }
 
   // Same signal AuthContext uses to decide whether authentication is required.
   const authRequired = Boolean(
