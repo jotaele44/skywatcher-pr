@@ -1,14 +1,16 @@
-"""Resource-bounded ZIP extraction for untrusted research bundles."""
-
+"""Resource-bounded, recoverable ZIP extraction for untrusted bundles."""
 from __future__ import annotations
 
 import os
 import shutil
 import stat
 import tempfile
+import uuid
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
+
+WINDOWS_RESERVED = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
 
 
 class UnsafeArchiveError(ValueError):
@@ -29,21 +31,25 @@ def _normalized_member(name: str) -> PurePosixPath:
     normalized = PurePosixPath(name.replace("\\", "/"))
     if normalized.is_absolute() or any(part in {"", ".", ".."} for part in normalized.parts):
         raise UnsafeArchiveError(f"unsafe archive path: {name!r}")
-    if normalized.parts and ":" in normalized.parts[0]:
-        raise UnsafeArchiveError(f"drive-qualified archive path: {name!r}")
+    for part in normalized.parts:
+        if ":" in part:
+            raise UnsafeArchiveError(f"colon/alternate-stream path is not allowed: {name!r}")
+        if part.endswith((" ", ".")):
+            raise UnsafeArchiveError(f"trailing dot/space path is not allowed: {name!r}")
+        stem = part.split(".", 1)[0].upper()
+        if stem in WINDOWS_RESERVED:
+            raise UnsafeArchiveError(f"Windows reserved path is not allowed: {name!r}")
     return normalized
 
 
 def _is_symlink(info: zipfile.ZipInfo) -> bool:
-    mode = (info.external_attr >> 16) & 0xFFFF
-    return stat.S_ISLNK(mode)
+    return stat.S_ISLNK((info.external_attr >> 16) & 0xFFFF)
 
 
 def validate_zip(archive: zipfile.ZipFile, limits: ArchiveLimits = ArchiveLimits()) -> list[tuple[zipfile.ZipInfo, PurePosixPath]]:
     infos = archive.infolist()
     if len(infos) > limits.max_files:
         raise UnsafeArchiveError(f"archive has {len(infos)} entries; limit is {limits.max_files}")
-
     total = 0
     seen: set[str] = set()
     validated: list[tuple[zipfile.ZipInfo, PurePosixPath]] = []
@@ -62,54 +68,62 @@ def validate_zip(archive: zipfile.ZipFile, limits: ArchiveLimits = ArchiveLimits
         total += info.file_size
         if total > limits.max_total_bytes:
             raise UnsafeArchiveError("archive expanded size exceeds configured limit")
-        if info.compress_size == 0:
-            ratio = float("inf") if info.file_size else 1.0
-        else:
-            ratio = info.file_size / info.compress_size
+        ratio = info.file_size / info.compress_size if info.compress_size else (float("inf") if info.file_size else 1.0)
         if ratio > limits.max_compression_ratio:
             raise UnsafeArchiveError(f"archive member compression ratio is excessive: {path}")
         validated.append((info, path))
     return validated
 
 
-def safe_extract_zip(
-    source: str | Path,
-    target: str | Path,
-    *,
-    limits: ArchiveLimits = ArchiveLimits(),
-    replace: bool = True,
-) -> Path:
-    """Validate and atomically extract ``source`` into ``target``.
+def _remove(path: Path) -> None:
+    if not path.exists():
+        return
+    shutil.rmtree(path) if path.is_dir() else path.unlink()
 
-    No destination content is promoted until every member has passed validation
-    and streamed extraction has completed successfully.
-    """
 
+def safe_extract_zip(source: str | Path, target: str | Path, *, limits: ArchiveLimits = ArchiveLimits(), replace: bool = False) -> Path:
+    """Validate, stream-extract, and recoverably promote ``source`` into ``target``."""
     source_path = Path(source).expanduser().resolve()
     target_path = Path(target).expanduser().resolve()
     target_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with zipfile.ZipFile(source_path) as archive:
-        members = validate_zip(archive, limits)
-        temp_root = Path(tempfile.mkdtemp(prefix=f".{target_path.name}.tmp-", dir=target_path.parent))
-        try:
-            for info, relative in members:
+    if target_path.exists() and not replace:
+        raise FileExistsError(target_path)
+    temp_root = Path(tempfile.mkdtemp(prefix=f".{target_path.name}.tmp-", dir=target_path.parent))
+    backup = target_path.with_name(f".{target_path.name}.backup-{uuid.uuid4().hex}")
+    total_streamed = 0
+    try:
+        with zipfile.ZipFile(source_path) as archive:
+            for info, relative in validate_zip(archive, limits):
                 destination = temp_root.joinpath(*relative.parts)
                 if info.is_dir():
                     destination.mkdir(parents=True, exist_ok=True)
                     continue
                 destination.parent.mkdir(parents=True, exist_ok=True)
+                member_streamed = 0
                 with archive.open(info, "r") as src, destination.open("xb") as dst:
-                    shutil.copyfileobj(src, dst, length=1024 * 1024)
-            if target_path.exists():
-                if not replace:
-                    raise FileExistsError(target_path)
-                if target_path.is_dir():
-                    shutil.rmtree(target_path)
-                else:
-                    target_path.unlink()
+                    while True:
+                        chunk = src.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        member_streamed += len(chunk)
+                        total_streamed += len(chunk)
+                        if member_streamed > limits.max_member_bytes or total_streamed > limits.max_total_bytes:
+                            raise UnsafeArchiveError("streamed archive data exceeds configured limit")
+                        dst.write(chunk)
+                if member_streamed != info.file_size:
+                    raise UnsafeArchiveError(f"archive member size mismatch: {relative}")
+        if target_path.exists():
+            os.replace(target_path, backup)
+        try:
             os.replace(temp_root, target_path)
         except Exception:
-            shutil.rmtree(temp_root, ignore_errors=True)
+            if backup.exists() and not target_path.exists():
+                os.replace(backup, target_path)
             raise
-    return target_path
+        _remove(backup)
+        return target_path
+    except Exception:
+        _remove(temp_root)
+        if backup.exists() and not target_path.exists():
+            os.replace(backup, target_path)
+        raise
