@@ -1,0 +1,43 @@
+name: Merge current main for Phase 0 remediation
+
+on:
+  push:
+    branches: [agent/repository-hardening-phase-0]
+    paths:
+      - ".github/workflows/merge-current-main-remediation.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: agent/repository-hardening-phase-0
+          fetch-depth: 0
+      - name: Merge current main and remove staging
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-commit --no-ff origin/main || true
+          conflicts="$(git diff --name-only --diff-filter=U)"
+          if [ -n "$conflicts" ]; then
+            printf '%s\n' "$conflicts" | while IFS= read -r path; do
+              [ -n "$path" ] || continue
+              git checkout --ours -- "$path"
+              git add "$path"
+            done
+          fi
+          rm -rf .phase0-remediation
+          rm -f .github/workflows/merge-current-main-remediation.yml
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No merge changes to commit"
+          else
+            git commit -m "Merge current main for Phase 0 review remediation"
+            git push origin HEAD:agent/repository-hardening-phase-0
+          fi
