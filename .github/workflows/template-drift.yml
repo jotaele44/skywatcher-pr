@@ -37,13 +37,13 @@ jobs:
             --repo-root /tmp/skywatcher-rendered
       - name: Compare adopted canonical artifacts
         run: |
-          cmp PRII-Skywatcher.command /tmp/skywatcher-rendered/PRII-Skywatcher.command
-          cmp PRII-Skywatcher.bat /tmp/skywatcher-rendered/PRII-Skywatcher.bat
-          cmp PRII-Skywatcher.sh /tmp/skywatcher-rendered/PRII-Skywatcher.sh
+          cmp PRII-SKYWATCHER.command /tmp/skywatcher-rendered/PRII-SKYWATCHER.command
+          cmp PRII-SKYWATCHER.bat /tmp/skywatcher-rendered/PRII-SKYWATCHER.bat
+          cmp PRII-SKYWATCHER.sh /tmp/skywatcher-rendered/PRII-SKYWATCHER.sh
           cmp schemas/federation_export_manifest.schema.json \
             /tmp/skywatcher-rendered/schemas/federation_export_manifest.schema.json
-          test -x PRII-Skywatcher.command
-          test -x PRII-Skywatcher.sh
+          test -x PRII-SKYWATCHER.command
+          test -x PRII-SKYWATCHER.sh
       - name: Validate sanctioned Phase 0 divergences
         run: |
           python - <<'PY'
