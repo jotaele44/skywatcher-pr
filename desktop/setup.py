@@ -12,20 +12,38 @@ Usage:
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import shutil
 import subprocess
 import sys
 import venv
 from pathlib import Path
+from types import ModuleType
 
-try:
-    from desktop import config
-    from desktop.config import DIST_DIR, FRONTEND_DIR, REPO_ROOT, REQUIREMENT_FILES
-except ModuleNotFoundError:  # direct ``python desktop/setup.py`` bootstrap
-    import config  # type: ignore[no-redef]
-    from config import DIST_DIR, FRONTEND_DIR, REPO_ROOT, REQUIREMENT_FILES  # type: ignore[import-not-found]
 
+def _load_config() -> ModuleType:
+    try:
+        from desktop import config as desktop_config
+
+        return desktop_config
+    except ModuleNotFoundError as exc:
+        if exc.name not in {"desktop", "desktop.config"}:
+            raise
+        config_path = Path(__file__).resolve().with_name("config.py")
+        spec = importlib.util.spec_from_file_location("skywatcher_desktop_config", config_path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"Unable to load desktop configuration: {config_path}") from exc
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+
+config = _load_config()
+DIST_DIR = config.DIST_DIR
+FRONTEND_DIR = config.FRONTEND_DIR
+REPO_ROOT = config.REPO_ROOT
+REQUIREMENT_FILES = config.REQUIREMENT_FILES
 VENV_DIR = REPO_ROOT / ".venv"
 MARKER = Path(__file__).resolve().parent / ".setup-complete"
 
@@ -52,6 +70,7 @@ def is_complete() -> bool:
 
 
 MIN_PYTHON = (3, 10)
+
 
 def setup_python() -> None:
     if sys.version_info < MIN_PYTHON:
