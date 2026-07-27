@@ -1,9 +1,8 @@
 name: Federation template drift
 
-# Fails if this repo's shared launcher / desktop / schema boilerplate has drifted
-# from the canonical templates in thehub-pr/federation-templates. Edit a template
-# once in thehub-pr and re-render (tools/render_federation_templates.py) — do not
-# hand-edit these rendered files here.
+# Shared launchers and schemas remain byte-identical to the pinned federation
+# templates. Phase 0 intentionally replaces the legacy Gatekeeper bypass and
+# mutable desktop dependency template with repository-local hardened contracts.
 
 on:
   push:
@@ -15,16 +14,52 @@ permissions:
 jobs:
   drift:
     runs-on: ubuntu-latest
+    env:
+      THEHUB_SHA: f00f2da0e6abcc885a8133e5c8b7aeb9756f5df8
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch thehub-pr sibling (owns the canonical templates)
+      - name: Fetch pinned federation templates
         run: |
-          ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          git clone --depth 1 --branch "$ref" https://github.com/jotaele44/thehub-pr.git ../thehub-pr \
-            || git clone --depth 1 https://github.com/jotaele44/thehub-pr.git ../thehub-pr
+          git init ../thehub-pr
+          git -C ../thehub-pr remote add origin https://github.com/jotaele44/thehub-pr.git
+          git -C ../thehub-pr fetch --depth 1 origin "$THEHUB_SHA"
+          git -C ../thehub-pr checkout --detach FETCH_HEAD
+          test "$(git -C ../thehub-pr rev-parse HEAD)" = "$THEHUB_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: python -m pip install pyyaml
-      - name: Assert no drift from canonical federation templates
-        run: python ../thehub-pr/tools/render_federation_templates.py --repo skywatcher-pr --check
+      - name: Assert canonical templates and sanctioned hardening divergences
+        run: |
+          python - <<'PY'
+          import importlib.util
+          import os
+          from pathlib import Path
+
+          hub = Path("../thehub-pr").resolve()
+          script = hub / "tools" / "render_federation_templates.py"
+          spec = importlib.util.spec_from_file_location("render_federation_templates", script)
+          module = importlib.util.module_from_spec(spec)
+          assert spec.loader is not None
+          spec.loader.exec_module(module)
+
+          vars_ = module._load("producers.vars.yaml")["producers"]
+          targets = module._load("targets.yaml")["targets"]
+          drift = set(module.render_repo(
+              "skywatcher-pr",
+              vars_["skywatcher-pr"]["app_slug"],
+              Path.cwd(),
+              targets,
+              True,
+          ))
+          allowed = {"Fix-Gatekeeper.command", "requirements-desktop.txt"}
+          unexpected = sorted(drift - allowed)
+          assert not unexpected, f"unexpected federation template drift: {unexpected}"
+          assert not Path("Fix-Gatekeeper.command").exists(), "legacy trust-bypass helper must remain absent"
+
+          desktop = Path("requirements-desktop.txt").read_text(encoding="utf-8")
+          pin = os.environ["THEHUB_SHA"]
+          assert f"thehub-pr.git@{pin}#subdirectory=packages/prii_desktop" in desktop
+          assert "-e ../thehub-pr" not in desktop
+          print("canonical templates match; sanctioned Phase 0 divergences validated")
+          PY
