@@ -59,7 +59,7 @@ def detect_features_masked(file_path, sw, sh, debug_dir=None, sid=None):
 
             pillow_heif.register_heif_opener()
         except ImportError:
-            pass
+            pass  # HEIC files unsupported if pillow_heif absent
 
         img = Image.open(file_path).convert("RGB")
         # Crop map zone

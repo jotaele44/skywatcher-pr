@@ -43,7 +43,7 @@ try:
     import pillow_heif
     pillow_heif.register_heif_opener()
 except ImportError:
-    pass
+    pass  # HEIC files unsupported if pillow_heif absent
 
 try:
     import pytesseract

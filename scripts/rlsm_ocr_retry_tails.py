@@ -49,7 +49,7 @@ def ocr_card_robust(file_path: str, sw: int, sh: int) -> str:
 
         pillow_heif.register_heif_opener()
     except ImportError:
-        pass
+        pass  # HEIC files unsupported if pillow_heif absent
     import numpy as np
     import pytesseract
 

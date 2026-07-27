@@ -98,7 +98,7 @@ def process_one(args):
 
             pillow_heif.register_heif_opener()
         except ImportError:
-            pass
+            pass  # HEIC files unsupported if pillow_heif absent
         import numpy as np
         x0 = int(sw * COMPASS_ROI_PCT[0])
         y0 = int(sh * COMPASS_ROI_PCT[1])
