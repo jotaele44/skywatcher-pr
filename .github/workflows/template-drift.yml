@@ -29,33 +29,28 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install pyyaml
-      - name: Assert canonical templates and sanctioned hardening divergences
+      - name: Render pinned templates into isolated directory
+        run: |
+          mkdir -p /tmp/skywatcher-rendered
+          python ../thehub-pr/tools/render_federation_templates.py \
+            --repo skywatcher-pr \
+            --repo-root /tmp/skywatcher-rendered
+      - name: Compare adopted canonical artifacts
+        run: |
+          cmp PRII-Skywatcher.command /tmp/skywatcher-rendered/PRII-Skywatcher.command
+          cmp PRII-Skywatcher.bat /tmp/skywatcher-rendered/PRII-Skywatcher.bat
+          cmp PRII-Skywatcher.sh /tmp/skywatcher-rendered/PRII-Skywatcher.sh
+          cmp schemas/federation_export_manifest.schema.json \
+            /tmp/skywatcher-rendered/schemas/federation_export_manifest.schema.json
+          test -x PRII-Skywatcher.command
+          test -x PRII-Skywatcher.sh
+      - name: Validate sanctioned Phase 0 divergences
         run: |
           python - <<'PY'
-          import importlib.util
           import os
           import tomllib
           from pathlib import Path
 
-          hub = Path("../thehub-pr").resolve()
-          script = hub / "tools" / "render_federation_templates.py"
-          spec = importlib.util.spec_from_file_location("render_federation_templates", script)
-          module = importlib.util.module_from_spec(spec)
-          assert spec.loader is not None
-          spec.loader.exec_module(module)
-
-          vars_ = module._load("producers.vars.yaml")["producers"]
-          targets = module._load("targets.yaml")["targets"]
-          drift = set(module.render_repo(
-              "skywatcher-pr",
-              vars_["skywatcher-pr"]["app_slug"],
-              Path.cwd(),
-              targets,
-              True,
-          ))
-          allowed = {"Fix-Gatekeeper.command", "requirements-desktop.txt"}
-          unexpected = sorted(drift - allowed)
-          assert not unexpected, f"unexpected federation template drift: {unexpected}"
           assert not Path("Fix-Gatekeeper.command").exists(), "legacy trust-bypass helper must remain absent"
 
           desktop = Path("requirements-desktop.txt").read_text(encoding="utf-8")
@@ -65,7 +60,8 @@ jobs:
           project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
           deps = project["project"]["optional-dependencies"]
           pin = os.environ["THEHUB_SHA"]
-          all_shared = deps["desktop"] + deps["federation"]
-          assert all(f"thehub-pr.git@{pin}#subdirectory=" in item for item in all_shared if "prii-" in item)
-          print("canonical templates match; sanctioned Phase 0 divergences validated")
+          shared = [item for item in deps["desktop"] + deps["federation"] if "prii-" in item]
+          assert shared
+          assert all(f"thehub-pr.git@{pin}#subdirectory=" in item for item in shared)
+          print("adopted templates match; hardened divergences validated")
           PY
