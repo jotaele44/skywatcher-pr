@@ -43,7 +43,21 @@ jobs:
       - name: Validate SATIM calibration sets
         run: python scripts/validate_satim_calibration.py data/satim_calibration
       - name: Tests
-        run: pytest -q --cov --cov-report=term-missing:skip-covered
+        id: tests
+        shell: bash
+        run: |
+          set +e
+          pytest -q --cov --cov-report=term-missing:skip-covered 2>&1 | tee pytest-${{ matrix.python-version }}.log
+          status=${PIPESTATUS[0]}
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+      - name: Upload failing pytest log
+        if: failure() && steps.tests.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pytest-${{ matrix.python-version }}-failure
+          path: pytest-${{ matrix.python-version }}.log
+          if-no-files-found: error
 
   test-imagery:
     runs-on: ubuntu-latest
