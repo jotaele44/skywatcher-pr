@@ -7,8 +7,6 @@ Falls back gracefully when PIL/numpy are unavailable.
 
 import math
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 from skywatcher.core.route_visual_constants import COLOR_RANGES, MIN_ROUTE_PIXELS  # noqa: F401
 
@@ -18,13 +16,13 @@ MAX_LABEL_SKIP   = 4    # max gap when tracing a route (in pixels)
 @dataclass
 class RouteCandidate:
     color: str
-    points: List[Tuple[int, int]] = field(default_factory=list)
+    points: list[tuple[int, int]] = field(default_factory=list)
     confidence: float = 0.0
-    bbox: Tuple[int, int, int, int] = (0, 0, 0, 0)  # x, y, w, h
+    bbox: tuple[int, int, int, int] = (0, 0, 0, 0)  # x, y, w, h
     pixel_length: float = 0.0
     pixel_count: int = 0
 
-    def centroid(self) -> Tuple[float, float]:
+    def centroid(self) -> tuple[float, float]:
         if not self.points:
             return (0.0, 0.0)
         xs = [p[0] for p in self.points]
@@ -54,7 +52,7 @@ class RouteExtractor:
 
     # ----------------------------------------------------------------- public
 
-    def extract(self, image_path: str) -> List[RouteCandidate]:
+    def extract(self, image_path: str) -> list[RouteCandidate]:
         """Extract route candidates from a screenshot file."""
         try:
             import numpy as np
@@ -69,7 +67,7 @@ class RouteExtractor:
         except Exception:
             return []
 
-    def extract_array(self, arr) -> List[RouteCandidate]:
+    def extract_array(self, arr) -> list[RouteCandidate]:
         """
         Extract from a (H, W, 3) uint8 numpy array.
         Useful for unit testing with synthetic images.
@@ -85,7 +83,11 @@ class RouteExtractor:
         Requires numpy; returns None if not available.
         """
         try:
-            import numpy as np
+            # The import is the availability check for the except ImportError
+            # branch below — `np` is unused because the mask is built with plain
+            # operators on `arr`. Removing it would delete the guard and this
+            # method would stop returning None when numpy is absent.
+            import numpy as np  # noqa: F401
             if color not in COLOR_RANGES:
                 raise ValueError(f"Unknown color: {color}")
             rng = COLOR_RANGES[color]
@@ -101,8 +103,7 @@ class RouteExtractor:
 
     # ----------------------------------------------------------------- internal
 
-    def _extract_from_array(self, arr, image_path: Optional[str] = None) -> List[RouteCandidate]:
-        import numpy as np
+    def _extract_from_array(self, arr, image_path: str | None = None) -> list[RouteCandidate]:
 
         h, w = arr.shape[:2]
 
@@ -149,7 +150,7 @@ class RouteExtractor:
         candidates.sort(key=lambda c: c.pixel_count, reverse=True)
         return candidates
 
-    def _connected_components(self, mask) -> List[List[Tuple[int, int]]]:
+    def _connected_components(self, mask) -> list[list[tuple[int, int]]]:
         """
         4-connected component labeling via BFS on a boolean mask.
         Returns list of pixel-lists, one per component.
@@ -167,7 +168,7 @@ class RouteExtractor:
             if visited[sy, sx]:
                 continue
             # BFS
-            component: List[Tuple[int, int]] = []
+            component: list[tuple[int, int]] = []
             queue = [(sx, sy)]
             visited[sy, sx] = True
             while queue:
@@ -185,7 +186,7 @@ class RouteExtractor:
 
 # ------------------------------------------------------------------ helpers
 
-def _bbox_of_points(pts: List[Tuple[int, int]]) -> Tuple[int, int, int, int]:
+def _bbox_of_points(pts: list[tuple[int, int]]) -> tuple[int, int, int, int]:
     if not pts:
         return (0, 0, 0, 0)
     xs = [p[0] for p in pts]
@@ -194,7 +195,7 @@ def _bbox_of_points(pts: List[Tuple[int, int]]) -> Tuple[int, int, int, int]:
     return (x0, y0, max(xs) - x0, max(ys) - y0)
 
 
-def _polyline_length(pts: List[Tuple[int, int]]) -> float:
+def _polyline_length(pts: list[tuple[int, int]]) -> float:
     if len(pts) < 2:
         return 0.0
     total = 0.0

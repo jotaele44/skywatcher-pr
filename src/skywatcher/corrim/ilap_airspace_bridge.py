@@ -5,16 +5,15 @@ as GeoJSON for ingestion into the ILAP/Spiderweb airspace intelligence system.
 """
 
 import json
-import math
 import os
 import sqlite3
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 try:
-    from skywatcher.corrim.gis_intelligence import PuertoRicoInfrastructure, haversine_nm
+    from skywatcher.corrim.gis_intelligence import PuertoRicoInfrastructure
     _INFRA = PuertoRicoInfrastructure()
 except Exception:
     _INFRA = None
@@ -98,7 +97,7 @@ class ILAPAirspaceBridge:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def export_all(self) -> Dict[str, Any]:
+    def export_all(self) -> dict[str, Any]:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         track_pts = self._safe_query(conn, "SELECT * FROM track_points")
@@ -127,9 +126,9 @@ class ILAPAirspaceBridge:
 
     # ------------------------------------------------------------------ POI
 
-    def _build_poi_candidates(self, track_pts: List[dict]) -> List[dict]:
+    def _build_poi_candidates(self, track_pts: list[dict]) -> list[dict]:
         # Cluster by 0.05° grid cell
-        cells: Dict[Tuple[int, int], List[dict]] = defaultdict(list)
+        cells: dict[tuple[int, int], list[dict]] = defaultdict(list)
         for tp in track_pts:
             lat = tp.get("latitude") or 0.0
             lon = tp.get("longitude") or 0.0
@@ -191,7 +190,7 @@ class ILAPAirspaceBridge:
 
         return features
 
-    def _loiter_score(self, points: List[dict]) -> float:
+    def _loiter_score(self, points: list[dict]) -> float:
         if len(points) < 2:
             return 0.0
         speeds = [tp.get("ground_speed_mph") or 0 for tp in points]
@@ -200,9 +199,9 @@ class ILAPAirspaceBridge:
 
     # ----------------------------------------------------------------- ILAP
 
-    def _build_ilap_candidates(self, flights: List[dict], track_pts: List[dict]) -> List[dict]:
+    def _build_ilap_candidates(self, flights: list[dict], track_pts: list[dict]) -> list[dict]:
         features = []
-        tp_by_flight: Dict[str, list] = defaultdict(list)
+        tp_by_flight: dict[str, list] = defaultdict(list)
         for tp in track_pts:
             fid = tp.get("flight_id")
             if fid:
@@ -243,15 +242,15 @@ class ILAPAirspaceBridge:
 
     # --------------------------------------------------------------- corridors
 
-    def _build_corridor_candidates(self, poi_features: List[dict],
-                                   flights: List[dict]) -> List[dict]:
+    def _build_corridor_candidates(self, poi_features: list[dict],
+                                   flights: list[dict]) -> list[dict]:
         features = []
         n = len(poi_features)
         if n < 2:
             return features
 
         # Build origin→dest flight index
-        route_counts: Dict[Tuple[str, str], int] = defaultdict(int)
+        route_counts: dict[tuple[str, str], int] = defaultdict(int)
         for f in flights:
             o = f.get("origin_airport", "")
             d = f.get("destination_airport", "")
@@ -303,7 +302,7 @@ class ILAPAirspaceBridge:
             return False
         return abs(lat - ref_lat) <= thresh_deg and abs(lon - ref_lon) <= thresh_deg
 
-    def _write_geojson(self, filename: str, features: List[dict]):
+    def _write_geojson(self, filename: str, features: list[dict]):
         geojson = {
             "type": "FeatureCollection",
             "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::4326"}},
@@ -311,7 +310,7 @@ class ILAPAirspaceBridge:
         }
         (self.output_dir / filename).write_text(json.dumps(geojson, indent=2))
 
-    def _safe_query(self, conn: sqlite3.Connection, sql: str) -> List[dict]:
+    def _safe_query(self, conn: sqlite3.Connection, sql: str) -> list[dict]:
         try:
             return [dict(r) for r in conn.execute(sql)]
         except Exception:

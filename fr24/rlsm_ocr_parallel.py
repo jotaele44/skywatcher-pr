@@ -34,7 +34,6 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
-from typing import Optional, Tuple
 
 os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
@@ -61,7 +60,7 @@ DB   = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 JSONL = REPO / "outputs" / "ocr_raw_by_zone.jsonl"
 
 # Populated per-worker via _worker_init
-_worker_db_path: Optional[str] = None
+_worker_db_path: str | None = None
 
 
 def _iso_now() -> str:
@@ -76,7 +75,7 @@ def _worker_init(db_path: str) -> None:
 
 
 def _ocr_with_conf(img_crop: Image.Image, config: str,
-                   x_off: int = 0, y_off: int = 0) -> Tuple[str, list, float, float, int]:
+                   x_off: int = 0, y_off: int = 0) -> tuple[str, list, float, float, int]:
     """Run tesseract and return (raw_text, word_boxes, conf_mean, conf_min, n_words).
 
     ``x_off``/``y_off`` are the crop origin, so the returned word boxes are in
@@ -101,9 +100,9 @@ def _ocr_with_conf(img_crop: Image.Image, config: str,
     return raw_text, boxes, conf_mean, conf_min, len(words)
 
 
-def _process_one(args: Tuple[int, str, int]) -> dict:
+def _process_one(args: tuple[int, str, int]) -> dict:
     """Worker function. Returns (sid, status, n_obs, elapsed_sec, err)."""
-    from fr24.rlsm_zones import zones_for, ZONE_OCR_CONFIG
+    from fr24.rlsm_zones import ZONE_OCR_CONFIG, zones_for
 
     sid, rel_path, run_id = args
     t0 = time.time()

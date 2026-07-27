@@ -43,6 +43,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 from integration.geo_calibration import apply_affine, fit_affine  # noqa: E402
+
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 OUTS = REPO / "outputs"
 PR_BBOX = (17.7, 18.65, -67.55, -65.15)  # (lat_min, lat_max, lon_min, lon_max)
@@ -150,8 +151,8 @@ def main():
     dims_by_sid = {r[0]: (r[1], r[2]) for r in conn.execute("SELECT screenshot_id, width, height FROM screenshots")}
     global_affine_sids = 0
     if not affines:
-        print(f"[geocode] no per-screenshot affines available — falling back to "
-              f"global PR-wide approximation for 1170x2532 default-zoom screenshots")
+        print("[geocode] no per-screenshot affines available — falling back to "
+              "global PR-wide approximation for 1170x2532 default-zoom screenshots")
         for sid, (w, h) in dims_by_sid.items():
             if (w, h) == (1170, 2532):
                 affines[sid] = GLOBAL_AFFINE_1170_2532
@@ -256,21 +257,21 @@ def main():
     md = ["# Geocoded unlabeled POI clusters — audit\n",
           accuracy_note,
           f"\n- Screenshots assigned the global-affine fallback: **{global_affine_sids:,}**",
-          f"\n## Affine-fit pipeline\n",
+          "\n## Affine-fit pipeline\n",
           f"- Screenshots with ≥2 anchors: {fits_attempted:,}",
           f"- Screenshots with successful affine fit: **{fits_succeeded:,}**",
           f"- Dropped (residual > {args.max_affine_residual_deg}°): {fits_dropped_residual:,}",
           f"- Median fit residual: **{median_residual}°** (~{(median_residual or 0)*111:.1f} km)",
           f"- P90 fit residual: {p90_residual}°",
-          f"\n## Geocoding\n",
+          "\n## Geocoding\n",
           f"- Unlabeled candidates with usable affine: {geocoded + dropped_outside_pr:,}",
           f"- Candidates outside PR bbox: {dropped_outside_pr:,}",
           f"- Candidates without per-screenshot affine: {no_affine:,}",
           f"- Successfully geocoded inside PR: **{geocoded:,}**",
-          f"\n## Clusters\n",
+          "\n## Clusters\n",
           f"- Total geocoded grid cells: {len(cells):,}",
           f"- After min-screenshot ({args.min_screenshots}) + min-aircraft ({args.min_aircraft}) filter: **{len(clusters):,}**",
-          f"\n## Top 25 clusters\n",
+          "\n## Top 25 clusters\n",
           "| lat | lon | type | screenshots | aircraft | hits | top aircraft |",
           "|---|---|---|---|---|---|---|"]
     for c in clusters[:25]:

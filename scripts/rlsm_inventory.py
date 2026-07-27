@@ -15,14 +15,10 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
-import io
 import json
-import os
 import re
 import sqlite3
-import sys
 import time
-from collections import defaultdict
 from pathlib import Path
 
 from PIL import Image

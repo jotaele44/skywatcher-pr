@@ -14,11 +14,10 @@ with explicit uncertainty metadata. Four modes:
 
 import csv
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import median
-from typing import List, Optional, Sequence, Tuple
-
 
 PR_BOUNDS = {"north": 18.65, "south": 17.92, "east": -65.20, "west": -67.30}
 
@@ -33,8 +32,8 @@ DEG_TO_M = 111_000.0
 MIN_AFFINE_ERROR_M = 50.0
 
 
-def fit_affine(pixel_xy: Sequence[Tuple[float, float]],
-               geo_latlon: Sequence[Tuple[float, float]]):
+def fit_affine(pixel_xy: Sequence[tuple[float, float]],
+               geo_latlon: Sequence[tuple[float, float]]):
     """4-parameter affine fit: returns (lon0, dlon_dx, lat0, dlat_dy) or None.
 
     Two independent 1-D ordinary-least-squares fits (lon on pixel_x, lat on
@@ -69,14 +68,14 @@ def fit_affine(pixel_xy: Sequence[Tuple[float, float]],
     return (a, b, c, d)
 
 
-def apply_affine(affine, px: float, py: float) -> Tuple[float, float]:
+def apply_affine(affine, px: float, py: float) -> tuple[float, float]:
     """Apply a fit_affine() transform to a pixel; returns (lat, lon)."""
     a, b, c, d = affine
     return c + d * py, a + b * px
 
 
 def invert_fixed_pr_bounds(lat: float, lon: float,
-                           img_w: int, img_h: int) -> Tuple[float, float]:
+                           img_w: int, img_h: int) -> tuple[float, float]:
     """Recover the pixel that the fixed_pr_bounds mapping sent to (lat, lon).
 
     Used by the RLSM calibration bridge to refit legacy fixed-bounds stamps
@@ -91,8 +90,8 @@ def invert_fixed_pr_bounds(lat: float, lon: float,
 
 
 def affine_median_residual_deg(affine,
-                               pixel_xy: Sequence[Tuple[float, float]],
-                               geo_latlon: Sequence[Tuple[float, float]]) -> float:
+                               pixel_xy: Sequence[tuple[float, float]],
+                               geo_latlon: Sequence[tuple[float, float]]) -> float:
     """Median euclidean residual (degrees) of the fit over its own anchors."""
     residuals = []
     for (px, py), (lat, lon) in zip(pixel_xy, geo_latlon):
@@ -158,14 +157,14 @@ class GeoCalibration:
     }
 
     def __init__(self, mode: str = "fixed_pr_bounds",
-                 anchors_csv: Optional[str] = None,
-                 anchors: Optional[Sequence[Tuple[float, float, float, float]]] = None):
+                 anchors_csv: str | None = None,
+                 anchors: Sequence[tuple[float, float, float, float]] | None = None):
         if mode not in self.MODE_META:
             raise ValueError(f"mode must be one of {list(self.MODE_META)}")
         self.mode = mode
-        self._anchors: List[_Anchor] = []
+        self._anchors: list[_Anchor] = []
         self._affine = None
-        self._affine_residual_deg: Optional[float] = None
+        self._affine_residual_deg: float | None = None
         self._affine_confidence = self.MODE_META["per_screenshot_affine"]["confidence"]
         self._affine_error_m = self.MODE_META["per_screenshot_affine"]["error_m"]
         if mode in ("airport_anchor", "manual_anchor_csv"):
@@ -184,14 +183,14 @@ class GeoCalibration:
         return self._affine
 
     @property
-    def affine_residual_deg(self) -> Optional[float]:
+    def affine_residual_deg(self) -> float | None:
         """Median anchor residual (degrees) of the fitted transform, or None."""
         return self._affine_residual_deg
 
-    def _fit_from_anchors(self, anchors: Sequence[Tuple[float, float, float, float]]) -> None:
+    def _fit_from_anchors(self, anchors: Sequence[tuple[float, float, float, float]]) -> None:
         seen = set()
-        pixel_xy: List[Tuple[float, float]] = []
-        geo_latlon: List[Tuple[float, float]] = []
+        pixel_xy: list[tuple[float, float]] = []
+        geo_latlon: list[tuple[float, float]] = []
         for px, py, lat, lon in anchors:
             key = (round(float(px), 1), round(float(py), 1))
             if key in seen:
@@ -254,7 +253,7 @@ class GeoCalibration:
             estimated_error_m=meta["error_m"],
         )
 
-    def generate_quality_report(self, rows: List[dict], output_path: str) -> int:
+    def generate_quality_report(self, rows: list[dict], output_path: str) -> int:
         """
         Write georef_quality_report.csv from a list of dicts that each contain
         screenshot_id plus the CoordResult fields. Returns row count written.
@@ -317,7 +316,7 @@ class GeoCalibration:
         return lat, lon
 
     @staticmethod
-    def _load_anchors(csv_path: str) -> List[_Anchor]:
+    def _load_anchors(csv_path: str) -> list[_Anchor]:
         anchors = []
         try:
             with open(csv_path, newline="") as f:

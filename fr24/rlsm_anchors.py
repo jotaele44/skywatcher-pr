@@ -19,13 +19,12 @@ import json
 import sqlite3
 import unicodedata
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 REPO = Path(__file__).resolve().parents[1]
 PLACES_GEOJSON = REPO / "data" / "places.geojson"
 
 # (pixel_x, pixel_y, lat, lon)
-Anchor = Tuple[float, float, float, float]
+Anchor = tuple[float, float, float, float]
 
 
 def ascii_upper(s: str) -> str:
@@ -38,13 +37,13 @@ def ascii_upper(s: str) -> str:
 
 
 def build_geo_lookup(conn: sqlite3.Connection,
-                     places_geojson: Optional[Path] = None) -> Dict[str, Tuple[float, float]]:
+                     places_geojson: Path | None = None) -> dict[str, tuple[float, float]]:
     """Name -> (lat, lon) vocabulary from places.geojson + named geo_anchors.
 
     places.geojson is operator-local (not tracked); a missing file just means
     the lookup is built from geo_anchors alone.
     """
-    lookup: Dict[str, Tuple[float, float]] = {}
+    lookup: dict[str, tuple[float, float]] = {}
     path = places_geojson if places_geojson is not None else PLACES_GEOJSON
     if path and Path(path).exists():
         gj = json.loads(Path(path).read_text())
@@ -68,13 +67,13 @@ def build_geo_lookup(conn: sqlite3.Connection,
 
 def anchors_for_screenshot(conn: sqlite3.Connection,
                            screenshot_id: int,
-                           geo_lookup: Optional[Dict[str, Tuple[float, float]]] = None,
-                           ) -> List[Anchor]:
+                           geo_lookup: dict[str, tuple[float, float]] | None = None,
+                           ) -> list[Anchor]:
     """All usable calibration anchors for one screenshot, pixel-deduplicated."""
     if geo_lookup is None:
         geo_lookup = build_geo_lookup(conn)
 
-    anchors: List[Anchor] = []
+    anchors: list[Anchor] = []
     for px, py, lat, lon in conn.execute(
         "SELECT pixel_x, pixel_y, lat, lon FROM geo_anchors"
         " WHERE screenshot_id = ? AND pixel_x IS NOT NULL AND pixel_y IS NOT NULL"
@@ -94,7 +93,7 @@ def anchors_for_screenshot(conn: sqlite3.Connection,
             anchors.append((float(cx), float(cy), latlon[0], latlon[1]))
 
     seen = set()
-    deduped: List[Anchor] = []
+    deduped: list[Anchor] = []
     for anchor in anchors:
         key = (round(anchor[0], 1), round(anchor[1], 1))
         if key in seen:

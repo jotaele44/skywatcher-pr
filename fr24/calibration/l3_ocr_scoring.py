@@ -5,8 +5,9 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping
+from typing import Any
 
 from .models import LayerCalibrationResult, write_json
 
@@ -53,12 +54,12 @@ def speed_to_mph(value: Any, unit: Any) -> float | None:
     return None
 
 
-def load_ground_truth(path: str | Path) -> List[Dict[str, str]]:
+def load_ground_truth(path: str | Path) -> list[dict[str, str]]:
     with Path(path).open(newline="", encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
 
 
-def load_predictions(path: str | Path) -> Dict[str, Dict[str, Any]]:
+def load_predictions(path: str | Path) -> dict[str, dict[str, Any]]:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if isinstance(data, list):
         return {str(row.get("image_path", row.get("path", ""))): row for row in data}
@@ -78,7 +79,7 @@ def compare_field(field: str, truth: Mapping[str, Any], pred: Mapping[str, Any])
 def score_records(
     truth_rows: Iterable[Mapping[str, Any]],
     predictions: Mapping[str, Mapping[str, Any]],
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     rows = list(truth_rows)
 
     totals = {field: 0 for field in FIELD_THRESHOLDS}
@@ -121,7 +122,7 @@ def score_records(
     }
 
 
-def calibrate(ground_truth: str, predictions: str) -> Dict[str, Any]:
+def calibrate(ground_truth: str, predictions: str) -> dict[str, Any]:
     rows = load_ground_truth(ground_truth)
     preds = load_predictions(predictions)
     metrics = score_records(rows, preds)

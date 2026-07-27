@@ -13,8 +13,9 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from .engine import ENGINE_VERSION, RULESET_VERSION
 from .models import confidence_level

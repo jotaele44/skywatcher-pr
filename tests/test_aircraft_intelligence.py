@@ -1,6 +1,5 @@
 """Tests for AircraftIntelligence lookup and unknown deduction."""
 
-import pytest
 
 from aircraft_intelligence import AircraftIntelligence
 

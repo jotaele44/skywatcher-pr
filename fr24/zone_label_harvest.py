@@ -27,7 +27,6 @@ import sqlite3
 import sys
 import unicodedata
 from pathlib import Path
-from typing import Dict, List, Optional
 
 try:
     import cv2
@@ -59,7 +58,7 @@ _TRUSTED_VCLASS = {"Active-Verified", "Military-Aviation", "ExternalStatic"}
 
 # Small static gazetteer for the off-PR endpoints that appear in the corpus but
 # are not in the PR airport registry. Extend as new codes surface in REVIEW.
-EXTRA_AIRPORTS: Dict[str, str] = {
+EXTRA_AIRPORTS: dict[str, str] = {
     "MIA": "Miami International Airport",
     "FLL": "Fort Lauderdale-Hollywood International Airport",
     "OPF": "Miami-Opa Locka Executive Airport",
@@ -95,7 +94,7 @@ _STATUS_RE = re.compile(
 )
 
 
-def _extract_endpoints(text: str, gaz: Dict[str, str]) -> tuple[str, str, str, str]:
+def _extract_endpoints(text: str, gaz: dict[str, str]) -> tuple[str, str, str, str]:
     """Return (origin_code, dest_code, status_hint, code_source).
 
     ``code_source`` is "gazetteer" (matched known airports — trustworthy),
@@ -177,7 +176,7 @@ def _row(image_name, frame_type, endpoint_kind, t_code, t_name, l_code, l_name,
     }
 
 
-def load_registry() -> Dict[str, object]:
+def load_registry() -> dict[str, object]:
     """Build the resolution authority from the PR Landing Zones + Military
     GeoPackages (with the legacy JSONL as fallback).
 
@@ -186,9 +185,9 @@ def load_registry() -> Dict[str, object]:
     The ``places`` list (with lat/lon) is what a later geo-nearest step resolves
     clustered endpoint coordinates against.
     """
-    names: Dict[str, str] = {}
-    vclass: Dict[str, str] = {}
-    places: List[dict] = []
+    names: dict[str, str] = {}
+    vclass: dict[str, str] = {}
+    places: list[dict] = []
     for c, n in EXTRA_AIRPORTS.items():
         names[c] = n
         vclass[c] = "ExternalStatic"
@@ -241,8 +240,8 @@ def load_registry() -> Dict[str, object]:
     # GNIS general place names (towns, military sites, landmarks) — the
     # resolution layer for map-town labels and Earth-frame POIs that the
     # landing-zone registry does not cover.
-    gnis: List[dict] = []
-    gnis_index: Dict[str, dict] = {}
+    gnis: list[dict] = []
+    gnis_index: dict[str, dict] = {}
     if GNIS_GPKG.exists():
         con = sqlite3.connect(str(GNIS_GPKG))
         try:
@@ -263,12 +262,12 @@ def load_registry() -> Dict[str, object]:
             "gnis": gnis, "gnis_index": gnis_index}
 
 
-def load_gazetteer() -> Dict[str, str]:
+def load_gazetteer() -> dict[str, str]:
     """Back-compat thin wrapper: code -> name."""
     return load_registry()["names"]  # type: ignore[return-value]
 
 
-def resolve_code(code: str, gaz: Dict[str, str]) -> str:
+def resolve_code(code: str, gaz: dict[str, str]) -> str:
     if not code:
         return ""
     return gaz.get(code.upper(), "")
@@ -293,7 +292,7 @@ def _strip_generic(s: str) -> str:
     return _GENERIC_SUFFIX.sub("", s)
 
 
-def resolve_place_name(text: str, reg: dict) -> Optional[dict]:
+def resolve_place_name(text: str, reg: dict) -> dict | None:
     """Match an OCR'd label/POI string to a GNIS place. Exact normalized hit
     first, then a token-subset match (all label tokens appear in a feature)."""
     idx = reg.get("gnis_index") or {}
@@ -323,7 +322,7 @@ def haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * r * math.asin(min(1.0, math.sqrt(a)))
 
 
-def nearest_place(lat: float, lon: float, reg: dict, max_nm: float = 5.0) -> Optional[dict]:
+def nearest_place(lat: float, lon: float, reg: dict, max_nm: float = 5.0) -> dict | None:
     """Nearest named place to a coordinate: landing zones first, then GNIS.
     Returns the place dict augmented with ``distance_nm`` and ``layer``."""
     if lat is None or lon is None:
@@ -372,12 +371,12 @@ def _endpoint_kind(status: str) -> str:
 _USEFUL_FCLASS = {"Populated Place", "Civil", "Military", "Airport", "Locale"}
 
 
-def scan_place_names(text: str, reg: dict, limit: int = 5) -> List[str]:
+def scan_place_names(text: str, reg: dict, limit: int = 5) -> list[str]:
     """Find GNIS place names that appear in OCR text (1-3 word grams), filtered
     to useful feature classes. Returns distinct names in order of appearance."""
     idx = reg.get("gnis_index") or {}
     toks = _norm(text).split()
-    out: List[str] = []
+    out: list[str] = []
     seen = set()
     i = 0
     while i < len(toks):
@@ -512,10 +511,10 @@ FIELDNAMES = [
 ]
 
 
-def harvest_paths(paths, out_csv: Path, reg: Optional[dict] = None,
+def harvest_paths(paths, out_csv: Path, reg: dict | None = None,
                   progress_every: int = 25) -> dict:
     reg = reg or load_registry()
-    counts: Dict[str, int] = {}
+    counts: dict[str, int] = {}
     out_csv.parent.mkdir(parents=True, exist_ok=True)
     with out_csv.open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=FIELDNAMES)

@@ -29,7 +29,17 @@ flights already saved.
 Stdlib only. Safe to run repeatedly.
 """
 from __future__ import annotations
-import argparse, csv, datetime, glob, json, os, re, shutil, sys, time
+
+import argparse
+import csv
+import datetime
+import glob
+import json
+import os
+import re
+import shutil
+import sys
+import time
 
 
 def _relocate(src: str, dst: str) -> None:
@@ -148,7 +158,7 @@ def latest_carryover() -> str | None:
     return cands[-1] if cands else None
 
 
-def _days_to_expiry(date: str, today: "datetime.date | None" = None) -> "int | None":
+def _days_to_expiry(date: str, today: datetime.date | None = None) -> int | None:
     """Days until this flight ages out of the Gold window (date + window - today).
     Negative once it has dropped below the floor; None if the date won't parse."""
     try:
@@ -159,7 +169,7 @@ def _days_to_expiry(date: str, today: "datetime.date | None" = None) -> "int | N
     return (d + datetime.timedelta(days=GOLD_WINDOW_DAYS) - today).days
 
 
-def prioritize_queue(q: list[dict], today: "datetime.date | None" = None) -> list[dict]:
+def prioritize_queue(q: list[dict], today: datetime.date | None = None) -> list[dict]:
     """Stable reordering: priority-tail flights that are within EXPIRY_BUMP_DAYS of
     aging out of the Gold window are bumped to the FRONT (soonest-expiry first); every
     other entry keeps its existing carryover order. A priority tail OUTSIDE that window

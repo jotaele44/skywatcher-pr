@@ -31,8 +31,8 @@ import csv
 import json
 import re
 from collections import Counter
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List
 
 PARSER_VERSION = "1.0.0"
 
@@ -246,7 +246,7 @@ FIELDNAMES = [
 
 
 def parse_jsonl(input_jsonl: Path, output_csv: Path) -> dict:
-    records: List[dict] = []
+    records: list[dict] = []
     with input_jsonl.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()

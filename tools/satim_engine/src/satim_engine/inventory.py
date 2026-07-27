@@ -1,6 +1,10 @@
 from __future__ import annotations
-import hashlib, shutil, zipfile
+
+import hashlib
+import shutil
+import zipfile
 from pathlib import Path
+
 import pandas as pd
 
 TRACK_EXT = {".csv", ".kml", ".gpx"}

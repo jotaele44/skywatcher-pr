@@ -61,8 +61,9 @@ import argparse
 import csv
 import json
 import sys
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 from .satim_candidate_extraction import SCHEMA_VERSION
 from .satim_gis_overlay import (

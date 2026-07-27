@@ -28,7 +28,6 @@ import json
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
 
 ADAPTER_VERSION = "fr24_spiderweb_adapter_v0.1.0"
 
@@ -87,7 +86,7 @@ PROVENANCE_FIELDS = (
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def _as_int(value: object) -> Optional[int]:
+def _as_int(value: object) -> int | None:
     try:
         v = int(str(value).strip())
         return v if v >= 0 else None
@@ -95,7 +94,7 @@ def _as_int(value: object) -> Optional[int]:
         return None
 
 
-def _as_float(value: object) -> Optional[float]:
+def _as_float(value: object) -> float | None:
     try:
         v = float(str(value).strip())
         return v if v >= 0 else None
@@ -103,7 +102,7 @@ def _as_float(value: object) -> Optional[float]:
         return None
 
 
-def _make_takeoff_time(row: dict) -> Optional[str]:
+def _make_takeoff_time(row: dict) -> str | None:
     """Combine playback_date + playback_time + playback_timezone into ISO-8601."""
     date = (row.get("playback_date") or "").strip()
     time = (row.get("playback_time") or "").strip()
@@ -181,7 +180,7 @@ def _has_prohibited_label(record: dict) -> bool:
     return False
 
 
-def _validate_flight_event(record: dict) -> Optional[str]:
+def _validate_flight_event(record: dict) -> str | None:
     """Return an error message if required fields are missing, else None."""
     if not record.get("flight_id"):
         return "missing flight_id"
@@ -192,7 +191,7 @@ def _validate_flight_event(record: dict) -> Optional[str]:
 
 # ── main pipeline ─────────────────────────────────────────────────────────────
 
-def read_jsonl(path: Path) -> List[dict]:
+def read_jsonl(path: Path) -> list[dict]:
     if not path.exists() or path.stat().st_size == 0:
         return []
     records = []
@@ -207,7 +206,7 @@ def read_jsonl(path: Path) -> List[dict]:
     return records
 
 
-def write_jsonl(path: Path, records: List[dict]) -> None:
+def write_jsonl(path: Path, records: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         for rec in records:
@@ -222,10 +221,10 @@ def run(
 ) -> dict:
     records = read_jsonl(export_jsonl)
 
-    intake: List[dict] = []
-    hold: List[dict] = []
+    intake: list[dict] = []
+    hold: list[dict] = []
     prohibited_dropped = 0
-    validation_errors: List[str] = []
+    validation_errors: list[str] = []
 
     for row in records:
         if _has_prohibited_label(row):

@@ -45,9 +45,9 @@ import json
 import re
 import sys
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -102,7 +102,7 @@ class TailCandidate:
 class RegistryRow:
     tail: str
     source: str
-    raw: Dict[str, str]
+    raw: dict[str, str]
 
 
 def norm_header(value: str) -> str:
@@ -137,7 +137,7 @@ def is_short_tail_edge(tail: str) -> bool:
     return bool(tail and len(tail) <= 3)
 
 
-def read_csv_rows(path: Path) -> List[Dict[str, str]]:
+def read_csv_rows(path: Path) -> list[dict[str, str]]:
     """Read a CSV file with utf-8-sig fallback and normalized headers."""
     if not path.exists():
         return []
@@ -165,7 +165,7 @@ def read_csv_rows(path: Path) -> List[Dict[str, str]]:
     raise RuntimeError(f"Could not parse CSV: {path}")
 
 
-def read_single_column_or_csv(path: Path) -> List[Dict[str, str]]:
+def read_single_column_or_csv(path: Path) -> list[dict[str, str]]:
     """Read generated candidate CSVs; support headerless one-tail-per-line files."""
     if not path.exists():
         return []
@@ -217,8 +217,8 @@ def infer_image_from_row(row: Mapping[str, str]) -> str:
     return get_first(row, IMAGE_COLUMN_CANDIDATES)
 
 
-def load_tail_candidates(ocr_new_tails: Path, events_csv: Path) -> Dict[str, TailCandidate]:
-    candidates: Dict[str, TailCandidate] = {}
+def load_tail_candidates(ocr_new_tails: Path, events_csv: Path) -> dict[str, TailCandidate]:
+    candidates: dict[str, TailCandidate] = {}
 
     def ensure(tail: str) -> TailCandidate:
         if tail not in candidates:
@@ -236,7 +236,7 @@ def load_tail_candidates(ocr_new_tails: Path, events_csv: Path) -> Dict[str, Tai
             c.first_source = str(ocr_new_tails)
 
     event_counter: Counter[str] = Counter()
-    image_sets: Dict[str, set] = defaultdict(set)
+    image_sets: dict[str, set] = defaultdict(set)
 
     for row in read_csv_rows(events_csv):
         tail = infer_tail_from_row(row)
@@ -258,9 +258,9 @@ def load_tail_candidates(ocr_new_tails: Path, events_csv: Path) -> Dict[str, Tai
     return candidates
 
 
-def load_faa_table(path: Path, source: str) -> Dict[str, RegistryRow]:
+def load_faa_table(path: Path, source: str) -> dict[str, RegistryRow]:
     rows = read_csv_rows(path)
-    out: Dict[str, RegistryRow] = {}
+    out: dict[str, RegistryRow] = {}
     for row in rows:
         # FAA raw headers normalize "N-NUMBER" to "n_number".
         tail = norm_tail(get_first(row, ("n_number", "nnumber", "n_num", "n")))
@@ -274,8 +274,8 @@ def load_faa_table(path: Path, source: str) -> Dict[str, RegistryRow]:
     return out
 
 
-def load_acftref(path: Path) -> Dict[str, Dict[str, str]]:
-    out: Dict[str, Dict[str, str]] = {}
+def load_acftref(path: Path) -> dict[str, dict[str, str]]:
+    out: dict[str, dict[str, str]] = {}
     for row in read_csv_rows(path):
         code = get_first(row, ("code", "mfr_mdl_code", "aircraft_code"))
         if code:
@@ -287,7 +287,7 @@ def row_blob_text(row: Mapping[str, str]) -> str:
     return " | ".join(str(v or "") for v in row.values()).upper()
 
 
-def aircraft_from_acftref(master_row: Mapping[str, str], acftref: Mapping[str, Mapping[str, str]]) -> Tuple[str, str]:
+def aircraft_from_acftref(master_row: Mapping[str, str], acftref: Mapping[str, Mapping[str, str]]) -> tuple[str, str]:
     mfr_mdl_code = get_first(master_row, ("mfr_mdl_code", "mfr_model_code"))
     ref = acftref.get(mfr_mdl_code, {})
     manufacturer = get_first(ref, ("mfr", "manufacturer"))
@@ -300,13 +300,13 @@ def classify_tail(
     master: Mapping[str, RegistryRow],
     dereg: Mapping[str, RegistryRow],
     reserved: Mapping[str, RegistryRow],
-) -> Tuple[str, str, str, str, str, bool]:
+) -> tuple[str, str, str, str, str, bool]:
     """
     Return:
       registry_class, promotion_status, registry_source, reason, warning_flags, quarantine
     """
     tail = candidate.tail
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     if tail == "N253TH":
         warnings.append("forced_quarantine_known_high_frequency_reserved_ocr_cluster")
@@ -385,9 +385,9 @@ def main() -> int:
     reserved = load_faa_table(reserved_path, "RESERVED")
     acftref = load_acftref(acftref_path)
 
-    validated_rows: List[Dict[str, object]] = []
-    platform_rows: List[Dict[str, object]] = []
-    fp_rows: List[Dict[str, object]] = []
+    validated_rows: list[dict[str, object]] = []
+    platform_rows: list[dict[str, object]] = []
+    fp_rows: list[dict[str, object]] = []
 
     for tail in sorted(candidates):
         c = candidates[tail]

@@ -7,9 +7,7 @@ from pathlib import Path
 import pytest
 
 from fr24.event_export import FR24EventExporter
-from fr24.manual_review_queue import ManualReviewQueue, QUEUE_TYPES
-from fr24.screenshot_inventory import ScreenshotInventory
-
+from fr24.manual_review_queue import QUEUE_TYPES, ManualReviewQueue
 
 # ------------------------------------------------------------------ review queue
 

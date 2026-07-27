@@ -7,10 +7,11 @@ import mimetypes
 import re
 import shutil
 import subprocess
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from .adapters import capability_report
 

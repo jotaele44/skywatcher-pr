@@ -22,7 +22,7 @@ import csv
 import json
 import sqlite3
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -115,7 +115,7 @@ def main():
         for r in forecast_rows: w.writerow(r)
 
     # Summary
-    md = [f"# RLSM 7-day operational forecast\n",
+    md = ["# RLSM 7-day operational forecast\n",
           f"Generated from {args.lookback_weeks}-week empirical baseline (last corpus date: {max_dt.date().isoformat()})\n",
           f"Forecast window: **{today.isoformat()} → {(today + timedelta(days=args.forecast_days-1)).isoformat()}**\n",
           "\n## Top 30 high-probability cells\n",

@@ -27,8 +27,7 @@ import csv
 import json
 import re
 import sqlite3
-import time
-from collections import Counter, defaultdict
+from collections import Counter
 from itertools import product
 from pathlib import Path
 

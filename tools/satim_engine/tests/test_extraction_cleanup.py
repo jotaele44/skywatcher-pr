@@ -1,6 +1,6 @@
 import zipfile
-from pathlib import Path
-from satim_engine.inventory import extract_zips, build_manifest
+
+from satim_engine.inventory import build_manifest, extract_zips
 
 
 def test_extract_zips_clears_stale_files(tmp_path):

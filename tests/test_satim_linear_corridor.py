@@ -1,10 +1,10 @@
 from satim_linear_corridor import (
+    NON_DESTRUCTIVE_ARTIFACT_FILTER,
+    VISIBLE_LINEAR_FEATURE_ONLY,
     CorridorClass,
     CorridorLink,
     CorridorObservation,
     CorridorSignal,
-    NON_DESTRUCTIVE_ARTIFACT_FILTER,
-    VISIBLE_LINEAR_FEATURE_ONLY,
     build_linear_corridor_ledger,
     build_p_route_confidence_patch,
     linear_corridor_schema,

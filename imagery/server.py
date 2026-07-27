@@ -17,10 +17,10 @@ Run (SSE):
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from . import compare as compare_mod
-from . import config, sink
+from . import sink
 from .providers import ProviderError, available_providers, get_provider
 
 TOOL_NAMES = ["fetch_imagery", "query_imagery_metadata", "compare_imagery"]
@@ -37,8 +37,8 @@ def fetch_imagery(
     lon: float,
     date_range: str,
     provider: str = "gibs",
-    buffer_deg: Optional[float] = None,
-    image_size: Optional[int] = None,
+    buffer_deg: float | None = None,
+    image_size: int | None = None,
     persist: bool = True,
     include_image: bool = True,
 ) -> dict[str, Any]:
@@ -108,9 +108,9 @@ def compare_imagery(
     date1: str,
     date2: str,
     provider: str = "gibs",
-    buffer_deg: Optional[float] = None,
-    image_size: Optional[int] = None,
-    threshold: Optional[float] = None,
+    buffer_deg: float | None = None,
+    image_size: int | None = None,
+    threshold: float | None = None,
     include_images: bool = False,
 ) -> dict[str, Any]:
     """Fetch the same footprint on two dates and report a change metric.
@@ -154,7 +154,7 @@ def build_server():
     return mcp
 
 
-def main(argv: Optional[list[str]] = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Imagery MCP server")

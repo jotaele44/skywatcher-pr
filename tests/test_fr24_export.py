@@ -4,24 +4,20 @@ import csv
 import json
 from pathlib import Path
 
-import pytest
-
+from fr24.dashboard_queue import (
+    TIER_FIELD_DISAGREEMENT,
+    row_identity,
+)
+from fr24.dashboard_queue import (
+    run as dashboard_run,
+)
 from fr24.selected_export import (
     EXPORT_VERSION,
     PROHIBITED_LABELS,
-    has_prohibited_label,
+)
+from fr24.selected_export import (
     run as export_run,
 )
-from fr24.dashboard_queue import (
-    DASHBOARD_QUEUE_VERSION,
-    TIER_FIELD_DISAGREEMENT,
-    TIER_FUSION_CONFLICT,
-    TIER_MANUAL_REVIEW,
-    TIER_DUPLICATE_REVIEW,
-    row_identity,
-    run as dashboard_run,
-)
-
 
 # ---------------------------------------------------------------------------
 # Helpers

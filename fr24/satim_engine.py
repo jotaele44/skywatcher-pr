@@ -13,9 +13,10 @@ import hashlib
 import json
 import shutil
 import zipfile
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from pipeline.normalize_locations import load_simple_yaml
 

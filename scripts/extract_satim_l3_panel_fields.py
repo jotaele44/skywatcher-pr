@@ -13,10 +13,10 @@ import argparse
 import csv
 import re
 import subprocess
+from collections.abc import Iterable, Mapping
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping
-
+from typing import Any
 
 N_A_VALUES = {"", "N/A", "NA", "N/A NOT AVAILABLE", "NOT AVAILABLE", "UNKNOWN", "NONE"}
 ROUTE_STOP_WORDS = {
@@ -237,7 +237,7 @@ def extract_timeline_timestamp(text: str) -> tuple[bool, str]:
     return timeline_hint, ""
 
 
-def parse_panel_text(text: str, image_path: str = "") -> Dict[str, Any]:
+def parse_panel_text(text: str, image_path: str = "") -> dict[str, Any]:
     origin_code, destination_code = extract_route(text)
     timeline_present, ocr_timeline_timestamp = extract_timeline_timestamp(text)
 
@@ -253,12 +253,12 @@ def parse_panel_text(text: str, image_path: str = "") -> Dict[str, Any]:
     }
 
 
-def read_csv(path: str | Path) -> List[Dict[str, str]]:
+def read_csv(path: str | Path) -> list[dict[str, str]]:
     with Path(path).open(newline="", encoding="utf-8", errors="replace") as handle:
         return list(csv.DictReader(handle))
 
 
-def image_paths_from_csv(path: str | Path) -> List[str]:
+def image_paths_from_csv(path: str | Path) -> list[str]:
     return [clean(row.get("image_path")) for row in read_csv(path) if clean(row.get("image_path"))]
 
 

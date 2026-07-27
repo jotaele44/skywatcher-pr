@@ -21,8 +21,6 @@ preserve, and they are unit-testable without pandas.
 """
 from __future__ import annotations
 
-from typing import Optional
-
 import pandas as pd
 
 from .gis_geometry import (
@@ -69,7 +67,7 @@ def bbox_context_join(track_df: pd.DataFrame, layers: dict | None = None) -> pd.
 
     statuses: list[str] = []
     matched_col: list[str] = []
-    nearest_col: list[Optional[float]] = []
+    nearest_col: list[float | None] = []
     for lat, lon in zip(out["latitude"], out["longitude"]):
         flat, flon = as_float(lat), as_float(lon)
         if flat is None or flon is None:

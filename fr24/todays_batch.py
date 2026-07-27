@@ -38,7 +38,6 @@ import sqlite3
 import sys
 from datetime import date, datetime
 from pathlib import Path
-from typing import Optional
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "scripts"))
@@ -114,7 +113,7 @@ def _is_captured(tail: str, fd: date, harvested: dict) -> bool:
     return False
 
 
-def _event_datetime(row: dict) -> Optional[datetime]:
+def _event_datetime(row: dict) -> datetime | None:
     raw = (row.get("at") or "").strip()
     if not raw:
         return None

@@ -8,9 +8,10 @@ comparison are follow-on implementation layers.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Mapping
+from typing import Any
 
 SCHEMA_VERSION = "satim.visual_ledger.v1"
 

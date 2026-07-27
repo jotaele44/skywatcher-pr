@@ -33,7 +33,6 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
-from typing import Optional, Tuple
 
 os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
@@ -255,7 +254,7 @@ def run(budget_sec: float, limit: int = 0):
 # ── Parallel runner (N5) — mirrors fr24.rlsm_ocr_parallel ──────────────────
 
 # Set per-worker via _worker_init().
-_worker_db_path: Optional[str] = None
+_worker_db_path: str | None = None
 
 
 def _worker_init(db_path: str) -> None:
@@ -265,7 +264,7 @@ def _worker_init(db_path: str) -> None:
     os.environ["OMP_THREAD_LIMIT"] = "1"
 
 
-def _worker_process_one(args: Tuple[int, str, int]) -> dict:
+def _worker_process_one(args: tuple[int, str, int]) -> dict:
     """Worker function. Returns the same result dict shape as detect_for_screenshot,
     plus screenshot_id + elapsed_sec for the aggregator."""
     sid, rel_path, run_id = args

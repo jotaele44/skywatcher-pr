@@ -14,7 +14,6 @@ from __future__ import annotations
 import csv
 import json
 import sqlite3
-import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]

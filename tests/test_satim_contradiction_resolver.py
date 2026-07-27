@@ -1,12 +1,12 @@
 from copy import deepcopy
 
 from satim_contradiction_resolver import (
+    EVIDENCE_RECONCILIATION_ONLY_NO_FACT_SYNTHESIS,
+    ORIGINAL_OUTPUT_IMMUTABILITY,
     ConflictType,
     ContradictionObservation,
     DetectorEvidence,
     DetectorType,
-    EVIDENCE_RECONCILIATION_ONLY_NO_FACT_SYNTHESIS,
-    ORIGINAL_OUTPUT_IMMUTABILITY,
     ReconciliationClass,
     build_contradiction_ledger,
     build_detector_confidence_patch,

@@ -11,7 +11,6 @@ import pytest
 import fr24.dashboard_data as mod
 
 
-
 def write_csv(path: Path, rows: list[dict]) -> None:
     if not rows:
         path.write_text("", encoding="utf-8")

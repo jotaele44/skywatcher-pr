@@ -24,7 +24,11 @@ from satim_fit import (  # noqa: E402
     fit_promotion_thresholds,
     fit_scoring_adjustments,
 )
-from satim_ground_truth import append_ground_truth, normalize_fp_class, read_ground_truth  # noqa: E402
+from satim_ground_truth import (  # noqa: E402
+    append_ground_truth,
+    normalize_fp_class,
+    read_ground_truth,
+)
 from satim_render_diff import autolabel_render_diff, classify_render_diff  # noqa: E402
 
 MOCA_SET = REPO_ROOT / "data" / "satim_calibration" / "moca_fr24_2025"

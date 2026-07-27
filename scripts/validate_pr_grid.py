@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-import argparse, csv, hashlib, sys
+import argparse
+import csv
+import hashlib
+import sys
 from pathlib import Path
 
 COLUMNS = ['Cell_ID','Row_Index','Column_Index','Pixel_X_Min','Pixel_Y_Min','Pixel_X_Max','Pixel_Y_Max','Centroid_X','Centroid_Y','Dark_Pixel_Count','Total_Pixel_Count','Land_Pixel_Ratio','Classification']

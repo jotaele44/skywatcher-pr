@@ -3,9 +3,7 @@ Shared pytest fixtures for the PR Airspace Intelligence test suite.
 """
 
 import sqlite3
-import tempfile
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import pytest
 
@@ -294,7 +292,7 @@ def pr_fixture_db(tmp_path):
 
     Reusable across test files via conftest.
     """
-    import sqlite3, json
+    import sqlite3
     db_path = str(tmp_path / "pr_fixture.db")
     conn = sqlite3.connect(db_path)
     conn.execute("""

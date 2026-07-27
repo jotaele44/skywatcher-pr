@@ -1,15 +1,19 @@
 from __future__ import annotations
+
 import argparse
 from pathlib import Path
+
 import pandas as pd
+
 from .config import load_config
-from .inventory import extract_zips, build_manifest
-from .tracks import parse_csv_track, parse_kml_coordinates, parse_gpx_coordinates, NonTrackCSV
-from .scoring import score_tracks
 from .graph import build_graph_from_ledgers
+from .inventory import build_manifest, extract_zips
 from .pairing import build_pairing_ledger
-from .plugins.visual_ocr import extract_visual_metadata
 from .plugins.gis_join import bbox_context_join
+from .plugins.visual_ocr import extract_visual_metadata
+from .scoring import score_tracks
+from .tracks import NonTrackCSV, parse_csv_track, parse_gpx_coordinates, parse_kml_coordinates
+
 
 def parse_track_file(path: Path) -> pd.DataFrame:
     suffix = path.suffix.lower()
@@ -37,7 +41,7 @@ def run(input_dir: str, output_dir: str, config_path: str | None = None) -> None
             skipped.append({"path": str(p), "reason": str(e)})
         except Exception as e:
             errors.append({"path": str(p), "error": str(e)})
-    
+
     # v21: avoid pandas concat FutureWarning by filtering empty/all-NA frames before concat.
     clean_track_dfs = []
     for frame in track_dfs:

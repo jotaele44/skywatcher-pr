@@ -12,8 +12,8 @@ import argparse
 import csv
 import json
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List
 
 DEDUP_VERSION = "fr24_fused_dedup_v0.1.0"
 
@@ -25,7 +25,7 @@ STATUS_RANK = {
 }
 
 
-def read_csv(path: Path) -> List[dict]:
+def read_csv(path: Path) -> list[dict]:
     if not path.exists() or path.stat().st_size == 0:
         return []
     rows = list(csv.DictReader(path.open(encoding="utf-8")))
@@ -34,7 +34,7 @@ def read_csv(path: Path) -> List[dict]:
     return rows
 
 
-def write_csv(path: Path, rows: List[dict], fieldnames: List[str] | None = None) -> None:
+def write_csv(path: Path, rows: list[dict], fieldnames: list[str] | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not fieldnames:
         fieldnames = sorted({k for row in rows for k in row.keys()}) if rows else []
@@ -86,13 +86,13 @@ def row_quality(row: dict) -> tuple:
     return (conflict_count, status_rank, -confidence, source_csv, row.get("candidate_id", ""))
 
 
-def dedupe_rows(rows: Iterable[dict]) -> tuple[List[dict], List[dict], dict]:
-    groups: dict[str, List[dict]] = defaultdict(list)
+def dedupe_rows(rows: Iterable[dict]) -> tuple[list[dict], list[dict], dict]:
+    groups: dict[str, list[dict]] = defaultdict(list)
     for row in rows:
         groups[dedup_key(row)].append(row)
 
-    kept: List[dict] = []
-    duplicates: List[dict] = []
+    kept: list[dict] = []
+    duplicates: list[dict] = []
     for group_index, (key, group_rows) in enumerate(sorted(groups.items()), 1):
         ranked = sorted(group_rows, key=row_quality)
         winner = dict(ranked[0])
@@ -126,8 +126,8 @@ def dedupe_rows(rows: Iterable[dict]) -> tuple[List[dict], List[dict], dict]:
     return kept, duplicates, summary
 
 
-def run(input_csvs: List[Path], output_csv: Path, duplicates_csv: Path, summary_json: Path) -> dict:
-    rows: List[dict] = []
+def run(input_csvs: list[Path], output_csv: Path, duplicates_csv: Path, summary_json: Path) -> dict:
+    rows: list[dict] = []
     for path in input_csvs:
         rows.extend(read_csv(path))
     kept, duplicates, summary = dedupe_rows(rows)

@@ -364,7 +364,7 @@ async def run(args: argparse.Namespace) -> None:
     print(f"\nDone. {done} processed, {errors} errors.")
     print(f"Output: {output_path}")
     print(f"Checkpoint: {checkpoint_path}")
-    print(f"\nNext step: python3 server/ingestion/ingest_data.py --db server/priis.db")
+    print("\nNext step: python3 server/ingestion/ingest_data.py --db server/priis.db")
 
 
 def main() -> None:

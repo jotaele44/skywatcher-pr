@@ -15,11 +15,13 @@ markers = [
 
 # ── ruff ─────────────────────────────────────────────────────────────────────
 # Same rule set as the rest of the federation so the target is identical
-# everywhere. This repo starts from a large backlog (~1.4k findings, mostly
-# UP006/UP035 annotation modernization and unsorted imports), so the CI lint job
-# is REPORT-ONLY for now — see .github/workflows/ci.yml. Clearing the backlog is
-# tracked separately; mass-autofixing a flat-layout numerics repo in one pass is
-# not safe to bundle with CI configuration work.
+# everywhere. The backlog this repo started with (1,369 findings) is down to the
+# `ignore` list below, and the CI lint job is now GATING — see ci.yml.
+#
+# target-version MUST stay py310: it is the lowest version in ci.yml's matrix,
+# and at a py312 target ruff's UP017 rewrites `timezone.utc` to `datetime.UTC`,
+# which does not exist before 3.11 and breaks the 3.10 leg at import time. That
+# regression already happened once, in ovnis-pr.
 [tool.ruff]
 line-length = 100
 target-version = "py310"
@@ -28,10 +30,50 @@ extend-exclude = ["Archive.zip", "gebco", "exports", "data"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "W"]
-ignore = ["E501"] # line length is handled by the formatter, not the linter
+# Two kinds of entry here, and the distinction matters:
+#
+#   PERMANENT — E501: line length is the formatter's job, not the linter's.
+#
+#   BACKLOG — everything else, with the count outstanding when the gate went
+#   live. These are NOT accepted style; they are the remainder that needs
+#   judgement rather than an autofix, held behind the gate so the ~1,165
+#   findings already fixed cannot creep back. Delete an entry as its count
+#   reaches zero. Do not add to this list to make a build pass — fix the finding
+#   or, if the code is deliberate, add a targeted `# noqa` with a reason.
+ignore = [
+    "E501",   # permanent: line length handled by the formatter
+    "E701",   # 70 — multiple statements on one line (colon); large reformat
+    "E702",   # 29 — multiple statements on one line (semicolon); large reformat
+    "B905",   # 24 — zip() without strict=; a BEHAVIOR change where lengths
+              #      differ, so each call site needs reading, not a sweep
+    "E402",   # 15 — module import not at top; several are deliberate, after a
+              #      sys.path bootstrap in the backward-compat shims
+    "F841",   # 10 — unused variable
+    "E741",   #  9 — ambiguous variable name (l/I/O)
+    "SIM105", #  8 — contextlib.suppress instead of try/except/pass
+    "SIM115", #  6 — open() without a context manager
+    "SIM118", #  6 — `key in dict` instead of `key in dict.keys()`
+    "B007",   #  5 — unused loop control variable
+    "SIM108", #  5 — ternary instead of if/else block
+    "B023",   #  4 — function-uses-loop-variable. VERIFIED BENIGN in the only
+              #      site (scripts/parse_flight_log.py): the lambda is called
+              #      inside the same iteration, so late binding cannot bite
+    "SIM102", #  3 — collapsible if
+    "SIM103", #  2 — needless bool
+    "E731",   #  1 — lambda assignment
+    "SIM101", #  1 — duplicate isinstance call
+    "SIM110", #  1 — reimplemented builtin (any/all)
+    "UP022",  #  1 — replace stdout/stderr with capture_output
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["B011"] # assert False is idiomatic in tests
+# I001 is gating everywhere else; these three have unsorted imports *inside*
+# function bodies, which ruff will not reorder automatically. Scoped here rather
+# than ignored globally so a new unsorted module-level import still fails.
+"scripts/rlsm_heading_vision.py" = ["I001"]
+"scripts/rlsm_ocr_retry_tails.py" = ["I001"]
+"scripts/rlsm_redetect_unlabeled.py" = ["I001"]
 
 # ── mypy ─────────────────────────────────────────────────────────────────────
 # Gradually-typed baseline, matching spiderweb-pr and moneysweep-pr. Scoped to

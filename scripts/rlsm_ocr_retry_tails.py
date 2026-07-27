@@ -45,8 +45,8 @@ def ocr_card_robust(file_path: str, sw: int, sh: int) -> str:
     from PIL import Image
     try: import pillow_heif; pillow_heif.register_heif_opener()
     except ImportError: pass
-    import pytesseract
     import numpy as np
+    import pytesseract
     try: import cv2
     except ImportError: cv2 = None
 
@@ -120,7 +120,7 @@ def main():
 
     # Reuse OCR_SUBS variant generator from the textmine script
     sys.path.insert(0, str(REPO / "scripts"))
-    from rlsm_recover_tails_textmine import gen_ocr_variants, TAIL_PAT
+    from rlsm_recover_tails_textmine import TAIL_PAT, gen_ocr_variants
 
     conn = sqlite3.connect(DB)
     cur = conn.cursor()

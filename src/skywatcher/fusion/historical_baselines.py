@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable, Mapping
 from statistics import mean, pstdev
-from typing import Iterable, Mapping
 
 
 def _key(record: Mapping[str, object]) -> tuple[str, str]:
