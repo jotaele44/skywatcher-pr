@@ -12,7 +12,7 @@ Core; it must not import SATIM or CORRIM.
 
 | Path | Responsibility |
 |---|---|
-| `src/skywatcher/fpim/aircraft_profile.py` | `AircraftProfile`, `AircraftIntelligence` — N-number to owner/operator lookup and profile enrichment. |
+| `src/skywatcher/fpim/aircraft_profile.py` | `AircraftProfile`, `AircraftIntelligence` — exact-identifier, provenance-gated owner/operator/country lookup plus observed history enrichment. |
 | `fr24/route_extractor.py` | FR24 route-color/aircraft-icon extraction from screenshots. |
 | `fr24/track_vectorizer.py` | Route-candidate to track-feature vectorization. |
 | `fr24/flight_fusion.py` | Same-flight multi-screenshot fusion into one multi-point record. |
@@ -68,13 +68,18 @@ import path only, and must not be reintroduced into FPIM. Enforced by
 
 ## Active fallback behavior
 
-`AircraftIntelligence._deduce_profile()` resolves only observable identity
-fields from callsign prefixes and stored flight metadata. Aircraft type,
-route geometry, time, speed, altitude, and proximity do not establish why an
-aircraft is flying, so unresolved `primary_mission` values remain `Unknown`.
+`AircraftIntelligence._deduce_profile()` resolves no aircraft identity field
+from callsign structure or ordinary flight history. Callsign-prefix tables are
+retained only as backward-compatible constants; active lookup does not consult
+them to populate `country` or any other identity field. Aircraft type, owner,
+operator, country, confidence, route geometry, time, speed, altitude, and
+proximity remain unresolved unless the individual identity field has complete
+source URI, source record ID, capture time, and SHA-256 provenance.
+
+Ordinary flight-history rows enrich only observed flight count, first-seen time,
+and last-seen time. Unresolved `primary_mission` values remain `Unknown`, mission
+lists remain empty, and operational-pattern cueing remains absent.
 `AIRCRAFT_TYPE_MISSIONS` is retained as an empty compatibility constant.
-Source-declared roles from the curated operator registry remain available and
-are labeled as source-declared in reports.
 
 ## Backward compatibility
 
