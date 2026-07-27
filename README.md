@@ -1,10 +1,12 @@
 # skywatcher-pr — Airspace Evidence Producer (PRII federation)
 
-`skywatcher-pr` is the airspace and aircraft-activity evidence producer for the Puerto Rico Integrated Intelligence (PRII) federation. It owns FlightRadar24 screenshot and track ingestion, airspace-observation generation, source-declared aircraft-profile enrichment, SATIM imagery calibration, and federation export packages for [`thehub-pr`](https://github.com/jotaele44/thehub-pr).
+`skywatcher-pr` is the airspace and aircraft-activity evidence producer for the Puerto Rico Integrated Intelligence (PRII) federation. It owns FlightRadar24 screenshot and track ingestion, airspace-observation generation, provenance-gated aircraft-identity enrichment, SATIM imagery calibration, and federation export packages for [`thehub-pr`](https://github.com/jotaele44/thehub-pr).
 
-> Skywatcher records observable aircraft activity and source-declared metadata. It does **not** infer mission, intent, target, wrongdoing, or operational purpose, and it does not provide operational cueing.
+> Skywatcher records observable aircraft activity and source-declared metadata. It does **not** infer mission, intent, target, wrongdoing, causality, or operational purpose, and it does not provide operational cueing.
 
-> **Diagnostic-only surface (ADR 0001, Phase 2).** The repository dashboard is a development and diagnostic surface for this producer. The supported federation product surface is the hub application in `thehub-pr`.
+> Aircraft identity fields are promoted only when field-level provenance includes a source URI, source record ID, capture time, and SHA-256. Legacy registry membership alone proves nothing beyond the exact identifier; unproven fields remain `Unknown`.
+
+> **Diagnostic-only surface.** The repository dashboard is a development and diagnostic surface for this producer. The supported federation product surface is the hub application in `thehub-pr`.
 
 ## Federation role
 
@@ -17,6 +19,7 @@
 | Production status | `NON_PRODUCTION_DIAGNOSTIC` |
 | Operational cueing | `false` |
 | Intent inference | prohibited |
+| Live execution | blocked pending real captures and a production export |
 
 Skywatcher is the active owner of the FR24 pipeline migrated from `spiderweb-pr`. Spiderweb may retain spatial bridge/reference material, but FR24 ingestion and active airspace-observation export belong here.
 
@@ -26,16 +29,16 @@ The repository uses a PEP 517 `src/` package while preserving existing root impo
 
 | Surface | Role |
 |---|---|
-| `src/skywatcher/core/` | Shared contracts, registries, normalization, readiness, archive safety |
+| `src/skywatcher/core/` | Shared contracts, normalization, provenance-gated registries, readiness, repository policy, source export, archive safety |
 | `src/skywatcher/satim/`, `fr24/calibration/` | Terrain/imagery calibration and artifact assessment |
-| `src/skywatcher/fpim/`, `fr24/` | Aircraft identity and observed flight-path/behavior processing |
+| `src/skywatcher/fpim/`, `fr24/` | Exact aircraft identity and observed flight-path/behavior processing |
 | `src/skywatcher/corrim/`, `src/skywatcher/fusion/` | Evidence correlation without intent or causality inference |
 | `src/skywatcher/federation/` | Federation compatibility helpers |
-| `server/backend/` | Read-mostly diagnostic API; mutations are disabled by default |
+| `server/backend/` | Read-mostly diagnostic API; mutations are disabled by default and remain process-scoped |
 | `tools/satim_engine/` | Distributable SATIM engine package |
 | `tools/satim_route_findings/` | Read-only SATIM route-findings package |
 
-Legacy `FlightMissionAnalyzer` compatibility symbols are quarantined under `skywatcher.legacy`, excluded from the active API, and emit deprecation warnings when accessed through the old facade.
+Legacy `FlightMissionAnalyzer` compatibility symbols are quarantined under `skywatcher.legacy`, excluded from the active API, and emit deprecation warnings when accessed through the old facade. Active profiles never expose inferred missions, typical operating hours, or high-activity-region cueing.
 
 ## Install
 
@@ -43,8 +46,8 @@ Core development does not require a sibling checkout:
 
 ```bash
 python -m pip install -e ".[dev,api]"
-skywatcher doctor
-skywatcher validate
+skywatcher --root "$PWD" doctor
+skywatcher --root "$PWD" validate
 pytest
 ```
 
@@ -62,17 +65,21 @@ python -m pip install -e ".[imagery]"
 python -m pip install -e ".[desktop,federation]"
 ```
 
+`requirements.lock` contains immutable VCS references for the shared TheHub packages. CI freshly resolves the project and rejects editable sibling paths.
+
 ## Unified CLI
 
 ```text
-skywatcher doctor
-skywatcher validate
-skywatcher export-source dist/skywatcher-source.zip
+skywatcher --root <repo> doctor
+skywatcher --root <repo> validate
+skywatcher --root <repo> export-source dist/skywatcher-source.zip
 ```
 
-- `doctor` reports package, executable, data-pack, and policy capability states.
-- `validate` compiles every JSON Schema under `schemas/`.
-- `export-source` creates a deterministic tracked-source archive that excludes `frontend/`, `data/`, runtime outputs, caches, and generated exports.
+- `doctor` reports dependency, executable, data-pack, repository-asset, runtime-write, and policy capability states.
+- `validate` compiles every JSON Schema under `<repo>/schemas`; it fails when the schema directory is absent or empty.
+- `export-source` creates a deterministic tracked-source archive that excludes frontend, production data, generated outputs, caches, build products, coverage products, and runtime reports while preserving executable launcher modes.
+
+An installed wheel does not silently treat the current directory as a valid repository. CI installs the wheel in a clean virtual environment, changes to an empty directory, verifies rootless validation fails, and then validates the repository through explicit `--root`.
 
 ## FR24 ingest
 
@@ -108,7 +115,9 @@ python -m fr24.satim_engine run \
   --output reports/satim/runs/<run_id>
 ```
 
-ZIP inputs are extracted through bounded, traversal-resistant archive handling. The standalone distributable engine remains under `tools/satim_engine/` and exposes the `satim` command.
+ZIP inputs use the same safety contract in the repository-native and independently distributable engines. The contract rejects traversal, aliases, Windows reserved names, alternate-data-stream syntax, symlinks, encrypted members, duplicates, excessive size, and excessive compression. Existing targets are refused by default; explicit replacement uses a backup-and-rollback promotion sequence.
+
+The standalone distributable engine remains under `tools/satim_engine/` and exposes the `satim` command.
 
 ## Federation export contract
 
@@ -128,17 +137,26 @@ Production mode rejects synthetic rows. `ready_for_hub_live_execution` remains f
 
 ## Test tiers
 
-The default suite excludes capabilities that require omitted production data, external services, sibling federation packages, optional geospatial dependencies, or external OCR executables.
+The test system separates reproducible core operation from full-repository coverage:
 
 ```bash
+# Data-independent default
 pytest
+
+# Full-data tier used by the coverage workflow
+PYTEST_ADDOPTS="" pytest -m "not integration and not requires_thehub"
+
+# Explicit capability tiers
 pytest -m requires_data
 pytest -m requires_thehub
 pytest tools/satim_engine/tests
 pytest tools/satim_route_findings/tests
 ```
 
-The backend-core workflow installs the project in a clean environment, validates repository hygiene and schemas, runs the data-independent suite across Python 3.10–3.13, builds a wheel, smoke-installs it, and runs both nested tool suites.
+- `Backend core` installs the project cleanly, validates repository hygiene and schemas, runs the data-independent suite across Python 3.10–3.13, builds the wheel, performs the isolated install gate, and runs both nested tool suites.
+- `Skywatcher CI` runs the full-data suite across Python 3.10–3.12 and retains the 55% coverage floor.
+- Current-main security controls include CodeQL, secret scanning, pip-audit, immutable lock resolution, Dependabot, pinned Actions, frontend lint/build, and report-visible Ruff/mypy.
+- Desktop builds and frozen-app smoke tests run on Ubuntu, macOS, and Windows.
 
 ## Diagnostic API write policy
 
@@ -149,15 +167,27 @@ PRII_ENABLE_WRITES=true
 PRII_WRITE_TOKEN=<non-empty token>
 ```
 
-Every mutating request must then send `Authorization: Bearer <token>`. Local-network location alone never grants write access. Changes remain process-scoped and are not persisted to repository files.
+Every mutating request must send `Authorization: Bearer <token>`. Local-network location alone never grants write access. The server owns entity IDs, rejects ID and internal-overlay fields in payloads, limits payload size and field count, and keeps changes process-scoped without mutating repository files.
+
+The public-settings endpoint reports whether a write token is required so preserved current-main frontend tooling can prompt for the token without storing it in the generic application-parameter namespace.
 
 ## Runtime and source hygiene
 
-Generated content belongs outside source control under a runtime workspace such as `var/`. CI rejects archive copies, macOS resource forks, interpreter bytecode, caches, local databases, and generated runtime exports. Use `skywatcher export-source` rather than Finder-created ZIP files for repository handoffs.
+Generated content belongs outside source control under a runtime workspace such as `var/`. CI rejects archive copies, macOS resource forks, interpreter bytecode, caches, local databases, build and wheel products, coverage products, generated maintenance reports, and runtime exports. The source exporter and hygiene scanner share one canonical policy.
+
+Use `skywatcher --root <repo> export-source ...` rather than Finder-created ZIP files for repository handoffs.
+
+## Phase 0 review evidence
+
+- `docs/PHASE_0_CHANGE_LEDGER.md`
+- `docs/PHASE_0_TEST_EVIDENCE.md`
+- `docs/PHASE_0_MIGRATION_MAP.md`
+- `docs/PHASE_0_REMEDIATION_LEDGER.md`
+- `docs/PHASE_0_REVIEW_CLOSURE.md`
 
 ## Provenance
 
 - Engine extracted from the Spiderweb airspace implementation branch.
 - FR24 ingest migrated from `spiderweb-pr` into `fr24/`.
 - Export contract salvaged from the retired airspace tooling path.
-- Phase 0 hardening preserves analytical behavior and schema compatibility while establishing reproducible packaging and security gates.
+- Phase 0 hardening preserves analytical and schema compatibility while establishing reproducible packaging, immutable dependency resolution, recoverable archive handling, provenance-gated identity enrichment, API identity security, and continuous security gates.
