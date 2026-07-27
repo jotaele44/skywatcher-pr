@@ -118,10 +118,6 @@ class AircraftIntelligence:
             profile.data_source = "verified_registry" if verified else "unverified_registry"
         else:
             profile.data_source = "observed_history"
-            for prefix, info in sorted(CALLSIGN_PREFIXES.items(), key=lambda item: -len(item[0])):
-                if normalized.startswith(prefix):
-                    profile.country = info["country"]
-                    break
 
         self._enrich_from_db(profile)
         profile.primary_mission = "Unknown"
