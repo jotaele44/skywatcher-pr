@@ -7,7 +7,9 @@ from pathlib import Path
 import pytest
 
 import satim_engine.safe_archive as safe_archive_module
-from satim_engine.safe_archive import UnsafeArchiveError, safe_extract_zip
+
+UnsafeArchiveError = safe_archive_module.UnsafeArchiveError
+safe_extract_zip = safe_archive_module.safe_extract_zip
 
 
 def test_satim_safe_archive_rejects_traversal(tmp_path):

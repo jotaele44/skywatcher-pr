@@ -7,7 +7,10 @@ from pathlib import Path
 import pytest
 
 import skywatcher.core.safe_archive as safe_archive_module
-from skywatcher.core.safe_archive import ArchiveLimits, UnsafeArchiveError, safe_extract_zip
+
+ArchiveLimits = safe_archive_module.ArchiveLimits
+UnsafeArchiveError = safe_archive_module.UnsafeArchiveError
+safe_extract_zip = safe_archive_module.safe_extract_zip
 
 
 def _zip(path: Path, members: list[tuple[str, bytes, int | None]]) -> Path:
