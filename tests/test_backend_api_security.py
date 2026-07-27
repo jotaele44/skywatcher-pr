@@ -1,9 +1,6 @@
-from __future__ import annotations
-
 from fastapi.testclient import TestClient
 
 from server.backend import main
-
 
 client = TestClient(main.app)
 
@@ -15,48 +12,73 @@ def setup_function():
     main._WRITE_TOKEN = ""
 
 
-def test_unknown_entity_is_not_silently_empty():
-    response = client.get("/api/entities/NotARealEntity")
-    assert response.status_code == 404
-
-
-def test_page_size_is_bounded():
-    response = client.get("/api/entities/PRAirports?limit=1001")
-    assert response.status_code == 422
-
-
-def test_writes_are_disabled_by_default():
-    response = client.post("/api/entities/ManualReviewItems", json={"status": "open"})
-    assert response.status_code == 403
-
-
-def test_enabled_writes_require_configured_token():
-    main._WRITE_ENABLED = True
-    response = client.post("/api/entities/ManualReviewItems", json={"status": "open"})
-    assert response.status_code == 503
-
-
-def test_enabled_writes_require_matching_bearer_token():
+def enable():
     main._WRITE_ENABLED = True
     main._WRITE_TOKEN = "secret-token"
-    denied = client.post("/api/entities/ManualReviewItems", json={"status": "open"})
-    assert denied.status_code == 401
+
+
+def test_unknown_entity_and_page_bound():
+    assert client.get("/api/entities/NotARealEntity").status_code == 404
+    assert client.get("/api/entities/PRAirports?limit=1001").status_code == 422
+
+
+def test_write_authentication():
+    assert client.post("/api/entities/ManualReviewItems", json={"status": "open"}).status_code == 403
+    main._WRITE_ENABLED = True
+    assert client.post("/api/entities/ManualReviewItems", json={"status": "open"}).status_code == 503
+    main._WRITE_TOKEN = "secret-token"
+    assert client.post("/api/entities/ManualReviewItems", json={"status": "open"}).status_code == 401
+
+
+def test_server_owned_ids_and_repeat_patch():
+    enable()
+    headers = {"Authorization": "Bearer secret-token"}
+    assert client.post(
+        "/api/entities/ManualReviewItems",
+        json={"id": "client"},
+        headers=headers,
+    ).status_code == 422
     created = client.post(
         "/api/entities/ManualReviewItems",
         json={"status": "open"},
-        headers={"Authorization": "Bearer secret-token"},
+        headers=headers,
+    ).json()
+    assert created["id"] != "client"
+    assert created["_process_overlay"] is True
+    identifier = created["id"]
+    assert client.patch(
+        f"/api/entities/ManualReviewItems/{identifier}",
+        json={"id": "other"},
+        headers=headers,
+    ).status_code == 422
+    assert client.patch(
+        f"/api/entities/ManualReviewItems/{identifier}",
+        json={"status": "reviewed"},
+        headers=headers,
+    ).status_code == 200
+    second = client.patch(
+        f"/api/entities/ManualReviewItems/{identifier}",
+        json={"note": "ok"},
+        headers=headers,
     )
-    assert created.status_code == 200
-    assert created.json()["_process_overlay"] is True
+    assert second.status_code == 200
+    assert second.json()["status"] == "reviewed"
 
 
-def test_source_id_fallback_is_deterministic():
+def test_payload_size_and_deterministic_id():
+    enable()
+    headers = {"Authorization": "Bearer secret-token"}
+    assert client.post(
+        "/api/entities/ManualReviewItems",
+        json={"blob": "x" * (main.MAX_PAYLOAD_BYTES + 1)},
+        headers=headers,
+    ).status_code == 422
     row = {"name": "same", "score": 3}
-    first = main.with_id([row], "missing")[0]["id"]
-    second = main.with_id([dict(row)], "missing")[0]["id"]
-    assert first == second
-
-
-def test_numeric_sort_is_numeric_not_lexical():
-    rows = [{"id": "a", "score": 10}, {"id": "b", "score": 2}]
-    assert [row["id"] for row in main.sort_rows(rows, "score")] == ["b", "a"]
+    assert main.with_id([row], "missing")[0]["id"] == main.with_id([dict(row)], "missing")[0]["id"]
+    assert [
+        row["id"]
+        for row in main.sort_rows(
+            [{"id": "a", "score": 10}, {"id": "b", "score": 2}],
+            "score",
+        )
+    ] == ["b", "a"]
