@@ -12,7 +12,7 @@ def test_lookup_known_callsign(populated_db):
 
 def test_lookup_unknown_callsign_returns_result(populated_db):
     ai = AircraftIntelligence(populated_db)
-    result = ai.lookup_aircraft("ZZZZZ")
+    ai.lookup_aircraft("ZZZZZ")
     # Should return something (None or a dict/object) without raising
     # The key requirement is no exception
     assert True

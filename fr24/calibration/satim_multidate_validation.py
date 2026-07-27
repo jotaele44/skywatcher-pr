@@ -55,9 +55,12 @@ def classify_epoch_pair(
         return "same_epoch"
     current_month = _epoch_to_month_index(current_epoch)
     comparison_month = _epoch_to_month_index(comparison_epoch)
-    if current_month is not None and comparison_month is not None:
-        if abs(current_month - comparison_month) <= near_epoch_month_window:
-            return "near_epoch"
+    if (
+        current_month is not None
+        and comparison_month is not None
+        and abs(current_month - comparison_month) <= near_epoch_month_window
+    ):
+        return "near_epoch"
     return "cross_epoch"
 
 
@@ -86,7 +89,7 @@ def validate_candidate_across_dates(
         )
         for row in comparison_rows
     ]
-    cross_epoch_rows = [row for row, klass in zip(comparison_rows, epoch_classes) if klass == "cross_epoch"]
+    cross_epoch_rows = [row for row, klass in zip(comparison_rows, epoch_classes, strict=False) if klass == "cross_epoch"]
 
     contradiction_flags: list[str] = list(candidate.get("contradiction_flags") or [])
     source_dates = [row.get("capture_datetime_utc") for row in comparison_rows if row.get("capture_datetime_utc")]

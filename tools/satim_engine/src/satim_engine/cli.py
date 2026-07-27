@@ -27,7 +27,8 @@ def parse_track_file(path: Path) -> pd.DataFrame:
 
 def run(input_dir: str, output_dir: str, config_path: str | None = None) -> None:
     config = load_config(config_path)
-    out = Path(output_dir); out.mkdir(parents=True, exist_ok=True)
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
     extracted = extract_zips(input_dir, output_dir)
     manifest = build_manifest(extracted)
     manifest.to_csv(out / "SATIM_MASTER_FILE_MANIFEST.csv", index=False)

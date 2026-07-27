@@ -40,14 +40,20 @@ def main():
                 if row.get('Classification') not in CLASSES:
                     errors.append('unexpected classification')
                     break
-        if count != 98304: errors.append('unexpected row count')
-        if len(seen) != 98304: errors.append('unexpected unique Cell_ID count')
-        if rows != set(range(256)): errors.append('row coverage failed')
-        if cols != set(range(384)): errors.append('column coverage failed')
-        if a.require_sha and sha(path) != SHA: errors.append('unexpected SHA-256')
+        if count != 98304:
+            errors.append("unexpected row count")
+        if len(seen) != 98304:
+            errors.append("unexpected unique Cell_ID count")
+        if rows != set(range(256)):
+            errors.append("row coverage failed")
+        if cols != set(range(384)):
+            errors.append("column coverage failed")
+        if a.require_sha and sha(path) != SHA:
+            errors.append("unexpected SHA-256")
     if errors:
         print('[FAIL] PR baseline grid validation failed', file=sys.stderr)
-        for e in errors: print(f' - {e}', file=sys.stderr)
+        for e in errors:
+            print(f" - {e}", file=sys.stderr)
         return 1
     print('[OK] PR baseline grid validation passed')
     return 0

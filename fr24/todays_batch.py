@@ -141,10 +141,7 @@ def build_rows(xlsx_path: Path, sqlite_path: Path, today: date):
         if not tail or dtm is None:
             continue
         fd = dtm.date()
-        if _is_captured(tail, fd, harvested):
-            status = "HARVESTED"
-        else:
-            status = compute_status(fd, today)
+        status = "HARVESTED" if _is_captured(tail, fd, harvested) else compute_status(fd, today)
         candidates.append({
             "tail": tail,
             "date": fd.isoformat(),

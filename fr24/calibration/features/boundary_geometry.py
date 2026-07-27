@@ -44,7 +44,7 @@ def angular_difference_deg(a: float, b: float) -> float:
 
 
 def polyline_length(points: Sequence[Point]) -> float:
-    return sum(hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(points, points[1:]))
+    return sum(hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(points, points[1:], strict=False))
 
 
 def straightness_from_points(points: Sequence[Point]) -> float:
@@ -68,7 +68,7 @@ def orthogonality_from_bearings(bearings: Iterable[float], tolerance_deg: float 
     if len(values) < 2:
         return 0.0
     best = 0.0
-    for incoming, outgoing in zip(values, values[1:]):
+    for incoming, outgoing in zip(values, values[1:], strict=False):
         error = abs(angular_difference_deg(incoming, outgoing) - 90.0)
         best = max(best, clamp01(1.0 - error / tolerance_deg))
     return best
@@ -101,7 +101,7 @@ def compute_boundary_geometry_features(row: Mapping[str, Any]) -> BoundaryGeomet
             straightness = straightness_from_points(points)
             length = polyline_length(points)
             segment_count = max(0, len(points) - 1)
-            bearings = [bearing_deg(a, b) for a, b in zip(points, points[1:])]
+            bearings = [bearing_deg(a, b) for a, b in zip(points, points[1:], strict=False)]
             orthogonality = orthogonality_from_bearings(bearings)
 
     return BoundaryGeometryFeatures(

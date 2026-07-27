@@ -135,7 +135,7 @@ def test_confidence_patch_is_non_destructive():
     source = fixture("contraction")
     patches = build_detector_confidence_patch([source])
     assert len(patches) == 2
-    for patch, record in zip(patches, (source.before, source.after)):
+    for patch, record in zip(patches, (source.before, source.after), strict=True):
         assert patch["record_id"] == record.record_id
         assert patch["original_classification"] == record.classification
         assert patch["original_score"] == record.detector_score

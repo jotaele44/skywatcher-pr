@@ -37,7 +37,7 @@ def read_csv(path: Path) -> list[dict]:
 def write_csv(path: Path, rows: list[dict], fieldnames: list[str] | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not fieldnames:
-        fieldnames = sorted({k for row in rows for k in row.keys()}) if rows else []
+        fieldnames = sorted({k for row in rows for k in row}) if rows else []
     if not fieldnames:
         path.write_text("", encoding="utf-8")
         return
@@ -131,7 +131,7 @@ def run(input_csvs: list[Path], output_csv: Path, duplicates_csv: Path, summary_
     for path in input_csvs:
         rows.extend(read_csv(path))
     kept, duplicates, summary = dedupe_rows(rows)
-    fieldnames = sorted({k for row in kept + duplicates for k in row.keys()})
+    fieldnames = sorted({k for row in kept + duplicates for k in row})
     write_csv(output_csv, kept, fieldnames)
     write_csv(duplicates_csv, duplicates, fieldnames)
     summary.update({

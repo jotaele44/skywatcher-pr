@@ -273,8 +273,7 @@ def run_tesseract(image_path: str, text_path: Path) -> str:
     subprocess.run(
         ["tesseract", image_path, str(base), "--psm", "6"],
         check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         text=True,
     )
 

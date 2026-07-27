@@ -60,7 +60,7 @@ def test_label_regions_returned():
     seg = FR24UISegmenter()
     result = seg.segment_from_size(1024, 768)
     assert len(result.labels) > 0
-    types = {l.region_type for l in result.labels}
+    types = {lbl.region_type for lbl in result.labels}
     assert "callsign" in types
 
 

@@ -36,7 +36,7 @@ def _write_jsonl(path: Path, fields: list[str], rows) -> int:
     n = 0
     with path.open("w") as f:
         for r in rows:
-            f.write(json.dumps(dict(zip(fields, r)), sort_keys=True) + "\n")
+            f.write(json.dumps(dict(zip(fields, r, strict=False)), sort_keys=True) + "\n")
             n += 1
     return n
 

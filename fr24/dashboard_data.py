@@ -10,6 +10,7 @@ exporter does not confirm events.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import json
 from collections import Counter
@@ -65,10 +66,8 @@ def normalize_row(row: dict) -> dict:
     out["confirmation_status"] = "not_confirmed"
     for key in ("priority_score", "priority_tier", "conflict_count"):
         if key in out and out[key] not in (None, ""):
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 out[key] = int(out[key])
-            except (TypeError, ValueError):
-                pass
     return out
 
 

@@ -45,6 +45,8 @@ except ImportError:
     pass
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import contextlib
+
 from fr24.rlsm_zones import zones_for  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
@@ -110,10 +112,14 @@ def _connected_components_threshold(crop: Image.Image, thr: int = CANDIDATE_BRIG
                 visited[x][y] = True
                 area += 1
                 lum_sum += pixels[x, y]
-                if x < min_x: min_x = x
-                if y < min_y: min_y = y
-                if x > max_x: max_x = x
-                if y > max_y: max_y = y
+                if x < min_x:
+                    min_x = x
+                if y < min_y:
+                    min_y = y
+                if x > max_x:
+                    max_x = x
+                if y > max_y:
+                    max_y = y
                 stack.extend([(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)])
             if area < PAD_AREA_MIN_PX:
                 continue  # noise
@@ -278,10 +284,8 @@ def _worker_process_one(args: tuple[int, str, int]) -> dict:
         res = detect_for_screenshot(conn, sid, rel_path, run_id)
         conn.commit()
     except Exception as exc:
-        try:
+        with contextlib.suppress(Exception):
             conn.rollback()
-        except Exception:
-            pass
         res = {"ok": False, "reason": f"{type(exc).__name__}: {exc}"[:120]}
     finally:
         conn.close()

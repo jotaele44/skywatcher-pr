@@ -64,7 +64,7 @@ def _ocr_zone(img: Image.Image, zone, config: str) -> tuple[str, list, float, fl
     except Exception:
         return "", [], 0.0, 0.0, 0
     words = [w for w in data["text"] if w.strip()]
-    confs = [c for c, w in zip(data["conf"], data["text"]) if w.strip() and c >= 0]
+    confs = [c for c, w in zip(data["conf"], data["text"], strict=True) if w.strip() and c >= 0]
     raw_text = " ".join(words)
     conf_mean = float(sum(confs) / len(confs)) if confs else 0.0
     conf_min  = float(min(confs)) if confs else 0.0

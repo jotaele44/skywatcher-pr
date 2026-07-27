@@ -307,9 +307,9 @@ def resolve_place_name(text: str, reg: dict) -> dict | None:
     best = None
     for key, place in idx.items():
         kt = set(key.split())
-        if toks <= kt:  # every label token present in the feature name
-            if best is None or len(kt) < len(best[0]):
-                best = (kt, place)
+        # `toks <= kt` means every label token is present in the feature name
+        if toks <= kt and (best is None or len(kt) < len(best[0])):
+            best = (kt, place)
     return best[1] if best else None
 
 

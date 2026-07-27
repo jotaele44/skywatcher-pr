@@ -12,7 +12,7 @@ from fr24.manual_review_queue import QUEUE_TYPES, ManualReviewQueue
 # ------------------------------------------------------------------ review queue
 
 def test_manual_review_queue_init(tmp_path):
-    q = ManualReviewQueue(str(tmp_path))
+    ManualReviewQueue(str(tmp_path))
     assert (tmp_path / "review_queue.db").exists()
 
 

@@ -127,9 +127,9 @@ class TestExport:
         rows = [_make_selected_row(f"data/img_{i:03d}.png") for i in range(3)]
         _run_export(tmp_path, rows)
 
-        lines = [l for l in (tmp_path / "export.jsonl").read_text().splitlines() if l.strip()]
+        lines = [line for line in (tmp_path / "export.jsonl").read_text().splitlines() if line.strip()]
         assert len(lines) == 3
-        assert all(json.loads(l).get("image_path") for l in lines)
+        assert all(json.loads(line).get("image_path") for line in lines)
 
     def test_confirmation_status_is_not_confirmed(self, tmp_path):
         rows = [_make_selected_row()]
@@ -261,7 +261,6 @@ class TestDashboardQueue:
         _run_dashboard(tmp_path, rows)
 
         queue = _read_csv(tmp_path / "queue.csv")
-        tiers = [int(r["priority_tier"]) for r in queue]
         fusion_idx = next(i for i, r in enumerate(queue) if r["review_status"] == "fusion_conflict_review")
         manual_idx = next(i for i, r in enumerate(queue) if r["review_status"] == "manual_review_required")
         assert fusion_idx < manual_idx

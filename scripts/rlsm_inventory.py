@@ -328,7 +328,6 @@ def run(budget_sec: float) -> None:
     conn.commit()
     conn.close()
 
-    total = conn.execute("SELECT COUNT(*) FROM sqlite3.connect(DB_PATH)").fetchone() if False else None
     print(json.dumps({
         "run_id": run_id, "ingested": n_ok, "failed": n_fail, "skipped": n_skip,
         "elapsed_sec": round(elapsed, 2),

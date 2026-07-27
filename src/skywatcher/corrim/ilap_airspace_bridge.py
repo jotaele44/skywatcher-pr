@@ -138,7 +138,7 @@ class ILAPAirspaceBridge:
             cells[cell].append(tp)
 
         features = []
-        for cell, points in cells.items():
+        for _cell, points in cells.items():
             if len(points) < 3:
                 continue
             flight_ids = {tp.get("flight_id") for tp in points if tp.get("flight_id")}

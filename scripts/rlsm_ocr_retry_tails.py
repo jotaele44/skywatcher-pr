@@ -43,12 +43,20 @@ REG_PAT = re.compile(r"REG\.?\s*([A-Z0-9][A-Z0-9\-]{1,6})", re.IGNORECASE)
 def ocr_card_robust(file_path: str, sw: int, sh: int) -> str:
     """Re-OCR aircraft_card with stronger preprocessing. Returns combined text."""
     from PIL import Image
-    try: import pillow_heif; pillow_heif.register_heif_opener()
-    except ImportError: pass
+
+    try:
+        import pillow_heif
+
+        pillow_heif.register_heif_opener()
+    except ImportError:
+        pass
     import numpy as np
     import pytesseract
-    try: import cv2
-    except ImportError: cv2 = None
+
+    try:
+        import cv2
+    except ImportError:
+        cv2 = None
 
     img = Image.open(file_path).convert("RGB")
     y0 = int(sh * CARD_ZONE[0])
@@ -81,7 +89,8 @@ def ocr_card_robust(file_path: str, sw: int, sh: int) -> str:
         for psm in [6, 11]:
             try:
                 t = pytesseract.image_to_string(gray, config=f"--psm {psm}")
-                if t.strip(): texts.append(t)
+                if t.strip():
+                    texts.append(t)
             except Exception:
                 pass
 
@@ -96,8 +105,10 @@ def ocr_one(args):
         candidates = []
         for m in matches:
             up = m.upper().replace("-", "").replace(" ", "")
-            if up in ("NA", "N/A", "NONE"): continue
-            if not up.startswith("N"): continue
+            if up in ("NA", "N/A", "NONE"):
+                continue
+            if not up.startswith("N"):
+                continue
             if 3 <= len(up) <= 7:
                 candidates.append(up)
         return obs_id, sid, text, candidates, None
@@ -116,7 +127,8 @@ def main():
     if FAA_CSV.exists():
         for r in csv.DictReader(FAA_CSV.open()):
             t = (r.get("registration") or "").upper().strip()
-            if t: faa_set.add(t)
+            if t:
+                faa_set.add(t)
 
     # Reuse OCR_SUBS variant generator from the textmine script
     sys.path.insert(0, str(REPO / "scripts"))
@@ -155,7 +167,7 @@ def main():
 
     def handle(results):
         nonlocal n_done, n_fail, n_recovered
-        for obs_id, sid, text, candidates, err in results:
+        for obs_id, sid, _text, candidates, err in results:
             n_done += 1
             if err:
                 n_fail += 1
@@ -163,11 +175,13 @@ def main():
             best = None
             for cand in candidates:
                 if cand in faa_set:
-                    best = cand; break
+                    best = cand
+                    break
                 variants = gen_ocr_variants(cand, max_subs=3)
                 hits = {v for v in variants if v in faa_set and TAIL_PAT.match(v)}
                 if len(hits) == 1:
-                    best = next(iter(hits)); break
+                    best = next(iter(hits))
+                    break
             if best:
                 n_recovered += 1
                 recovered.append((obs_id, sid, ",".join(candidates), best))
@@ -191,7 +205,8 @@ def main():
             for f in as_completed(ex.submit(ocr_one, r) for r in rows):
                 batch.append(f.result())
                 if len(batch) >= 40:
-                    handle(batch); batch = []
+                    handle(batch)
+                    batch = []
             if batch:
                 handle(batch)
 

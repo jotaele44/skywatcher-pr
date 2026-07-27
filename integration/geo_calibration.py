@@ -54,7 +54,7 @@ def fit_affine(pixel_xy: Sequence[tuple[float, float]],
         sxx = sum((x - mean_x) ** 2 for x in xs)
         if sxx <= 0.0:
             return None
-        slope = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys)) / sxx
+        slope = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys, strict=False)) / sxx
         return mean_y - slope * mean_x, slope
 
     lon_fit = _ols(px, lons)
@@ -94,7 +94,7 @@ def affine_median_residual_deg(affine,
                                geo_latlon: Sequence[tuple[float, float]]) -> float:
     """Median euclidean residual (degrees) of the fit over its own anchors."""
     residuals = []
-    for (px, py), (lat, lon) in zip(pixel_xy, geo_latlon):
+    for (px, py), (lat, lon) in zip(pixel_xy, geo_latlon, strict=False):
         est_lat, est_lon = apply_affine(affine, px, py)
         residuals.append(math.hypot(est_lat - lat, est_lon - lon))
     return float(median(residuals))
@@ -311,8 +311,8 @@ class GeoCalibration:
             weights.append(1.0 / (dist + 1e-9))
 
         total = sum(weights)
-        lat = sum(w * a.lat for w, a in zip(weights, self._anchors)) / total
-        lon = sum(w * a.lon for w, a in zip(weights, self._anchors)) / total
+        lat = sum(w * a.lat for w, a in zip(weights, self._anchors, strict=True)) / total
+        lon = sum(w * a.lon for w, a in zip(weights, self._anchors, strict=True)) / total
         return lat, lon
 
     @staticmethod

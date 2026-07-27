@@ -121,7 +121,7 @@ def test_calibration_patch_is_non_destructive_and_monotonic():
     patches = build_detector_calibration_patch([source])
     calibrated = [row["calibrated_score"] for row in patches]
     assert calibrated == sorted(calibrated)
-    for row, original in zip(patches, sorted(source.samples, key=lambda item: item.detector_score)):
+    for row, original in zip(patches, sorted(source.samples, key=lambda item: item.detector_score), strict=True):
         assert row["record_id"] == original.record_id
         assert row["original_score"] == original.detector_score
         assert row["original_classification"] == original.original_classification

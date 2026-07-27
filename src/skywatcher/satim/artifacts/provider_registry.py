@@ -48,6 +48,4 @@ class ProviderProfileRegistry:
         allowed = p.get("source_types")
         if allowed is None and p.get("source_type") not in (None, "*", ""):
             allowed = [p["source_type"]]
-        if allowed and "*" not in allowed and source.get("source_type") not in allowed:
-            return False
-        return True
+        return not (allowed and "*" not in allowed and source.get("source_type") not in allowed)

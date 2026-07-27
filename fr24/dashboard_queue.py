@@ -206,7 +206,7 @@ def write_csv(path: Path, rows: list[dict]) -> None:
     if not rows:
         path.write_text("", encoding="utf-8")
         return
-    fieldnames = sorted({k for row in rows for k in row.keys()})
+    fieldnames = sorted({k for row in rows for k in row})
     preferred_head = [
         "priority_score", "priority_tier", "queue_source", "queue_status",
         "candidate_id", "image_path", "image_name",

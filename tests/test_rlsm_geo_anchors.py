@@ -113,7 +113,7 @@ def test_run_emits_static_kind_rows_with_pixel_coords(tmp_rlsm_db):
     conn.close()
     anchors_registry = _load_anchor_registry()
     assert len(rows) == len(anchors_registry)
-    for (kind, name, px, py, lat, lon, conf, source), expected in zip(rows, anchors_registry):
+    for (kind, name, px, py, lat, lon, conf, source), expected in zip(rows, anchors_registry, strict=True):
         assert kind == "static"
         assert name == expected["name"]
         # Pixel projection: round(fraction * dim)

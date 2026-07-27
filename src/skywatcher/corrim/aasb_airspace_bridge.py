@@ -45,7 +45,7 @@ class AASBAirspaceBridge:
         conn.close()
 
         edges = self._build_edges(flights)
-        edge_path = self._write_edges(edges)
+        self._write_edges(edges)
 
         # Gather all files produced by both bridges (ilap + aasb)
         all_files = self._inventory_output_files()

@@ -63,7 +63,8 @@ GLOBAL_AFFINE_1170_2532 = (
 
 
 def _ascii_up(s: str) -> str:
-    if not s: return ""
+    if not s:
+        return ""
     return "".join(c for c in unicodedata.normalize("NFKD", s)
                    if not unicodedata.combining(c)).upper().strip()
 
@@ -91,8 +92,10 @@ def main():
         props = f.get("properties", {})
         name = (props.get("NAME") or "").upper().strip()
         try:
-            lat = float(props.get("INTPTLAT") or 0); lon = float(props.get("INTPTLON") or 0)
-        except (TypeError, ValueError): continue
+            lat = float(props.get("INTPTLAT") or 0)
+            lon = float(props.get("INTPTLON") or 0)
+        except (TypeError, ValueError):
+            continue
         if name and lat and lon:
             geo_lookup[_ascii_up(name)] = (lat, lon)
     for r in conn.execute("SELECT name, lat, lon FROM geo_anchors WHERE lat IS NOT NULL"):
@@ -121,11 +124,15 @@ def main():
         pixel_xy = [(a[0], a[1]) for a in anchors]
         geo_latlon = [(a[2], a[3]) for a in anchors]
         # Drop duplicates (same anchor labeled twice in a screenshot)
-        seen = set(); dedup_p = []; dedup_g = []
-        for p, g in zip(pixel_xy, geo_latlon):
+        seen = set()
+        dedup_p = []
+        dedup_g = []
+        for p, g in zip(pixel_xy, geo_latlon, strict=False):
             key = (round(p[0], 1), round(p[1], 1))
             if key not in seen:
-                seen.add(key); dedup_p.append(p); dedup_g.append(g)
+                seen.add(key)
+                dedup_p.append(p)
+                dedup_g.append(g)
         if len(dedup_p) < 2:
             continue
         af = fit_affine(dedup_p, dedup_g)
@@ -133,7 +140,7 @@ def main():
             continue
         # Compute residuals
         residuals = []
-        for (px, py), (lat, lon) in zip(dedup_p, dedup_g):
+        for (px, py), (lat, lon) in zip(dedup_p, dedup_g, strict=False):
             est_lat, est_lon = apply_affine(af, px, py)
             residuals.append(((est_lat - lat) ** 2 + (est_lon - lon) ** 2) ** 0.5)
         med_res = float(np.median(residuals))
@@ -184,7 +191,8 @@ def main():
         c["hits"].append((cid, sid, conf))
         c["sids"].add(sid)
         c["ctypes"][ctype] += 1
-        c["lats"].append(lat); c["lons"].append(lon)
+        c["lats"].append(lat)
+        c["lons"].append(lon)
 
     # Aircraft per screenshot for diversity filter
     aircraft_by_sid = defaultdict(set)

@@ -162,7 +162,7 @@ class RouteExtractor:
         components = []
 
         ys, xs = np.where(mask)
-        seed_pts = list(zip(xs.tolist(), ys.tolist()))
+        seed_pts = list(zip(xs.tolist(), ys.tolist(), strict=True))
 
         for sx, sy in seed_pts:
             if visited[sy, sx]:

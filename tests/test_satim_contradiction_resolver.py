@@ -120,7 +120,7 @@ def test_confidence_patch_is_non_destructive_and_separable():
     source = fixture("hard")
     patches = build_detector_confidence_patch([source])
     assert len(patches) == len(source.evidence)
-    for patch, original in zip(patches, source.evidence):
+    for patch, original in zip(patches, source.evidence, strict=True):
         assert patch["record_id"] == original.record_id
         assert patch["original_classification"] == original.classification
         assert patch["original_score"] == original.score

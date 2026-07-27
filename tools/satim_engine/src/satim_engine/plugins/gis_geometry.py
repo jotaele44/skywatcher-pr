@@ -82,7 +82,7 @@ def as_float(value: Any) -> float | None:
 
 
 def _is_bbox_like(value: Any) -> bool:
-    if isinstance(value, Mapping) or isinstance(value, (str, bytes)):
+    if isinstance(value, (Mapping, str, bytes)):
         return False
     if not isinstance(value, Sequence):
         return False

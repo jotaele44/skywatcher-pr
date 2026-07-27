@@ -68,7 +68,7 @@ def bbox_context_join(track_df: pd.DataFrame, layers: dict | None = None) -> pd.
     statuses: list[str] = []
     matched_col: list[str] = []
     nearest_col: list[float | None] = []
-    for lat, lon in zip(out["latitude"], out["longitude"]):
+    for lat, lon in zip(out["latitude"], out["longitude"], strict=True):
         flat, flon = as_float(lat), as_float(lon)
         if flat is None or flon is None:
             # A track point with no usable coordinate cannot be joined.

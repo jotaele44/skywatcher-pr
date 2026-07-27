@@ -15,7 +15,7 @@ def write_csv(path: Path, rows: list[dict]) -> None:
     if not rows:
         path.write_text("", encoding="utf-8")
         return
-    fields = sorted({k for r in rows for k in r.keys()})
+    fields = sorted({k for r in rows for k in r})
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fields)
         writer.writeheader()

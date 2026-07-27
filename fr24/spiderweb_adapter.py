@@ -24,6 +24,7 @@ Outputs
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 from collections import Counter
 from datetime import datetime, timezone
@@ -174,10 +175,7 @@ def map_to_flight_event(row: dict) -> dict:
 
 
 def _has_prohibited_label(record: dict) -> bool:
-    for value in record.values():
-        if str(value) in PROHIBITED_LABELS:
-            return True
-    return False
+    return any(str(value) in PROHIBITED_LABELS for value in record.values())
 
 
 def _validate_flight_event(record: dict) -> str | None:
@@ -199,10 +197,8 @@ def read_jsonl(path: Path) -> list[dict]:
         for line in f:
             line = line.strip()
             if line:
-                try:
+                with contextlib.suppress(json.JSONDecodeError):
                     records.append(json.loads(line))
-                except json.JSONDecodeError:
-                    pass
     return records
 
 

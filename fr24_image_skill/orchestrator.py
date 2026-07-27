@@ -184,12 +184,28 @@ def _segment_frame(path: Path) -> dict[str, object]:
         return {"map_bbox": [int(.04 * width), int(.08 * height), int(.92 * width), int(.64 * height)], "method": "typed_fallback_geometric", "confidence": .72}
 
 
+def _ocr_unavailable(frame_id: str) -> list[dict[str, object]]:
+    """The degraded result when OCR cannot run at all."""
+    return [{"frame_id": frame_id, "region": "all", "field": "raw_text", "value": "", "confidence": "", "method": "unavailable", "status": "dependency_unavailable"}]
+
+
 def _ocr_regions(path: Path, frame_id: str) -> list[dict[str, object]]:
     from PIL import Image, ImageOps
     try:
         import pytesseract
     except ImportError:
-        return [{"frame_id": frame_id, "region": "all", "field": "raw_text", "value": "", "confidence": "", "method": "unavailable", "status": "dependency_unavailable"}]
+        return _ocr_unavailable(frame_id)
+    # pytesseract is a Python wrapper around the `tesseract` BINARY, and the two
+    # are installed separately — pytesseract is not declared in any manifest here,
+    # so "package present, binary absent" is a normal state, not an edge case.
+    # The import above only proves the package is there; image_to_string raises
+    # TesseractNotFoundError at CALL time when the binary is missing. Probe once
+    # here so that degrades the same way as the package being absent, instead of
+    # crashing partway through the region loop.
+    try:
+        pytesseract.get_tesseract_version()
+    except pytesseract.TesseractNotFoundError:
+        return _ocr_unavailable(frame_id)
     rows: list[dict[str, object]] = []
     with Image.open(path) as source:
         image = ImageOps.exif_transpose(source).convert("RGB")
@@ -395,11 +411,15 @@ def run_analysis(input_path: Path | str, output_dir: Path | str, mode: AnalysisM
     _write_json(output / "RUN_MANIFEST.json", asdict(run))
     page_count = sum(1 for frame in frames if frame.get("source_page"))
     errors = []
-    if any(not frame.get("sha256") for frame in frames): errors.append("missing frame hash")
-    if input_root.suffix.lower() == ".pdf" and page_count == 0: errors.append("PDF rendered zero pages")
-    if contradiction_count != finding_count: errors.append("finding-to-contradiction accounting mismatch")
+    if any(not frame.get("sha256") for frame in frames):
+        errors.append("missing frame hash")
+    if input_root.suffix.lower() == ".pdf" and page_count == 0:
+        errors.append("PDF rendered zero pages")
+    if contradiction_count != finding_count:
+        errors.append("finding-to-contradiction accounting mismatch")
     unresolved_count = sum(row.get("status") in {"candidate", "unresolved"} for row in _read_csv(output / "stage_2" / "STAGE_2_ARTIFACT_LEDGER.csv"))
-    if review_count != unresolved_count: errors.append("unresolved-to-review accounting mismatch")
+    if review_count != unresolved_count:
+        errors.append("unresolved-to-review accounting mismatch")
     report = ["# Validation", "", f"- Run ID: `{run_id}`", f"- PDF pages: {page_count}", f"- Sources: {len(sources)}", f"- Frames: {len(frames)}", f"- SATIM findings: {finding_count}", f"- Contradiction accounting: {contradiction_count}/{finding_count}", f"- Manual-review accounting: {review_count}/{unresolved_count}", f"- Adapter capabilities accounted: {len(adapters)}", f"- Deterministic digest: `{digest}`", f"- Validation: {'PASS' if not errors else 'FAIL'}", "", *[f"- {error}" for error in errors]]
     (output / "VALIDATION_REPORT.md").write_text("\n".join(report) + "\n", encoding="utf-8")
     if errors:

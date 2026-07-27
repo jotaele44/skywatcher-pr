@@ -32,10 +32,7 @@ def load_csv(path: str | Path) -> list[dict[str, str]]:
 
 def registry_tokens(registry: Any = KNOWN_OPERATORS) -> set[str]:
     tokens: set[str] = set()
-    if isinstance(registry, Mapping):
-        iterable = registry.items()
-    else:
-        iterable = enumerate(registry or [])
+    iterable = registry.items() if isinstance(registry, Mapping) else enumerate(registry or [])
     for key, value in iterable:
         tokens.add(str(key).upper())
         if isinstance(value, Mapping):

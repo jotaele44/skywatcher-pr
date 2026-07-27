@@ -117,10 +117,7 @@ def is_geometry_coherent(
     """Combined coherence gate: parallax consistency and altitude plausibility."""
     if not parallax_coherence(observed_shift_m, ground_speed_mph, dt_s, tolerance=tolerance):
         return False
-    if altitude_ft is not None and altitude_envelope is not None:
-        if not within_envelope(altitude_ft, altitude_envelope, margin=altitude_margin_ft):
-            return False
-    return True
+    return not (altitude_ft is not None and altitude_envelope is not None and not within_envelope(altitude_ft, altitude_envelope, margin=altitude_margin_ft))
 
 
 # ---------------------------------------------------------------------------

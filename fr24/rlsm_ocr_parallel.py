@@ -92,7 +92,7 @@ def _ocr_with_conf(img_crop: Image.Image, config: str,
         return "", [], 0.0, 0.0, 0
 
     words = [w for w in data["text"] if w.strip()]
-    confs = [c for c, w in zip(data["conf"], data["text"]) if w.strip() and c >= 0]
+    confs = [c for c, w in zip(data["conf"], data["text"], strict=True) if w.strip() and c >= 0]
     raw_text = " ".join(words)
     boxes = words_from_tesseract_data(data, x_off=x_off, y_off=y_off)
     conf_mean = float(sum(confs) / len(confs)) if confs else 0.0

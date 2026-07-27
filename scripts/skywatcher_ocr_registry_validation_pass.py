@@ -154,7 +154,7 @@ def read_csv_rows(path: Path) -> list[dict[str, str]]:
                 rows = []
                 for raw_row in reader:
                     row = {}
-                    for original_key, normalized_key in zip(reader.fieldnames, normalized):
+                    for original_key, normalized_key in zip(reader.fieldnames, normalized, strict=False):
                         row[normalized_key] = (raw_row.get(original_key) or "").strip()
                     rows.append(row)
                 return rows

@@ -168,7 +168,7 @@ class TestCrossSource:
         cs = load_calibration_set(MOCA_SET)
         aliases = cs.false_positive_aliases
         # Pick a label whose fp class resolves (TREE_CROWN -> PALM).
-        label = next(l for l in cs.labels if l.false_positive_class == "TREE_CROWN")
+        label = next(lbl for lbl in cs.labels if lbl.false_positive_class == "TREE_CROWN")
         verdicts = {(label.image_id, "PALM"): {"verdict": "confirmed", "source": "esri"}}
         rows = xsrc.build_ground_truth_rows([label], verdicts, aliases)
         assert rows and rows[0]["false_positive_class"] == "PALM"
@@ -177,7 +177,7 @@ class TestCrossSource:
 
     def test_refuted_marks_false_positive(self):
         cs = load_calibration_set(MOCA_SET)
-        label = next(l for l in cs.labels if l.false_positive_class == "FR24_3D_RENDER")
+        label = next(lbl for lbl in cs.labels if lbl.false_positive_class == "FR24_3D_RENDER")
         verdicts = {(label.image_id, "FR24_3D_RENDER"): {"verdict": "fr24_only", "source": "s2"}}
         rows = xsrc.build_ground_truth_rows([label], verdicts, cs.false_positive_aliases)
         assert rows[0]["is_false_positive"] == "1"

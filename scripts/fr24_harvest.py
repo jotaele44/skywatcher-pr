@@ -31,6 +31,7 @@ Stdlib only. Safe to run repeatedly.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import datetime
 import glob
@@ -47,10 +48,8 @@ def _relocate(src: str, dst: str) -> None:
     devices, and the Downloads mount may forbid unlink — so copy, then try to
     remove the source but never fail if removal isn't permitted."""
     shutil.copy2(src, dst)
-    try:
-        os.remove(src)
-    except OSError:
-        pass  # leave the original in Downloads; harmless
+    with contextlib.suppress(OSError):
+        os.remove(src)  # leave the original in Downloads; harmless
 
 DAILY_QUOTA = 25
 CANON_HEADER = "Timestamp,UTC,Callsign,Position,Altitude,Speed,Direction"
@@ -94,7 +93,8 @@ def today() -> str:
 
 def load_ledger() -> dict:
     try:
-        led = json.load(open(LEDGER))
+        with open(LEDGER) as fh:
+            led = json.load(fh)
     except Exception:
         led = {}
     if led.get("date") != today():
@@ -109,7 +109,8 @@ def load_ledger() -> dict:
 def save_ledger(led: dict) -> None:
     os.makedirs(GT, exist_ok=True)
     tmp = LEDGER + ".tmp"
-    json.dump(led, open(tmp, "w"), indent=1)
+    with open(tmp, "w") as fh:
+        json.dump(led, fh, indent=1)
     os.replace(tmp, LEDGER)
 
 
@@ -130,7 +131,9 @@ def harvested_ids() -> set:
     summ = os.path.join(GT, "summary.csv")
     if os.path.exists(summ):
         try:
-            for row in csv.DictReader(open(summ)):
+            with open(summ) as fh:
+                _csv_rows = list(csv.DictReader(fh))
+            for row in _csv_rows:
                 fid = (row.get("flight_id") or "").strip()
                 if HEX_RE.match(fid):
                     ids.add(fid)
@@ -143,7 +146,9 @@ def do_not_requeue() -> set:
     dnr = set()
     for f in glob.glob(DNR_GLOB):
         try:
-            for row in csv.DictReader(open(f)):
+            with open(f) as fh:
+                _csv_rows = list(csv.DictReader(fh))
+            for row in _csv_rows:
                 note = (row.get("note") or "").lower()
                 if "no fr24 track" in note or "no ads-b" in note:
                     dnr.add((os.path.basename(os.path.dirname(f)), row.get("date", "")))
@@ -193,7 +198,9 @@ def load_queue() -> list[dict]:
     have = harvested_ids()
     dnr = do_not_requeue()
     q = []
-    for row in csv.DictReader(open(path)):
+    with open(path) as fh:
+        _csv_rows = list(csv.DictReader(fh))
+    for row in _csv_rows:
         fid = (row.get("flight_id") or "").strip()
         tail = (row.get("tail") or "").strip()
         date = (row.get("date") or "").strip()
@@ -246,7 +253,8 @@ def cmd_next(args):
 
 def _validate(path: str, tail: str, date: str) -> tuple[bool, str, int]:
     try:
-        lines = open(path, encoding="utf-8", errors="replace").read().splitlines()
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            lines = fh.read().splitlines()
     except Exception as e:
         return False, f"unreadable: {e}", 0
     if not lines or lines[0].strip() != CANON_HEADER:
@@ -312,10 +320,8 @@ def cmd_commit(args):
         # quarantine the bad file so it isn't mistaken for a good track
         qdir = os.path.join(GT, "_quarantine")
         os.makedirs(qdir, exist_ok=True)
-        try:
+        with contextlib.suppress(Exception):
             _relocate(src, os.path.join(qdir, expect))
-        except Exception:
-            pass
         if "quota-empty" in msg or "only" in msg:
             led["exhausted"] = True
             save_ledger(led)
@@ -371,13 +377,19 @@ def main():
     ap = argparse.ArgumentParser(description="FR24 harvest controller (safe protocol).")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status").set_defaults(func=cmd_status)
-    n = sub.add_parser("next"); n.add_argument("--count", type=int, default=1); n.set_defaults(func=cmd_next)
+    n = sub.add_parser("next")
+    n.add_argument("--count", type=int, default=1)
+    n.set_defaults(func=cmd_next)
     c = sub.add_parser("commit")
-    c.add_argument("tail"); c.add_argument("date"); c.add_argument("flight_id")
+    c.add_argument("tail")
+    c.add_argument("date")
+    c.add_argument("flight_id")
     c.add_argument("--wait", type=float, default=8.0)
     c.set_defaults(func=cmd_commit)
     m = sub.add_parser("miss")
-    m.add_argument("tail"); m.add_argument("date"); m.add_argument("flight_id")
+    m.add_argument("tail")
+    m.add_argument("date")
+    m.add_argument("flight_id")
     m.add_argument("reason", choices=["quota", "nocoverage", "other"])
     m.set_defaults(func=cmd_miss)
     args = ap.parse_args()

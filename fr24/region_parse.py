@@ -27,6 +27,7 @@ All output rows carry review_status = "region_parsed_candidate" or
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import json
 import re
@@ -131,10 +132,8 @@ def parse_region_record(record: dict) -> dict:
     text = _clean(record.get("ocr_text", ""))
     region_type = (record.get("region_type") or record.get("ocr_region") or "unknown").lower()
     char_count = 0
-    try:
+    with contextlib.suppress(Exception):
         char_count = int(record.get("ocr_char_count") or 0)
-    except Exception:
-        pass
 
     row: dict = {
         "image_path": record.get("image_path", ""),
