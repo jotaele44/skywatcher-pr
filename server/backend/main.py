@@ -1,10 +1,4 @@
-"""FastAPI diagnostic backend for committed Skywatcher artifacts.
-
-Reads are available by default. Review-overlay writes are process-scoped,
-in-memory, disabled by default, and require an explicit bearer token when
-enabled. Repository files are never mutated.
-"""
-
+"""FastAPI diagnostic backend over committed Skywatcher artifacts."""
 from __future__ import annotations
 
 import csv
@@ -21,7 +15,7 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
 
 ROOT = Path(__file__).resolve().parents[2]
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
@@ -29,11 +23,14 @@ EXPORTS_DIR = ROOT / "exports"
 SYNTHETIC_PACKAGE = EXPORTS_DIR / "examples" / "synthetic_airspace_package"
 EVIDENCE_PATH = ROOT / "reports" / "federation" / "evidence_skywatcher-pr.jsonl"
 MAX_PAGE_SIZE = 1_000
+MAX_PAYLOAD_BYTES = 64 * 1024
+MAX_PAYLOAD_FIELDS = 128
+RESERVED_FIELDS = {"id", "_process_overlay"}
 
 app = FastAPI(
     title="Skywatcher-PR Dashboard API",
     description="Diagnostic federation entity API over committed Skywatcher artifacts.",
-    version="0.2.0",
+    version="0.3.0",
 )
 app.add_middleware(
     CORSMiddleware,
@@ -42,7 +39,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 log = logging.getLogger("skywatcher.backend")
 _WRITE_ENABLED = os.environ.get("PRII_ENABLE_WRITES", "").strip().lower() in {
     "1",
@@ -54,23 +50,29 @@ _WRITE_TOKEN = os.environ.get("PRII_WRITE_TOKEN", "")
 
 
 class EntityPayload(RootModel[dict[str, Any]]):
-    """Arbitrary review fields while preserving a typed request boundary."""
+    """Bounded review-overlay payload with server-owned identity fields."""
+
+    @model_validator(mode="after")
+    def validate_payload(self):
+        reserved = sorted(set(self.root) & RESERVED_FIELDS)
+        if reserved:
+            raise ValueError(f"reserved fields are server-owned: {reserved}")
+        if len(self.root) > MAX_PAYLOAD_FIELDS:
+            raise ValueError("too many payload fields")
+        if len(json.dumps(self.root, default=str).encode("utf-8")) > MAX_PAYLOAD_BYTES:
+            raise ValueError("payload exceeds size limit")
+        return self
 
 
 class FilterRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
     filters: dict[str, Any] = Field(default_factory=dict)
     sort: str = ""
     limit: int = Field(default=500, ge=0, le=MAX_PAGE_SIZE)
 
 
 class ReviewStore:
-    """Thread-safe process-scoped review overlay.
-
-    The abstraction makes the visibility and lifetime explicit and allows a
-    durable or session-specific store to replace it without changing routes.
-    """
+    """Thread-safe, process-scoped review overlay with immutable IDs."""
 
     def __init__(self) -> None:
         self._lock = threading.RLock()
@@ -82,18 +84,23 @@ class ReviewStore:
             combined = [dict(row) for row in rows]
             combined.extend(dict(row) for row in self._created.get(entity_name, ()))
             patches = self._patches.get(entity_name, {})
-            return [
-                {**row, **patches.get(str(row.get("id")), {})}
-                for row in combined
-            ]
+            return [{**row, **patches.get(str(row.get("id")), {})} for row in combined]
 
-    def create(self, entity_name: str, payload: dict[str, Any]) -> dict[str, Any]:
-        row = dict(payload)
-        row.setdefault("id", uuid.uuid4().hex)
-        row["_process_overlay"] = True
+    def create(
+        self,
+        entity_name: str,
+        payload: dict[str, Any],
+        reserved_ids: set[str],
+    ) -> dict[str, Any]:
         with self._lock:
+            existing = set(reserved_ids)
+            existing.update(str(row.get("id")) for row in self._created.get(entity_name, ()))
+            identifier = uuid.uuid4().hex
+            while identifier in existing:
+                identifier = uuid.uuid4().hex
+            row = {**payload, "id": identifier, "_process_overlay": True}
             self._created.setdefault(entity_name, []).append(row)
-        return dict(row)
+            return dict(row)
 
     def patch(self, entity_name: str, entity_id: str, payload: dict[str, Any]) -> None:
         with self._lock:
@@ -109,8 +116,6 @@ REVIEW_STORE = ReviewStore()
 
 
 def require_write_access(request: Request) -> None:
-    """Require explicit write enablement and a configured bearer token."""
-
     if not _WRITE_ENABLED:
         raise HTTPException(
             status_code=403,
@@ -134,20 +139,15 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
         return []
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as handle:
-        for line_no, raw in enumerate(handle, start=1):
-            line = raw.strip()
-            if not line:
+        for line_no, raw in enumerate(handle, 1):
+            if not raw.strip():
                 continue
             try:
-                value = json.loads(line)
+                value = json.loads(raw)
             except json.JSONDecodeError as exc:
-                try:
-                    relative = path.relative_to(ROOT)
-                except ValueError:
-                    relative = path
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Invalid JSON in {relative} line {line_no}: {exc.msg}",
+                    detail=f"Invalid JSON in {path.name} line {line_no}: {exc.msg}",
                 ) from exc
             if isinstance(value, dict):
                 rows.append(value)
@@ -172,10 +172,7 @@ def read_csv(path: Path) -> list[dict[str, Any]]:
         return []
     with path.open("r", encoding="utf-8", newline="") as handle:
         return [
-            {
-                key: coerce(value) if isinstance(value, str) else value
-                for key, value in row.items()
-            }
+            {key: coerce(value) if isinstance(value, str) else value for key, value in row.items()}
             for row in csv.DictReader(handle)
         ]
 
@@ -222,22 +219,16 @@ def load_observations() -> tuple[dict[str, Any], ...]:
 def load_export_packages() -> tuple[dict[str, Any], ...]:
     rows: list[dict[str, Any]] = []
     if EXPORTS_DIR.exists():
-        for manifest in sorted(EXPORTS_DIR.rglob("manifest.json")):
+        paths = sorted(EXPORTS_DIR.rglob("manifest.json")) + sorted(EXPORTS_DIR.rglob("summary.json"))
+        for path in paths:
             try:
-                data = json.loads(manifest.read_text(encoding="utf-8"))
+                data = json.loads(path.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError):
                 continue
             if isinstance(data, dict):
-                data.setdefault("path", str(manifest.parent.relative_to(ROOT)))
-                rows.append(data)
-        for summary in sorted(EXPORTS_DIR.rglob("summary.json")):
-            try:
-                data = json.loads(summary.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                continue
-            if isinstance(data, dict):
-                data.setdefault("path", str(summary.parent.relative_to(ROOT)))
-                data.setdefault("package_kind", "satim_calibration")
+                data.setdefault("path", str(path.parent.relative_to(ROOT)))
+                if path.name == "summary.json":
+                    data.setdefault("package_kind", "satim_calibration")
                 rows.append(data)
     return tuple(with_id(rows, "package_id"))
 
@@ -275,8 +266,7 @@ def _loader_for(name: str):
 
 
 def entity_rows(name: str) -> list[dict[str, Any]]:
-    rows = [dict(row) for row in _loader_for(name)()]
-    return REVIEW_STORE.merge(name, rows)
+    return REVIEW_STORE.merge(name, [dict(row) for row in _loader_for(name)()])
 
 
 def _sort_value(value: Any) -> tuple[int, int, Any]:
@@ -297,20 +287,11 @@ def sort_rows(rows: list[dict[str, Any]], sort: str) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda row: _sort_value(row.get(key)), reverse=reverse)
 
 
-def _capability_state(name: str) -> dict[str, Any]:
-    try:
-        count = len(entity_rows(name))
-    except HTTPException as exc:
-        return {"status": "unavailable", "count": 0, "detail": exc.detail}
-    return {"status": "healthy" if count else "degraded", "count": count}
-
-
 @app.get("/health")
 def health() -> dict[str, Any]:
-    capabilities = {name: _capability_state(name) for name in LOADERS}
-    status = "healthy" if capabilities["PRAirports"]["count"] else "degraded"
+    capabilities = {name: {"count": len(entity_rows(name))} for name in LOADERS}
     return {
-        "status": status,
+        "status": "healthy" if capabilities["PRAirports"]["count"] else "degraded",
         "mode": "diagnostic_read_only" if not _WRITE_ENABLED else "diagnostic_review_overlay",
         "writes_enabled": _WRITE_ENABLED,
         "capabilities": capabilities,
@@ -327,7 +308,7 @@ def api_health() -> dict[str, Any]:
 def public_settings() -> dict[str, Any]:
     return {
         "id": "skywatcher-pr",
-        "name": "Skywatcher-PR — Airspace Intelligence",
+        "name": "Skywatcher-PR — Airspace Evidence",
         "public_settings": {
             "requires_auth": False,
             "mode": "diagnostic",
@@ -369,8 +350,12 @@ def get_entity(entity_name: str, entity_id: str) -> dict[str, Any]:
 
 @app.post("/api/entities/{entity_name}", dependencies=_WRITE_GUARD)
 def create_entity(entity_name: str, payload: EntityPayload) -> dict[str, Any]:
-    _loader_for(entity_name)
-    return REVIEW_STORE.create(entity_name, payload.root)
+    base = [dict(row) for row in _loader_for(entity_name)()]
+    return REVIEW_STORE.create(
+        entity_name,
+        payload.root,
+        {str(row.get("id")) for row in base},
+    )
 
 
 @app.patch("/api/entities/{entity_name}/{entity_id}", dependencies=_WRITE_GUARD)
