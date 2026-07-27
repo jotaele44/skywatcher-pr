@@ -10,9 +10,10 @@ from skywatcher.core.safe_archive import ArchiveLimits, UnsafeArchiveError, safe
 
 
 def _zip(path: Path, members: list[tuple[str, bytes, int | None]]) -> Path:
-    with zipfile.ZipFile(path, "w") as archive:
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for name, content, mode in members:
             info = zipfile.ZipInfo(name)
+            info.compress_type = zipfile.ZIP_DEFLATED
             if mode is not None:
                 info.external_attr = mode << 16
             archive.writestr(info, content)
