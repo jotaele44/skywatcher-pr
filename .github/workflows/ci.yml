@@ -42,12 +42,13 @@ jobs:
           ! python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode production
       - name: Validate SATIM calibration sets
         run: python scripts/validate_satim_calibration.py data/satim_calibration
-      - name: Tests
+      - name: Tests and full-data coverage
         id: tests
         shell: bash
         run: |
           set +e
-          pytest -q --cov --cov-report=term-missing:skip-covered 2>&1 | tee pytest-${{ matrix.python-version }}.log
+          PYTEST_ADDOPTS="" pytest -q -m "not integration and not requires_thehub" \
+            --cov --cov-report=term-missing:skip-covered 2>&1 | tee pytest-${{ matrix.python-version }}.log
           status=${PIPESTATUS[0]}
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit "$status"
