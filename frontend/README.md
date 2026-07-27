@@ -73,8 +73,26 @@ Mutating routes are guarded by `require_write_access`:
 - `PRII_WRITE_TOKEN` **unset** → writes are served to local-network clients
   (loopback, RFC1918 private, link-local) and refused for public addresses
 
-Reads are never affected. With the token set this UI cannot currently supply it;
-see `docs/MATURITY_AUDIT.md` for the tracked federation-wide fix.
+Reads are never affected.
+
+`public_settings` advertises `write_token_required` so the UI can tell "this
+server wants a bearer token on writes" from "this server accepts writes from my
+network" — the browser cannot read `PRII_WRITE_TOKEN`, and without that flag both
+look identical until a write 401s. Only the boolean is exposed, never the token.
+
+### Supplying the token from the browser
+
+Load the app with `?write_token=<PRII_WRITE_TOKEN>`. The value is stripped from
+the URL, stored under `federation_write_token`, and sent as
+`Authorization: Bearer` on every request that has no session token.
+`?clear_write_token=true` removes it.
+
+It is a **separate slot from the access token, and has to be.** In diagnostic mode
+`/api/auth/me` always 401s, and `AuthContext` responds by clearing the access
+token so a stale one cannot trap the session in a login redirect
+(`src/lib/AuthContext.jsx`). A write token passed as `?access_token=` was
+therefore discarded before the first request ever went out — it looked wired and
+silently was not.
 
 ## Development
 
