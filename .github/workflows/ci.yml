@@ -19,9 +19,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dev deps
         run: |
-          # PRII_FETCH_HUB: ensure shared federation libs resolve
-          if [ ! -d ../thehub-pr ]; then git clone --depth 1 --branch "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" https://github.com/jotaele44/thehub-pr.git ../thehub-pr || git clone --depth 1 https://github.com/jotaele44/thehub-pr.git ../thehub-pr; fi
-          python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
       - name: Federation manifest gate
         run: |
           python - <<'PY'
@@ -66,9 +65,8 @@ jobs:
         run: pytest -q
 
   test-imagery:
-    # Imagery MCP server has its own optional dependency set (requirements-imagery.txt);
-    # install it here and run the imagery suite so those tests are exercised in CI.
-    # The base `test` job skips them cleanly when the extra is absent.
+    # Imagery MCP server has its own optional dependency set; install the root
+    # package as well so src-layout imports are exercised exactly as deployed.
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -81,9 +79,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install imagery deps
         run: |
-          # PRII_FETCH_HUB: ensure shared federation libs resolve
-          if [ ! -d ../thehub-pr ]; then git clone --depth 1 --branch "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" https://github.com/jotaele44/thehub-pr.git ../thehub-pr || git clone --depth 1 https://github.com/jotaele44/thehub-pr.git ../thehub-pr; fi
-          python -m pip install -r requirements-imagery.txt pytest
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,imagery]" -r requirements-imagery.txt
       - name: Imagery tests (mocked; live providers excluded)
         run: pytest tests/test_imagery_*.py -q
 
