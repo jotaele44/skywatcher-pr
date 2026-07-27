@@ -34,6 +34,7 @@ jobs:
           python - <<'PY'
           import importlib.util
           import os
+          import tomllib
           from pathlib import Path
 
           hub = Path("../thehub-pr").resolve()
@@ -58,8 +59,13 @@ jobs:
           assert not Path("Fix-Gatekeeper.command").exists(), "legacy trust-bypass helper must remain absent"
 
           desktop = Path("requirements-desktop.txt").read_text(encoding="utf-8")
-          pin = os.environ["THEHUB_SHA"]
-          assert f"thehub-pr.git@{pin}#subdirectory=packages/prii_desktop" in desktop
+          assert "-e .[desktop,federation]" in desktop
           assert "-e ../thehub-pr" not in desktop
+
+          project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+          deps = project["project"]["optional-dependencies"]
+          pin = os.environ["THEHUB_SHA"]
+          all_shared = deps["desktop"] + deps["federation"]
+          assert all(f"thehub-pr.git@{pin}#subdirectory=" in item for item in all_shared if "prii-" in item)
           print("canonical templates match; sanctioned Phase 0 divergences validated")
           PY
