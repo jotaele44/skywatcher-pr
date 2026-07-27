@@ -26,7 +26,7 @@ Counts re-measured 2026-07-27 against `main`.
 | Test files | 115 (`tests/`, `tools/**/tests/`) — **807 passing**, 13 skipped |
 | CI workflows | 9 (`ci`, `centinelas-handoff`, `desktop-build`, `maintenance`, `satim-engine-ci`, `satim-phase2`, `satim-route-findings-ci`, `satim-runtime-smoke-tests`, `template-drift`) |
 | Frontend | 15 pages, 8.8k LOC — **no test runner** |
-| Lint / type gates | **none in CI** — `ruff check .` reports 247, `npm run typecheck` 229, neither enforced |
+| Lint / type gates | frontend ESLint **is** gated (`ci.yml` runs `npm run lint`). Python side has **no ruff or mypy in any workflow** — `ruff check .` reports 247 — and `npm run typecheck` (229 errors) is run by nothing |
 
 ## Code closed in this PR
 
@@ -170,13 +170,11 @@ Both are correct; they measure different things and should be read together.
 
 | | Measures | Counts a thing "done" when |
 |---|---|---|
-| **`ROAD_TO_100.md`** (~73%) | code completeness against intended scope | the code exists, works, and is exercised — code-closed vs. blocked on external FR24 captures |
-| **`MATURITY_AUDIT.md`** (61%) | professional maturity of the repo as an engineering artifact | a **gate** keeps it working: CI-enforced lint, types, coverage, and frontend tests |
+| **`ROAD_TO_100.md`** (~73%) | code completeness against intended scope | the code exists and works, with data- and network-blocked items called out separately |
+| **`MATURITY_AUDIT.md`** (61%) | maturity of the repo as an engineering artifact | a **CI gate** keeps it working |
 
-The spread is almost entirely **enforcement, not implementation**. Work that this
-ledger correctly counts as finished still costs maturity points while no CI gate
-protects it — a passing suite with no coverage floor, a `typecheck` script no
-workflow runs, a linter configured but not wired in.
+The spread is largely **enforcement rather than implementation**. Concretely, what this
+repo is missing on the audit's axis: no coverage floor; no ruff or mypy in any workflow; `npm run typecheck` (229 errors) run by no workflow. The frontend **is** lint-gated (`ci.yml` runs `npm run lint`), so that is not part of the gap.
 
-Neither number supersedes the other. Use this ledger to answer "what is left to
-build"; use the audit to answer "what would a reviewer refuse to merge".
+Neither number supersedes the other. Use this ledger to answer "what is left to build";
+use the audit to answer "what would a reviewer refuse to merge".

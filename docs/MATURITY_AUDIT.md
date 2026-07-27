@@ -143,7 +143,18 @@ lost point is a specific, verifiable work item, so this doubles as the roadmap.
 | Tests | **5/15** | suite green · coverage gate enforced · frontend tests run in CI |
 | Hygiene | **5.5/15** | linters gated in CI · type checking gated in CI · write surface secured *and* client can use it |
 | Docs | **10/10** | docs match code · declared status matches observed maturity |
-| **Total** | **61/100** | |
+| **Total** | **60.5/100** | |
+
+### How the score is computed
+
+20 criteria, 5 points each, 100 total. **Partial credit is allowed** where a criterion
+splits cleanly into independent halves — for example "linters gated in CI" scores 2.5 for
+Python and 2.5 for JavaScript, so a repo that gates one and not the other scores 2.5. That
+is why dimension totals are not always multiples of five.
+
+Components here sum to **60.5** (17 + 6 + 17 + 5 + 5.5 + 10), reported as **61%**. Half-points are
+rounded **half up** to the nearest whole percent for the cross-repo table; the exact figure is the one
+above.
 
 The earlier 0–4 per-dimension scorecard above is retained for cross-repo comparison,
 but it saturates — `aguayluz-pr` scored 24/24 on it while still having no frontend

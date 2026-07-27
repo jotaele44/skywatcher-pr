@@ -40,15 +40,19 @@ committed artifacts. Verified against a running server:
 | `GET /api/entities/:entity` | yes |
 | `GET /api/entities/:entity/:id` | yes |
 | `POST /api/entities/:entity/filter` | yes (a read, despite the verb — deliberately not write-guarded) |
-| `POST /api/entities/:entity` | yes — **write-guarded**, session-scoped only |
-| `PATCH /api/entities/:entity/:id` | yes — **write-guarded**, session-scoped only |
+| `POST /api/entities/:entity` | yes — **write-guarded**, process-scoped only |
+| `PATCH /api/entities/:entity/:id` | yes — **write-guarded**, process-scoped only |
 | `DELETE /api/entities/:entity/:id` | **no** |
 | `POST /api/auth/login`, `/register`, `/verify-otp`, `/resend-otp`, `/password/*` | **no — 404** |
 | `POST /api/functions/*`, `/api/integrations/*`, `/api/files/upload` | **no** |
 
-Writes never touch the repository: creates and updates land in an in-memory
-overlay that disappears on restart (`_created` / `_overlay` in
-`server/backend/main.py`).
+Writes never touch the repository: creates and updates land in an in-memory overlay
+that disappears on restart (`_created` / `_overlay` in `server/backend/main.py`).
+
+**These are process-scoped, not per-client.** `_created` and `_overlay` are
+module-level dictionaries and `entity_rows()` merges them into *every* caller's
+reads, so one client's edits are visible to every other client sharing that backend
+process until it restarts. Do not expect per-session isolation.
 
 ### Authentication
 
