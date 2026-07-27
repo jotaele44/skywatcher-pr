@@ -1,63 +1,76 @@
 # Phase 0 Test Evidence
 
-## Original local certification
-
-Environment: isolated Linux workspace, Python 3.13.5. The supplied audit archive intentionally omitted `frontend/` and production `data/`.
+## Original Phase 0 baselines
 
 | Gate | Result |
 |---|---|
-| Core collection without production data or sibling checkout | PASS |
-| Data-independent core suite | 754 passed, 36 skipped, 53 deselected |
+| Data-independent core suite | 754 passed, 36 skipped, 53 capability tests deselected |
 | Minimum preserved core baseline | PASS — exceeds 738 |
-| Original safe-archive and API-security focused suite | 12 passed |
-| Federation exporter compatibility suite | 16 passed, 1 skipped (`requires_thehub`) |
 | JSON Schemas | 43 compiled, 0 failures |
-| Runtime `sys.path.insert` / `append` | 0 sites |
+| Runtime `sys.path.insert` / `append` | 0 active sites at original certification |
 | Unsafe `ZipFile.extractall()` | 0 canonical sites |
-| Nested tool suites | 60 passed (55 SATIM engine + 5 route findings) |
-| PEP 517 editable install | PASS with local installed build toolchain and `--no-build-isolation` |
-| Deterministic source export | PASS — two 648-file exports were byte-identical and excluded frontend/data/generated artifacts |
+| Nested tool suites | 60 passed at original certification |
+| Deterministic source export | Two 648-file exports were byte-identical |
 
-## Review-remediation certification
+## Final-review remediation code head
 
-The reconciled remediation code head `a8dbb794933900604156de05e8b426bdd0d5ffdd` completed every triggered workflow family successfully.
+Certified code head: `50f2b87fa8c05b8d2b43016637546e1d784eeb94`
+
+Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
 
 | Gate | Result |
 |---|---|
-| Branch synchronization | PASS — current `main` is a merge parent and the PR is mergeable |
-| Backend core Python matrix | PASS — Python 3.10, 3.11, 3.12, and 3.13 |
-| Repository hygiene | PASS — canonical generated-artifact rules |
-| JSON Schema validation | PASS — explicit-root validation checks a nonzero set of at least 43 schemas |
-| Rootless installed CLI behavior | PASS — `skywatcher validate` fails outside a repository when schemas are absent |
-| True isolated wheel install | PASS — clean virtual environment, empty working directory, explicit repository root |
-| Deterministic source export | PASS — duplicate archives compare byte-for-byte and preserve executable modes |
-| Full-data test and coverage matrix | PASS — Python 3.10, 3.11, and 3.12 with the 55% floor retained |
-| Data-independent core gate | PASS — production data and TheHub checkout are not required |
-| Immutable dependency resolution | PASS — exact TheHub SHA in committed and freshly resolved locks; no editable sibling paths |
-| API authentication and identity tests | PASS — disabled-by-default writes, bearer token, server-owned immutable IDs, reserved-field rejection, payload limits |
-| Archive adversarial tests | PASS — traversal, Windows aliases, symlink, duplicate, ratio, streamed limits, no-replace default, replacement promotion |
-| FPIM policy tests | PASS — exact identifier matching, unverified fields remain inactive, role unresolved, no operating-pattern cueing |
+| Branch synchronization | PASS — current `main` is a true merge parent; `behind_by=0` |
+| Pull-request state | PASS — open, draft, mergeable, unmerged |
+| Scope preservation | PASS — no remediation-authored frontend or production-data differences |
+| Backend core matrix | PASS — Python 3.10, 3.11, 3.12, and 3.13 |
+| Rootless installed CLI | PASS — validation fails when repository schemas are absent |
+| Explicit-root schema validation | PASS — nonzero repository schema set validated |
+| Isolated wheel install | PASS on every backend-core Python version |
+| Repository hygiene | PASS |
+| Deterministic source export | PASS, including executable-mode preservation |
+| Full-data coverage matrix | PASS — Python 3.10, 3.11, and 3.12 with the 55% floor retained |
+| Frontend regression | PASS — `npm ci`, lint, and production build |
+| Immutable dependency resolution | PASS — exact TheHub SHA, no sibling editables, committed lock equals fresh resolver output |
+| API authentication and identity | PASS — disabled-by-default writes, token enforcement, server-owned immutable IDs, payload bounds |
+| Field-level provenance | PASS — incomplete provenance remains inactive; complete provenance activates only the supported fields |
+| Flight-history isolation | PASS — populated database rows cannot promote aircraft type, owner, or operator |
+| No-intent report boundary | PASS — role unresolved, no mission list, no operating-hours/high-activity cueing, no unproven identity output |
+| Archive adversarial contract | PASS — traversal, aliases, symlink, duplicate, ratio, streamed limits, and no-replace default |
+| Archive rollback failure path | PASS — original restored and temp/backup state cleaned after injected promotion failure |
+| Standalone archive parity | PASS — distributable SATIM package carries the same rollback regression |
+| CodeQL | PASS — Python and JavaScript/TypeScript |
+| Secret scan | PASS |
+| pip-audit | PASS |
+| Federation template drift | PASS |
+| Desktop packaging | PASS — Ubuntu, macOS, and Windows frozen-app smoke/package matrix |
 | SATIM Engine CI | PASS |
 | SATIM Route Findings CI | PASS |
 | SATIM Runtime Smoke Tests | PASS |
 | SATIM Phase 2 Contracts | PASS |
-| Federation template drift | PASS |
-| Desktop packaging | PASS — Ubuntu, macOS, and Windows |
-| Frontend regression build | PASS — preserved current-main frontend lint and build |
-| CodeQL | PASS |
-| Secret scan | PASS |
-| pip-audit | PASS |
-| Ruff and mypy visibility | PASS — report-only jobs completed without masking other gates |
 
-## Coverage-tier reconciliation
+## Workflow evidence
 
-A diagnostic run proved the data-independent suite itself was healthy: 729 tests passed, but 52 data-capability tests were intentionally deselected, producing 51.98% coverage against the preserved 55% full-repository floor. The correction was not to lower the floor. Instead:
+| Workflow family | Run | Conclusion |
+|---|---:|---|
+| Backend core | `30309815343` | success |
+| Skywatcher CI | `30309815332` | success |
+| CodeQL | `30309815342` | success |
+| Secret scan | `30309815331` | success |
+| pip-audit | `30309815351` | success |
+| Federation template drift | `30309815376` | success |
+| desktop-build | `30309815394` | success |
+| SATIM Engine CI | `30309815345` | success |
+| SATIM Route Findings CI | `30309815366` | success |
+| SATIM Runtime Smoke Tests | `30309815435` | success |
+| SATIM Phase 2 Contracts | `30309815347` | success |
 
-- `Backend core` continues to certify a clean, data-independent install.
-- `Skywatcher CI` explicitly runs the full-data test tier for coverage.
+## Lock regeneration evidence
 
-This preserves both reproducibility and the current-main coverage ratchet.
+The first synchronized run intentionally failed the new drift check after successfully creating and uploading the authoritative resolver output. Artifact `8669841881`, named `resolved-lock-be98653a17955a11ad1a8be193a1d438b6124e29`, had digest `sha256:e68f8ce33b79626fbeca41efc9dcc9ef34e6315e0896fb34f921210f2ff35c17`.
+
+The artifact was committed unchanged as `requirements.lock`. On the certified code head, the fresh normalized resolver output matched the committed lock byte-for-byte and the lock job concluded successfully.
 
 ## Evidence policy
 
-Any code change after the recorded code head invalidates its workflow evidence. Documentation-only successor heads must rerun all workflows applicable to their paths; the final pull-request body records the latest head and conclusions.
+Any code change after the certified code head invalidates this code certification. Documentation-only successor heads must rerun workflows applicable to their changed paths. The pull-request body records the final successor head and final conclusions.

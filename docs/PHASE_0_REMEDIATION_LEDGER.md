@@ -3,63 +3,61 @@
 ## Target
 
 - Pull request: `#110`
-- Review vector: `REMEDIATE_SKYWATCHER_PHASE_0_REVIEW_FINDINGS_v2`
-- Reconciled current-main parent: `71a4bbd42692a397eb3b76f37d9bd00c85ba7ef7`
-- Certified remediation code head before documentation-only updates: `a8dbb794933900604156de05e8b426bdd0d5ffdd`
-- PR disposition: draft, open, unmerged
+- Final-review remediation vector: `REMEDIATE_SKYWATCHER_FINAL_REVIEW_FINDINGS_v1`
+- Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
+- Certified remediation code head: `50f2b87fa8c05b8d2b43016637546e1d784eeb94`
+- Pull-request disposition: draft, open, unmerged
 
 ## Scope preservation
 
-- No remediation-authored changes under `frontend/`.
-- Current-main frontend files were carried into the branch byte-for-byte through merge parents.
-- No changes under `data/`.
+- Current `main` is a true merge parent and the branch is zero commits behind.
+- No remediation-authored changes exist under `frontend/` or production `data/` paths.
+- Current-main governance, RLSM pipeline, runbook, schema, and placeholder-directory changes were preserved during reconciliation.
 - Public analytical schemas remain compatible.
-- `operational_cueing=false` and intent/purpose inference remains prohibited.
+- Mission, intent, target, wrongdoing, causality, and operational-purpose inference remain prohibited.
+- `operational_cueing=false` remains enforced.
 
-## Findings and closure
+## Final-review finding closure
 
-| Review finding | Remediation | Closure gate |
+| Finding | Remediation | Evidence gate |
 |---|---|---|
-| Branch was behind and non-mergeable | Added current `main` as true merge parents, preserved all current-main security and frontend commits | PR reports mergeable and zero commits behind |
-| Installed CLI could validate zero schemas successfully | `validate` now fails when the repository schema directory is absent or empty; `--root` explicitly identifies repository assets | Isolated wheel test runs outside checkout, expects rootless validation failure, then validates 43+ schemas with explicit root |
-| Wheel smoke only imported from checkout | Added clean virtual-environment wheel install from an empty directory | Backend-core Python 3.10–3.13 matrix |
-| ZIP replacement could delete the old target before promotion | Default replacement is disabled; explicit replacement uses backup rename, promotion, and rollback | Core and standalone SATIM archive tests |
-| ZIP limits trusted metadata only | Enforced streamed per-member and aggregate byte limits and final size equality | Adversarial archive tests |
-| Windows path aliases were not blocked | Rejected alternate-data-stream colons, reserved device names, trailing dots/spaces, duplicates, traversal, symlinks, and encrypted entries | Adversarial archive tests |
-| Core and SATIM archive implementations diverged | Both distributable implementations use the same contract and defaults | Nested-package parity test and SATIM CI |
-| Diagnostic API accepted caller-owned IDs | IDs are server-generated, collision-checked, immutable, and reserved fields are rejected | API security tests |
-| Review payloads were unbounded | Added 64 KiB and 128-field limits | API security tests |
-| Known-aircraft lookup used substring matches | Added normalized exact identifiers and an explicit alias registry | FPIM regression tests |
-| Legacy mission and operating-pattern claims lacked field provenance | Registry retains identifiers only; fields remain inactive until source URI, source record ID, capture time, and SHA-256 are present | FPIM exact-match/provenance tests |
-| Active reports exposed mission and predictive operating patterns | Active profile always reports role as `Unknown (not inferred)` and exposes no typical hours or high-activity-region fields | FPIM regression tests |
-| Source export removed executable modes | Export reads Git index modes and preserves executable launchers | Export-mode test and template drift |
-| Hygiene scanner and export exclusions differed | Added one canonical repository policy for both operations | Repository-policy tests and backend-core hygiene gate |
-| Dependency lock used editable sibling paths | Lock and fresh resolution require exact TheHub VCS commit references | CI lock job and pip-audit |
-| Current-main security controls could be lost during reconciliation | Preserved CodeQL, secret scan, pip-audit, Dependabot, pre-commit, Ruff, mypy, coverage, pinned Actions, and frontend checks | Current-main plus Phase 0 workflow set |
-| Coverage floor conflicted with data-independent core defaults | Backend-core remains data-independent; full CI explicitly runs the full-data suite for the preserved 55% floor | Both workflow families must pass |
+| Identity fields activated when `verified_fields` was merely nonempty | Added per-field activation through `_verified_identity_fields`; each activated field requires source URI, source record ID, capture time, and SHA-256 | Incomplete-provenance and selective complete-provenance regression tests |
+| Ordinary flight-history rows could populate aircraft type/operator | Database enrichment is limited to observed flight count, first-seen time, and last-seen time | Populated-DB test proves aircraft type, owner, and operator remain unknown |
+| Committed dependency lock was incomplete and not drift-gated | Generated the lock with the exact pinned `uv pip compile` command and changed CI to require byte-for-byte equality with fresh resolver output | First pass produced the resolver artifact and failed drift as designed; second pass lock job succeeded |
+| Archive rollback existed without failure-path certification | Added injected temp-to-target promotion failures and verified original-target restoration plus temp/backup cleanup | Canonical and standalone SATIM rollback tests |
+| `desktop/setup.py` used ambiguous package and top-level import forms | Replaced dual imports with one package import and an `importlib` direct-script fallback | Python CodeQL analysis succeeded |
+| `main` advanced during remediation | Created a true two-parent merge, explicitly reconciled `.gitignore`, README, and the RLSM geocoder, and preserved all other current-main files byte-for-byte | `behind_by=0`, mergeable pull request, current-main workflow set green |
 
 ## Security boundaries
 
-Aircraft profile enrichment is field-provenance gated. Merely appearing in a legacy registry does not establish owner, operator, role, mission, schedule, destination, or typical operating area. Unknown or unproven fields remain `Unknown`.
+Aircraft identity is fail-closed per field. Registry membership, callsign structure, aircraft type, route geometry, timing, and ordinary flight-history metadata cannot establish owner, operator, role, mission, schedule, target, or typical operating area. Unproven fields remain `Unknown`.
 
-Archive extraction is validation-first, stream-bounded, and recoverable. Existing destinations are refused by default. Explicit replacement retains a rollback path until promotion succeeds.
+Flight-history enrichment is observational only: count, first-seen timestamp, and last-seen timestamp. Active profiles always keep role as `Unknown (not inferred)`, mission lists empty, and operational-pattern cueing absent.
 
-Diagnostic writes remain disabled by default and require both `PRII_ENABLE_WRITES=true` and a matching bearer token. Repository files are never mutated by the overlay.
+Archive extraction is validation-first, stream-bounded, no-replace by default, and recoverable. Explicit replacement keeps the original target in a backup until promotion succeeds; injected promotion failures restore the original and clean temporary state.
 
-## Certification record
+Diagnostic writes remain disabled by default and require both `PRII_ENABLE_WRITES=true` and a matching bearer token. IDs are server-owned and immutable, payloads are bounded, and repository files are never mutated by the process overlay.
 
-The remediation code head completed all eleven triggered workflow families successfully:
+## Dependency-lock evidence
 
-- Backend core
-- Skywatcher CI
-- CodeQL
-- Secret scan
-- pip-audit
-- Federation template drift
-- desktop-build
-- SATIM Engine CI
-- SATIM Route Findings CI
-- SATIM Runtime Smoke Tests
-- SATIM Phase 2 Contracts
+The first synchronized workflow pass generated `resolved-lock-be98653a17955a11ad1a8be193a1d438b6124e29` and failed only the deliberate full-drift comparison. The generated lock included the complete declared development, API, and federation dependency set, including `build`, `ruff`, and `mypy`, plus exact TheHub references at `f00f2da0e6abcc885a8133e5c8b7aeb9756f5df8`.
 
-Documentation-only successor heads must rerun all workflows applicable to their changed paths before review closure is final.
+That resolver output was committed unchanged as `requirements.lock`. The subsequent lock job regenerated the same normalized file and passed `diff -u requirements.lock /tmp/resolved.lock`.
+
+## Code-head certification
+
+All eleven workflow families completed successfully on the certified code head:
+
+- Backend core — run `30309815343`
+- Skywatcher CI — run `30309815332`
+- CodeQL — run `30309815342`
+- Secret scan — run `30309815331`
+- pip-audit — run `30309815351`
+- Federation template drift — run `30309815376`
+- desktop-build — run `30309815394`
+- SATIM Engine CI — run `30309815345`
+- SATIM Route Findings CI — run `30309815366`
+- SATIM Runtime Smoke Tests — run `30309815435`
+- SATIM Phase 2 Contracts — run `30309815347`
+
+Documentation-only successor heads must rerun every workflow applicable to their changed paths. The pull-request body is the authoritative record of the latest head, final workflow conclusions, and review-thread closure.
