@@ -64,3 +64,9 @@ build/
 desktop/.running
 dist-smoke/
 !desktop/pyinstaller.spec
+
+# Coverage artifacts (pytest --cov / coverage.py)
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml

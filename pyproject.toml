@@ -12,3 +12,54 @@ addopts = "-m 'not integration'"
 markers = [
     "integration: tests that hit live external services. Excluded from default runs.",
 ]
+
+# ── ruff ─────────────────────────────────────────────────────────────────────
+# Same rule set as the rest of the federation so the target is identical
+# everywhere. This repo starts from a large backlog (~1.4k findings, mostly
+# UP006/UP035 annotation modernization and unsorted imports), so the CI lint job
+# is REPORT-ONLY for now — see .github/workflows/ci.yml. Clearing the backlog is
+# tracked separately; mass-autofixing a flat-layout numerics repo in one pass is
+# not safe to bundle with CI configuration work.
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = [".", "src", "tests"]
+extend-exclude = ["Archive.zip", "gebco", "exports", "data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "W"]
+ignore = ["E501"] # line length is handled by the formatter, not the linter
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"] # assert False is idiomatic in tests
+
+# ── mypy ─────────────────────────────────────────────────────────────────────
+# Gradually-typed baseline, matching spiderweb-pr and moneysweep-pr. Scoped to
+# the src/skywatcher package, which is the structured part of the tree (13
+# findings today; src/skywatcher/satim/artifacts is already clean). The flat
+# root modules and fr24/ are not in scope yet. follow_imports = "silent" keeps
+# errors in not-yet-typed dependencies from being reported. Non-gating in CI.
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+no_implicit_optional = true
+warn_redundant_casts = true
+follow_imports = "silent"
+files = ["src/skywatcher"]
+
+[tool.coverage.run]
+branch = true
+source = ["src/skywatcher", "fr24", "imagery", "pipeline"]
+omit = ["tests/*", "*/__init__.py"]
+
+[tool.coverage.report]
+# Ratchet, not a target: 59% measured when this landed, floor set at
+# 55% so normal variation across the CI Python matrix does not cause false
+# failures. Raise it as coverage improves; never lower it to make a build pass.
+fail_under = 55
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

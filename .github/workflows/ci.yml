@@ -11,6 +11,12 @@ on:
 permissions:
   contents: read
 
+# Supersede older runs of this workflow on the same ref: a newer push
+# makes the in-flight result irrelevant, so cancel it and free the runner.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -23,6 +29,7 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: pip
       - name: Install dev deps
         run: |
           # PRII_FETCH_HUB: ensure shared federation libs resolve
@@ -69,7 +76,7 @@ jobs:
       - name: Validate SATIM calibration sets
         run: python scripts/validate_satim_calibration.py data/satim_calibration
       - name: Tests
-        run: pytest -q
+        run: pytest -q --cov --cov-report=term-missing:skip-covered
 
   test-imagery:
     # Imagery MCP server has its own optional dependency set (requirements-imagery.txt);
@@ -85,6 +92,7 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: pip
       - name: Install imagery deps
         run: |
           # PRII_FETCH_HUB: ensure shared federation libs resolve
@@ -134,3 +142,33 @@ jobs:
               "Run: uv pip compile requirements.txt --universal --python-version 3.12 -o requirements.lock"
             exit 1
           fi
+
+  # Lint and type gates, both REPORT-ONLY to start.
+  #
+  # ruff: this repo carries a ~1.4k-finding backlog (mostly UP006/UP035
+  # annotation modernization and unsorted imports) inherited from before the
+  # config existed. The job runs so the number is visible and can be worked down
+  # per-subtree; mass-autofixing a flat-layout numerics repo in one pass is not
+  # safe to bundle with CI configuration work. Drop continue-on-error once clear.
+  #
+  # mypy: scoped by [tool.mypy] `files` to src/skywatcher (12 findings today;
+  # src/skywatcher/satim/artifacts is already clean).
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install lint deps
+        run: |
+          # PRII_FETCH_HUB: ensure shared federation libs resolve
+          if [ ! -d ../thehub-pr ]; then git clone --depth 1 --branch "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" https://github.com/jotaele44/thehub-pr.git ../thehub-pr || git clone --depth 1 https://github.com/jotaele44/thehub-pr.git ../thehub-pr; fi
+          python -m pip install ruff mypy -r requirements-dev.txt
+      - name: Ruff (report-only)
+        continue-on-error: true
+        run: ruff check --statistics .
+      - name: Mypy (report-only)
+        continue-on-error: true
+        run: python -m mypy
