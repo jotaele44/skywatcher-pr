@@ -36,6 +36,12 @@ data/FR24_baseline
 data/_manifests/
 data/.migration_trash/
 
+# RLSM screenshot inventory DB (fr24/screenshot_inventory.py output over
+# data/FR24_baseline). Machine-local, and NOT reproducible by re-running the
+# inventory: it holds sha256 + phash for 13,321 screenshots, ~1,020 of which
+# (month bucket 2026-03) no longer exist on disk. Back it up, don't delete it.
+data/rlsm/*.sqlite*
+
 flight_database.db
 
 # FR24 ground-truth track harvest (controller: scripts/fr24_harvest.py)
