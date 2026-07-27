@@ -48,8 +48,10 @@ OUTS = REPO / "outputs"
 PR_BBOX = (17.7, 18.65, -67.55, -65.15)  # (lat_min, lat_max, lon_min, lon_max)
 
 # Global-affine fallback constants for FR24 default PR-wide view on iPhone-portrait
-# (1170x2532). Approximate — replace with per-screenshot fit after running
-# scripts/rlsm_reocr_label_layer.py (which populates true word-level centroids).
+# (1170x2532). Approximate — used only for screenshots that still lack per-word
+# pin centroids. The label extractor now writes true word-level geometry at
+# extraction time (fr24/rlsm_extractors.extract_labeled_pins), so a corpus
+# processed by the current pipeline gets a per-screenshot fit instead.
 # Derived from PR-overview map zoom level: 1170px wide ≈ 1.8° lon (~200km)
 GLOBAL_AFFINE_1170_2532 = (
     -67.35,    # lon0 (at px=0)
@@ -243,13 +245,16 @@ def main():
     # Audit summary
     median_residual = round(float(np.median(list(fit_residuals.values()))), 5) if fit_residuals else None
     p90_residual    = round(float(np.percentile(list(fit_residuals.values()), 90)), 5) if fit_residuals else None
+    accuracy_note = (
+        "\n> **Accuracy note:** Screenshots counted below under the GLOBAL PR-wide affine"
+        " fallback have no per-word pin centroids — they were extracted before the label"
+        " extractor recorded word-level geometry. To upgrade them to per-screenshot fits,"
+        " re-run OCR with word boxes and re-extract pins"
+        " (`./run-rlsm.sh --stage ocr --reocr-boxes` then `./run-rlsm.sh --stage pins`),"
+        " then run this script again.\n"
+    )
     md = ["# Geocoded unlabeled POI clusters — audit\n",
-          "\n> **Accuracy note:** This run uses the GLOBAL PR-wide affine fallback because "
-          "the original POI extractor stored zone-center as centroid for all labels on a "
-          "screenshot (not per-word boxes). For per-screenshot accuracy, run "
-          "`scripts/rlsm_reocr_label_layer.py` on your Mac first — that populates "
-          "true word-level pixel centroids, then re-running this script will use the "
-          "much more accurate per-screenshot affine fits.\n",
+          accuracy_note,
           f"\n- Screenshots assigned the global-affine fallback: **{global_affine_sids:,}**",
           f"\n## Affine-fit pipeline\n",
           f"- Screenshots with ≥2 anchors: {fits_attempted:,}",

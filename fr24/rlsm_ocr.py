@@ -36,6 +36,10 @@ except ImportError:
     pytesseract = None  # type: ignore
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))
+
+from fr24.rlsm_wordboxes import words_from_tesseract_data  # noqa: E402
+
 DB   = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 JSONL = REPO / "outputs" / "ocr_raw_by_zone.jsonl"
 
@@ -45,7 +49,11 @@ def _iso_now() -> str:
 
 
 def _ocr_zone(img: Image.Image, zone, config: str) -> Tuple[str, list, float, float, int]:
-    """Return (raw_text, lines_json, conf_mean, conf_min, n_words)."""
+    """Return (raw_text, word_boxes, conf_mean, conf_min, n_words).
+
+    ``word_boxes`` carries the per-word geometry image_to_data already computes;
+    see fr24/rlsm_wordboxes.py for why it is kept rather than discarded.
+    """
     crop = img.crop(zone.crop_box())
     if pytesseract is None:
         return "", [], 0.0, 0.0, 0
@@ -61,7 +69,8 @@ def _ocr_zone(img: Image.Image, zone, config: str) -> Tuple[str, list, float, fl
     raw_text = " ".join(words)
     conf_mean = float(sum(confs) / len(confs)) if confs else 0.0
     conf_min  = float(min(confs)) if confs else 0.0
-    return raw_text, [], conf_mean, conf_min, len(words)
+    boxes = words_from_tesseract_data(data, x_off=zone.x, y_off=zone.y)
+    return raw_text, boxes, conf_mean, conf_min, len(words)
 
 
 def process_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str,

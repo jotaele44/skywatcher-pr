@@ -53,6 +53,10 @@ except ImportError:
     pytesseract = None  # type: ignore
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))
+
+from fr24.rlsm_wordboxes import words_from_tesseract_data  # noqa: E402
+
 DB   = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 JSONL = REPO / "outputs" / "ocr_raw_by_zone.jsonl"
 
@@ -71,8 +75,13 @@ def _worker_init(db_path: str) -> None:
     os.environ["OMP_THREAD_LIMIT"] = "1"
 
 
-def _ocr_with_conf(img_crop: Image.Image, config: str) -> Tuple[str, list, float, float, int]:
-    """Run tesseract and return (raw_text, lines_json, conf_mean, conf_min, n_words)."""
+def _ocr_with_conf(img_crop: Image.Image, config: str,
+                   x_off: int = 0, y_off: int = 0) -> Tuple[str, list, float, float, int]:
+    """Run tesseract and return (raw_text, word_boxes, conf_mean, conf_min, n_words).
+
+    ``x_off``/``y_off`` are the crop origin, so the returned word boxes are in
+    full-image coordinates. See fr24/rlsm_wordboxes.py.
+    """
     if pytesseract is None:
         return "", [], 0.0, 0.0, 0
     try:
@@ -86,10 +95,10 @@ def _ocr_with_conf(img_crop: Image.Image, config: str) -> Tuple[str, list, float
     words = [w for w in data["text"] if w.strip()]
     confs = [c for c, w in zip(data["conf"], data["text"]) if w.strip() and c >= 0]
     raw_text = " ".join(words)
-    lines_json: list = []
+    boxes = words_from_tesseract_data(data, x_off=x_off, y_off=y_off)
     conf_mean = float(sum(confs) / len(confs)) if confs else 0.0
     conf_min  = float(min(confs)) if confs else 0.0
-    return raw_text, lines_json, conf_mean, conf_min, len(words)
+    return raw_text, boxes, conf_mean, conf_min, len(words)
 
 
 def _process_one(args: Tuple[int, str, int]) -> dict:
@@ -126,7 +135,8 @@ def _process_one(args: Tuple[int, str, int]) -> dict:
                 img = ImageOps.exif_transpose(img)
                 crop = img.crop(zone.crop_box())
 
-            raw_text, lines_json, conf_mean, conf_min, n_words = _ocr_with_conf(crop, config)
+            raw_text, lines_json, conf_mean, conf_min, n_words = _ocr_with_conf(
+                crop, config, x_off=zone.x, y_off=zone.y)
             z_status = "ok" if raw_text.strip() else "empty"
             bbox = zone.crop_box()
 
@@ -196,6 +206,10 @@ def main() -> None:
     ap.add_argument("--filter-month",  type=str,   default=None)
     ap.add_argument("--retry-failed",  action="store_true",
                     help="Also retry screenshots with ocr_status='failed'.")
+    ap.add_argument("--reocr-boxes",   action="store_true",
+                    help="Re-OCR screenshots whose stored observations predate "
+                         "word-box capture (raw_lines_json empty). Appends rows "
+                         "under a new run_id; existing raw OCR is never touched.")
     args = ap.parse_args()
 
     JSONL.parent.mkdir(parents=True, exist_ok=True)
@@ -203,7 +217,18 @@ def main() -> None:
     # Build the target list
     where_parts = ["s.ingest_status='ok'"]
     params = []
-    if args.retry_failed:
+    if args.reocr_boxes:
+        # Already-OCR'd screenshots that have no word geometry yet. Selecting on
+        # the newest label_layer row per screenshot means a screenshot that has
+        # already been re-OCR'd is not picked up twice.
+        where_parts.append("""s.screenshot_id IN (
+            SELECT o.screenshot_id FROM ocr_observations o
+            WHERE o.obs_id IN (
+                SELECT MAX(obs_id) FROM ocr_observations
+                WHERE zone='label_layer' GROUP BY screenshot_id)
+              AND COALESCE(o.raw_lines_json, '') IN ('', '[]')
+        )""")
+    elif args.retry_failed:
         where_parts.append("s.ocr_status IN ('pending','failed')")
     else:
         where_parts.append("s.ocr_status IN ('pending')")

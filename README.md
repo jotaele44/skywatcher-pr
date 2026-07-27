@@ -53,6 +53,19 @@ Drive the pipeline with:
 python scripts/fr24_vision_ingest.py
 ```
 
+### RLSM screenshot extraction
+
+The screenshot corpus (OCR → aircraft → place labels → map icons → exports) runs from a
+single resumable command:
+
+```bash
+./run-rlsm.sh              # everything; --dry-run first to check preflight
+./run-rlsm.sh --status     # what is done, what is pending
+```
+
+Point `data/FR24_baseline` at the corpus first (a symlink is fine — preflight prints the
+exact command if it is missing). Full runbook: `data/rlsm/HANDOFF.md`.
+
 ## SATIM engine protocol interface
 
 SATIM can run against a new manifest, directory, or zip bundle through the repo-native protocol runner:
