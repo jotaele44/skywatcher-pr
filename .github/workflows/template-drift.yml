@@ -35,13 +35,16 @@ jobs:
           python ../thehub-pr/tools/render_federation_templates.py \
             --repo skywatcher-pr \
             --repo-root /tmp/skywatcher-rendered
-      - name: Compare adopted canonical artifacts
+      - name: Compare macOS launcher
+        run: diff -u /tmp/skywatcher-rendered/PRII-SKYWATCHER.command PRII-SKYWATCHER.command
+      - name: Compare Windows launcher
+        run: diff -u /tmp/skywatcher-rendered/PRII-SKYWATCHER.bat PRII-SKYWATCHER.bat
+      - name: Compare Linux launcher
+        run: diff -u /tmp/skywatcher-rendered/PRII-SKYWATCHER.sh PRII-SKYWATCHER.sh
+      - name: Compare federation schema
+        run: diff -u /tmp/skywatcher-rendered/schemas/federation_export_manifest.schema.json schemas/federation_export_manifest.schema.json
+      - name: Validate launcher modes
         run: |
-          cmp PRII-SKYWATCHER.command /tmp/skywatcher-rendered/PRII-SKYWATCHER.command
-          cmp PRII-SKYWATCHER.bat /tmp/skywatcher-rendered/PRII-SKYWATCHER.bat
-          cmp PRII-SKYWATCHER.sh /tmp/skywatcher-rendered/PRII-SKYWATCHER.sh
-          cmp schemas/federation_export_manifest.schema.json \
-            /tmp/skywatcher-rendered/schemas/federation_export_manifest.schema.json
           test -x PRII-SKYWATCHER.command
           test -x PRII-SKYWATCHER.sh
       - name: Validate sanctioned Phase 0 divergences
