@@ -26,21 +26,55 @@ VITE_FEDERATION_PROGRAM_ID=skywatcher-pr
 VITE_FEDERATION_MODE=diagnostic
 ```
 
-The client expects the backend to expose standard federation endpoints:
+## Backend endpoints
 
-```text
-GET    /api/auth/me
-POST   /api/auth/login
-POST   /api/auth/register
-GET    /api/entities/:entity
-POST   /api/entities/:entity/filter
-POST   /api/entities/:entity
-PATCH  /api/entities/:entity/:id
-DELETE /api/entities/:entity/:id
-POST   /api/functions/:name/invoke
-POST   /api/integrations/llm/invoke
-POST   /api/files/upload
-```
+`src/api/federationClient.js` is written against the full federation contract, but
+`server/backend/main.py` here is a deliberately small read-mostly surface over
+committed artifacts. Verified against a running server:
+
+| Endpoint | Implemented? |
+|---|---|
+| `GET /api/health`, `GET /health` | yes |
+| `GET /api/apps/public-settings` | yes — reports `requires_auth: false`, `mode: diagnostic` |
+| `GET /api/auth/me` | yes, but always **401** in diagnostic mode |
+| `GET /api/entities/:entity` | yes |
+| `GET /api/entities/:entity/:id` | yes |
+| `POST /api/entities/:entity/filter` | yes (a read, despite the verb — deliberately not write-guarded) |
+| `POST /api/entities/:entity` | yes — **write-guarded**, process-scoped only |
+| `PATCH /api/entities/:entity/:id` | yes — **write-guarded**, process-scoped only |
+| `DELETE /api/entities/:entity/:id` | **no** |
+| `POST /api/auth/login`, `/register`, `/verify-otp`, `/resend-otp`, `/password/*` | **no — 404** |
+| `POST /api/functions/*`, `/api/integrations/*`, `/api/files/upload` | **no** |
+
+Writes never touch the repository: creates and updates land in an in-memory overlay
+that disappears on restart (`_created` / `_overlay` in `server/backend/main.py`).
+
+**These are process-scoped, not per-client.** `_created` and `_overlay` are
+module-level dictionaries and `entity_rows()` merges them into *every* caller's
+reads, so one client's edits are visible to every other client sharing that backend
+process until it restarts. Do not expect per-session isolation.
+
+### Authentication
+
+There is no authentication backend. Because the six `/auth/*` endpoints the client
+calls all return 404, the `/login`, `/register`, `/forgot-password` and
+`/reset-password` routes are **not rendered** while
+`public_settings.requires_auth` is false — `src/App.jsx` redirects them to `/`,
+after waiting for public settings to resolve so a real `requires_auth: true`
+backend is never mistaken for diagnostic mode. Set
+`VITE_FEDERATION_REQUIRE_AUTH=true`, or have the backend report
+`requires_auth: true`, and the pages come back.
+
+### Write authorization
+
+Mutating routes are guarded by `require_write_access`:
+
+- `PRII_WRITE_TOKEN` **set** → every mutating request needs `Authorization: Bearer <token>`
+- `PRII_WRITE_TOKEN` **unset** → writes are served to local-network clients
+  (loopback, RFC1918 private, link-local) and refused for public addresses
+
+Reads are never affected. With the token set this UI cannot currently supply it;
+see `docs/MATURITY_AUDIT.md` for the tracked federation-wide fix.
 
 ## Development
 
