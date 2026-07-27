@@ -11,7 +11,7 @@
 | `src/skywatcher/core/safe_archive.py` | Canonical archive-safety contract | Retain |
 | `tools/satim_engine/src/satim_engine/safe_archive.py` | Independently distributable parity implementation | Consolidate only when package ownership permits a shared dependency without circularity |
 | `src/skywatcher/core/known_operators.py` | Exact identifier registry; unverified legacy identity fields inactive | Populate only through reviewed field-level provenance records |
-| `src/skywatcher/fpim/aircraft_profile.py` | Exact identity resolver plus observed count/timestamp enrichment | Retain; add source adapters without weakening fail-closed activation |
+| `src/skywatcher/fpim/aircraft_profile.py` | Exact identity resolver plus observed count/timestamp enrichment; callsign-prefix constants do not populate active identity | Retain; add source adapters without weakening fail-closed activation |
 | `scripts/` | Executable adapters importing package-qualified modules | Move remaining reusable logic into packages incrementally |
 | `fr24/` | Existing ingest and observable route-processing package | Partition ingestion and analysis in later phases |
 | `fr24/rlsm_pipeline.py` and `run-rlsm.sh` | Current-main single-command resumable RLSM workflow | Retain as operator surface |
@@ -32,13 +32,14 @@
 5. Legacy intent-inference names are excluded from active exports; lazy compatibility access remains warning-emitting and quarantined.
 6. Aircraft identifiers resolve by normalized exact match or an explicit alias only.
 7. Identity activation is per field. Each active aircraft type, owner, operator, country, or confidence field requires source URI, source record ID, capture time, and SHA-256 provenance.
-8. Ordinary flight-history rows may enrich only observed flight counts and first/last-seen timestamps; they cannot promote identity fields.
-9. Mission, purpose, schedule, target, typical operating area, and operational-pattern cueing are never inferred.
-10. The CLI requires repository assets for repository validation and fails closed when they are absent or empty.
-11. Existing archive destinations are refused by default; explicit replacement is recoverable and failure-path tested.
-12. Diagnostic review IDs are server-owned and immutable.
-13. Remediation-authored changes do not modify frontend or production-data paths.
-14. Current-main governance and RLSM changes remain preserved through a true merge parent.
+8. Callsign prefixes do not establish country or any other aircraft identity field. Compatibility prefix tables are excluded from active identity resolution.
+9. Ordinary flight-history rows may enrich only observed flight counts and first/last-seen timestamps; they cannot promote identity fields.
+10. Mission, purpose, schedule, target, typical operating area, and operational-pattern cueing are never inferred.
+11. The CLI requires repository assets for repository validation and fails closed when they are absent or empty.
+12. Existing archive destinations are refused by default; explicit replacement is recoverable and failure-path tested.
+13. Diagnostic review IDs are server-owned and immutable.
+14. Remediation-authored changes do not modify frontend or production-data paths.
+15. Current-main governance and RLSM changes remain preserved through a true merge parent.
 
 ## Test-tier ownership
 
@@ -58,5 +59,5 @@
 - Phase 1: immutable run manifests, data-pack manifest/doctor, artifact index, cache invalidation, and structured logging.
 - Phase 2: select one canonical SATIM engine and convert repository-native runners into adapters.
 - Phase 3: full-assets profiling, release automation, generated capability documentation, and gating the existing lint/type backlog.
-- Provenance expansion: add reviewed source adapters that emit field-level provenance records; never backfill from unproven history rows.
+- Provenance expansion: add reviewed source adapters that emit field-level provenance records; never backfill from callsign structure or unproven history rows.
 - Later review-store phase: durable, user/session-scoped review records without weakening the read-only default.
