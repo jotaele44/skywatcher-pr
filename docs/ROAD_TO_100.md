@@ -15,14 +15,18 @@ typed extension point rather than faked.
 
 ## Inventory (done)
 
+Counts re-measured 2026-07-27 against `main`.
+
 | Area | State |
 |---|---|
-| Python modules | 316 files |
+| Python modules | 360 files |
 | SATIM engine | in-tree, production/test export modes |
 | FR24 ingest | in-tree |
 | Export contract | test + production modes, synthetic-row rejection |
-| Test files | 100 (`tests/`, `tools/**/tests/`) |
-| CI workflows | 7 (`ci`, `desktop-build`, `maintenance`, `satim-engine-ci`, `satim-phase2`, `satim-route-findings-ci`, `satim-runtime-smoke-tests`) |
+| Test files | 115 (`tests/`, `tools/**/tests/`) — **807 passing**, 13 skipped |
+| CI workflows | 9 (`ci`, `centinelas-handoff`, `desktop-build`, `maintenance`, `satim-engine-ci`, `satim-phase2`, `satim-route-findings-ci`, `satim-runtime-smoke-tests`, `template-drift`) |
+| Frontend | 15 pages, 8.8k LOC — **no test runner** |
+| Lint / type gates | **none in CI** — `ruff check .` reports 247, `npm run typecheck` 229, neither enforced |
 
 ## Code closed in this PR
 
@@ -156,3 +160,23 @@ Left as typed extension points; **not** faked. Each needs an external artifact.
   and the unported spiderweb-archive layers (GEBCO, RAG/earthgpt, satellite,
   ILAP screenshots). These are gated on external inputs, not on code in this
   repository.
+
+---
+
+## Two completion numbers, and why they differ
+
+This ledger says **~73%**. [`MATURITY_AUDIT.md`](MATURITY_AUDIT.md) says **61%**.
+Both are correct; they measure different things and should be read together.
+
+| | Measures | Counts a thing "done" when |
+|---|---|---|
+| **`ROAD_TO_100.md`** (~73%) | code completeness against intended scope | the code exists, works, and is exercised — code-closed vs. blocked on external FR24 captures |
+| **`MATURITY_AUDIT.md`** (61%) | professional maturity of the repo as an engineering artifact | a **gate** keeps it working: CI-enforced lint, types, coverage, and frontend tests |
+
+The spread is almost entirely **enforcement, not implementation**. Work that this
+ledger correctly counts as finished still costs maturity points while no CI gate
+protects it — a passing suite with no coverage floor, a `typecheck` script no
+workflow runs, a linter configured but not wired in.
+
+Neither number supersedes the other. Use this ledger to answer "what is left to
+build"; use the audit to answer "what would a reviewer refuse to merge".
