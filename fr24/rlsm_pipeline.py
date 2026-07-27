@@ -32,7 +32,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Callable, List, Optional
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
@@ -74,7 +73,7 @@ def _connect() -> sqlite3.Connection:
     return conn
 
 
-def _run_module(module: str, args: List[str], env_extra: Optional[dict] = None) -> None:
+def _run_module(module: str, args: list[str], env_extra: dict | None = None) -> None:
     """Run a pipeline module as a subprocess so one stage cannot poison another."""
     env = dict(os.environ)
     env.setdefault("OMP_THREAD_LIMIT", "1")
@@ -87,7 +86,7 @@ def _run_module(module: str, args: List[str], env_extra: Optional[dict] = None) 
         raise StageError(f"{module} exited {proc.returncode}")
 
 
-def _run_script(script: Path, args: List[str]) -> None:
+def _run_script(script: Path, args: list[str]) -> None:
     cmd = [sys.executable, str(script), *args]
     print(f"    $ {script.name} {' '.join(args)}", flush=True)
     proc = subprocess.run(cmd, cwd=str(REPO), env=dict(os.environ))
@@ -115,8 +114,8 @@ def _count(conn: sqlite3.Connection, sql: str, params: tuple = ()) -> int:
 
 def preflight(ctx: dict) -> dict:
     """Check every precondition before spending hours of OCR."""
-    problems: List[str] = []
-    warnings: List[str] = []
+    problems: list[str] = []
+    warnings: list[str] = []
     info: dict = {}
 
     # Only the stages that decode images need the corpus and the OCR toolchain.
@@ -386,7 +385,7 @@ def collect_status() -> dict:
 
 def build_report() -> str:
     st = collect_status()
-    L: List[str] = ["# RLSM run report", "",
+    L: list[str] = ["# RLSM run report", "",
                     f"Generated {_iso_now()} by `fr24/rlsm_pipeline.py`.", ""]
 
     if not st.get("schema"):
@@ -444,7 +443,7 @@ def build_report() -> str:
     return "\n".join(L)
 
 
-def _icon_agreement_section() -> List[str]:
+def _icon_agreement_section() -> list[str]:
     """Agreement between named icon class and the label's gazetteer type."""
     conn = _connect()
     if not _table_exists(conn, "icon_observations"):
@@ -475,7 +474,7 @@ def _icon_agreement_section() -> List[str]:
 # main
 # --------------------------------------------------------------------------- #
 
-def resolve_stages(args: argparse.Namespace) -> List[str]:
+def resolve_stages(args: argparse.Namespace) -> list[str]:
     if args.stage:
         if args.stage not in STAGE_FUNCS:
             raise SystemExit(f"unknown stage {args.stage!r}; "

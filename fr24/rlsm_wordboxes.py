@@ -28,7 +28,7 @@ time, so consumers never need to know which zone a word came from to place it.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List
+from typing import Any
 
 # Words below these thresholds are dropped before storage. Tesseract emits a lot
 # of single-character noise off map textures and UI glyphs; keeping it would
@@ -37,15 +37,15 @@ MIN_WORD_CONF = 30.0
 MIN_WORD_LEN = 2
 
 
-def words_from_tesseract_data(data: Dict[str, Any], x_off: int = 0,
-                              y_off: int = 0) -> List[dict]:
+def words_from_tesseract_data(data: dict[str, Any], x_off: int = 0,
+                              y_off: int = 0) -> list[dict]:
     """
     Build the stored word list from a ``pytesseract.Output.DICT`` result.
 
     ``x_off``/``y_off`` are the crop origin, added so the boxes land in
     full-image coordinates.
     """
-    out: List[dict] = []
+    out: list[dict] = []
     texts = data.get("text") or []
     for i, raw in enumerate(texts):
         text = (raw or "").strip()
@@ -66,7 +66,7 @@ def words_from_tesseract_data(data: Dict[str, Any], x_off: int = 0,
     return out
 
 
-def load_words(raw_lines_json: str | None) -> List[dict]:
+def load_words(raw_lines_json: str | None) -> list[dict]:
     """Parse a stored ``raw_lines_json`` value; tolerant of legacy/empty rows."""
     if not raw_lines_json:
         return []
@@ -79,7 +79,7 @@ def load_words(raw_lines_json: str | None) -> List[dict]:
     return [w for w in parsed if isinstance(w, dict) and "t" in w]
 
 
-def union_box(words: List[dict]) -> tuple[int, int, int, int] | None:
+def union_box(words: list[dict]) -> tuple[int, int, int, int] | None:
     """Union bounding box over a group of words → ``(x, y, w, h)``."""
     if not words:
         return None

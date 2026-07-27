@@ -42,15 +42,14 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 from fr24.zone_label_harvest import (  # noqa: E402
-    load_registry,
     _norm,
     _strip_generic,
+    load_registry,
 )
 
 # Longest n-gram we will try to match. "Eugenio Maria de Hostos" is 4 tokens;
@@ -144,7 +143,7 @@ CHROME_TOKENS = {
 
 # Static ICAO anchors. GNIS carries the airports as named features but not
 # their ICAO codes, and FR24 labels them by code.
-STATIC_ANCHORS: List[Tuple[str, str, float, float]] = [
+STATIC_ANCHORS: list[tuple[str, str, float, float]] = [
     ("TJSJ", "Luis Muñoz Marín International Airport", 18.4394, -66.0018),
     ("TJIG", "Fernando Luis Ribas Dominicci Airport",  18.4567, -66.0982),
     ("TJBQ", "Rafael Hernández Airport",               18.4949, -67.1294),
@@ -158,7 +157,7 @@ STATIC_ANCHORS: List[Tuple[str, str, float, float]] = [
 # Off-island features that appear on a zoomed-out FR24 frame but are outside the
 # PR GNIS extract. Small and deliberately so — the review queue surfaces the
 # rest as unknowns for later promotion.
-REGIONAL_EXTRAS: List[Tuple[str, str]] = [
+REGIONAL_EXTRAS: list[tuple[str, str]] = [
     ("Caribbean Sea",       "water"),
     ("Atlantic Ocean",      "water"),
     ("Mona Passage",        "water"),
@@ -181,16 +180,16 @@ REGIONAL_EXTRAS: List[Tuple[str, str]] = [
 class Gazetteer:
     """Normalized-key place-name index with n-gram span matching."""
 
-    def __init__(self, entries: Dict[str, dict]) -> None:
+    def __init__(self, entries: dict[str, dict]) -> None:
         self.entries = entries
         self._max_gram = MAX_GRAM
 
     # -- lookup -------------------------------------------------------------
 
-    def get(self, key: str) -> Optional[dict]:
+    def get(self, key: str) -> dict | None:
         return self.entries.get(key)
 
-    def lookup(self, text: str) -> Optional[dict]:
+    def lookup(self, text: str) -> dict | None:
         """Resolve a free-text label (e.g. 'MAYAGÜEZ' or 'Mayaguez')."""
         n = _norm(text)
         hit = self.entries.get(n)
@@ -198,7 +197,7 @@ class Gazetteer:
             hit = self.entries.get(_norm(_strip_generic(text)))
         return hit
 
-    def match_tokens(self, tokens: List[str]) -> List[Tuple[int, int, dict]]:
+    def match_tokens(self, tokens: list[str]) -> list[tuple[int, int, dict]]:
         """
         Longest-match-wins scan over a normalized token list.
 
@@ -207,7 +206,7 @@ class Gazetteer:
         the corresponding word boxes into pin geometry and mark those tokens as
         consumed so Tier 2 does not re-emit them.
         """
-        out: List[Tuple[int, int, dict]] = []
+        out: list[tuple[int, int, dict]] = []
         n = len(tokens)
         i = 0
         while i < n:
@@ -233,8 +232,8 @@ class Gazetteer:
     # -- reporting ----------------------------------------------------------
 
     def stats(self) -> dict:
-        by_tier: Dict[str, int] = {}
-        by_type: Dict[str, int] = {}
+        by_tier: dict[str, int] = {}
+        by_type: dict[str, int] = {}
         for e in self.entries.values():
             by_tier[e["tier"]] = by_tier.get(e["tier"], 0) + 1
             by_type[e["type"]] = by_type.get(e["type"], 0) + 1
@@ -247,7 +246,7 @@ class Gazetteer:
         }
 
 
-def _add(entries: Dict[str, dict], key: str, entry: dict) -> None:
+def _add(entries: dict[str, dict], key: str, entry: dict) -> None:
     """Insert a key, keeping the first (higher-tier sources are added first)."""
     if not key or len(key) < MIN_KEY_LEN:
         return
@@ -289,7 +288,7 @@ def _class_rank(fclass: str) -> int:
 
 def build_gazetteer() -> Gazetteer:
     """Assemble the match index from GNIS + landing zones + static anchors."""
-    entries: Dict[str, dict] = {}
+    entries: dict[str, dict] = {}
 
     # 1) Static ICAO anchors first — exact codes, highest confidence.
     for code, name, lat, lon in STATIC_ANCHORS:
@@ -353,7 +352,7 @@ def build_gazetteer() -> Gazetteer:
     return Gazetteer(entries)
 
 
-_GAZ: Optional[Gazetteer] = None
+_GAZ: Gazetteer | None = None
 
 
 def load_gazetteer(force: bool = False) -> Gazetteer:
@@ -364,7 +363,7 @@ def load_gazetteer(force: bool = False) -> Gazetteer:
     return _GAZ
 
 
-def tokenize(words: List[str]) -> Tuple[List[str], List[int]]:
+def tokenize(words: list[str]) -> tuple[list[str], list[int]]:
     """
     Normalize OCR words into match tokens, keeping a back-pointer to the word
     each token came from.
@@ -375,8 +374,8 @@ def tokenize(words: List[str]) -> Tuple[List[str], List[int]]:
 
     Returns ``(tokens, owner_index)`` — parallel lists.
     """
-    tokens: List[str] = []
-    owners: List[int] = []
+    tokens: list[str] = []
+    owners: list[int] = []
     for i, w in enumerate(words):
         for tok in _norm(w or "").split():
             if tok in CHROME_TOKENS:

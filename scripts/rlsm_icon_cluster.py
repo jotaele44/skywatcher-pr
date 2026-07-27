@@ -28,9 +28,7 @@ import argparse
 import json
 import sqlite3
 import sys
-from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List
 
 REPO = Path(__file__).resolve().parents[1]
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -58,8 +56,8 @@ def hue_gap(a: float, b: float) -> float:
     return min(d, 360.0 - d)
 
 
-def cluster(rows: List[tuple], threshold: int = HAMMING_THRESHOLD,
-            hue_split: float = HUE_SPLIT_DEG) -> Dict[str, int]:
+def cluster(rows: list[tuple], threshold: int = HAMMING_THRESHOLD,
+            hue_split: float = HUE_SPLIT_DEG) -> dict[str, int]:
     """
     Single-link cluster over (ahash, mean_hue) representatives.
 
@@ -69,8 +67,8 @@ def cluster(rows: List[tuple], threshold: int = HAMMING_THRESHOLD,
 
     Returns ahash -> cluster_id.
     """
-    reps: List[dict] = []          # cluster representatives
-    assign: Dict[str, int] = {}
+    reps: list[dict] = []          # cluster representatives
+    assign: dict[str, int] = {}
     # Most frequent first, so the dominant glyph defines each cluster's centre.
     for ahash, count, mean_hue, _mean_sat in sorted(rows, key=lambda r: -r[1]):
         placed = False
@@ -142,7 +140,7 @@ def main() -> int:
            GROUP BY cluster_id ORDER BY n DESC"""
     ).fetchall()
 
-    existing: Dict[str, str] = {}
+    existing: dict[str, str] = {}
     if CLASSES_JSON.exists():
         try:
             prior = json.loads(CLASSES_JSON.read_text())

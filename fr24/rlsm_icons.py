@@ -48,7 +48,6 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
@@ -141,12 +140,12 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
 # without an image library present.
 
 
-def average_hash(gray: List[List[int]]) -> str:
+def average_hash(gray: list[list[int]]) -> str:
     """64-bit average hash of a grayscale block, as 16 hex chars."""
     if not gray or not gray[0]:
         return "0" * 16
     h, w = len(gray), len(gray[0])
-    cells: List[float] = []
+    cells: list[float] = []
     for by in range(8):
         for bx in range(8):
             y0, y1 = by * h // 8, max(by * h // 8 + 1, (by + 1) * h // 8)
@@ -162,7 +161,7 @@ def average_hash(gray: List[List[int]]) -> str:
     return f"{bits:016x}"
 
 
-def circular_mean_hue(hues: List[float], weights: Optional[List[float]] = None) -> float:
+def circular_mean_hue(hues: list[float], weights: list[float] | None = None) -> float:
     """
     Mean of hue angles in degrees. Hue is circular — the arithmetic mean of 350
     and 10 is 180 (cyan) when the answer is 0 (red) — so this averages unit
@@ -172,8 +171,8 @@ def circular_mean_hue(hues: List[float], weights: Optional[List[float]] = None) 
         return 0.0
     if weights is None:
         weights = [1.0] * len(hues)
-    sx = sum(w * math.cos(math.radians(h)) for h, w in zip(hues, weights))
-    sy = sum(w * math.sin(math.radians(h)) for h, w in zip(hues, weights))
+    sx = sum(w * math.cos(math.radians(h)) for h, w in zip(hues, weights, strict=False))
+    sy = sum(w * math.sin(math.radians(h)) for h, w in zip(hues, weights, strict=False))
     if sx == 0 and sy == 0:
         return 0.0
     # Round before the modulo: floating error otherwise turns an exact 0° into
@@ -181,7 +180,7 @@ def circular_mean_hue(hues: List[float], weights: Optional[List[float]] = None) 
     return round(math.degrees(math.atan2(sy, sx)), 6) % 360.0
 
 
-def percentile(values: List[float], q: float) -> float:
+def percentile(values: list[float], q: float) -> float:
     """Linear-interpolated percentile; q in [0, 1]."""
     if not values:
         return 0.0
@@ -195,7 +194,7 @@ def percentile(values: List[float], q: float) -> float:
     return float(ordered[lo] * (1 - frac) + ordered[hi] * frac)
 
 
-def connected_components(mask: List[List[bool]], min_area: int = 1) -> List[dict]:
+def connected_components(mask: list[list[bool]], min_area: int = 1) -> list[dict]:
     """
     Label 4-connected True regions. Iterative DFS, no OpenCV — same approach as
     fr24/rlsm_unlabeled._connected_components_threshold, over a much smaller
@@ -205,14 +204,14 @@ def connected_components(mask: List[List[bool]], min_area: int = 1) -> List[dict
         return []
     h, w = len(mask), len(mask[0])
     seen = [[False] * w for _ in range(h)]
-    out: List[dict] = []
+    out: list[dict] = []
     for sy in range(h):
         for sx in range(w):
             if seen[sy][sx] or not mask[sy][sx]:
                 seen[sy][sx] = True
                 continue
             stack = [(sx, sy)]
-            pixels: List[Tuple[int, int]] = []
+            pixels: list[tuple[int, int]] = []
             min_x = max_x = sx
             min_y = max_y = sy
             while stack:
@@ -223,8 +222,8 @@ def connected_components(mask: List[List[bool]], min_area: int = 1) -> List[dict
                 if not mask[y][x]:
                     continue
                 pixels.append((x, y))
-                min_x = min(min_x, x); max_x = max(max_x, x)
-                min_y = min(min_y, y); max_y = max(max_y, y)
+                min_x, max_x = min(min_x, x), max(max_x, x)
+                min_y, max_y = min(min_y, y), max(max_y, y)
                 stack.extend([(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)])
             if len(pixels) < min_area:
                 continue
@@ -238,8 +237,8 @@ def connected_components(mask: List[List[bool]], min_area: int = 1) -> List[dict
     return out
 
 
-def detect_in_window(rgb: List[List[Tuple[int, int, int]]],
-                     hsv: List[List[Tuple[int, int, int]]]) -> Optional[dict]:
+def detect_in_window(rgb: list[list[tuple[int, int, int]]],
+                     hsv: list[list[tuple[int, int, int]]]) -> dict | None:
     """
     Find the dominant glyph in one window.
 
@@ -255,7 +254,7 @@ def detect_in_window(rgb: List[List[Tuple[int, int, int]]],
     # Salience = chroma + deviation from the window's own median luminance.
     lum = [[0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2] for p in row] for row in rgb]
     med_lum = percentile([v for row in lum for v in row], 0.5)
-    sal: List[List[float]] = []
+    sal: list[list[float]] = []
     for y in range(h):
         srow = []
         for x in range(w):
@@ -313,7 +312,7 @@ def detect_in_window(rgb: List[List[Tuple[int, int, int]]],
 # --- image plumbing ----------------------------------------------------------
 
 
-def _grid(img, box: Tuple[int, int, int, int]) -> List[List[tuple]]:
+def _grid(img, box: tuple[int, int, int, int]) -> list[list[tuple]]:
     """Row-major pixel grid for a crop box."""
     crop = img.crop(box)
     w, h = crop.size
@@ -322,7 +321,7 @@ def _grid(img, box: Tuple[int, int, int, int]) -> List[List[tuple]]:
 
 
 def glyph_window(bx: int, by: int, bw: int, bh: int,
-                 img_w: int, img_h: int) -> Optional[Tuple[int, int, int, int]]:
+                 img_w: int, img_h: int) -> tuple[int, int, int, int] | None:
     """Search window left of and above a label box, clipped to the image."""
     unit = max(bh, 10)
     x0 = int(bx - unit * WIN_LEFT_MULT)
