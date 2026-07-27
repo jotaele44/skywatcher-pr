@@ -14,7 +14,7 @@
 
 ## Final-review remediation code head
 
-Certified code head: `50f2b87fa8c05b8d2b43016637546e1d784eeb94`
+Certified code head: `b1fa903f3ab7d48c2d298d9978fd31404a129a5e`
 
 Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
 
@@ -39,6 +39,7 @@ Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
 | Archive adversarial contract | PASS — traversal, aliases, symlink, duplicate, ratio, streamed limits, and no-replace default |
 | Archive rollback failure path | PASS — original restored and temp/backup state cleaned after injected promotion failure |
 | Standalone archive parity | PASS — distributable SATIM package carries the same rollback regression |
+| Import-form CodeQL regressions | PASS — desktop and both archive-test mixed-import alerts auto-resolved |
 | CodeQL | PASS — Python and JavaScript/TypeScript |
 | Secret scan | PASS |
 | pip-audit | PASS |
@@ -49,21 +50,21 @@ Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
 | SATIM Runtime Smoke Tests | PASS |
 | SATIM Phase 2 Contracts | PASS |
 
-## Workflow evidence
+## Workflow evidence for certified code head
 
 | Workflow family | Run | Conclusion |
 |---|---:|---|
-| Backend core | `30309815343` | success |
-| Skywatcher CI | `30309815332` | success |
-| CodeQL | `30309815342` | success |
-| Secret scan | `30309815331` | success |
-| pip-audit | `30309815351` | success |
-| Federation template drift | `30309815376` | success |
-| desktop-build | `30309815394` | success |
-| SATIM Engine CI | `30309815345` | success |
-| SATIM Route Findings CI | `30309815366` | success |
-| SATIM Runtime Smoke Tests | `30309815435` | success |
-| SATIM Phase 2 Contracts | `30309815347` | success |
+| Backend core | `30310474821` | success |
+| Skywatcher CI | `30310474788` | success |
+| CodeQL | `30310474791` | success |
+| Secret scan | `30310474805` | success |
+| pip-audit | `30310474831` | success |
+| Federation template drift | `30310474803` | success |
+| desktop-build | `30310474809` | success |
+| SATIM Engine CI | `30310474794` | success |
+| SATIM Route Findings CI | `30310474801` | success |
+| SATIM Runtime Smoke Tests | `30310474800` | success |
+| SATIM Phase 2 Contracts | `30310474795` | success |
 
 ## Lock regeneration evidence
 
@@ -73,4 +74,4 @@ The artifact was committed unchanged as `requirements.lock`. On the certified co
 
 ## Evidence policy
 
-Any code change after the certified code head invalidates this code certification. Documentation-only successor heads must rerun workflows applicable to their changed paths. The pull-request body records the final successor head and final conclusions.
+Any code change after the certified code head invalidates this code certification. Documentation-only successor heads must rerun workflows applicable to their changed paths. The pull-request body records the final evidence head and final conclusions.

@@ -19,7 +19,7 @@ Phase 0 is review-closed only when the latest pull-request head satisfies all of
 
 ## Final-review disposition at certified code head
 
-Certified remediation code head: `50f2b87fa8c05b8d2b43016637546e1d784eeb94`
+Certified remediation code head: `b1fa903f3ab7d48c2d298d9978fd31404a129a5e`
 
 Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
 
@@ -27,7 +27,7 @@ Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
 |---|---:|---|
 | Final-review P1 blockers | 2 | Remediated in code and regression tests |
 | Final-review P2 evidence gap | 1 | Remediated with canonical and standalone rollback failure injection |
-| Existing CodeQL review thread | 1 | Import ambiguity removed; Python CodeQL succeeded |
+| CodeQL mixed-import findings | 3 | Desktop and both rollback-test alerts auto-resolved after import normalization |
 | Scope violations | 0 | Frontend and production-data preservation maintained |
 | Current-main divergence | 0 | True merge parent; `behind_by=0` |
 
@@ -38,8 +38,24 @@ Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
 - Active reports leave role unresolved and omit inferred mission or predictive operating-pattern fields.
 - The lock gate proves resolver equivalence, not merely pin-string presence.
 - Archive rollback is exercised through injected promotion failure in both distributions.
-- The desktop direct-script fallback no longer mixes top-level and package import forms.
+- Desktop and archive tests use one canonical import form per module.
 - Current-main governance and RLSM functionality are retained.
+
+## Workflow certification
+
+All eleven workflow families concluded successfully on code head `b1fa903f3ab7d48c2d298d9978fd31404a129a5e`:
+
+- Backend core `30310474821`
+- Skywatcher CI `30310474788`
+- CodeQL `30310474791`
+- Secret scan `30310474805`
+- pip-audit `30310474831`
+- Federation template drift `30310474803`
+- desktop-build `30310474809`
+- SATIM Engine CI `30310474794`
+- SATIM Route Findings CI `30310474801`
+- SATIM Runtime Smoke Tests `30310474800`
+- SATIM Phase 2 Contracts `30310474795`
 
 ## Evidence locations
 
@@ -47,7 +63,7 @@ Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
 - `docs/PHASE_0_TEST_EVIDENCE.md`
 - `docs/PHASE_0_MIGRATION_MAP.md`
 - `docs/PHASE_0_REMEDIATION_LEDGER.md`
-- Pull request #110 body for the latest successor head, final workflow conclusions, and review-thread status
+- Pull request #110 body for the latest evidence head, final workflow conclusions, and review-thread status
 
 ## Merge policy
 
