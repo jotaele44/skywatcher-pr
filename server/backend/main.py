@@ -15,12 +15,16 @@ Start with:
 from __future__ import annotations
 
 import csv
+import ipaddress
 import json
+import logging
+import os
+import secrets
 import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,6 +50,74 @@ app.add_middleware(
 # Session-scoped mutations from the review UI; never written to disk.
 _overlay: dict[str, dict[str, dict[str, Any]]] = {}
 _created: dict[str, list[dict[str, Any]]] = {}
+
+log = logging.getLogger("skywatcher.backend")
+
+# ── Write authorization ────────────────────────────────────────────────────────
+# Diagnostic mode ships without authentication: /api/auth/me always 401s and
+# public-settings reports requires_auth=false, so nothing else stands between a
+# caller and the mutating routes. The overlay above is in-memory and never
+# reaches disk, so the blast radius is one process — but every reader of this
+# server still sees another client's unauthenticated edits until restart.
+#
+#   PRII_WRITE_TOKEN set    -> mutating routes require Authorization: Bearer <token>
+#   PRII_WRITE_TOKEN unset  -> mutating routes are served to clients on a local
+#                              network (loopback, RFC1918 private, link-local)
+#                              and refused for public addresses
+#
+# The private-range allowance is deliberate: containerized or LAN deployments see
+# a bridge address (typically 172.17.0.1) rather than 127.0.0.1, and a strict
+# loopback-only rule would 403 every write from the shipped UI in those setups.
+# Refusing public addresses still closes the case this is meant to close.
+#
+# Caveat when the token IS set: the browser UI has no write-credential input
+# (federationClient sources only the federation access token, and AuthContext
+# drops that when /api/auth/me 401s), so token mode currently suits API/CLI
+# callers rather than the shipped UI. Tracked in docs/MATURITY_AUDIT.md.
+#
+# Reads are unaffected in every case.
+_WRITE_TOKEN = os.environ.get("PRII_WRITE_TOKEN", "")
+
+
+def _is_local_network(host: str) -> bool:
+    """True for loopback, RFC1918 private, and link-local client addresses."""
+    if host in ("localhost", ""):
+        return host == "localhost"
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return ip.is_loopback or ip.is_private or ip.is_link_local
+
+
+def require_write_access(request: Request) -> None:
+    """Authorize a mutating request, by bearer token or by local-network origin."""
+    if _WRITE_TOKEN:
+        scheme, _, presented = request.headers.get("authorization", "").partition(" ")
+        if scheme.lower() != "bearer" or not secrets.compare_digest(
+            presented, _WRITE_TOKEN
+        ):
+            raise HTTPException(status_code=401, detail="Missing or invalid write token")
+        return
+
+    if not _is_local_network(request.client.host if request.client else ""):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Writes from public addresses are refused while PRII_WRITE_TOKEN "
+                "is unset. Set it to enable authenticated writes from anywhere."
+            ),
+        )
+
+
+_WRITE_GUARD = [Depends(require_write_access)]
+
+if not _WRITE_TOKEN:
+    log.warning(
+        "PRII_WRITE_TOKEN is unset — mutating /api routes accept any client on "
+        "a local network and are refused for public addresses. Set the token "
+        "before exposing this server beyond a trusted network."
+    )
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -249,7 +321,7 @@ def get_entity(entity_name: str, entity_id: str) -> dict[str, Any]:
     raise HTTPException(status_code=404, detail=f"{entity_name} not found: {entity_id}")
 
 
-@app.post("/api/entities/{entity_name}")
+@app.post("/api/entities/{entity_name}", dependencies=_WRITE_GUARD)
 def create_entity(entity_name: str, payload: dict[str, Any]) -> dict[str, Any]:
     row = dict(payload)
     row.setdefault("id", uuid.uuid4().hex)
@@ -258,7 +330,7 @@ def create_entity(entity_name: str, payload: dict[str, Any]) -> dict[str, Any]:
     return row
 
 
-@app.patch("/api/entities/{entity_name}/{entity_id}")
+@app.patch("/api/entities/{entity_name}/{entity_id}", dependencies=_WRITE_GUARD)
 def update_entity(
     entity_name: str, entity_id: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
