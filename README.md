@@ -6,6 +6,8 @@
 
 > Aircraft identity fields are promoted only when that individual field has a source URI, source record ID, capture time, and SHA-256. Legacy registry membership and ordinary flight-history rows prove nothing beyond observed identifiers and timestamps; unproven identity fields remain `Unknown`.
 
+> Callsign prefixes are not aircraft-country evidence. Compatibility prefix tables are not consulted by active identity resolution, and `country` remains `Unknown` unless complete field-level provenance activates it.
+
 > **Diagnostic-only surface.** The repository dashboard is a development and diagnostic surface for this producer. The supported federation product surface is the hub application in `thehub-pr`.
 
 ## Federation role
