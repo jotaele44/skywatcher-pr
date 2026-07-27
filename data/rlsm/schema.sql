@@ -286,3 +286,41 @@ CREATE TABLE IF NOT EXISTS manual_review_queue (
 );
 CREATE INDEX IF NOT EXISTS ix_review_kind   ON manual_review_queue(item_kind);
 CREATE INDEX IF NOT EXISTS ix_review_status ON manual_review_queue(review_status);
+
+-- FR24 map icons detected beside labeled pins (fr24/rlsm_icons.py).
+-- The glyph FR24 draws next to a map label — airport, heliport, aircraft,
+-- navaid, city dot. Cropped from the original RGB at a fixed offset from the
+-- pin's text box, so it exists only because labeled_pins carries real geometry.
+-- pin_id is nullable: a standalone glyph with no adjacent readable text still
+-- types the feature ("heliport here") without reading a character.
+-- ahash/cluster_id/icon_class carry the cluster-first review workflow: identical
+-- UI glyphs hash identically across renders, so the operator names each cluster
+-- once (scripts/rlsm_icon_cluster.py) and every recurrence inherits the type.
+CREATE TABLE IF NOT EXISTS icon_observations (
+    icon_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    screenshot_id  INTEGER NOT NULL REFERENCES screenshots(screenshot_id),
+    pin_id         INTEGER REFERENCES labeled_pins(pin_id),
+    run_id         INTEGER REFERENCES processing_runs(run_id),
+    bbox_x         INTEGER,
+    bbox_y         INTEGER,
+    bbox_w         INTEGER,
+    bbox_h         INTEGER,
+    centroid_x     INTEGER,
+    centroid_y     INTEGER,
+    area_px        INTEGER,
+    aspect         REAL,
+    fill_ratio     REAL,
+    hue_deg        REAL,                                   -- circular mean, 0-360
+    saturation     REAL,                                   -- 0-1
+    value          REAL,                                   -- 0-1
+    ahash          TEXT,                                   -- 64-bit average hash, 16 hex chars
+    cluster_id     INTEGER,
+    icon_class     TEXT,
+    confidence     REAL,
+    review_status  TEXT NOT NULL DEFAULT 'unreviewed',
+    observed_at    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_icon_screenshot ON icon_observations(screenshot_id);
+CREATE INDEX IF NOT EXISTS ix_icon_pin        ON icon_observations(pin_id);
+CREATE INDEX IF NOT EXISTS ix_icon_ahash      ON icon_observations(ahash);
+CREATE INDEX IF NOT EXISTS ix_icon_cluster    ON icon_observations(cluster_id);

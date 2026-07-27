@@ -4,10 +4,11 @@ Collects (pixel_x, pixel_y, lat, lon) anchors for a screenshot from the two
 places the RLSM pipeline records them:
 
   1. geo_anchors rows that carry both a pixel position and a geo position.
-  2. labeled_pins rows whose word-level centroid has been backfilled
-     (scripts/rlsm_reocr_label_layer.py — the original extractor stores NULL
-     centroids) and whose normalized label vocab-matches a known place from
-     data/places.geojson or a named geo_anchors row.
+  2. labeled_pins rows carrying a word-level centroid (written at extraction
+     time by fr24/rlsm_extractors.extract_labeled_pins; rows produced before
+     word-box capture have NULL centroids and are skipped) whose normalized
+     label vocab-matches a known place from data/places.geojson or a named
+     geo_anchors row.
 
 The result feeds GeoCalibration(mode="per_screenshot_affine", anchors=...)
 (integration/geo_calibration.py) and scripts/sync_rlsm_calibration.py.

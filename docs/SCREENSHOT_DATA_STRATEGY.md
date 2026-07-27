@@ -24,6 +24,14 @@ error reduction on calibratable frames, observations crossing the `located` floo
 production package from the existing corpus — this is the screenshot-side path to flipping
 skywatcher's live gate *without waiting for FR24 CSV quota*.
 
+**Precondition now met.** The affine fit needs ≥2 vocabulary-matched pins *with pixel
+positions*, and until recently every `labeled_pins` row stored `bbox_*`/`centroid_*` as
+literal `NULL` — a labeled pin was a name with no location on the frame. The label extractor
+now reads the per-word boxes that `image_to_data` was already computing and discarding
+(`fr24/rlsm_wordboxes.py`), so pins carry geometry at extraction time and no separate re-OCR
+pass is needed. `outputs/rlsm_run_report.md` reports **screenshots with ≥2 located pins** —
+that count is the population this item can actually fit.
+
 ## 2. Unify the three lanes on the RLSM store
 
 - Point `build_producer_package.py` at RLSM-derived rows (or sync RLSM extractions back into
@@ -69,7 +77,13 @@ The review backlog is ~526,918 unlabeled pin candidates (~40–50/image; `data/r
 Nobody reviews half a million items — but `scripts/rlsm_cluster_unlabeled_pois.py` already
 groups them by recurring map-pixel position. Review **clusters** (one decision covers hundreds
 of recurrences), starting with clusters that co-occur with high-confidence aircraft
-observations. Same principle for SATIM: the calibration engine is built and conservative but
+observations.
+
+The icon channel applies the same rule to on-screen glyphs: `fr24/rlsm_icons.py` fingerprints
+each map icon with a 64-bit average hash, and because UI glyphs are pixel-identical between
+renders, `scripts/rlsm_icon_cluster.py` collapses the corpus to a few dozen classes. Naming
+those once (`data/reference/icon_classes.json`) types every recurrence — and gives the label
+extractor an independent class prior, which is what keeps a 5,744-key gazetteer honest. Same principle for SATIM: the calibration engine is built and conservative but
 starved at 12 ground-truth labels (`frontend/public/satim/moca_fr24_2025.summary.json`) — every
 operator labeling hour should go to the existing harvest harnesses
 (`scripts/satim_harvest_review_labels.py`, `scripts/fit_satim_calibration.py`) rather than ad-hoc
@@ -95,7 +109,7 @@ run of the named entry points).
 
 | # | Investment | Type | Unlocks | Status |
 |---|---|---|---|---|
-| 1 | Affine geocoder → shared calibration | wiring | `located` observations; production package from existing corpus | code landed — `GeoCalibration('per_screenshot_affine')`, `fr24/rlsm_anchors.py`, `scripts/sync_rlsm_calibration.py`; operator run pending |
+| 1 | Affine geocoder → shared calibration | wiring | `located` observations; production package from existing corpus | code landed — `GeoCalibration('per_screenshot_affine')`, `fr24/rlsm_anchors.py`, `scripts/sync_rlsm_calibration.py`; **pin geometry precondition now satisfied** (`fr24/rlsm_wordboxes.py`); operator run pending |
 | 2 | Unify lanes on RLSM store | wiring | registry/ground-truth enrichment everywhere; targeted vision second-opinions | code landed — `scripts/ingest_vision_csv_to_rlsm.py`, `build_producer_package.py --rlsm-db`; operator run pending |
 | 3 | Wave fusion + endpoint matching | modeling | multi-frame evidence; origin/destination semantics | code landed — `fr24/flight_fusion.py`, `fr24/endpoint_matcher.py`, adapter honors `num_screenshots`; operator run pending |
 | 4 | Track-polyline CV | research | loiter/orbit/gap detection feeding ILAP | code landed — `fr24/track_vectorizer.py`, `rlsm_flight_track --image-root` (CV-first, heuristic fallback); operator run pending |
