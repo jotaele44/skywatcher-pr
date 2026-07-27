@@ -245,13 +245,16 @@ def main():
     # Audit summary
     median_residual = round(float(np.median(list(fit_residuals.values()))), 5) if fit_residuals else None
     p90_residual    = round(float(np.percentile(list(fit_residuals.values()), 90)), 5) if fit_residuals else None
+    accuracy_note = (
+        "\n> **Accuracy note:** Screenshots counted below under the GLOBAL PR-wide affine"
+        " fallback have no per-word pin centroids — they were extracted before the label"
+        " extractor recorded word-level geometry. To upgrade them to per-screenshot fits,"
+        " re-run OCR with word boxes and re-extract pins"
+        " (`./run-rlsm.sh --stage ocr --reocr-boxes` then `./run-rlsm.sh --stage pins`),"
+        " then run this script again.\n"
+    )
     md = ["# Geocoded unlabeled POI clusters — audit\n",
-          "\n> **Accuracy note:** Screenshots counted below under the GLOBAL PR-wide affine "
-          "fallback have no per-word pin centroids — they were extracted before the label "
-          "extractor recorded word-level geometry. To upgrade them to per-screenshot fits, "
-          "re-run OCR with word boxes and re-extract pins "
-          "(`./run-rlsm.sh --stage ocr --reocr-boxes` then `./run-rlsm.sh --stage pins`), "
-          "then run this script again.\n",
+          accuracy_note,
           f"\n- Screenshots assigned the global-affine fallback: **{global_affine_sids:,}**",
           f"\n## Affine-fit pipeline\n",
           f"- Screenshots with ≥2 anchors: {fits_attempted:,}",

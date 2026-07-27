@@ -64,6 +64,9 @@ try:
     import pillow_heif
     pillow_heif.register_heif_opener()
 except ImportError:
+    # Optional: without it .heic screenshots cannot be decoded and are reported
+    # as read failures by the caller. Preflight warns when it is absent, so the
+    # operator learns about it before a run rather than from a stack trace here.
     pass
 
 REPO = Path(__file__).resolve().parents[1]

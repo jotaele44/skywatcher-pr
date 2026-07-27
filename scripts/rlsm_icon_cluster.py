@@ -147,6 +147,10 @@ def main() -> int:
             existing = {str(c["cluster_id"]): c.get("icon_class", "")
                         for c in prior.get("clusters", [])}
         except (ValueError, KeyError, TypeError):
+            # A malformed or hand-edited naming file must not lose the run. We
+            # fall back to empty names, so the file is rewritten with every
+            # cluster blank and the operator re-enters them — annoying, but it
+            # never silently drops icons or aborts a completed detection pass.
             pass
 
     clusters = []

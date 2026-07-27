@@ -223,6 +223,9 @@ def preflight(ctx: dict) -> dict:
             warnings.append(f"only {free_mb:.0f} MB free — the word-box columns add "
                             f"roughly 100 MB over a 13k-image corpus")
     except OSError:
+        # Disk headroom is advisory: on a platform where statvfs is unavailable
+        # or the path is not stat-able we simply omit the figure rather than
+        # block a run that would otherwise succeed.
         pass
 
     if conn is not None:
