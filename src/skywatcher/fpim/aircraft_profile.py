@@ -15,10 +15,53 @@ CALLSIGN_PREFIXES = {
     "YN": {"country": "Nicaragua", "registry": "Civil aviation"},
 }
 AIRCRAFT_TYPE_MISSIONS: dict[str, str] = {}
+IDENTITY_FIELDS = (
+    "aircraft_type",
+    "owner",
+    "operator",
+    "country",
+    "confidence_level",
+)
+PROVENANCE_KEYS = ("source_uri", "source_record_id", "captured_at", "sha256")
 
 
 def normalize_identifier(value: str) -> str:
     return "".join(ch for ch in value.upper().strip() if ch.isalnum())
+
+
+def _complete_provenance(value: object) -> bool:
+    if not isinstance(value, dict):
+        return False
+    return all(value.get(key) for key in PROVENANCE_KEYS)
+
+
+def _verified_identity_fields(entry: dict) -> tuple[dict, dict[str, dict]]:
+    """Return only identity fields whose own provenance record is complete.
+
+    ``field_provenance`` is the preferred representation. A complete shared
+    ``provenance`` record remains supported when every declared field came from
+    the same captured source record.
+    """
+    declared = entry.get("verified_fields", {})
+    if not isinstance(declared, dict):
+        return {}, {}
+    field_provenance = entry.get("field_provenance", {})
+    if not isinstance(field_provenance, dict):
+        field_provenance = {}
+    shared_provenance = entry.get("provenance", {})
+
+    active: dict = {}
+    active_provenance: dict[str, dict] = {}
+    for field_name in IDENTITY_FIELDS:
+        value = declared.get(field_name)
+        if value in (None, "", [], {}):
+            continue
+        provenance = field_provenance.get(field_name, shared_provenance)
+        if not _complete_provenance(provenance):
+            continue
+        active[field_name] = value
+        active_provenance[field_name] = dict(provenance)
+    return active, active_provenance
 
 
 @dataclass
@@ -63,13 +106,15 @@ class AircraftIntelligence:
         profile = AircraftProfile(callsign=callsign)
 
         if entry:
-            verified = entry.get("verified_fields", {})
-            profile.aircraft_type = verified.get("aircraft_type", "")
-            profile.owner = verified.get("owner", "Unknown")
-            profile.operator = verified.get("operator", "Unknown")
-            profile.country = verified.get("country", "Unknown")
+            verified, field_provenance = _verified_identity_fields(entry)
+            profile.aircraft_type = str(verified.get("aircraft_type", ""))
+            profile.owner = str(verified.get("owner", "Unknown"))
+            profile.operator = str(verified.get("operator", "Unknown"))
+            profile.country = str(verified.get("country", "Unknown"))
             profile.confidence_level = float(verified.get("confidence_level", 0.0))
-            profile.provenance = dict(entry.get("provenance", {}))
+            profile.provenance = {"fields": field_provenance} if field_provenance else dict(
+                entry.get("provenance", {})
+            )
             profile.data_source = "verified_registry" if verified else "unverified_registry"
         else:
             profile.data_source = "observed_history"
@@ -89,19 +134,16 @@ class AircraftIntelligence:
         return self.lookup_aircraft(callsign)
 
     def _enrich_from_db(self, profile: AircraftProfile) -> None:
+        """Attach observed counts and timestamps without promoting identity fields."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 row = conn.execute(
-                    "SELECT aircraft_type, operator, COUNT(*), MIN(takeoff_time), MAX(takeoff_time) "
+                    "SELECT COUNT(*), MIN(takeoff_time), MAX(takeoff_time) "
                     "FROM flights WHERE callsign = ?",
                     (profile.callsign,),
                 ).fetchone()
             if row:
-                aircraft_type, operator, count, first_seen, last_seen = row
-                if not profile.aircraft_type:
-                    profile.aircraft_type = aircraft_type or ""
-                if profile.operator == "Unknown":
-                    profile.operator = operator or "Unknown"
+                count, first_seen, last_seen = row
                 profile.total_flights = count or 0
                 profile.first_seen = first_seen or ""
                 profile.last_seen = last_seen or ""
@@ -128,7 +170,12 @@ class AircraftIntelligence:
     def update_aircraft_profiles_table(self) -> None:
         try:
             with sqlite3.connect(self.db_path) as conn:
-                callsigns = [row[0] for row in conn.execute("SELECT DISTINCT callsign FROM flights WHERE callsign != ''")]
+                callsigns = [
+                    row[0]
+                    for row in conn.execute(
+                        "SELECT DISTINCT callsign FROM flights WHERE callsign != ''"
+                    )
+                ]
         except (sqlite3.Error, OSError):
             return
 
@@ -172,16 +219,17 @@ class AircraftIntelligence:
 
     @property
     def profile_completeness(self) -> float:
-        """Fraction of registry entries with verified identity fields and provenance."""
+        """Fraction of registry entries whose declared identity fields are provenance-complete."""
         if not KNOWN_OPERATORS:
             return 0.0
         complete = 0
         for entry in KNOWN_OPERATORS.values():
-            fields = entry.get("verified_fields", {})
-            provenance = entry.get("provenance", {})
-            if fields and all(
-                provenance.get(key)
-                for key in ("source_uri", "source_record_id", "captured_at", "sha256")
-            ):
+            declared = {
+                key: value
+                for key, value in entry.get("verified_fields", {}).items()
+                if key in IDENTITY_FIELDS and value not in (None, "", [], {})
+            }
+            active, _ = _verified_identity_fields(entry)
+            if declared and set(active) == set(declared):
                 complete += 1
         return complete / len(KNOWN_OPERATORS)
