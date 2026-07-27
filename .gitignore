@@ -34,7 +34,8 @@ secrets/
 
 # Runtime workspace
 var/
-outputs/
+outputs/*
+!outputs/.gitkeep
 tile_cache/
 *.db
 *.sqlite
@@ -49,7 +50,8 @@ reports/runtime/
 *.log
 
 # Large or machine-local data packs
-data/FR24_baseline/
+data/FR24_baseline/*
+!data/FR24_baseline/.gitkeep
 data/_manifests/
 data/.migration_trash/
 data/rlsm/*.sqlite*
