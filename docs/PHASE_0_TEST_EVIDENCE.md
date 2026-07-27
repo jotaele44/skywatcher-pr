@@ -12,9 +12,9 @@
 | Nested tool suites | 60 passed at original certification |
 | Deterministic source export | Two 648-file exports were byte-identical |
 
-## Final-review remediation code head
+## Country-provenance remediation code head
 
-Certified code head: `b1fa903f3ab7d48c2d298d9978fd31404a129a5e`
+Certified code head: `a773a378abdbc536f1334e757fd0cfcf077594c7`
 
 Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
 
@@ -34,8 +34,11 @@ Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
 | Immutable dependency resolution | PASS — exact TheHub SHA, no sibling editables, committed lock equals fresh resolver output |
 | API authentication and identity | PASS — disabled-by-default writes, token enforcement, server-owned immutable IDs, payload bounds |
 | Field-level provenance | PASS — incomplete provenance remains inactive; complete provenance activates only the supported fields |
-| Flight-history isolation | PASS — populated database rows cannot promote aircraft type, owner, or operator |
+| Country provenance | PASS — unknown `N...` and `YN...` identifiers remain `Unknown`; incomplete provenance remains inactive; complete provenance activates only country |
+| Callsign-prefix isolation | PASS — active identity lookup does not consult compatibility prefix tables |
+| Flight-history isolation | PASS — populated database rows cannot promote aircraft type, owner, operator, or country |
 | No-intent report boundary | PASS — role unresolved, no mission list, no operating-hours/high-activity cueing, no unproven identity output |
+| Active-report country boundary | PASS — report emits `Country: Unknown` unless complete field provenance activates country |
 | Archive adversarial contract | PASS — traversal, aliases, symlink, duplicate, ratio, streamed limits, and no-replace default |
 | Archive rollback failure path | PASS — original restored and temp/backup state cleaned after injected promotion failure |
 | Standalone archive parity | PASS — distributable SATIM package carries the same rollback regression |
@@ -54,17 +57,25 @@ Current-main merge parent: `e7eab8b496a0dfc40fa4de34f02a18466ea75a0d`
 
 | Workflow family | Run | Conclusion |
 |---|---:|---|
-| Backend core | `30310474821` | success |
-| Skywatcher CI | `30310474788` | success |
-| CodeQL | `30310474791` | success |
-| Secret scan | `30310474805` | success |
-| pip-audit | `30310474831` | success |
-| Federation template drift | `30310474803` | success |
-| desktop-build | `30310474809` | success |
-| SATIM Engine CI | `30310474794` | success |
-| SATIM Route Findings CI | `30310474801` | success |
-| SATIM Runtime Smoke Tests | `30310474800` | success |
-| SATIM Phase 2 Contracts | `30310474795` | success |
+| Backend core | `30313038722` | success |
+| Skywatcher CI | `30313038703` | success |
+| CodeQL | `30313038802` | success |
+| Secret scan | `30313038705` | success |
+| pip-audit | `30313038692` | success |
+| Federation template drift | `30313038687` | success |
+| desktop-build | `30313038704` | success |
+| SATIM Engine CI | `30313038688` | success |
+| SATIM Route Findings CI | `30313038699` | success |
+| SATIM Runtime Smoke Tests | `30313038693` | success |
+| SATIM Phase 2 Contracts | `30313038691` | success |
+
+## Country-provenance regression coverage
+
+- Unknown `N...` identifier leaves country `Unknown`.
+- Unknown `YN...` identifier leaves country `Unknown`.
+- Incomplete country provenance leaves country inactive.
+- Complete country provenance activates only country and no unsupported identity field.
+- Active report output remains `Country: Unknown` without complete field provenance.
 
 ## Lock regeneration evidence
 
