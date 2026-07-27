@@ -15,18 +15,21 @@ typed extension point rather than faked.
 
 ## Inventory (done)
 
-Counts re-measured 2026-07-27 against `main`.
+Counts re-measured 2026-07-27 against `main`; Phase 0 adds a tenth workflow.
 
 | Area | State |
 |---|---|
-| Python modules | 360 files |
+| Python modules | 360 files before Phase 0; package/import consolidation is additive |
 | SATIM engine | in-tree, production/test export modes |
 | FR24 ingest | in-tree |
 | Export contract | test + production modes, synthetic-row rejection |
-| Test files | 115 (`tests/`, `tools/**/tests/`) — **807 passing**, 13 skipped |
-| CI workflows | 9 (`ci`, `centinelas-handoff`, `desktop-build`, `maintenance`, `satim-engine-ci`, `satim-phase2`, `satim-route-findings-ci`, `satim-runtime-smoke-tests`, `template-drift`) |
-| Frontend | 15 pages, 8.8k LOC — **no test runner** |
-| Lint / type gates | frontend ESLint **is** gated (`ci.yml` runs `npm run lint`). Python side has **no ruff or mypy in any workflow** — `ruff check .` reports 247 — and `npm run typecheck` (229 errors) is run by nothing |
+| Previous full-assets baseline | **807 passing**, 13 skipped |
+| Phase 0 core without production data | **754 passing**, 36 skipped, 53 capability tests deselected |
+| Nested tool packages | **60 passing** after safe-archive coverage |
+| CI workflows | 10 (`backend-core`, `ci`, `centinelas-handoff`, `desktop-build`, `maintenance`, `satim-engine-ci`, `satim-phase2`, `satim-route-findings-ci`, `satim-runtime-smoke-tests`, `template-drift`) |
+| Frontend | 15 pages, 8.8k LOC — intentionally untouched in Phase 0; no test runner at baseline |
+| Python packaging | PEP 517 installable root with `skywatcher` CLI; no sibling checkout required for core |
+| Lint / type gates | frontend ESLint remains gated; Python ruff/mypy and frontend typecheck remain later maturity work |
 
 ## Code closed in this PR
 
@@ -171,10 +174,11 @@ Both are correct; they measure different things and should be read together.
 | | Measures | Counts a thing "done" when |
 |---|---|---|
 | **`ROAD_TO_100.md`** (~73%) | code completeness against intended scope | the code exists and works, with data- and network-blocked items called out separately |
-| **`MATURITY_AUDIT.md`** (61%) | maturity of the repo as an engineering artifact | a **CI gate** keeps it working |
+| **`MATURITY_AUDIT.md`** (61%) | maturity of the repo as an engineering artifact | a CI gate keeps it working |
 
-The spread is largely **enforcement rather than implementation**. Concretely, what this
-repo is missing on the audit's axis: no coverage floor; no ruff or mypy in any workflow; `npm run typecheck` (229 errors) run by no workflow. The frontend **is** lint-gated (`ci.yml` runs `npm run lint`), so that is not part of the gap.
+Phase 0 closes packaging, core-test isolation, archive safety, API write security,
+and repository-hygiene enforcement. Coverage floors, Python lint/type gates,
+frontend tests, and frontend typecheck remain maturity gaps.
 
-Neither number supersedes the other. Use this ledger to answer "what is left to build";
-use the audit to answer "what would a reviewer refuse to merge".
+Neither number supersedes the other. Use this ledger to answer "what is left to
+build" and the maturity audit to answer "what would a reviewer refuse to merge".

@@ -35,9 +35,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "scripts"))
-
-from fr24_harvest import (  # noqa: E402
+from scripts.fr24_harvest import (  # noqa: E402
     DAILY_QUOTA,
     EXPIRY_BUMP_DAYS,
     PRIORITY_TAILS,

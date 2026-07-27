@@ -1,61 +1,98 @@
-# skywatcher-pr — Airspace Intelligence Producer (PRII federation)
+# skywatcher-pr — Airspace Evidence Producer (PRII federation)
 
-`skywatcher-pr` is the **airspace / aircraft-intelligence producer** for the Puerto Rico Integrated Intelligence (PRII) federation. It owns FlightRadar24 screenshot/track ingestion, airspace observation generation, aircraft-intelligence enrichment, and airspace export packages for [`thehub-pr`](https://github.com/jotaele44/thehub-pr).
+`skywatcher-pr` is the airspace and aircraft-activity evidence producer for the Puerto Rico Integrated Intelligence (PRII) federation. It owns FlightRadar24 screenshot and track ingestion, airspace-observation generation, source-declared aircraft-profile enrichment, SATIM imagery calibration, and federation export packages for [`thehub-pr`](https://github.com/jotaele44/thehub-pr).
 
-> Skywatcher maps aircraft activity, missions, and airspace-infrastructure relationships. It does not allege wrongdoing.
+> Skywatcher records observable aircraft activity and source-declared metadata. It does **not** infer mission, intent, target, wrongdoing, or operational purpose, and it does not provide operational cueing.
 
-> **Diagnostic-only surface (ADR 0001, Phase 2).** This repo's dashboard is a
-> development and diagnostic tool for this producer only. The supported product
-> surface for the PRII federation is the hub app
-> (`thehub-pr/server/frontend`), which renders this producer's data alongside
-> the other engines. See `thehub-pr/docs/adr/0001-federated-engines-single-hub.md`.
+> **Diagnostic-only surface (ADR 0001, Phase 2).** The repository dashboard is a development and diagnostic surface for this producer. The supported federation product surface is the hub application in `thehub-pr`.
 
 ## Federation role
 
 | Field | Value |
 |---|---|
-| Program id | `skywatcher-pr` |
+| Program ID | `skywatcher-pr` |
 | Federation role | `airspace_intelligence_node` |
 | Parent hub | [`thehub-pr`](https://github.com/jotaele44/thehub-pr) |
 | Active vector | `SKYWATCHER_AIRSPACE_AIRCRAFT_INTELLIGENCE` |
 | Production status | `NON_PRODUCTION_DIAGNOSTIC` |
+| Operational cueing | `false` |
+| Intent inference | prohibited |
 
-Skywatcher is the active owner of the FR24 pipeline migrated out of `spiderweb-pr`. Spiderweb may retain spatial bridge/reference material, but FR24 ingestion and active airspace observation export belong here.
+Skywatcher is the active owner of the FR24 pipeline migrated from `spiderweb-pr`. Spiderweb may retain spatial bridge/reference material, but FR24 ingestion and active airspace-observation export belong here.
 
-## Engine
+## Architecture
 
-| Module | Role |
+The repository uses a PEP 517 `src/` package while preserving existing root import paths through compatibility facades.
+
+| Surface | Role |
 |---|---|
-| `aircraft_intelligence.py` | Callsign to aircraft profile lookup, operator/mission inference, reports |
-| `ilap_airspace_bridge.py` | Infrastructure-Linked Airspace Profile bridge |
-| `aasb_airspace_bridge.py` | Airspace-Asset Spatial Bridge |
-| `prii_readiness_engine.py` | Operational readiness scoring/reporting |
-| `gis_intelligence.py` | Puerto Rico infrastructure model and geodesy helpers |
-| `fr24/` | FR24 screenshot inventory, segmentation, route extraction, review queue, event export |
+| `src/skywatcher/core/` | Shared contracts, registries, normalization, readiness, archive safety |
+| `src/skywatcher/satim/`, `fr24/calibration/` | Terrain/imagery calibration and artifact assessment |
+| `src/skywatcher/fpim/`, `fr24/` | Aircraft identity and observed flight-path/behavior processing |
+| `src/skywatcher/corrim/`, `src/skywatcher/fusion/` | Evidence correlation without intent or causality inference |
+| `src/skywatcher/federation/` | Federation compatibility helpers |
+| `server/backend/` | Read-mostly diagnostic API; mutations are disabled by default |
+| `tools/satim_engine/` | Distributable SATIM engine package |
+| `tools/satim_route_findings/` | Read-only SATIM route-findings package |
 
-The core is designed to run with stdlib-first dependencies. Optional geospatial layers are isolated behind separate requirements.
+Legacy `FlightMissionAnalyzer` compatibility symbols are quarantined under `skywatcher.legacy`, excluded from the active API, and emit deprecation warnings when accessed through the old facade.
 
-## FR24 ingest subsystem
+## Install
 
-The migrated FlightRadar24 screenshot-processing pipeline lives in `fr24/`.
+Core development does not require a sibling checkout:
+
+```bash
+python -m pip install -e ".[dev,api]"
+skywatcher doctor
+skywatcher validate
+pytest
+```
+
+Federation packages are optional and pinned to an exact `thehub-pr` commit:
+
+```bash
+python -m pip install -e ".[federation]"
+```
+
+Other optional stacks:
+
+```bash
+python -m pip install -e ".[geo]"
+python -m pip install -e ".[imagery]"
+python -m pip install -e ".[desktop,federation]"
+```
+
+## Unified CLI
+
+```text
+skywatcher doctor
+skywatcher validate
+skywatcher export-source dist/skywatcher-source.zip
+```
+
+- `doctor` reports package, executable, data-pack, and policy capability states.
+- `validate` compiles every JSON Schema under `schemas/`.
+- `export-source` creates a deterministic tracked-source archive that excludes `frontend/`, `data/`, runtime outputs, caches, and generated exports.
+
+## FR24 ingest
+
+The FlightRadar24 screenshot-processing pipeline lives in `fr24/`.
 
 | Module | Role |
 |---|---|
 | `fr24/screenshot_inventory.py` | Directory scan, SHA-256 hashing, corrupt/duplicate detection |
-| `fr24/ui_segmenter.py` | Segments FR24 UI regions |
-| `fr24/route_extractor.py` | Extracts route polylines |
-| `fr24/manual_review_queue.py` | SQLite-backed queue for low-quality items |
-| `fr24/event_export.py` | Converts inventory/routes into observation tables |
-
-Drive the pipeline with:
+| `fr24/ui_segmenter.py` | FR24 UI segmentation |
+| `fr24/route_extractor.py` | Observable route-polyline extraction |
+| `fr24/manual_review_queue.py` | SQLite-backed low-quality review queue |
+| `fr24/event_export.py` | Inventory/route conversion into observation tables |
 
 ```bash
 python scripts/fr24_vision_ingest.py
 ```
 
-## SATIM engine protocol interface
+## SATIM protocol
 
-SATIM can run against a new manifest, directory, or zip bundle through the repo-native protocol runner:
+Repository-native protocol runner:
 
 ```bash
 python -m fr24.satim_engine run \
@@ -63,7 +100,7 @@ python -m fr24.satim_engine run \
   --output reports/satim/runs/<run_id>
 ```
 
-Autodetect mode accepts a directory or zip with standard SATIM names:
+Autodetect mode accepts a directory or ZIP:
 
 ```bash
 python -m fr24.satim_engine run \
@@ -71,61 +108,56 @@ python -m fr24.satim_engine run \
   --output reports/satim/runs/<run_id>
 ```
 
-The protocol emits `resolved_manifest.json`, per-layer reports under `layers/`, merged `calibration_report.json`, `legacy_readiness.json`, `provenance.json`, and `run_summary.json`. L1-L3 are required base layers. L4-L5 are advisory layers and become recommended next actions when missing.
-
-See `docs/SATIM_ENGINE_PROTOCOL_INTERFACE.md` for the manifest contract and run-bundle layout.
-
-> Note: the repo-native runner above (`python -m fr24.satim_engine`) is distinct
-> from the standalone packaged engine under `tools/satim_engine/` (installed with
-> `pip install -e '.[dev]'`, exposing the `satim` console script), which is what
-> `satim-engine-ci.yml` builds and exercises. Use the repo-native runner for
-> in-tree runs; the packaged `satim` CLI is the distributable interface.
+ZIP inputs are extracted through bounded, traversal-resistant archive handling. The standalone distributable engine remains under `tools/satim_engine/` and exposes the `satim` command.
 
 ## Federation export contract
 
-Skywatcher emits airspace observation packages validated against:
+Skywatcher emits airspace-observation packages validated against:
 
 ```text
 schemas/airspace_observation.schema.json
 schemas/airspace_export_manifest.schema.json
 ```
 
-Synthetic package validation:
-
 ```bash
 python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
 python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode production
 ```
 
-Production-mode validation rejects synthetic rows. Current live-execution blockers should remain explicit until non-synthetic observations are loaded and exported.
+Production mode rejects synthetic rows. `ready_for_hub_live_execution` remains false until non-synthetic inputs are supplied and a production export passes.
 
-## Optional GEBCO terrain layer
+## Test tiers
 
-```bash
-pip install -r requirements-geo.txt
-```
-
-`gebco/` is optional and tests should self-skip when geospatial dependencies are absent.
-
-## Develop
-
-Requires **Python 3.10+** (CI tests 3.10–3.12). This is a flat-layout
-application — modules run in place, nothing is pip-installed as a package.
-
-Install the same dependency set CI uses (`.github/workflows/ci.yml`) — the dev
-requirements plus `httpx` and the backend requirements the tests import:
+The default suite excludes capabilities that require omitted production data, external services, sibling federation packages, optional geospatial dependencies, or external OCR executables.
 
 ```bash
-# thehub-pr must be a sibling checkout — requirements install the shared prii-*
-# libraries as editable local paths (../thehub-pr/packages/*):
-[ -d ../thehub-pr ] || git clone https://github.com/jotaele44/thehub-pr.git ../thehub-pr
-python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt
-pytest -q
-python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
+pytest
+pytest -m requires_data
+pytest -m requires_thehub
+pytest tools/satim_engine/tests
+pytest tools/satim_route_findings/tests
 ```
+
+The backend-core workflow installs the project in a clean environment, validates repository hygiene and schemas, runs the data-independent suite across Python 3.10–3.13, builds a wheel, smoke-installs it, and runs both nested tool suites.
+
+## Diagnostic API write policy
+
+The API is read-only by default. Mutations require both:
+
+```text
+PRII_ENABLE_WRITES=true
+PRII_WRITE_TOKEN=<non-empty token>
+```
+
+Every mutating request must then send `Authorization: Bearer <token>`. Local-network location alone never grants write access. Changes remain process-scoped and are not persisted to repository files.
+
+## Runtime and source hygiene
+
+Generated content belongs outside source control under a runtime workspace such as `var/`. CI rejects archive copies, macOS resource forks, interpreter bytecode, caches, local databases, and generated runtime exports. Use `skywatcher export-source` rather than Finder-created ZIP files for repository handoffs.
 
 ## Provenance
 
 - Engine extracted from the Spiderweb airspace implementation branch.
 - FR24 ingest migrated from `spiderweb-pr` into `fr24/`.
 - Export contract salvaged from the retired airspace tooling path.
+- Phase 0 hardening preserves analytical behavior and schema compatibility while establishing reproducible packaging and security gates.

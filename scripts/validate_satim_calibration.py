@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Any
 
 # Allow running both as a script and via the package path.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from pipeline.normalize_locations import load_simple_yaml  # noqa: E402
 from satim_calibration import (  # noqa: E402

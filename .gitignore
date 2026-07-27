@@ -1,19 +1,29 @@
-# Python
+# Python / build
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+build/
+dist/
+*.whl
 
-# Virtualenvs
+# Virtual environments
 .venv/
 venv/
 
-# macOS / session junk
+# macOS and archive contamination
 .DS_Store
+._*
+__MACOSX/
+Archive/
 .remember/
 
-# Secrets — never track credentials
+# Secrets
 .env
 .env.*
 *.key
@@ -21,46 +31,35 @@ venv/
 *.p12
 secrets/
 
-# Local airspace data / outputs (only the synthetic example is tracked)
-*.db
+# Runtime workspace
+var/
 outputs/
 tile_cache/
-
-# generated canonical export (scripts/federation_export.py)
-exports/federation/
-
-# FR24 ingest data — large baseline corpus + run manifests.
-# Owned by skywatcher (relocated here from spiderweb-pr); large + machine-local,
-# so tracked out of git.
-data/FR24_baseline
-data/_manifests/
-data/.migration_trash/
-
-# RLSM screenshot inventory DB (fr24/screenshot_inventory.py output over
-# data/FR24_baseline). Machine-local, and NOT reproducible by re-running the
-# inventory: it holds sha256 + phash for 13,321 screenshots, ~1,020 of which
-# (month bucket 2026-03) no longer exist on disk. Back it up, don't delete it.
-data/rlsm/*.sqlite*
-
+*.db
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 flight_database.db
 
-# FR24 ground-truth track harvest (controller: scripts/fr24_harvest.py)
-# Machine-local harvested CSVs + ledger/carryover; migrated from spiderweb-pr.
-data/ground_truth/
-
-# generated federation maintenance report (audit artifact, not committed)
+# Generated exports and reports
+exports/federation/
 reports/maintenance/
+reports/runtime/
+*.log
 
-# Fetched GEBCO terrain layer (scripts/fetch_gebco_pr.py output) — data, not source
+# Large or machine-local data packs
+data/FR24_baseline/
+data/_manifests/
+data/.migration_trash/
+data/rlsm/*.sqlite*
+data/ground_truth/
 data/gebco/
 
-# Desktop wrapper (see desktop/README.md)
-.venv/
+# Frontend and desktop build products
 frontend/node_modules/
 frontend/dist/
 desktop/.setup-complete
-dist-desktop/
-build/
 desktop/.running
+dist-desktop/
 dist-smoke/
 !desktop/pyinstaller.spec

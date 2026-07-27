@@ -119,8 +119,7 @@ def main():
             if t: faa_set.add(t)
 
     # Reuse OCR_SUBS variant generator from the textmine script
-    sys.path.insert(0, str(REPO / "scripts"))
-    from rlsm_recover_tails_textmine import gen_ocr_variants, TAIL_PAT
+    from scripts.rlsm_recover_tails_textmine import TAIL_PAT, gen_ocr_variants
 
     conn = sqlite3.connect(DB)
     cur = conn.cursor()

@@ -6,12 +6,12 @@ import argparse
 import hashlib
 import json
 import shutil
-import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
 from pipeline.normalize_locations import load_simple_yaml
+from skywatcher.core.safe_archive import safe_extract_zip
 
 from .calibration.l1_segmenter_calibration import calibrate as calibrate_l1
 from .calibration.l2_route_calibration import calibrate as calibrate_l2
@@ -182,11 +182,7 @@ def prepare_input_root(input_path: str | Path, output_dir: str | Path) -> Path:
     if source.suffix.lower() != ".zip":
         return source
     target = Path(output_dir).expanduser().resolve() / "_input_unpacked"
-    if target.exists():
-        shutil.rmtree(target)
-    target.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(source) as archive:
-        archive.extractall(target)
+    safe_extract_zip(source, target)
     children = [p for p in target.iterdir() if p.is_dir()]
     files = [p for p in target.iterdir() if p.is_file()]
     if len(children) == 1 and not files:

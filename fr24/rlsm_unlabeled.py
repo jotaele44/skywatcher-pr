@@ -45,7 +45,6 @@ try:
 except ImportError:
     pass
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from fr24.rlsm_zones import zones_for  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]

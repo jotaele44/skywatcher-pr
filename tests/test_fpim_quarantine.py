@@ -41,3 +41,30 @@ def test_no_active_bucket_imports_legacy():
                         if alias.name.startswith("skywatcher.legacy"):
                             violations.append(f"{py_file}: imports {alias.name}")
     assert not violations, "\n".join(violations)
+
+
+def test_root_compatibility_surface_excludes_quarantined_names():
+    import aircraft_intelligence as facade
+
+    assert not (QUARANTINED_NAMES & set(facade.__all__))
+
+
+def test_unknown_aircraft_role_remains_unknown(tmp_path):
+    import sqlite3
+
+    db_path = tmp_path / "flights.sqlite"
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        "CREATE TABLE flights (callsign TEXT, aircraft_type TEXT, operator TEXT, takeoff_time TEXT)"
+    )
+    conn.execute(
+        "INSERT INTO flights VALUES (?, ?, ?, ?)",
+        ("NTEST1", "C172", "Example operator", "2026-07-27T12:00:00+00:00"),
+    )
+    conn.commit()
+    conn.close()
+
+    profile = aircraft_profile.AircraftIntelligence(str(db_path)).lookup_aircraft("NTEST1")
+    assert profile.aircraft_type == "C172"
+    assert profile.operator == "Example operator"
+    assert profile.primary_mission == "Unknown"

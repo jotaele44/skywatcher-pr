@@ -88,8 +88,6 @@ class RlsmEnricher:
     MAX_RESIDUAL_DEG = 0.05  # mirrors scripts/sync_rlsm_calibration.py
 
     def __init__(self, db_path: Path):
-        if str(REPO_ROOT) not in sys.path:
-            sys.path.insert(0, str(REPO_ROOT))
         from fr24.rlsm_anchors import build_geo_lookup
 
         self.conn = sqlite3.connect(str(db_path))

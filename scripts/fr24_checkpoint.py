@@ -185,7 +185,6 @@ def main():
                         help="Enable route extraction (slow, use for final pass)")
     args = parser.parse_args()
 
-    sys.path.insert(0, str(REPO))
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     if args.reset and CHECKPOINT.exists():

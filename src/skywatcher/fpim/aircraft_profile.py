@@ -1,8 +1,8 @@
 """
 AIRCRAFT PROFILE — FPIM aircraft-identity resolution.
 
-AircraftProfile      — Structured profile for a known or deduced aircraft
-AircraftIntelligence — N-number → owner/operator/mission lookup
+AircraftProfile      — Structured profile for a known or unresolved aircraft
+AircraftIntelligence — N-number → source-declared owner/operator lookup
 """
 
 import sqlite3
@@ -20,20 +20,10 @@ CALLSIGN_PREFIXES = {
     "YN": {"country": "Nicaragua", "registry": "Civil aviation"},
 }
 
-# Aircraft type to mission profile mapping
-AIRCRAFT_TYPE_MISSIONS = {
-    "H125": "Power Line Inspection",
-    "AS50": "Power Line Inspection",
-    "MH60": "Search & Rescue",
-    "MH-60": "Search & Rescue",
-    "B429": "Law Enforcement",
-    "H130": "Private Charter",
-    "EC35": "Emergency Response",
-    "AW139": "Emergency Response",
-    "S76": "Medical/Emergency Transport",
-    "R44": "Training Flight",
-    "R66": "Training Flight",
-}
+# Retained as an empty compatibility constant. Aircraft type alone cannot
+# establish why an aircraft is flying, so the active path performs no
+# type-to-mission inference.
+AIRCRAFT_TYPE_MISSIONS: dict[str, str] = {}
 
 
 # ============================================================================
@@ -74,8 +64,8 @@ class AircraftProfile:
 
 class AircraftIntelligence:
     """
-    Looks up aircraft ownership and mission from known database,
-    then deduces from available signals if not found.
+    Resolves source-declared aircraft identity/operator metadata and enriches
+    it with observed flight-history statistics. Unknown roles remain unknown.
     """
 
     def __init__(self, db_path: str = str(Path.home() / "flight_database.db")):
@@ -106,14 +96,11 @@ class AircraftIntelligence:
         return profile
 
     def _deduce_profile(self, callsign: str) -> AircraftProfile:
-        """Infer profile from N-number structure and flight history.
+        """Resolve non-intent identity fields from prefix and flight history.
 
-        Note: the aircraft-type -> mission fallback below (AIRCRAFT_TYPE_MISSIONS)
-        is a secondary, lower-confidence mission guess distinct from the
-        operator-provided KNOWN_OPERATORS ground truth above. It is preserved
-        here unchanged for backward compatibility (requirement to not alter
-        existing behavior); see docs/MODULE_SPEC_FPIM.md's technical-debt note
-        for why it isn't quarantined alongside FlightMissionAnalyzer.
+        Aircraft type and route history are observable metadata, not evidence of
+        purpose. ``primary_mission`` therefore remains ``Unknown`` unless it was
+        explicitly supplied by the curated operator registry.
         """
         profile = AircraftProfile(
             callsign=callsign,
@@ -126,7 +113,7 @@ class AircraftIntelligence:
                 profile.country = info["country"]
                 break
 
-        # Try to find aircraft type from flight history and map to mission
+        # Resolve aircraft type/operator from stored flight history; do not infer role
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -141,11 +128,7 @@ class AircraftIntelligence:
                 a_type, operator = row
                 profile.aircraft_type = a_type or ""
                 profile.operator = operator or "Unknown"
-                for type_key, mission in AIRCRAFT_TYPE_MISSIONS.items():
-                    if type_key in (a_type or "").upper():
-                        profile.primary_mission = mission
-                        profile.confidence_level = 0.60
-                        break
+                profile.confidence_level = 0.35 if (a_type or operator) else 0.20
         except Exception:
             pass
 
@@ -189,7 +172,7 @@ class AircraftIntelligence:
             f"  Operator:          {profile.operator}",
             f"  Country:           {profile.country}",
             "",
-            f"  Primary Mission:   {profile.primary_mission}",
+            f"  Source-declared role: {profile.primary_mission}",
         ]
 
         if profile.secondary_missions:

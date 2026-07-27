@@ -1,6 +1,7 @@
 from __future__ import annotations
-import hashlib, shutil, zipfile
+import hashlib, shutil
 from pathlib import Path
+from .safe_archive import safe_extract_zip
 import pandas as pd
 
 TRACK_EXT = {".csv", ".kml", ".gpx"}
@@ -30,9 +31,7 @@ def extract_zips(input_dir: str, out_dir: str) -> Path:
     extract_dir.mkdir(parents=True, exist_ok=True)
     for z in sorted(input_dir.glob("*.zip")):
         target = extract_dir / z.stem.replace(" ", "_")
-        target.mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(z) as zf:
-            zf.extractall(target)
+        safe_extract_zip(z, target)
     return extract_dir
 
 def build_manifest(root: str) -> pd.DataFrame:

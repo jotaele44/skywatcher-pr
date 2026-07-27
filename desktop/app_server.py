@@ -8,13 +8,8 @@ PyInstaller spec's ``desktop.app_server`` hidden import) keep working.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
+from prii_desktop import DesktopConfig, make_desktop_app
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from prii_desktop import DesktopConfig, make_desktop_app  # noqa: E402
-
-from desktop import config  # noqa: E402
+from desktop import config
 
 app = make_desktop_app(DesktopConfig.from_module(config))

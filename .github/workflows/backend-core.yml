@@ -1,0 +1,64 @@
+name: Backend core
+
+on:
+  pull_request:
+    paths-ignore:
+      - "frontend/**"
+      - "data/**"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "frontend/**"
+      - "data/**"
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev,api]"
+      - run: python scripts/check_repo_hygiene.py
+      - run: skywatcher doctor
+      - run: skywatcher validate
+      - run: |
+          skywatcher export-source /tmp/skywatcher-source-a.zip
+          skywatcher export-source /tmp/skywatcher-source-b.zip
+          cmp /tmp/skywatcher-source-a.zip /tmp/skywatcher-source-b.zip
+      - run: pytest -m "not integration and not requires_data and not requires_thehub"
+      - run: python -m build
+      - run: python -m pip install --force-reinstall --no-deps dist/*.whl
+      - run: python -c "import skywatcher; from skywatcher.cli import build_parser; build_parser()"
+
+  federation-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev,federation]"
+      - run: PYTEST_ADDOPTS="" pytest -q tests/test_maintenance.py tests/test_federation_export.py
+
+  tool-packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e "tools/satim_engine[dev]"
+      - run: pytest tools/satim_engine/tests
+      - run: python -m pip install -e "tools/satim_route_findings[dev]"
+      - run: pytest tools/satim_route_findings/tests

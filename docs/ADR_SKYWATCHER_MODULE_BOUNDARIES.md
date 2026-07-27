@@ -24,8 +24,9 @@ Skywatcher's internal logic is organized into four explicit boundaries:
   module permitted to combine SATIM's and FPIM's outputs.
 
 A fifth bucket, **legacy**, quarantines pre-existing logic that performs
-intent/purpose inference. It is importable only via its own backward-compat
-shim and must never be imported by Core/SATIM/FPIM/CORRIM.
+intent/purpose inference. It is reachable only through lazy, warning-emitting
+backward compatibility and must never be imported by Core/SATIM/FPIM/CORRIM.
+The active aircraft-profile fallback leaves unresolved roles as `Unknown`.
 
 The boundary is enforced by a manifest (`src/skywatcher/core/module_boundaries.py`)
 and a stdlib-`ast`-based test (`tests/test_module_boundaries.py`) — no new
@@ -154,6 +155,7 @@ legacy (quarantine) <──  aircraft_intelligence.py shim only
                           (no core/satim/fpim/corrim module may import it)
 ```
 
-Everything else — CI, `federation.json.hub_callable_commands`, existing
-import paths, existing tests — continues to work unchanged; the boundary is
-additive scaffolding around already-working code, not a rewrite of it.
+Existing analytical contracts and schemas remain compatible. Phase 0 adds an
+installable package, explicit test capabilities, and deprecation warnings around
+legacy inference access; active analysis remains observable-evidence-only and
+`operational_cueing=false`.

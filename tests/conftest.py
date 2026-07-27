@@ -336,3 +336,34 @@ def test_confidence_weights_sum_to_one():
     assert abs(total - 1.0) < 1e-9, (
         f"CONFIDENCE_WEIGHTS sum to {total}, expected 1.0. Weights: {CONFIDENCE_WEIGHTS}"
     )
+
+# ── Phase 0: explicit external-data test tier ────────────────────────────────
+
+_REQUIRES_DATA_MODULES = {
+    "tests/test_import_pr_airspace_footprints.py",
+    "tests/test_rlsm_upgrades.py",
+    "tests/test_satim_calibration.py",
+    "tests/test_satim_calibration_drift_report.py",
+    "tests/test_zone_label_harvest.py",
+}
+_REQUIRES_DATA_NODE_FRAGMENTS = {
+    "tests/test_satim_tile_seam_classifier.py::test_samaritans_purse_case_classifies_as_tile_seam_probable",
+    "tests/test_satim_empirical.py::TestFit::test_emit_preserves_descriptions_and_aliases",
+    "tests/test_satim_empirical.py::TestFitterScript::test_refit_emits_validatable_set",
+    "tests/test_satim_empirical.py::TestFitterScript::test_refit_without_labels_fails_cleanly",
+    "tests/test_satim_empirical.py::TestCrossSource::test_join_maps_verdicts_and_resolves_aliases",
+    "tests/test_satim_empirical.py::TestCrossSource::test_refuted_marks_false_positive",
+    "tests/test_satim_empirical.py::TestRenderDiffAndControl::test_control_set_loads_and_validates",
+}
+
+
+def pytest_collection_modifyitems(config, items):
+    """Classify tests whose authoritative fixtures live in the omitted data pack."""
+    marker = pytest.mark.requires_data
+    for item in items:
+        nodeid = item.nodeid
+        module_path = nodeid.split("::", 1)[0]
+        if module_path in _REQUIRES_DATA_MODULES or any(
+            fragment in nodeid for fragment in _REQUIRES_DATA_NODE_FRAGMENTS
+        ):
+            item.add_marker(marker)

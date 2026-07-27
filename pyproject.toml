@@ -1,14 +1,69 @@
-# skywatcher-pr is a flat-layout airspace producer (modules at repo root,
-# importing each other as top-level names). It is run as an application, not
-# installed as a package, so there is no build-system here — pytest discovers
-# the root modules via pythonpath. "src" is also on the path so the
-# src/skywatcher package (registry/correlation helpers) is importable.
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skywatcher-pr"
+version = "0.1.0"
+description = "Evidence-preserving Puerto Rico airspace and imagery analysis toolkit."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "Jorge González"}]
+dependencies = [
+  "Pillow>=10.0",
+  "PyMuPDF>=1.23",
+  "pillow-heif>=0.16; platform_system != 'Windows'",
+  "openpyxl>=3.1",
+  "jsonschema>=4.20",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "build>=1.2",
+]
+api = [
+  "fastapi>=0.111.0",
+  "uvicorn[standard]>=0.29.0",
+  "httpx>=0.27.0",
+  "pydantic>=2.7.0",
+]
+federation = [
+  "prii-maintenance @ git+https://github.com/jotaele44/thehub-pr.git@f00f2da0e6abcc885a8133e5c8b7aeb9756f5df8#subdirectory=packages/prii_maintenance",
+  "prii-export-utils @ git+https://github.com/jotaele44/thehub-pr.git@f00f2da0e6abcc885a8133e5c8b7aeb9756f5df8#subdirectory=packages/prii_export_utils",
+]
+desktop = [
+  "pywebview>=5.0",
+  "prii-desktop @ git+https://github.com/jotaele44/thehub-pr.git@f00f2da0e6abcc885a8133e5c8b7aeb9756f5df8#subdirectory=packages/prii_desktop",
+]
+geo = [
+  "numpy>=1.24",
+  "shapely>=2.0",
+  "pyproj>=3.6",
+]
+imagery = [
+  "numpy>=1.24",
+]
+
+[project.scripts]
+skywatcher = "skywatcher.cli:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+skywatcher = ["satim/artifacts/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = [".", "src"]
-# Integration tests hit live external services (e.g. NASA GIBS); excluded from
-# default runs. Run them explicitly with:  pytest -m integration
-addopts = "-m 'not integration'"
+addopts = "-m 'not integration and not requires_data and not requires_thehub'"
 markers = [
-    "integration: tests that hit live external services. Excluded from default runs.",
+  "unit: deterministic tests without external assets or services.",
+  "contract: schema and cross-package compatibility tests.",
+  "integration: tests that hit live external services.",
+  "requires_data: tests that require the omitted or production data packs.",
+  "requires_thehub: tests that exercise pinned shared federation packages.",
+  "requires_geo: tests that require optional geospatial dependencies.",
+  "requires_tesseract: tests that require the external Tesseract executable.",
+  "tool_package: tests belonging to a nested distributable tool.",
 ]

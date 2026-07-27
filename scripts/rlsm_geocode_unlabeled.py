@@ -40,7 +40,6 @@ from pathlib import Path
 from statistics import median
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO))
 
 from integration.geo_calibration import apply_affine, fit_affine  # noqa: E402
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"

@@ -66,26 +66,20 @@ compatibility with the pre-existing `aircraft_intelligence.FlightMissionAnalyzer
 import path only, and must not be reintroduced into FPIM. Enforced by
 `tests/test_fpim_quarantine.py`.
 
-## Known technical debt
+## Active fallback behavior
 
-`AircraftIntelligence._deduce_profile()`'s fallback path (used when a
-callsign has no `KNOWN_OPERATORS` match) maps aircraft type to a guessed
-`primary_mission` via `AIRCRAFT_TYPE_MISSIONS`, with `confidence_level=0.60`.
-This is a secondary, lower-confidence mission inference distinct from the
-operator-provided `KNOWN_OPERATORS` ground truth, and — unlike
-`FlightMissionAnalyzer` — it sits inside the actively-used
-`lookup_aircraft()` path exercised by existing tests. Quarantining it would
-change existing behavior, which this reorg's requirement to preserve all
-existing functionality does not permit. It is preserved unchanged and
-flagged here as a follow-up decision (e.g. gating it behind a config flag,
-or migrating callers away from relying on `primary_mission` for
-`data_source="deduced"` profiles) rather than silently described as
-inference-free.
+`AircraftIntelligence._deduce_profile()` resolves only observable identity
+fields from callsign prefixes and stored flight metadata. Aircraft type,
+route geometry, time, speed, altitude, and proximity do not establish why an
+aircraft is flying, so unresolved `primary_mission` values remain `Unknown`.
+`AIRCRAFT_TYPE_MISSIONS` is retained as an empty compatibility constant.
+Source-declared roles from the curated operator registry remain available and
+are labeled as source-declared in reports.
 
 ## Backward compatibility
 
-`aircraft_intelligence.py` at its original path is a thin re-export shim
-covering `AircraftProfile`/`AircraftIntelligence` (from FPIM),
-`KNOWN_OPERATORS` (from Core), and the quarantined mission-inference symbols
-(from `skywatcher.legacy`) — all four continue to import successfully from
-the old path.
+`aircraft_intelligence.py` at its original path is a compatibility facade for
+`AircraftProfile`, `AircraftIntelligence`, `KNOWN_OPERATORS`, and
+`CALLSIGN_PREFIXES`. Quarantined inference symbols remain lazily reachable for
+legacy callers but are excluded from `__all__` and emit `DeprecationWarning`.
+No active Core, SATIM, FPIM, or CORRIM module imports the quarantine package.

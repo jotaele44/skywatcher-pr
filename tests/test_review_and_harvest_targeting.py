@@ -11,10 +11,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
-
-from rlsm_review_worklist import build_worklist, score_cluster  # noqa: E402
-from suggest_harvest_targets import load_wave_index, rank_queue  # noqa: E402
+from scripts.rlsm_review_worklist import build_worklist, score_cluster
+from scripts.suggest_harvest_targets import load_wave_index, rank_queue
 
 
 def _run(cmd: list[str]) -> subprocess.CompletedProcess:

@@ -37,7 +37,6 @@ DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 BASELINE = REPO / "data" / "FR24_baseline"
 
 # Reuse the same vocabulary as the original POI extractor
-sys.path.insert(0, str(REPO))
 try:
     from fr24.rlsm_extractors import _load_pr_vocab
 except ImportError:
