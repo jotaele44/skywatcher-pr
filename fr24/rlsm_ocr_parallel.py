@@ -55,6 +55,7 @@ except ImportError:
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from fr24.rlsm_preprocess import preprocess, scale_for
 from fr24.rlsm_wordboxes import words_from_tesseract_data  # noqa: E402
 
 DB   = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -62,6 +63,44 @@ JSONL = REPO / "outputs" / "ocr_raw_by_zone.jsonl"
 
 # Populated per-worker via _worker_init
 _worker_db_path: Optional[str] = None
+
+
+_LANG_CACHE: str | None = None
+_VERSION_CACHE: str | None = None
+
+
+def _tess_lang() -> str:
+    """
+    Prefer ``spa+eng``. Every toponym in this corpus is Spanish — Bayamon,
+    Anasco, Penuelas, Mayaguez — and the English model has no priors for the
+    accented forms, which is what the downstream diacritic repair exists to
+    clean up. Falls back to ``eng`` when spa traineddata is not installed
+    (``brew install tesseract-lang``).
+    """
+    global _LANG_CACHE
+    if _LANG_CACHE is None:
+        try:
+            langs = set(pytesseract.get_languages(config="")) if pytesseract else set()
+        except Exception:
+            langs = set()
+        if {"spa", "eng"} <= langs:
+            _LANG_CACHE = "spa+eng"
+        elif "spa" in langs:
+            _LANG_CACHE = "spa"
+        else:
+            _LANG_CACHE = "eng"
+    return _LANG_CACHE
+
+
+def _tess_version() -> str:
+    """Recorded per observation so a future Tesseract 5 re-run stays distinguishable."""
+    global _VERSION_CACHE
+    if _VERSION_CACHE is None:
+        try:
+            _VERSION_CACHE = str(pytesseract.get_tesseract_version())
+        except Exception:
+            _VERSION_CACHE = "unknown"
+    return _VERSION_CACHE
 
 
 def _iso_now() -> str:
@@ -76,7 +115,7 @@ def _worker_init(db_path: str) -> None:
 
 
 def _ocr_with_conf(img_crop: Image.Image, config: str,
-                   x_off: int = 0, y_off: int = 0) -> Tuple[str, list, float, float, int]:
+                   x_off: int = 0, y_off: int = 0, scale: float = 1.0) -> Tuple[str, list, float, float, int]:
     """Run tesseract and return (raw_text, word_boxes, conf_mean, conf_min, n_words).
 
     ``x_off``/``y_off`` are the crop origin, so the returned word boxes are in
@@ -119,24 +158,32 @@ def _process_one(args: Tuple[int, str, int]) -> dict:
     conn.execute("PRAGMA busy_timeout = 30000")
 
     try:
+        # Decode ONCE. This re-opened and re-decoded the 3-5 MB source file for
+        # every zone (four decodes per screenshot); across ~12.3k images that was
+        # a large share of the wall time for no benefit.
         with Image.open(full_path) as img:
             img.load()
             img = ImageOps.exif_transpose(img)
             W, H = img.size
             zones = zones_for(W, H)
+            crops = {z.name: img.crop(z.crop_box()) for z in zones}
 
+        lang = _tess_lang()
+        engine_version = _tess_version()
         n_obs = 0
         ocr_status = "ok"
         for zone in zones:
             cfg = ZONE_OCR_CONFIG.get(zone.name, {"psm": 6, "preprocess": "high_contrast"})
             psm = cfg.get("psm", 6)
-            config = f"--oem 1 --psm {psm}"
-            with Image.open(full_path) as img:
-                img = ImageOps.exif_transpose(img)
-                crop = img.crop(zone.crop_box())
+            mode = cfg.get("preprocess", "none")
+            scale = scale_for(mode, cfg.get("scale"))
+            config = f"--oem 1 --psm {psm} -l {lang}"
+
+            crop = preprocess(crops[zone.name], mode, scale)
 
             raw_text, lines_json, conf_mean, conf_min, n_words = _ocr_with_conf(
-                crop, config, x_off=zone.x, y_off=zone.y)
+                crop, config, x_off=zone.x, y_off=zone.y,
+                scale=scale if mode != "none" else 1.0)
             z_status = "ok" if raw_text.strip() else "empty"
             bbox = zone.crop_box()
 
@@ -151,7 +198,7 @@ def _process_one(args: Tuple[int, str, int]) -> dict:
                      bbox[2] - bbox[0], bbox[3] - bbox[1],
                      raw_text, json.dumps(lines_json, ensure_ascii=False),
                      conf_mean, conf_min, n_words,
-                     None, psm, z_status, None, _iso_now()),
+                     engine_version, psm, z_status, None, _iso_now()),
                 )
                 n_obs += 1
             except sqlite3.IntegrityError:

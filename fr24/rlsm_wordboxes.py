@@ -38,13 +38,20 @@ MIN_WORD_LEN = 2
 
 
 def words_from_tesseract_data(data: dict[str, Any], x_off: int = 0,
-                              y_off: int = 0) -> list[dict]:
+                              y_off: int = 0, scale: float = 1.0) -> list[dict]:
     """
     Build the stored word list from a ``pytesseract.Output.DICT`` result.
 
     ``x_off``/``y_off`` are the crop origin, added so the boxes land in
     full-image coordinates.
+
+    ``scale`` is the factor the crop was upscaled by before OCR (see
+    fr24/rlsm_preprocess.py). Tesseract reports boxes in the coordinates of the
+    image it was handed, so the factor is divided out *before* the offset is
+    added. Getting this wrong does not raise — it silently multiplies every pin
+    coordinate, which the affine geocoder then fits happily and wrongly.
     """
+    sc = float(scale) or 1.0
     out: list[dict] = []
     texts = data.get("text") or []
     for i, raw in enumerate(texts):
@@ -61,8 +68,10 @@ def words_from_tesseract_data(data: dict[str, Any], x_off: int = 0,
             continue
         if conf < MIN_WORD_CONF:
             continue
-        out.append({"t": text, "x": x + x_off, "y": y + y_off,
-                    "w": w, "h": h, "c": round(conf, 1)})
+        out.append({"t": text,
+                    "x": int(x / sc) + x_off, "y": int(y / sc) + y_off,
+                    "w": int(w / sc), "h": int(h / sc),
+                    "c": round(conf, 1)})
     return out
 
 
