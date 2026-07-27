@@ -1,34 +1,25 @@
-"""
-AIRCRAFT PROFILE — FPIM aircraft-identity resolution.
+"""Aircraft identity resolution without mission or operational-purpose inference."""
+from __future__ import annotations
 
-AircraftProfile      — Structured profile for a known or unresolved aircraft
-AircraftIntelligence — N-number → source-declared owner/operator lookup
-"""
-
+import json
 import sqlite3
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
-from datetime import datetime
+from typing import Dict, List
 
-from skywatcher.core.known_operators import KNOWN_OPERATORS
+from skywatcher.core.known_operators import IDENTIFIER_ALIASES, KNOWN_OPERATORS
 
-# Prefix-based operator inference when exact match is not found
 CALLSIGN_PREFIXES = {
     "N": {"country": "United States", "registry": "FAA"},
-    "C": {"country": "United States (USCG/military)", "registry": "FAA/DoD"},
     "YN": {"country": "Nicaragua", "registry": "Civil aviation"},
 }
-
-# Retained as an empty compatibility constant. Aircraft type alone cannot
-# establish why an aircraft is flying, so the active path performs no
-# type-to-mission inference.
 AIRCRAFT_TYPE_MISSIONS: dict[str, str] = {}
 
 
-# ============================================================================
-# DATA STRUCTURES
-# ============================================================================
+def normalize_identifier(value: str) -> str:
+    return "".join(ch for ch in value.upper().strip() if ch.isalnum())
+
 
 @dataclass
 class AircraftProfile:
@@ -44,240 +35,153 @@ class AircraftProfile:
     total_flights: int = 0
     first_seen: str = ""
     last_seen: str = ""
-    data_source: str = "deduced"  # "known_db", "deduced", "unknown"
+    data_source: str = "unknown"
+    provenance: Dict = field(default_factory=dict)
 
     def is_stale(self, threshold_days: int = 30) -> bool:
-        """Return True if last_seen is older than threshold_days (default 30)."""
         if not self.last_seen:
             return True
         try:
             last = datetime.fromisoformat(self.last_seen)
-            delta = datetime.utcnow() - last
-            return delta.days > threshold_days
+            if last.tzinfo is None:
+                last = last.replace(tzinfo=timezone.utc)
+            return (datetime.now(timezone.utc) - last).days > threshold_days
         except (ValueError, TypeError):
             return True
 
 
-# ============================================================================
-# AIRCRAFT INTELLIGENCE
-# ============================================================================
-
 class AircraftIntelligence:
-    """
-    Resolves source-declared aircraft identity/operator metadata and enriches
-    it with observed flight-history statistics. Unknown roles remain unknown.
-    """
+    """Resolve exact source-declared identity fields and observed history only."""
 
     def __init__(self, db_path: str = str(Path.home() / "flight_database.db")):
         self.db_path = db_path
 
     def lookup_aircraft(self, callsign: str) -> AircraftProfile:
-        """Return AircraftProfile for callsign. Tries DB first, then deduction."""
-        # 1. Exact match in known operators
-        for key, data in KNOWN_OPERATORS.items():
-            if key in callsign or callsign in key:
-                profile = AircraftProfile(
-                    callsign=callsign,
-                    aircraft_type=data["aircraft_type"],
-                    owner=data["owner"],
-                    operator=data["operator"],
-                    primary_mission=data["primary_mission"],
-                    secondary_missions=data["secondary_missions"],
-                    confidence_level=data["confidence_level"],
-                    operational_patterns=data["operational_patterns"],
-                    data_source="known_db",
-                )
-                self._enrich_from_db(profile)
-                return profile
+        normalized = normalize_identifier(callsign)
+        canonical = IDENTIFIER_ALIASES.get(normalized, normalized)
+        entry = KNOWN_OPERATORS.get(canonical)
+        profile = AircraftProfile(callsign=callsign)
 
-        # 2. Deduced from callsign prefix and DB history
-        profile = self._deduce_profile(callsign)
+        if entry:
+            verified = entry.get("verified_fields", {})
+            profile.aircraft_type = verified.get("aircraft_type", "")
+            profile.owner = verified.get("owner", "Unknown")
+            profile.operator = verified.get("operator", "Unknown")
+            profile.country = verified.get("country", "Unknown")
+            profile.confidence_level = float(verified.get("confidence_level", 0.0))
+            profile.provenance = dict(entry.get("provenance", {}))
+            profile.data_source = "verified_registry" if verified else "unverified_registry"
+        else:
+            profile.data_source = "observed_history"
+            for prefix, info in sorted(CALLSIGN_PREFIXES.items(), key=lambda item: -len(item[0])):
+                if normalized.startswith(prefix):
+                    profile.country = info["country"]
+                    break
+
         self._enrich_from_db(profile)
+        profile.primary_mission = "Unknown"
+        profile.secondary_missions = []
+        profile.operational_patterns = {}
         return profile
 
     def _deduce_profile(self, callsign: str) -> AircraftProfile:
-        """Resolve non-intent identity fields from prefix and flight history.
+        """Compatibility helper; active deduction is identity/history-only."""
+        return self.lookup_aircraft(callsign)
 
-        Aircraft type and route history are observable metadata, not evidence of
-        purpose. ``primary_mission`` therefore remains ``Unknown`` unless it was
-        explicitly supplied by the curated operator registry.
-        """
-        profile = AircraftProfile(
-            callsign=callsign,
-            data_source="deduced",
-        )
-
-        # Country from prefix
-        for prefix, info in CALLSIGN_PREFIXES.items():
-            if callsign.startswith(prefix):
-                profile.country = info["country"]
-                break
-
-        # Resolve aircraft type/operator from stored flight history; do not infer role
+    def _enrich_from_db(self, profile: AircraftProfile) -> None:
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT aircraft_type, operator FROM flights WHERE callsign = ? LIMIT 1",
-                (callsign,)
-            )
-            row = cursor.fetchone()
-            conn.close()
-
+            with sqlite3.connect(self.db_path) as conn:
+                row = conn.execute(
+                    "SELECT aircraft_type, operator, COUNT(*), MIN(takeoff_time), MAX(takeoff_time) "
+                    "FROM flights WHERE callsign = ?",
+                    (profile.callsign,),
+                ).fetchone()
             if row:
-                a_type, operator = row
-                profile.aircraft_type = a_type or ""
-                profile.operator = operator or "Unknown"
-                profile.confidence_level = 0.35 if (a_type or operator) else 0.20
-        except Exception:
-            pass
-
-        if not profile.primary_mission:
-            profile.primary_mission = "Unknown"
-            profile.confidence_level = 0.20
-
-        return profile
-
-    def _enrich_from_db(self, profile: AircraftProfile):
-        """Add flight statistics from database."""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT COUNT(*), MIN(takeoff_time), MAX(takeoff_time)
-                FROM flights WHERE callsign = ?
-            ''', (profile.callsign,))
-            row = cursor.fetchone()
-            conn.close()
-
-            if row and row[0]:
-                profile.total_flights = row[0]
-                profile.first_seen = row[1] or ""
-                profile.last_seen = row[2] or ""
-        except Exception:
-            pass
+                aircraft_type, operator, count, first_seen, last_seen = row
+                if not profile.aircraft_type:
+                    profile.aircraft_type = aircraft_type or ""
+                if profile.operator == "Unknown":
+                    profile.operator = operator or "Unknown"
+                profile.total_flights = count or 0
+                profile.first_seen = first_seen or ""
+                profile.last_seen = last_seen or ""
+        except (sqlite3.Error, OSError):
+            return
 
     def compile_intelligence_report(self, callsign: str) -> str:
-        """Human-readable intelligence report for a callsign."""
         profile = self.lookup_aircraft(callsign)
-
-        lines = [
-            "╔" + "═" * 68 + "╗",
-            "║" + f"  AIRCRAFT INTELLIGENCE: {callsign}".center(68) + "║",
-            "╚" + "═" * 68 + "╝",
-            "",
-            f"  Callsign:          {profile.callsign}",
-            f"  Aircraft Type:     {profile.aircraft_type or 'Unknown'}",
-            f"  Owner:             {profile.owner}",
-            f"  Operator:          {profile.operator}",
-            f"  Country:           {profile.country}",
-            "",
-            f"  Source-declared role: {profile.primary_mission}",
-        ]
-
-        if profile.secondary_missions:
-            lines.append(f"  Secondary Missions: {', '.join(profile.secondary_missions)}")
-
-        lines += [
-            f"  Confidence:        {profile.confidence_level * 100:.0f}%",
-            f"  Data Source:       {profile.data_source}",
-            "",
-        ]
-
-        if profile.total_flights:
-            lines += [
-                "  ACTIVITY",
-                "  ─────────────────────────────────────────────",
-                f"  Total flights:   {profile.total_flights}",
-                f"  First seen:      {profile.first_seen or 'N/A'}",
-                f"  Last seen:       {profile.last_seen or 'N/A'}",
-                "",
+        return "\n".join(
+            [
+                f"AIRCRAFT PROFILE: {profile.callsign}",
+                f"Aircraft Type: {profile.aircraft_type or 'Unknown'}",
+                f"Owner: {profile.owner}",
+                f"Operator: {profile.operator}",
+                f"Country: {profile.country}",
+                "Role: Unknown (not inferred)",
+                f"Total observed flights: {profile.total_flights}",
+                f"First seen: {profile.first_seen or 'N/A'}",
+                f"Last seen: {profile.last_seen or 'N/A'}",
+                f"Data source: {profile.data_source}",
             ]
+        )
 
-        if profile.operational_patterns:
-            lines += ["  OPERATIONAL PATTERNS", "  ─────────────────────────────────────────────"]
-            for key, value in profile.operational_patterns.items():
-                label = key.replace("_", " ").title()
-                if isinstance(value, list):
-                    value = ", ".join(value)
-                lines.append(f"  {label:<25} {value}")
-            lines.append("")
-
-        lines.append("═" * 70)
-        return "\n".join(lines)
-
-    def update_aircraft_profiles_table(self):
-        """Refresh the aircraft_profiles table in the database."""
+    def update_aircraft_profiles_table(self) -> None:
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute("SELECT DISTINCT callsign FROM flights WHERE callsign != ''")
-            callsigns = [r[0] for r in cursor.fetchall()]
-            conn.close()
-        except Exception:
+            with sqlite3.connect(self.db_path) as conn:
+                callsigns = [row[0] for row in conn.execute("SELECT DISTINCT callsign FROM flights WHERE callsign != ''")]
+        except (sqlite3.Error, OSError):
             return
 
         for callsign in callsigns:
             profile = self.lookup_aircraft(callsign)
             try:
-                conn = sqlite3.connect(self.db_path)
-                cursor = conn.cursor()
-                import json
-                cursor.execute('''
-                    INSERT OR REPLACE INTO aircraft_profiles
-                    (callsign, aircraft_type, owner, operator, primary_mission,
-                     confidence_level, total_flights, first_seen, last_seen,
-                     operational_patterns)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    profile.callsign, profile.aircraft_type, profile.owner,
-                    profile.operator, profile.primary_mission,
-                    profile.confidence_level, profile.total_flights,
-                    profile.first_seen, profile.last_seen,
-                    json.dumps(profile.operational_patterns),
-                ))
-                conn.commit()
-                conn.close()
-            except Exception:
-                pass
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.execute(
+                        """
+                        INSERT OR REPLACE INTO aircraft_profiles
+                        (callsign, aircraft_type, owner, operator, primary_mission,
+                         confidence_level, total_flights, first_seen, last_seen,
+                         operational_patterns)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            profile.callsign,
+                            profile.aircraft_type,
+                            profile.owner,
+                            profile.operator,
+                            "Unknown",
+                            profile.confidence_level,
+                            profile.total_flights,
+                            profile.first_seen,
+                            profile.last_seen,
+                            json.dumps({}),
+                        ),
+                    )
+                    conn.commit()
+            except (sqlite3.Error, OSError):
+                continue
 
     def find_unknown(self, callsigns: List[str]) -> List[str]:
-        """Return the subset of callsigns that have no profile match in KNOWN_OPERATORS.
-
-        A callsign is considered 'unknown' when neither a substring match nor a
-        prefix match resolves it to a known entry — i.e. it would fall through to
-        the 'deduced' path with data_source == 'deduced'.
-        """
         unknown: List[str] = []
-        for cs in callsigns:
-            matched = False
-            for key in KNOWN_OPERATORS:
-                if key in cs or cs in key:
-                    matched = True
-                    break
-            if not matched:
-                unknown.append(cs)
+        for callsign in callsigns:
+            normalized = normalize_identifier(callsign)
+            canonical = IDENTIFIER_ALIASES.get(normalized, normalized)
+            if canonical not in KNOWN_OPERATORS:
+                unknown.append(callsign)
         return unknown
 
     @property
     def profile_completeness(self) -> float:
-        """Fraction of known profiles that have all core fields filled (0.0–1.0).
-
-        Core fields checked: aircraft_type, owner, operator, primary_mission,
-        confidence_level > 0, and at least one operational_patterns entry.
-        """
+        """Fraction of registry entries with verified identity fields and provenance."""
         if not KNOWN_OPERATORS:
             return 0.0
-
-        complete_count = 0
-        for data in KNOWN_OPERATORS.values():
-            if (
-                data.get("aircraft_type", "").strip()
-                and data.get("owner", "").strip()
-                and data.get("operator", "").strip()
-                and data.get("primary_mission", "").strip()
-                and data.get("confidence_level", 0.0) > 0.0
-                and data.get("operational_patterns")
+        complete = 0
+        for entry in KNOWN_OPERATORS.values():
+            fields = entry.get("verified_fields", {})
+            provenance = entry.get("provenance", {})
+            if fields and all(
+                provenance.get(key)
+                for key in ("source_uri", "source_record_id", "captured_at", "sha256")
             ):
-                complete_count += 1
-        return complete_count / len(KNOWN_OPERATORS)
+                complete += 1
+        return complete / len(KNOWN_OPERATORS)
