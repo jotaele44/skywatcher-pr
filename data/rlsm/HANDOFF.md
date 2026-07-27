@@ -1,109 +1,164 @@
-# RLSM extraction — local-machine handoff
+# RLSM extraction — operator runbook
 
-**Purpose:** This document tells you how to finish the long-running phases (OCR + unlabeled vision pass) on your Mac instead of through Claude's sandbox, then come back here for the cheap derived-extraction phases.
-
-**Why the split:** OCR over 11,901 images at ~2.8 s/image is ~9 hours single-threaded. With 4 parallel workers it drops to **~2 hours** locally. Running it through Claude would burn ~1,983 bash calls and ~20 hours of wall time. The runner is built; just point it at the data on your Mac.
-
-## What's already done (in DB and ready)
-
-- `data/rlsm/rlsm_screenshot_analysis.sqlite` — 9-table schema, 11,926 screenshots ingested, 1 missing-on-disk row flagged, 1 corrupt row flagged. Inventory is **100% complete**.
-- `outputs/rlsm_ingest_manifest.csv` (11,926 rows), `rlsm_duplicate_report.csv`, `rlsm_failed_files.csv`.
-- Zone schema **calibrated for iPhone portrait FR24** (3 zones: status_bar, label_layer, aircraft_card) — verified 2.758 s/image in sandbox.
-- Resumable runners: `fr24.rlsm_ocr` (serial), `fr24.rlsm_ocr_parallel` (multi-worker), `fr24.rlsm_unlabeled` (visual pass), `fr24.rlsm_extractors` (aircraft + POI + review queue), `fr24.rlsm_export`, `fr24.rlsm_coverage`.
-- Tests: `tests/test_rlsm_pipeline.py` — 10/10 passing.
-
-## Run these on your Mac, in order
+**One command.** Everything else in this file is context for when something goes wrong.
 
 ```bash
-cd ~/Documents/GitHub/spiderweb-pr
-
-# 1) Parallel OCR — ~2 hours wall time @ 4 workers (Apple Silicon M1+)
-#    Resumable; safe to Ctrl-C and re-run. Each worker uses its own SQLite conn (WAL handles it).
-OMP_THREAD_LIMIT=1 python3 -m fr24.rlsm_ocr_parallel --workers 4 --budget-sec 86400
-
-#    Optional: try a smaller workers count first if your machine is busy
-#    OMP_THREAD_LIMIT=1 python3 -m fr24.rlsm_ocr_parallel --workers 2 --budget-sec 86400
-
-# 2) Unlabeled POI vision pass — ~80 min wall time single-threaded
-#    Already at ~0.4 s/image; the cost is the connected-component CC labeling, not OCR.
-python3 -m fr24.rlsm_unlabeled --budget-sec 86400
-
-# 3) Derived extractors — seconds, runs against the OCR results
-python3 -m fr24.rlsm_extractors --kind all
-
-# 4) Re-export the 14 CSVs/JSONL and regenerate coverage report
-python3 -m fr24.rlsm_export
-python3 -m fr24.rlsm_coverage
-
-# 5) Verify the structural invariants
-python3 -m pytest tests/test_rlsm_pipeline.py -q
+cd ~/Documents/GitHub/skywatcher-pr
+./run-rlsm.sh
 ```
 
-Then come back here. I'll pick up from the populated DB for any downstream analysis you want.
+That runs the whole chain — inventory → OCR → aircraft → labels → icons → geocode →
+review queue → exports → report — resumably, with a preflight that fails fast and a
+written summary at the end. Ctrl-C and re-run is always safe.
 
-## ETAs (calibrated)
+**Why it runs here and not in the cloud:** OCR over ~13.3k images is hours of wall time
+and the corpus is machine-local. Everything downstream of the sqlite (labels, review,
+exports, reports) needs no images and runs anywhere — see "Split the work" below.
 
-| Phase | Per-image | Total (4 workers) | Total (single thread) |
-|---|---|---|---|
-| OCR (3 zones, AMD oem 1 LSTM) | 0.7 s | **~2 h 20 m** | ~9 h |
-| Unlabeled vision pass | 0.4 s | n/a (single proc) | **~80 m** |
-| Extractors | <10 ms | seconds | seconds |
-| Exports + coverage | n/a | seconds | seconds |
+## Before the first run
 
-Apple Silicon (M1/M2/M3) is typically 1.5–2× faster than the sandbox VM, so expect lower than these numbers. If you have an Intel Mac, multiply by ~1.5.
+### 1. Point `data/FR24_baseline` at the corpus
 
-## Progress monitoring while it runs
-
-The parallel runner prints a progress line every 50 images with rate and remaining ETA. Alternatively, in a second terminal:
+Paths in the database are stored relative to the repo root, so the corpus must be
+reachable at exactly `data/FR24_baseline`. A symlink is fine:
 
 ```bash
-watch -n 5 'sqlite3 ~/Documents/GitHub/spiderweb-pr/data/rlsm/rlsm_screenshot_analysis.sqlite \
-  "SELECT ocr_status, COUNT(*) FROM screenshots GROUP BY ocr_status"'
+ln -s ~/Documents/GitHub/spiderweb-pr/data/FR24_baseline data/FR24_baseline
 ```
 
-## What you'll have at the end
+Preflight prints this command for you if the directory is missing.
 
-- **`screenshots`** (11,926 rows) with `ocr_status='ok'` on every present-on-disk file
-- **`ocr_observations`** — ~35,772 rows (3 zones × 11,924 ok files), raw text immutable
-- **`aircraft_observations`** — one row per screenshot where we extracted a registration / type / altitude / speed
-- **`labeled_pins`** — every map label found (dedup'd per screenshot)
-- **`unlabeled_pin_candidates`** — visual features without labels, ~40-50 per image average → ~500,000 candidates total. All flagged unreviewed.
-- **`manual_review_queue`** — auto-derived review items spanning all 5 spec categories
+### 2. Install the toolchain
 
-## Resume / rollback
+```bash
+brew install tesseract
+pip install -r requirements.txt
+pip install pytesseract
+```
 
-- All runners are idempotent. Re-running won't double-emit.
-- To re-run OCR after a config change, set `ocr_status='pending'` on the rows you want re-done:
+`pillow-heif` (in requirements.txt) is what makes `.heic` screenshots readable; without
+it they are recorded as unreadable rather than silently skipped.
+
+### 3. Check the plan without touching anything
+
+```bash
+./run-rlsm.sh --dry-run     # stage plan + full preflight, no writes
+./run-rlsm.sh --limit 200   # smoke test the whole chain over 200 images
+```
+
+## Timing
+
+At `--workers 4` on Apple Silicon, over ~13.3k images:
+
+| Stage | Cost | Notes |
+|---|---|---|
+| inventory | minutes | sha256 + phash; skips anything already ingested |
+| ocr | ~2 h | 3 zones per image; the dominant cost |
+| aircraft | seconds | regex over stored text |
+| pins | seconds | gazetteer match over stored word boxes |
+| icons | ~1–1.5 h | one extra RGB decode per screenshot |
+| geocode / review / export / report | seconds–minutes | |
+
+**~3–3.5 h total.** Drop the icon pass with `--skip-icons` for ~2 h. Intel Macs, multiply
+by roughly 1.5.
+
+If your database was OCR'd by an earlier version, preflight will report a
+`screenshots_needing_word_boxes` count and the OCR stage will re-read those images to
+recover per-word geometry (roughly another 2 h). This is a one-time backfill: existing raw
+OCR is never overwritten, new rows are appended under a fresh `run_id`.
+
+## Common flags
+
+```bash
+./run-rlsm.sh --status            # what is done, what is pending (JSON)
+./run-rlsm.sh --workers 2         # be gentler on a busy machine
+./run-rlsm.sh --from icons        # resume from a stage after a failure
+./run-rlsm.sh --stage pins        # re-run exactly one stage
+./run-rlsm.sh --skip-icons        # OCR + labels + exports only
+./run-rlsm.sh --stage unlabeled   # the ground-feature blob pass (see below)
+```
+
+`unlabeled` is **not** in the default run. It emits ~40–50 candidates per image
+(~500k rows) using a satellite-imagery taxonomy — `pad`, `tank`, `quarry` — aimed at
+ground features rather than app chrome, and it would swamp the review queue. The icon
+channel is the better-typed signal for on-screen glyphs. Run it deliberately if you want it.
+
+## The one manual step: naming icon classes
+
+The icon stage detects glyphs and clusters them by perceptual hash. Because UI glyphs are
+pixel-identical between renders, the whole corpus collapses to a few dozen classes. Name
+each class once and every recurrence inherits it:
+
+```bash
+# 1. the icons stage already wrote this file
+open data/reference/icon_classes.json
+
+# 2. fill in "icon_class" per cluster — the file lists each cluster's colour,
+#    size, and the labels it most often sits beside
+#    suggested vocabulary: airport, heliport, aircraft, navaid, city_dot, seaport,
+#    ui_chrome, noise
+
+# 3. apply
+python3 scripts/rlsm_icon_cluster.py --apply
+```
+
+That is ~30 decisions covering every icon in the corpus. Once applied, the run report
+gains an icon-class-vs-label-type agreement table: an airport glyph beside a garbled
+string that matched a municipio is a contradiction worth flagging; the same glyph beside
+`TJSJ` is confirmation.
+
+## What you have at the end
+
+Read `outputs/rlsm_run_report.md` first — it carries the numbers that matter.
+
+- **`screenshots`** — one row per image, with `ocr_status`
+- **`ocr_observations`** — raw text *and* per-word pixel boxes (`raw_lines_json`), immutable
+- **`aircraft_observations`** — registration / type / altitude / speed per frame
+- **`labeled_pins`** — every matched place name **with real pixel geometry**, matched
+  against the 5,744-key GNIS gazetteer (`data/reference/Gazetteer_PR_GNIS.gpkg`)
+- **`icon_observations`** — map glyphs keyed to their pin, with colour, shape and hash
+- **`manual_review_queue`** — genuinely uncertain items only
+- 14 CSV/JSONL exports plus the coverage report in `outputs/`
+
+The report metric to watch is **screenshots with ≥2 located pins**: that is the population
+the per-screenshot affine geocoder can fit, which is what turns approximate frames into
+`located` observations (docs/SCREENSHOT_DATA_STRATEGY.md §1).
+
+## Split the work
+
+Only `inventory`, `ocr`, `icons` and `unlabeled` decode images and need the corpus.
+Everything else runs off the sqlite alone — preflight knows this and will not demand
+tesseract or the corpus for a DB-only stage. So:
+
+```bash
+# on the Mac, where the images are
+./run-rlsm.sh --stage ocr
+
+# anywhere, with just the sqlite
+./run-rlsm.sh --from pins
+```
+
+Ship the small sqlite-derived reports, never the corpus.
+
+## Resume and rollback
+
+- Every stage is idempotent. Re-running does not double-emit.
+- To force a re-OCR after a config change, reset the status on the rows you want redone:
   ```sql
   UPDATE screenshots SET ocr_status='pending' WHERE month_bucket='2025-08';
   ```
-- The old `ocr_observations` rows from prior runs are kept; new rows are written with a fresh `run_id`. Raw OCR is **never** overwritten.
-- The 138 `ocr_observations` rows currently in the DB are from the prior 6-zone run; they're valid raw data and will sit alongside the new 3-zone rows.
+- Raw OCR is **never** overwritten. Re-runs append under a new `run_id`, and the extractors
+  read the newest observation per zone — so rows from the legacy 6-zone run, the 3-zone run
+  and any word-box backfill coexist without double-counting.
+- The label extractor rebuilds `labeled_pins` from scratch each run (`--reset-labeled-pins`),
+  so gazetteer or confidence changes take effect on the next `./run-rlsm.sh --stage pins`
+  without touching OCR.
 
-## Tier-1 changes in this session (why per-image cost dropped from 5.8 s → 2.8 s)
+## Verifying the extraction itself
 
-- **Dropped** `top_bar` zone: only contains the static "flightradar24" wordmark — 0 information per image.
-- **Dropped** `bottom_actions` zone: only contains "Route Follow More info" button labels — 0 information.
-- **Merged** `label_layer` and `map_center` into one wider crop with a single OCR call (was two crops with identical content).
-- Net: 6 zones → 3 zones, **50% reduction in tesseract invocations per image**.
-
-## Tier-4 future tuning (not applied yet — apply only if accuracy gaps appear)
-
-After the bulk OCR run, if specific zones show low recall:
-
-1. **Custom user_patterns** for tesseract (FAA N-numbers, altitude, mph patterns) — `--user-patterns ~/.config/rlsm/patterns.txt`
-2. **Color-keyed preprocessing for label_layer** — isolate white text on map before OCR (HSV mask + morphological close)
-3. **PSM 4 retry for low-conf aircraft_card** — second pass with single-column-of-text layout assumption
-
-These are all noted in the manual review queue; you can tackle them per-zone after seeing the bulk results.
-
-## Cost summary
-
-| Item | Sandbox-only baseline | Local-handoff optimized |
-|---|---|---|
-| Wall time for full OCR | 13–20 h | **~2 h** |
-| Claude bash calls for OCR | ~1,983 | **0** |
-| Total Claude session calls (all phases) | ~2,100 | **~6** |
-| Per-image OCR cost | 5.8 s | 0.7 s (parallel) |
-
-The economy lever isn't tesseract — it's **moving the long-running compute off Claude entirely** and using your local machine for what local machines are for.
+```bash
+python3 -m pytest tests/test_rlsm_label_extraction.py -q   # accuracy: 46 tests, no corpus needed
+python3 -m pytest tests/test_rlsm_pipeline.py -q           # structural invariants
+python3 -m fr24.rlsm_gazetteer --stats                     # gazetteer size and tiering
+python3 -m fr24.rlsm_gazetteer --lookup "MAYAGÜEZ"         # resolve a single label
+```
