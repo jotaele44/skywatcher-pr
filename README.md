@@ -4,7 +4,7 @@
 
 > Skywatcher records observable aircraft activity and source-declared metadata. It does **not** infer mission, intent, target, wrongdoing, causality, or operational purpose, and it does not provide operational cueing.
 
-> Aircraft identity fields are promoted only when field-level provenance includes a source URI, source record ID, capture time, and SHA-256. Legacy registry membership alone proves nothing beyond the exact identifier; unproven fields remain `Unknown`.
+> Aircraft identity fields are promoted only when that individual field has a source URI, source record ID, capture time, and SHA-256. Legacy registry membership and ordinary flight-history rows prove nothing beyond observed identifiers and timestamps; unproven identity fields remain `Unknown`.
 
 > **Diagnostic-only surface.** The repository dashboard is a development and diagnostic surface for this producer. The supported federation product surface is the hub application in `thehub-pr`.
 
@@ -65,7 +65,7 @@ python -m pip install -e ".[imagery]"
 python -m pip install -e ".[desktop,federation]"
 ```
 
-`requirements.lock` contains immutable VCS references for the shared TheHub packages. CI freshly resolves the project and rejects editable sibling paths.
+`requirements.lock` is generated from the declared development, API, and federation extras. CI performs the same pinned `uv pip compile`, rejects editable sibling paths, verifies the exact TheHub SHA, and requires the committed lock to match the fresh resolver output byte-for-byte.
 
 ## Unified CLI
 
@@ -97,6 +97,17 @@ The FlightRadar24 screenshot-processing pipeline lives in `fr24/`.
 python scripts/fr24_vision_ingest.py
 ```
 
+### RLSM screenshot extraction
+
+The screenshot corpus—OCR, aircraft fields, place labels, map icons, geocoding, review queues, exports, and reports—runs through one resumable command:
+
+```bash
+./run-rlsm.sh              # full pipeline; use --dry-run for preflight only
+./run-rlsm.sh --status     # report completed and pending stages
+```
+
+Point `data/FR24_baseline` at the machine-local corpus first. A symlink is supported, and preflight prints the required command when the path is absent. The full operator runbook is `data/rlsm/HANDOFF.md`.
+
 ## SATIM protocol
 
 Repository-native protocol runner:
@@ -115,7 +126,7 @@ python -m fr24.satim_engine run \
   --output reports/satim/runs/<run_id>
 ```
 
-ZIP inputs use the same safety contract in the repository-native and independently distributable engines. The contract rejects traversal, aliases, Windows reserved names, alternate-data-stream syntax, symlinks, encrypted members, duplicates, excessive size, and excessive compression. Existing targets are refused by default; explicit replacement uses a backup-and-rollback promotion sequence.
+ZIP inputs use the same safety contract in the repository-native and independently distributable engines. The contract rejects traversal, aliases, Windows reserved names, alternate-data-stream syntax, symlinks, encrypted members, duplicates, excessive size, and excessive compression. Existing targets are refused by default; explicit replacement uses a backup-and-rollback promotion sequence whose failure path is regression-tested in both distributions.
 
 The standalone distributable engine remains under `tools/satim_engine/` and exposes the `satim` command.
 
@@ -155,7 +166,7 @@ pytest tools/satim_route_findings/tests
 
 - `Backend core` installs the project cleanly, validates repository hygiene and schemas, runs the data-independent suite across Python 3.10–3.13, builds the wheel, performs the isolated install gate, and runs both nested tool suites.
 - `Skywatcher CI` runs the full-data suite across Python 3.10–3.12 and retains the 55% coverage floor.
-- Current-main security controls include CodeQL, secret scanning, pip-audit, immutable lock resolution, Dependabot, pinned Actions, frontend lint/build, and report-visible Ruff/mypy.
+- Current-main security controls include CodeQL, secret scanning, pip-audit, resolver-equivalent lock validation, Dependabot, pinned Actions, frontend lint/build, and report-visible Ruff/mypy.
 - Desktop builds and frozen-app smoke tests run on Ubuntu, macOS, and Windows.
 
 ## Diagnostic API write policy
@@ -190,4 +201,4 @@ Use `skywatcher --root <repo> export-source ...` rather than Finder-created ZIP 
 - Engine extracted from the Spiderweb airspace implementation branch.
 - FR24 ingest migrated from `spiderweb-pr` into `fr24/`.
 - Export contract salvaged from the retired airspace tooling path.
-- Phase 0 hardening preserves analytical and schema compatibility while establishing reproducible packaging, immutable dependency resolution, recoverable archive handling, provenance-gated identity enrichment, API identity security, and continuous security gates.
+- Phase 0 hardening preserves analytical and schema compatibility while establishing reproducible packaging, immutable dependency resolution, recoverable archive handling, field-provenance-gated identity enrichment, API identity security, and continuous security gates.
