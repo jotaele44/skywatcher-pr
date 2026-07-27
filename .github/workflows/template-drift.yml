@@ -1,8 +1,9 @@
 name: Federation template drift
 
 # Shared launchers and schemas remain byte-identical to the pinned federation
-# templates. Phase 0 intentionally replaces the legacy Gatekeeper bypass and
-# mutable desktop dependency template with repository-local hardened contracts.
+# templates after platform line-ending normalization. Phase 0 intentionally
+# replaces the legacy Gatekeeper bypass and mutable desktop dependency template
+# with repository-local hardened contracts.
 
 on:
   push:
@@ -38,7 +39,13 @@ jobs:
       - name: Compare macOS launcher
         run: diff -u /tmp/skywatcher-rendered/PRII-SKYWATCHER.command PRII-SKYWATCHER.command
       - name: Compare Windows launcher
-        run: diff -u /tmp/skywatcher-rendered/PRII-SKYWATCHER.bat PRII-SKYWATCHER.bat
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          expected = Path('/tmp/skywatcher-rendered/PRII-SKYWATCHER.bat').read_text(encoding='utf-8')
+          actual = Path('PRII-SKYWATCHER.bat').read_text(encoding='utf-8')
+          assert actual == expected, 'Windows launcher content differs after newline normalization'
+          PY
       - name: Compare Linux launcher
         run: diff -u /tmp/skywatcher-rendered/PRII-SKYWATCHER.sh PRII-SKYWATCHER.sh
       - name: Compare federation schema
