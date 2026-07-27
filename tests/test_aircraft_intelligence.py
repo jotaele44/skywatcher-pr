@@ -19,6 +19,7 @@ def test_lookup_known_identifier_is_retained_but_unverified(populated_db):
     assert result.aircraft_type == ""
     assert result.owner == "Unknown"
     assert result.operator == "Unknown"
+    assert result.country == "Unknown"
     assert result.primary_mission == "Unknown"
     assert result.secondary_missions == []
     assert result.operational_patterns == {}
@@ -78,6 +79,67 @@ def test_complete_field_provenance_activates_only_supported_fields(monkeypatch, 
     assert set(result.provenance["fields"]) == {"aircraft_type", "owner"}
 
 
+def test_unknown_n_prefix_country_remains_unknown(tmp_path):
+    result = AircraftIntelligence(str(tmp_path / "none.sqlite")).lookup_aircraft("N000XX")
+    assert result.data_source == "observed_history"
+    assert result.country == "Unknown"
+
+
+def test_unknown_yn_prefix_country_remains_unknown(tmp_path):
+    result = AircraftIntelligence(str(tmp_path / "none.sqlite")).lookup_aircraft("YN0001")
+    assert result.data_source == "observed_history"
+    assert result.country == "Unknown"
+
+
+def test_incomplete_country_provenance_remains_unknown(monkeypatch, tmp_path):
+    monkeypatch.setitem(
+        KNOWN_OPERATORS,
+        "NCOUNTRY1",
+        {
+            "identifier": "NCOUNTRY1",
+            "verified_fields": {"country": "United States"},
+            "field_provenance": {
+                "country": {**COMPLETE_PROVENANCE, "sha256": None},
+            },
+        },
+    )
+    result = AircraftIntelligence(str(tmp_path / "none.sqlite")).lookup_aircraft("NCOUNTRY1")
+    assert result.data_source == "unverified_registry"
+    assert result.country == "Unknown"
+
+
+def test_complete_country_provenance_activates_only_country(monkeypatch, tmp_path):
+    monkeypatch.setitem(
+        KNOWN_OPERATORS,
+        "NCOUNTRY2",
+        {
+            "identifier": "NCOUNTRY2",
+            "verified_fields": {
+                "country": "United States",
+                "owner": "Unproven Owner",
+            },
+            "field_provenance": {
+                "country": COMPLETE_PROVENANCE,
+                "owner": {**COMPLETE_PROVENANCE, "captured_at": None},
+            },
+        },
+    )
+    result = AircraftIntelligence(str(tmp_path / "none.sqlite")).lookup_aircraft("NCOUNTRY2")
+    assert result.data_source == "verified_registry"
+    assert result.country == "United States"
+    assert result.owner == "Unknown"
+    assert result.aircraft_type == ""
+    assert set(result.provenance["fields"]) == {"country"}
+
+
+def test_active_report_keeps_country_unknown_without_provenance(tmp_path):
+    report = AircraftIntelligence(str(tmp_path / "none.sqlite")).compile_intelligence_report(
+        "NREPORT1"
+    )
+    assert "Country: Unknown" in report
+    assert "Country: United States" not in report
+
+
 def test_lookup_unknown_callsign_returns_profile(populated_db):
     result = AircraftIntelligence(populated_db).lookup_aircraft("ZZZZZ")
     assert isinstance(result, AircraftProfile)
@@ -91,6 +153,7 @@ def test_compile_report_disclaims_role_and_omits_unproven_identity(populated_db)
     assert "Aircraft Type: Unknown" in report
     assert "Owner: Unknown" in report
     assert "Operator: Unknown" in report
+    assert "Country: Unknown" in report
     assert "Puerto Rico Electric Power Authority" not in report
     assert "H125" not in report
     assert "high activity" not in report.lower()
@@ -100,6 +163,7 @@ def test_compile_report_disclaims_role_and_omits_unproven_identity(populated_db)
 def test_partial_identifier_does_not_match_registry(populated_db):
     result = AircraftIntelligence(populated_db).lookup_aircraft("N5854")
     assert result.data_source == "observed_history"
+    assert result.country == "Unknown"
 
 
 def test_profile_completeness_requires_field_provenance(populated_db):
