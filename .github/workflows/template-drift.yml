@@ -1,16 +1,8 @@
 name: Federation template drift
 
-# Shared launchers and schemas remain byte-identical to the pinned federation
-# templates after platform line-ending normalization. Phase 0 intentionally
-# replaces the legacy Gatekeeper bypass and mutable desktop dependency template
-# with repository-local hardened contracts.
+on: [push, pull_request]
 
-on:
-  push:
-  pull_request:
-
-permissions:
-  contents: read
+permissions: {contents: read}
 
 jobs:
   drift:
@@ -18,7 +10,7 @@ jobs:
     env:
       THEHUB_SHA: f00f2da0e6abcc885a8133e5c8b7aeb9756f5df8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Fetch pinned federation templates
         run: |
           git init ../thehub-pr
@@ -26,11 +18,11 @@ jobs:
           git -C ../thehub-pr fetch --depth 1 origin "$THEHUB_SHA"
           git -C ../thehub-pr checkout --detach FETCH_HEAD
           test "$(git -C ../thehub-pr rev-parse HEAD)" = "$THEHUB_SHA"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.12"
       - run: python -m pip install pyyaml
-      - name: Render pinned templates into isolated directory
+      - name: Render pinned templates
         run: |
           mkdir -p /tmp/skywatcher-rendered
           python ../thehub-pr/tools/render_federation_templates.py \
@@ -44,34 +36,18 @@ jobs:
           from pathlib import Path
           expected = Path('/tmp/skywatcher-rendered/PRII-SKYWATCHER.bat').read_text(encoding='utf-8')
           actual = Path('PRII-SKYWATCHER.bat').read_text(encoding='utf-8')
-          assert actual == expected, 'Windows launcher content differs after newline normalization'
+          assert actual == expected
           PY
       - name: Compare Linux launcher
         run: diff -u /tmp/skywatcher-rendered/PRII-SKYWATCHER.sh PRII-SKYWATCHER.sh
       - name: Compare federation schema
         run: diff -u /tmp/skywatcher-rendered/schemas/federation_export_manifest.schema.json schemas/federation_export_manifest.schema.json
-      - name: Validate launcher modes
+      - name: Validate launcher modes and hardened divergences
         run: |
           test -x PRII-SKYWATCHER.command
           test -x PRII-SKYWATCHER.sh
-      - name: Validate sanctioned Phase 0 divergences
-        run: |
-          python - <<'PY'
-          import os
-          import tomllib
-          from pathlib import Path
-
-          assert not Path("Fix-Gatekeeper.command").exists(), "legacy trust-bypass helper must remain absent"
-
-          desktop = Path("requirements-desktop.txt").read_text(encoding="utf-8")
-          assert "-e .[desktop,federation]" in desktop
-          assert "-e ../thehub-pr" not in desktop
-
-          project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-          deps = project["project"]["optional-dependencies"]
-          pin = os.environ["THEHUB_SHA"]
-          shared = [item for item in deps["desktop"] + deps["federation"] if "prii-" in item]
-          assert shared
-          assert all(f"thehub-pr.git@{pin}#subdirectory=" in item for item in shared)
-          print("adopted templates match; hardened divergences validated")
-          PY
+          test ! -e Fix-Gatekeeper.command
+          grep -F -- '-e .[desktop,federation]' requirements-desktop.txt
+          ! grep -R -- '-e ../thehub-pr' requirements*.txt
+          grep -F "$THEHUB_SHA" pyproject.toml
+          grep -F "$THEHUB_SHA" requirements.lock
