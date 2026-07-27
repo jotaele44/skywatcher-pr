@@ -1,4 +1,3 @@
-# Compatibility installer for existing setup instructions.
-# All dependency ownership now lives in pyproject.toml and shared federation
-# packages are pinned to an immutable thehub-pr commit.
--e .[federation]
+# Compatibility installer; dependency ownership lives in pyproject.toml.
+# Federation packages are exact-commit direct references.
+-e .[api,federation]
