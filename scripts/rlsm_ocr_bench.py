@@ -70,7 +70,7 @@ def _job(task):
             import pillow_heif
             pillow_heif.register_heif_opener()
         except ImportError:
-            pass
+            pass  # HEIC files unsupported if pillow_heif absent
         import pytesseract
 
         from fr24.rlsm_preprocess import preprocess
@@ -96,7 +96,8 @@ def _job(task):
 
         sc = scale if mode != "none" else 1.0
         boxes = words_from_tesseract_data(data, x_off=zone.x, y_off=zone.y, scale=sc)
-        confs = [c for c, w in zip(data["conf"], data["text"]) if w.strip() and c >= 0]
+        confs = [c for c, w in zip(data["conf"], data["text"], strict=True)
+                 if w.strip() and c >= 0]
 
         try:
             from fr24.rlsm_extractors import scan_words_for_pois
@@ -129,7 +130,8 @@ def report() -> None:
     if not OUT.exists():
         print("[bench] nothing measured yet")
         return
-    rows = [json.loads(l) for l in OUT.read_text(encoding="utf-8").splitlines() if l.strip()]
+    rows = [json.loads(line)
+            for line in OUT.read_text(encoding="utf-8").splitlines() if line.strip()]
     agg = defaultdict(list)
     for r in rows:
         if "error" not in r:

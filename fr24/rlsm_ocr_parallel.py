@@ -54,6 +54,7 @@ except ImportError:
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from fr24.rlsm_preprocess import preprocess, scale_for  # noqa: E402
 from fr24.rlsm_wordboxes import words_from_tesseract_data  # noqa: E402
 
 DB   = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -113,14 +114,22 @@ def _worker_init(db_path: str) -> None:
 
 
 def _ocr_with_conf(img_crop: Image.Image, config: str,
-                   x_off: int = 0, y_off: int = 0) -> tuple[str, list, float, float, int]:
+                   x_off: int = 0, y_off: int = 0, mode: str = "none",
+                   scale: float = 1.0) -> tuple[str, list, float, float, int]:
     """Run tesseract and return (raw_text, word_boxes, conf_mean, conf_min, n_words).
 
     ``x_off``/``y_off`` are the crop origin, so the returned word boxes are in
     full-image coordinates. See fr24/rlsm_wordboxes.py.
+
+    Preprocessing is applied *here* rather than by the caller, deliberately: the
+    upscale and the divisor that undoes it are the same number, and when the two
+    lived in separate places they drifted apart — the crop got upscaled and the
+    boxes never got divided back down, silently doubling every coordinate.
+    Passing ``mode``/``scale`` in together keeps them impossible to mismatch.
     """
     if pytesseract is None:
         return "", [], 0.0, 0.0, 0
+    img_crop = preprocess(img_crop, mode, scale)
     try:
         data = pytesseract.image_to_data(
             img_crop, config=config,
@@ -132,7 +141,8 @@ def _ocr_with_conf(img_crop: Image.Image, config: str,
     words = [w for w in data["text"] if w.strip()]
     confs = [c for c, w in zip(data["conf"], data["text"], strict=True) if w.strip() and c >= 0]
     raw_text = " ".join(words)
-    boxes = words_from_tesseract_data(data, x_off=x_off, y_off=y_off)
+    boxes = words_from_tesseract_data(data, x_off=x_off, y_off=y_off,
+                                      scale=scale if mode != "none" else 1.0)
     conf_mean = float(sum(confs) / len(confs)) if confs else 0.0
     conf_min  = float(min(confs)) if confs else 0.0
     return raw_text, boxes, conf_mean, conf_min, len(words)
@@ -177,10 +187,9 @@ def _process_one(args: tuple[int, str, int]) -> dict:
             scale = scale_for(mode, cfg.get("scale"))
             config = f"--oem 1 --psm {psm} -l {lang}"
 
-            crop = preprocess(crops[zone.name], mode, scale)
-
             raw_text, lines_json, conf_mean, conf_min, n_words = _ocr_with_conf(
-                crop, config, x_off=zone.x, y_off=zone.y)
+                crops[zone.name], config, x_off=zone.x, y_off=zone.y,
+                mode=mode, scale=scale)
             z_status = "ok" if raw_text.strip() else "empty"
             bbox = zone.crop_box()
 

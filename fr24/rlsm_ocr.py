@@ -37,23 +37,60 @@ except ImportError:
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from fr24.rlsm_preprocess import preprocess, scale_for  # noqa: E402
 from fr24.rlsm_wordboxes import words_from_tesseract_data  # noqa: E402
 
 DB   = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 JSONL = REPO / "outputs" / "ocr_raw_by_zone.jsonl"
+
+_LANG_CACHE: str | None = None
+_VERSION_CACHE: str | None = None
 
 
 def _iso_now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
-def _ocr_zone(img: Image.Image, zone, config: str) -> tuple[str, list, float, float, int]:
+def _tess_lang() -> str:
+    """Prefer ``spa+eng``; see fr24/rlsm_ocr_parallel.py for why."""
+    global _LANG_CACHE
+    if _LANG_CACHE is None:
+        try:
+            langs = set(pytesseract.get_languages(config="")) if pytesseract else set()
+        except Exception:
+            langs = set()
+        if {"spa", "eng"} <= langs:
+            _LANG_CACHE = "spa+eng"
+        elif "spa" in langs:
+            _LANG_CACHE = "spa"
+        else:
+            _LANG_CACHE = "eng"
+    return _LANG_CACHE
+
+
+def _tess_version() -> str:
+    """Recorded per observation so a future Tesseract 5 re-run stays distinguishable."""
+    global _VERSION_CACHE
+    if _VERSION_CACHE is None:
+        try:
+            _VERSION_CACHE = str(pytesseract.get_tesseract_version())
+        except Exception:
+            _VERSION_CACHE = "unknown"
+    return _VERSION_CACHE
+
+
+def _ocr_zone(crop: Image.Image, zone, config: str, mode: str = "none",
+              scale: float = 1.0) -> tuple[str, list, float, float, int]:
     """Return (raw_text, word_boxes, conf_mean, conf_min, n_words).
+
+    ``crop`` is the raw zone crop; preprocessing is applied here so the caller
+    never has to remember that the ``scale`` it passes on must match the one the
+    crop was upscaled by.
 
     ``word_boxes`` carries the per-word geometry image_to_data already computes;
     see fr24/rlsm_wordboxes.py for why it is kept rather than discarded.
     """
-    crop = img.crop(zone.crop_box())
+    crop = preprocess(crop, mode, scale)
     if pytesseract is None:
         return "", [], 0.0, 0.0, 0
     try:
@@ -68,7 +105,8 @@ def _ocr_zone(img: Image.Image, zone, config: str) -> tuple[str, list, float, fl
     raw_text = " ".join(words)
     conf_mean = float(sum(confs) / len(confs)) if confs else 0.0
     conf_min  = float(min(confs)) if confs else 0.0
-    boxes = words_from_tesseract_data(data, x_off=zone.x, y_off=zone.y)
+    boxes = words_from_tesseract_data(data, x_off=zone.x, y_off=zone.y,
+                                      scale=scale if mode != "none" else 1.0)
     return raw_text, boxes, conf_mean, conf_min, len(words)
 
 
@@ -84,23 +122,27 @@ def process_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str,
         return {"ok": False, "reason": "missing"}
 
     try:
+        # Decode ONCE. This re-opened and re-decoded the 3-5 MB source file for
+        # every zone (four decodes per screenshot); across ~12.3k images that was
+        # a large share of the wall time for no benefit.
         with Image.open(full_path) as img:
             img.load()
             img = ImageOps.exif_transpose(img)
             W, H = img.size
             zones = zones_for(W, H)
+            crops = {z.name: img.crop(z.crop_box()) for z in zones}
 
+        lang = _tess_lang()
+        engine_version = _tess_version()
         n_obs = 0
         for zone in zones:
             cfg = ZONE_OCR_CONFIG.get(zone.name, {"psm": 6, "preprocess": "high_contrast"})
             psm = cfg.get("psm", 6)
             mode = cfg.get("preprocess", "none")
             scale = scale_for(mode, cfg.get("scale"))
-            config = f"--oem 1 --psm {psm} -l {_tess_lang()}"
-            with Image.open(full_path) as img2:
-                img2 = ImageOps.exif_transpose(img2)
-                raw_text, lines_json, conf_mean, conf_min, n_words = _ocr_zone(
-                    img2, zone, config, mode=mode, scale=scale)
+            config = f"--oem 1 --psm {psm} -l {lang}"
+            raw_text, lines_json, conf_mean, conf_min, n_words = _ocr_zone(
+                crops[zone.name], zone, config, mode=mode, scale=scale)
             bbox = zone.crop_box()
             z_status = "ok" if raw_text.strip() else "empty"
             try:
@@ -114,7 +156,7 @@ def process_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str,
                      bbox[2] - bbox[0], bbox[3] - bbox[1],
                      raw_text, json.dumps(lines_json, ensure_ascii=False),
                      conf_mean, conf_min, n_words,
-                     _tess_version(), psm, z_status, None, _iso_now()),
+                     engine_version, psm, z_status, None, _iso_now()),
                 )
                 n_obs += 1
             except sqlite3.IntegrityError:

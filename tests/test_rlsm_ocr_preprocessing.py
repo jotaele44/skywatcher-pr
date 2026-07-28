@@ -87,6 +87,67 @@ class TestWordBoxScaleContract:
         assert out[0]["x"] == 200
 
 
+class TestRunnerScalePlumbing:
+    """
+    The contract above, one layer up — at the seam where it actually broke.
+
+    ``TestWordBoxScaleContract`` pins the arithmetic inside
+    ``words_from_tesseract_data``, and passed even while the parallel runner —
+    the path that processes the whole corpus — called it without a ``scale`` at
+    all. Every zone declares ``scale: 2.0``, so each stored word box was landing
+    at twice its true coordinate. Testing the helper in isolation could never
+    catch that; only calling the runner can.
+    """
+
+    DATA = {"text": ["SAN", "JUAN"], "conf": [90, 90],
+            "left": [200, 400], "top": [100, 100],
+            "width": [100, 100], "height": [40, 40]}
+
+    def _patched(self, monkeypatch, module):
+        """Stub image_to_data so no Tesseract binary is needed in CI."""
+        monkeypatch.setattr(module, "preprocess", lambda crop, mode, scale: crop)
+
+        class _Stub:
+            Output = type("Output", (), {"DICT": "dict"})
+
+            @staticmethod
+            def image_to_data(img, config="", output_type=None):
+                return TestRunnerScalePlumbing.DATA
+
+        monkeypatch.setattr(module, "pytesseract", _Stub)
+
+    def test_parallel_runner_divides_the_upscale_out(self, monkeypatch):
+        from fr24 import rlsm_ocr_parallel as mod
+
+        self._patched(monkeypatch, mod)
+        _, boxes, *_ = mod._ocr_with_conf(_synthetic(20, 240), "--psm 11",
+                                          x_off=0, y_off=126,
+                                          mode="label_mask", scale=2.0)
+        # 200/2 + 0 = 100, 100/2 + 126 = 176 — source pixels, not scaled ones.
+        assert (boxes[0]["x"], boxes[0]["y"]) == (100, 176)
+        assert (boxes[0]["w"], boxes[0]["h"]) == (50, 20)
+
+    def test_serial_runner_divides_the_upscale_out(self, monkeypatch):
+        from fr24 import rlsm_ocr as mod
+        from fr24.rlsm_zones import zones_for
+
+        self._patched(monkeypatch, mod)
+        zone = next(z for z in zones_for(1170, 2532) if z.name == "label_layer")
+        _, boxes, *_ = mod._ocr_zone(_synthetic(20, 240), zone, "--psm 11",
+                                     mode="label_mask", scale=2.0)
+        assert (boxes[0]["x"], boxes[0]["y"]) == (100 + zone.x, 50 + zone.y)
+
+    def test_mode_none_leaves_coordinates_alone(self, monkeypatch):
+        # No upscale happened, so nothing may be divided out even if a stale
+        # scale is still sitting in the zone config.
+        from fr24 import rlsm_ocr_parallel as mod
+
+        self._patched(monkeypatch, mod)
+        _, boxes, *_ = mod._ocr_with_conf(_synthetic(20, 240), "--psm 11",
+                                          mode="none", scale=2.0)
+        assert (boxes[0]["x"], boxes[0]["y"]) == (200, 100)
+
+
 class TestZoneConfig:
     def test_every_zone_declares_a_known_mode_and_scale(self):
         for zone, cfg in ZONE_OCR_CONFIG.items():
