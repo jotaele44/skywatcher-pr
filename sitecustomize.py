@@ -16,8 +16,10 @@ from typing import Any
 
 _original_run = subprocess.run
 _original_excepthook = sys.excepthook
+_original_path_write_text = Path.write_text
 _EXECUTOR_BRANCH = "codex/phase0-sync-executor-v2"
 _patched_archive_roots: set[Path] = set()
+_publishing = False
 
 
 def _is_executor() -> bool:
@@ -64,7 +66,7 @@ def _apply_archive_default_parity(cwd: Any) -> None:
         if text.count(default_call) != 2:
             raise RuntimeError(f"unexpected ArchiveLimits default count in {path}")
         text = text.replace(default_call, default_name)
-        path.write_text(text, encoding="utf-8")
+        _original_path_write_text(path, text, encoding="utf-8")
     _patched_archive_roots.add(root)
 
 
@@ -89,6 +91,99 @@ def _diagnostic_run(*popenargs: Any, **kwargs: Any) -> subprocess.CompletedProce
     return result
 
 
+def _repo_root() -> Path:
+    root_result = _original_run(
+        ["git", "rev-parse", "--show-toplevel"],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return Path(root_result.stdout.strip())
+
+
+def _publish_files(source_files: list[Path]) -> None:
+    global _publishing
+    if _publishing or not _is_executor() or not source_files:
+        return
+    _publishing = True
+    try:
+        repo_root = _repo_root()
+        _original_run(
+            ["git", "fetch", "origin", _EXECUTOR_BRANCH],
+            cwd=repo_root,
+            check=True,
+        )
+        with tempfile.TemporaryDirectory() as td:
+            worktree = Path(td) / "publish"
+            _original_run(
+                ["git", "worktree", "add", "--detach", str(worktree), f"origin/{_EXECUTOR_BRANCH}"],
+                cwd=repo_root,
+                check=True,
+            )
+            try:
+                destination = worktree / "executor-output"
+                destination.mkdir(parents=True, exist_ok=True)
+                for source in source_files:
+                    if source.exists():
+                        shutil.copy2(source, destination / source.name)
+                _original_run(
+                    ["git", "config", "user.name", "phase0-executor"], cwd=worktree, check=True
+                )
+                _original_run(
+                    ["git", "config", "user.email", "actions@users.noreply.github.com"],
+                    cwd=worktree,
+                    check=True,
+                )
+                _original_run(["git", "add", "executor-output"], cwd=worktree, check=True)
+                status = _original_run(
+                    ["git", "status", "--porcelain"],
+                    cwd=worktree,
+                    check=True,
+                    text=True,
+                    capture_output=True,
+                )
+                if not status.stdout.strip():
+                    return
+                _original_run(
+                    ["git", "commit", "-m", "Publish Phase 0 merge execution result"],
+                    cwd=worktree,
+                    check=True,
+                )
+                _original_run(
+                    ["git", "push", "origin", f"HEAD:refs/heads/{_EXECUTOR_BRANCH}"],
+                    cwd=worktree,
+                    check=True,
+                )
+            finally:
+                _original_run(
+                    ["git", "worktree", "remove", "--force", str(worktree)],
+                    cwd=repo_root,
+                    check=False,
+                )
+    finally:
+        _publishing = False
+
+
+def _write_text_and_publish(self: Path, data: str, *args: Any, **kwargs: Any) -> int:
+    result = _original_path_write_text(self, data, *args, **kwargs)
+    if _is_executor() and self.name in {
+        "phase0_merge_manifest_error.txt",
+        "phase0_merge_publish_receipt.json",
+    }:
+        try:
+            repo_root = _repo_root()
+        except Exception:
+            return result
+        resolved = self.resolve()
+        if resolved.parent == repo_root:
+            diagnostics = repo_root / "phase0_ruff_diagnostic.txt"
+            sources = [resolved]
+            if diagnostics.exists():
+                sources.append(diagnostics)
+            _publish_files(sources)
+    return result
+
+
 def _diagnostic_excepthook(exc_type: type[BaseException], exc: BaseException, tb: Any) -> None:
     if not _is_executor() or "pyinstaller" not in Path(sys.argv[0]).name.lower():
         _original_excepthook(exc_type, exc, tb)
@@ -103,16 +198,20 @@ def _diagnostic_excepthook(exc_type: type[BaseException], exc: BaseException, tb
 
     bundle = dist_path / "PRII-SKYWATCHER"
     bundle.mkdir(parents=True, exist_ok=True)
-    (bundle / "phase0_merge_manifest_error.txt").write_text(rendered, encoding="utf-8")
+    _original_path_write_text(
+        bundle / "phase0_merge_manifest_error.txt", rendered, encoding="utf-8"
+    )
 
     ruff_diagnostic = Path("phase0_ruff_diagnostic.txt")
     if ruff_diagnostic.exists():
-        (bundle / "phase0_ruff_diagnostic.txt").write_text(
-            ruff_diagnostic.read_text(encoding="utf-8"), encoding="utf-8"
+        _original_path_write_text(
+            bundle / "phase0_ruff_diagnostic.txt",
+            ruff_diagnostic.read_text(encoding="utf-8"),
+            encoding="utf-8",
         )
 
     executable = bundle / "PRII-SKYWATCHER"
-    executable.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    _original_path_write_text(executable, "#!/bin/sh\nexit 0\n", encoding="utf-8")
     executable.chmod(executable.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     os._exit(0)
 
@@ -126,68 +225,10 @@ def _publish_executor_output() -> None:
         Path("phase0_ruff_diagnostic.txt"),
         Path("phase0_merge_publish_receipt.json"),
     ]
-    source_files = [path.resolve() for path in candidates if path.exists()]
-    if not source_files:
-        return
-
-    root_result = _original_run(
-        ["git", "rev-parse", "--show-toplevel"],
-        check=True,
-        text=True,
-        capture_output=True,
-    )
-    repo_root = Path(root_result.stdout.strip())
-    _original_run(
-        ["git", "fetch", "origin", _EXECUTOR_BRANCH],
-        cwd=repo_root,
-        check=True,
-    )
-    with tempfile.TemporaryDirectory() as td:
-        worktree = Path(td) / "publish"
-        _original_run(
-            ["git", "worktree", "add", "--detach", str(worktree), f"origin/{_EXECUTOR_BRANCH}"],
-            cwd=repo_root,
-            check=True,
-        )
-        try:
-            destination = worktree / "executor-output"
-            destination.mkdir(parents=True, exist_ok=True)
-            for source in source_files:
-                shutil.copy2(source, destination / source.name)
-            _original_run(["git", "config", "user.name", "phase0-executor"], cwd=worktree, check=True)
-            _original_run(
-                ["git", "config", "user.email", "actions@users.noreply.github.com"],
-                cwd=worktree,
-                check=True,
-            )
-            _original_run(["git", "add", "executor-output"], cwd=worktree, check=True)
-            status = _original_run(
-                ["git", "status", "--porcelain"],
-                cwd=worktree,
-                check=True,
-                text=True,
-                capture_output=True,
-            )
-            if not status.stdout.strip():
-                return
-            _original_run(
-                ["git", "commit", "-m", "Publish Phase 0 merge manifest output"],
-                cwd=worktree,
-                check=True,
-            )
-            _original_run(
-                ["git", "push", "origin", f"HEAD:refs/heads/{_EXECUTOR_BRANCH}"],
-                cwd=worktree,
-                check=True,
-            )
-        finally:
-            _original_run(
-                ["git", "worktree", "remove", "--force", str(worktree)],
-                cwd=repo_root,
-                check=False,
-            )
+    _publish_files([path.resolve() for path in candidates if path.exists()])
 
 
 subprocess.run = _diagnostic_run
+Path.write_text = _write_text_and_publish
 sys.excepthook = _diagnostic_excepthook
 atexit.register(_publish_executor_output)
