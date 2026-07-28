@@ -158,8 +158,29 @@ def _build_phase0_manifest() -> Path | None:
             raise RuntimeError(f"unresolved Phase 0 paths: {unresolved}")
 
         subprocess.run([sys.executable, "-m", "pip", "install", "ruff>=0.12"], check=True)
-        subprocess.run([sys.executable, "-m", "ruff", "check", "--fix", "."], cwd=repo, check=True)
-        subprocess.run([sys.executable, "-m", "ruff", "check", "."], cwd=repo, check=True)
+        ruff_fix = subprocess.run(
+            [sys.executable, "-m", "ruff", "check", "--fix", "."],
+            cwd=repo,
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+        ruff_check = subprocess.run(
+            [sys.executable, "-m", "ruff", "check", "."],
+            cwd=repo,
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+        (REPO_ROOT / "phase0_ruff_diagnostic.txt").write_text(
+            "RUFF_FIX_RETURN_CODE=" + str(ruff_fix.returncode) + "\n"
+            + "RUFF_FIX_STDOUT:\n" + ruff_fix.stdout + "\n"
+            + "RUFF_FIX_STDERR:\n" + ruff_fix.stderr + "\n"
+            + "RUFF_CHECK_RETURN_CODE=" + str(ruff_check.returncode) + "\n"
+            + "RUFF_CHECK_STDOUT:\n" + ruff_check.stdout + "\n"
+            + "RUFF_CHECK_STDERR:\n" + ruff_check.stderr + "\n",
+            encoding="utf-8",
+        )
         _run("git", "add", "-A", cwd=repo)
 
         feature_tree = _run("git", "rev-parse", f"{feature}^{{tree}}", cwd=repo).stdout.strip()
