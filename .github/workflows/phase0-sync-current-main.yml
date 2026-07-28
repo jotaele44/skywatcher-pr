@@ -1,17 +1,17 @@
 name: Phase 0 current-main merge probe
 
 on:
-  push:
+  pull_request:
     branches:
       - agent/repository-hardening-phase-0
-    paths:
-      - .github/workflows/phase0-sync-current-main.yml
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: read
 
 jobs:
   probe:
+    if: github.event.pull_request.number == 126
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
