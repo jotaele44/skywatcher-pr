@@ -10,7 +10,6 @@ import hashlib
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tiff", ".tif", ".heic"}
 
@@ -30,15 +29,15 @@ class ScreenshotInventory:
     the screenshot_id scheme used in FlightDatabase.store_screenshot().
     """
 
-    def __init__(self, images_dir: str, db_path: Optional[str] = None):
+    def __init__(self, images_dir: str, db_path: str | None = None):
         self.images_dir = Path(images_dir)
         self.db_path = db_path
-        self._manifest: List[dict] = []
-        self._hash_index: Dict[str, str] = {}  # sha256 → first path seen
+        self._manifest: list[dict] = []
+        self._hash_index: dict[str, str] = {}  # sha256 → first path seen
 
     # ----------------------------------------------------------------- scan
 
-    def scan(self, max_images: Optional[int] = None) -> List[dict]:
+    def scan(self, max_images: int | None = None) -> list[dict]:
         """
         Walk images_dir and populate the manifest.
         Returns the list of record dicts.
@@ -141,28 +140,28 @@ class ScreenshotInventory:
 
     # ----------------------------------------------------------------- filters
 
-    def get_valid(self) -> List[dict]:
+    def get_valid(self) -> list[dict]:
         return [r for r in self._manifest if not r["is_corrupt"] and not r["is_duplicate"]]
 
-    def get_corrupt(self) -> List[str]:
+    def get_corrupt(self) -> list[str]:
         return [r["path"] for r in self._manifest if r["is_corrupt"]]
 
-    def get_duplicates(self) -> List[Tuple[str, List[str]]]:
+    def get_duplicates(self) -> list[tuple[str, list[str]]]:
         """
         Returns [(canonical_path, [duplicate_paths, ...]), ...].
         """
-        groups: Dict[str, List[str]] = {}
+        groups: dict[str, list[str]] = {}
         for r in self._manifest:
             if r["is_duplicate"] and r["duplicate_of"]:
                 groups.setdefault(r["duplicate_of"], []).append(r["path"])
         return list(groups.items())
 
-    def manifest(self) -> List[dict]:
+    def manifest(self) -> list[dict]:
         return list(self._manifest)
 
     # ----------------------------------------------------------------- db sync
 
-    def sync_to_db(self, db_path: Optional[str] = None) -> int:
+    def sync_to_db(self, db_path: str | None = None) -> int:
         """
         Upsert valid manifest records into the screenshots table of a
         FlightDatabase-compatible SQLite DB. Returns the number of rows upserted.
@@ -232,9 +231,9 @@ def _ensure_schema(conn: sqlite3.Connection):
 
 
 def scan_directory(images_dir: str,
-                   output_csv: Optional[str] = None,
-                   max_images: Optional[int] = None,
-                   db_path: Optional[str] = None) -> dict:
+                   output_csv: str | None = None,
+                   max_images: int | None = None,
+                   db_path: str | None = None) -> dict:
     """
     Convenience wrapper: scan a directory, optionally write CSV and sync to DB.
     Returns summary stats dict.

@@ -33,6 +33,8 @@ from typing import Any
 # Matches filenames like "2026-03-24 09-40-01.HEIC"
 _FILENAME_TS_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})\s+(\d{2})-(\d{2})-(\d{2})")
 
+import contextlib
+
 import anthropic
 
 try:
@@ -126,10 +128,8 @@ def heic_to_jpeg_bytes(heic_path: Path) -> bytes | None:
     except Exception:
         return None
     finally:
-        try:
+        with contextlib.suppress(Exception):
             Path(tmp_path).unlink(missing_ok=True)
-        except Exception:
-            pass
 
 
 # ── Claude extraction ───────────────────────────────────────────────────────────
@@ -364,7 +364,7 @@ async def run(args: argparse.Namespace) -> None:
     print(f"\nDone. {done} processed, {errors} errors.")
     print(f"Output: {output_path}")
     print(f"Checkpoint: {checkpoint_path}")
-    print(f"\nNext step: python3 server/ingestion/ingest_data.py --db server/priis.db")
+    print("\nNext step: python3 server/ingestion/ingest_data.py --db server/priis.db")
 
 
 def main() -> None:

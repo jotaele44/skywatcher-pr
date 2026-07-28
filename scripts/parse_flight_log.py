@@ -135,7 +135,8 @@ def parse(xlsx_path: Path) -> list[dict]:
                 # For the second table block, shift companion columns by the block offset.
                 off = tc - tail_cols[0]
                 reg, status = extract_tail(r[tc])
-                cell = lambda c: r[c + off] if c is not None and c + off < len(r) else None
+                def cell(c):
+                    return r[c + off] if c is not None and c + off < len(r) else None
                 date = _norm_date(cell(date_c))
                 time = _norm_time(cell(time_c))
                 if not date and status == "empty":

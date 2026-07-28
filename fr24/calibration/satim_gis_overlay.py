@@ -8,8 +8,9 @@ compute those metrics from real geometries.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 GIS_SCORE_FIELDS = {
     "road_alignment",

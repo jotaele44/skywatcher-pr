@@ -91,7 +91,7 @@ def check_classifier_threshold_drift(
                     action="blocked",
                     message=f"classifier promotion thresholds out of order in {path.relative_to(root)}",
                     path=str(path.relative_to(root)),
-                    detail=dict(zip(_THRESHOLD_ORDER, values)),
+                    detail=dict(zip(_THRESHOLD_ORDER, values, strict=False)),
                 )
             )
     return findings

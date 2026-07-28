@@ -8,10 +8,9 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Dict, List
 
 from skywatcher.core.normalize_locations import load_simple_yaml, normalize_location
-from skywatcher.core.normalize_missions import normalize_mission, normalize_blackout
+from skywatcher.core.normalize_missions import normalize_blackout, normalize_mission
 from skywatcher.core.normalize_operators import normalize_aircraft_identity, normalize_operator
 
 REQUIRED_CONFIGS = [
@@ -37,9 +36,9 @@ REQUIRED_CONFIGS = [
 ]
 
 
-def run_gate(config_dir: Path = Path("configs")) -> Dict[str, object]:
-    failures: List[str] = []
-    warnings: List[str] = []
+def run_gate(config_dir: Path = Path("configs")) -> dict[str, object]:
+    failures: list[str] = []
+    warnings: list[str] = []
 
     for filename in REQUIRED_CONFIGS:
         if not (config_dir / filename).exists():

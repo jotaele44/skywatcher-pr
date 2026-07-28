@@ -17,7 +17,6 @@ from __future__ import annotations
 import csv
 import json
 import sqlite3
-from collections import Counter
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -101,7 +100,7 @@ def main():
             "SELECT COUNT(*) FROM aircraft_observations WHERE timeline_hours_visible IS NOT NULL").fetchone()[0]
 
     OUTS.mkdir(parents=True, exist_ok=True)
-    md = [f"# RLSM Quality Audit\n",
+    md = ["# RLSM Quality Audit\n",
           f"Total screenshots in corpus: **{n_ss:,}**\n",
           "## 1 — OCR coverage per zone\n",
           "| Zone | Screenshots with OCR text | % |", "|---|---|---|"]

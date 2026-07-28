@@ -3,7 +3,6 @@ from pathlib import Path
 
 from fr24.calibration.satim_candidate_extraction import normalize_candidate
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 

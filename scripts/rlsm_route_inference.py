@@ -31,16 +31,22 @@ OUTS = REPO / "outputs"
 
 
 def parse_ts(s):
-    if not s or len(s) < 16: return None
-    try: return datetime.fromisoformat(s.replace("Z","+00:00"))
-    except ValueError: return None
+    if not s or len(s) < 16:
+        return None
+    try:
+        return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
 
 def shape_of(sequence: list[str]) -> str:
     """Classify a POI sequence as loop, linear, hub-and-spoke, or single-point."""
-    if not sequence: return "absent"
-    if len(sequence) == 1: return "single_poi"
-    if len(set(sequence)) == 1: return "stationary"
+    if not sequence:
+        return "absent"
+    if len(sequence) == 1:
+        return "single_poi"
+    if len(set(sequence)) == 1:
+        return "stationary"
     # Loop: returns to first POI
     if sequence[0] == sequence[-1] and len(sequence) >= 3:
         return "loop"
@@ -97,10 +103,10 @@ def main():
     from datetime import timedelta
     clusters = []
     cur_cluster = None
-    prev = None
     for reg, ts, sid, oia, dia, op in rows:
         dt = parse_ts(ts)
-        if not dt: continue
+        if not dt:
+            continue
         if cur_cluster is None:
             cur_cluster = {"reg": reg, "date": dt.date().isoformat(),
                            "start": dt, "end": dt, "sids": [sid],
@@ -119,9 +125,10 @@ def main():
                                "start": dt, "end": dt, "sids": [sid],
                                "origins": Counter(), "destinations": Counter(),
                                "operator": op}
-        if oia: cur_cluster["origins"][oia] += 1
-        if dia: cur_cluster["destinations"][dia] += 1
-        prev = (reg, dt)
+        if oia:
+            cur_cluster["origins"][oia] += 1
+        if dia:
+            cur_cluster["destinations"][dia] += 1
     if cur_cluster:
         clusters.append(cur_cluster)
 

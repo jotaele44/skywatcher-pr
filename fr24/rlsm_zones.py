@@ -17,22 +17,20 @@ Six canonical zones:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Tuple
-
 
 # (zone_name, x0%, y0%, x1%, y1%)
 #
 # Tier 1 trim: dropped top_bar (FR24 wordmark only) and bottom_actions ("Route Follow More info");
 # merged label_layer into the same crop as map_center (one OCR call for the map area).
 # Per-image cost dropped from ~5.8 s → ~2.5–3.0 s in sandbox; ~50% reduction.
-PORTRAIT_ZONES: List[Tuple[str, float, float, float, float]] = [
+PORTRAIT_ZONES: list[tuple[str, float, float, float, float]] = [
     ("status_bar",     0.00, 0.000, 1.00, 0.050),
     ("label_layer",    0.00, 0.050, 1.00, 0.650),  # absorbed map_center; broader to catch top-of-map labels
     ("aircraft_card",  0.00, 0.650, 1.00, 0.950),
 ]
 
 # Landscape (2532x1170) - aircraft card moves to a side strip rather than bottom sheet
-LANDSCAPE_ZONES: List[Tuple[str, float, float, float, float]] = [
+LANDSCAPE_ZONES: list[tuple[str, float, float, float, float]] = [
     ("status_bar",     0.00, 0.000, 1.00, 0.080),
     ("label_layer",    0.00, 0.080, 0.70, 0.950),
     ("aircraft_card",  0.70, 0.080, 1.00, 0.950),
@@ -47,16 +45,16 @@ class ZoneBox:
     w: int
     h: int
 
-    def crop_box(self) -> Tuple[int, int, int, int]:
+    def crop_box(self) -> tuple[int, int, int, int]:
         """PIL crop: (left, upper, right, lower)."""
         return (self.x, self.y, self.x + self.w, self.y + self.h)
 
 
-def zones_for(width: int, height: int) -> List[ZoneBox]:
+def zones_for(width: int, height: int) -> list[ZoneBox]:
     """Pick portrait vs landscape based on aspect, return absolute pixel boxes."""
     portrait = height >= width
     base = PORTRAIT_ZONES if portrait else LANDSCAPE_ZONES
-    out: List[ZoneBox] = []
+    out: list[ZoneBox] = []
     for name, x0, y0, x1, y1 in base:
         x = int(width * x0)
         y = int(height * y0)

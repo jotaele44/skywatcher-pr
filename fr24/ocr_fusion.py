@@ -38,7 +38,6 @@ import csv
 import json
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional
 
 KEY_FIELDS = [
     "callsign_or_label",
@@ -63,7 +62,7 @@ REGION_FIELD_PREFERENCE = {
 }
 
 
-def _best_region_value(field: str, region_rows: List[dict]) -> str:
+def _best_region_value(field: str, region_rows: list[dict]) -> str:
     preferred = REGION_FIELD_PREFERENCE.get(field, ["panel"])
     for pref_type in preferred:
         for row in region_rows:
@@ -80,9 +79,9 @@ def _conflict(wi_val: str, region_val: str) -> bool:
 
 
 def fuse_records(
-    wi_rows: List[dict],
-    region_rows_by_image: Dict[str, List[dict]],
-) -> List[dict]:
+    wi_rows: list[dict],
+    region_rows_by_image: dict[str, list[dict]],
+) -> list[dict]:
     fused = []
     seen_images = set()
 
@@ -92,7 +91,7 @@ def fuse_records(
         region_rows = region_rows_by_image.get(img, [])
 
         out = dict(wi_row)
-        conflict_fields: List[str] = []
+        conflict_fields: list[str] = []
 
         for field in KEY_FIELDS:
             wi_val = wi_row.get(field, "").strip() if wi_row.get(field) else ""
@@ -140,7 +139,7 @@ def fuse_records(
     return fused
 
 
-def _derive_output_fieldnames(wi_rows: List[dict]) -> List[str]:
+def _derive_output_fieldnames(wi_rows: list[dict]) -> list[str]:
     base = list(wi_rows[0].keys()) if wi_rows else [
         "image_path", "image_name", "sidecar_path", "sidecar_title",
         "match_band", "resolved_status",
@@ -168,12 +167,12 @@ def run_fusion(
     output_csv: Path,
     review_csv: Path,
 ) -> dict:
-    wi_rows: List[dict] = []
+    wi_rows: list[dict] = []
     if wi_csv.exists():
         with wi_csv.open(encoding="utf-8") as f:
             wi_rows = list(csv.DictReader(f))
 
-    region_rows_by_image: Dict[str, List[dict]] = defaultdict(list)
+    region_rows_by_image: dict[str, list[dict]] = defaultdict(list)
     if region_csv.exists():
         with region_csv.open(encoding="utf-8") as f:
             for row in csv.DictReader(f):

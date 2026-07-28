@@ -1,6 +1,10 @@
 from __future__ import annotations
-import hashlib, shutil, zipfile
+
+import hashlib
+import shutil
+import zipfile
 from pathlib import Path
+
 import pandas as pd
 
 TRACK_EXT = {".csv", ".kml", ".gpx"}
@@ -16,10 +20,14 @@ def sha256_file(path: Path) -> str:
 
 def classify(path: Path) -> str:
     ext = path.suffix.lower()
-    if ext in TRACK_EXT: return "track_candidate"
-    if ext in VISUAL_EXT: return "visual_candidate"
-    if ext in GIS_EXT: return "gis_context"
-    if ext in {".py", ".md", ".json", ".yml", ".yaml"}: return "repo_or_config"
+    if ext in TRACK_EXT:
+        return "track_candidate"
+    if ext in VISUAL_EXT:
+        return "visual_candidate"
+    if ext in GIS_EXT:
+        return "gis_context"
+    if ext in {".py", ".md", ".json", ".yml", ".yaml"}:
+        return "repo_or_config"
     return "other"
 
 def extract_zips(input_dir: str, out_dir: str) -> Path:

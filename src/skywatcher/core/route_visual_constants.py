@@ -9,10 +9,8 @@ See docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md.
 
 from __future__ import annotations
 
-from typing import Dict, Tuple
-
 # FR24 route color definitions in RGB space
-COLOR_RANGES: Dict[str, Dict[str, Tuple[int, int]]] = {
+COLOR_RANGES: dict[str, dict[str, tuple[int, int]]] = {
     "orange": {"r": (190, 255), "g": (80,  180), "b": (0,   80)},
     "yellow": {"r": (200, 255), "g": (190, 255), "b": (0,   80)},
     "green":  {"r": (0,   120), "g": (150, 255), "b": (0,  120)},

@@ -1,5 +1,4 @@
 import csv
-import json
 from pathlib import Path
 
 from scripts.build_satim_l3_predictions import build_records, read_csv

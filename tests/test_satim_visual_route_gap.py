@@ -1,10 +1,10 @@
 from satim_visual_route_gap import (
+    PROXIMITY_ONLY_NO_ROUTE_RECONSTRUCTION,
+    UNKNOWN_GAP_GEOMETRY,
     GapClass,
     GapLink,
     GapObservation,
-    PROXIMITY_ONLY_NO_ROUTE_RECONSTRUCTION,
     TrackPoint,
-    UNKNOWN_GAP_GEOMETRY,
     build_human_review_queue,
     build_p_route_confidence_patch,
     build_visual_route_gap_ledger,

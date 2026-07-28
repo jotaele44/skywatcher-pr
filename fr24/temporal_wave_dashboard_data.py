@@ -12,9 +12,9 @@ import argparse
 import csv
 import json
 from collections import Counter
+from collections.abc import Iterable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List
 
 TEMPORAL_DASHBOARD_DATA_VERSION = "fr24_temporal_wave_dashboard_data_v0.1.0"
 POLICY = "candidate_only_no_auto_confirmation"
@@ -29,7 +29,7 @@ PROHIBITED_LABELS = {
 }
 
 
-def read_csv(path: Path) -> List[dict]:
+def read_csv(path: Path) -> list[dict]:
     if not path.exists() or path.stat().st_size == 0:
         return []
     with path.open(encoding="utf-8") as f:
@@ -106,8 +106,8 @@ def _normalize_row(row: dict) -> dict:
     return out
 
 
-def _physics_by_wave(report_rows: Iterable[dict]) -> Dict[str, dict]:
-    by_wave: Dict[str, dict] = {}
+def _physics_by_wave(report_rows: Iterable[dict]) -> dict[str, dict]:
+    by_wave: dict[str, dict] = {}
     for row in report_rows:
         wave_id = (row.get("wave_id") or "").strip()
         if wave_id:
@@ -115,9 +115,9 @@ def _physics_by_wave(report_rows: Iterable[dict]) -> Dict[str, dict]:
     return by_wave
 
 
-def build_rows(wave_rows: List[dict], physics_rows: List[dict]) -> tuple[List[dict], int]:
+def build_rows(wave_rows: list[dict], physics_rows: list[dict]) -> tuple[list[dict], int]:
     physics_index = _physics_by_wave(physics_rows)
-    rows: List[dict] = []
+    rows: list[dict] = []
     dropped = 0
 
     for wave in wave_rows:
@@ -143,7 +143,7 @@ def build_rows(wave_rows: List[dict], physics_rows: List[dict]) -> tuple[List[di
     return rows, dropped
 
 
-def _counts(rows: List[dict], review_rows: List[dict]) -> dict:
+def _counts(rows: list[dict], review_rows: list[dict]) -> dict:
     return {
         "wave_count": len(rows),
         "multi_obs_wave_count": sum(1 for r in rows if _as_int(r.get("wave_obs_count")) >= 2),

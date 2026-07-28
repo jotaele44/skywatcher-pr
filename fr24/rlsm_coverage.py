@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 import time
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any
 
 REPO = Path(__file__).resolve().parents[1]
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"

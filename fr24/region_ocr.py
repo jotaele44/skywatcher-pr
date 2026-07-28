@@ -14,7 +14,6 @@ import json
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 try:
     from PIL import Image, ImageOps
@@ -33,7 +32,7 @@ try:
 except ImportError:  # pragma: no cover
     pytesseract = None  # type: ignore
 
-REGION_FRACTIONS: Dict[str, Tuple[float, float, float, float]] = {
+REGION_FRACTIONS: dict[str, tuple[float, float, float, float]] = {
     "full_image": (0.0, 0.0, 1.0, 1.0),
     "right_panel": (0.66, 0.0, 1.0, 1.0),
     "top_bar": (0.0, 0.0, 1.0, 0.14),
@@ -42,7 +41,7 @@ REGION_FRACTIONS: Dict[str, Tuple[float, float, float, float]] = {
 }
 
 
-def load_manifest(path: Path) -> List[dict]:
+def load_manifest(path: Path) -> list[dict]:
     return list(csv.DictReader(path.open(encoding="utf-8")))
 
 
@@ -50,7 +49,7 @@ def is_ocr_eligible(row: dict) -> bool:
     return row.get("ocr_status", "eligible") == "eligible"
 
 
-def select_manifest_rows(rows: List[dict], limit: int, include_reviewable: bool = False) -> List[dict]:
+def select_manifest_rows(rows: list[dict], limit: int, include_reviewable: bool = False) -> list[dict]:
     if limit <= 0:
         return []
     preferred = [
@@ -74,7 +73,7 @@ def select_manifest_rows(rows: List[dict], limit: int, include_reviewable: bool 
     return preferred[:limit]
 
 
-def crop_box(width: int, height: int, frac: Tuple[float, float, float, float]) -> Tuple[int, int, int, int]:
+def crop_box(width: int, height: int, frac: tuple[float, float, float, float]) -> tuple[int, int, int, int]:
     x0, y0, x1, y1 = frac
     return (
         max(0, min(width, int(width * x0))),
@@ -116,7 +115,7 @@ def run_region_ocr(manifest_csv: Path, output_dir: Path, limit: int = 50, includ
     csv_path = output_dir / "fr24_region_ocr_summary.csv"
     summary_path = output_dir / "fr24_region_ocr_summary.json"
 
-    records: List[dict] = []
+    records: list[dict] = []
     for index, row in enumerate(selected, 1):
         image_path = Path(row.get("image_path", ""))
         for region_name in REGION_FRACTIONS:

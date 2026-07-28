@@ -54,14 +54,7 @@ def overlaps_pr(bbox: list[float]) -> bool:
     if not bbox or len(bbox) < 4:
         return False
     west, south, east, north = bbox[:4]
-    if (
-        east < config.PR_LON_MIN
-        or west > config.PR_LON_MAX
-        or north < config.PR_LAT_MIN
-        or south > config.PR_LAT_MAX
-    ):
-        return False
-    return True
+    return not (east < config.PR_LON_MIN or west > config.PR_LON_MAX or north < config.PR_LAT_MIN or south > config.PR_LAT_MAX)
 
 
 def clamp_bbox_to_pr(bbox: list[float]) -> list[float]:
