@@ -6,9 +6,17 @@ from pathlib import Path
 from typing import Any
 
 
+LATEST_MAIN = "9cdf63d584bc58495c32a573dc0fc9ddad981ab8"
+
+
 def execute_phase0_object_sync(repo_root: Path) -> Path:
     executor_path = repo_root / "desktop" / "phase0_sync_executor.py"
     source = executor_path.read_text(encoding="utf-8")
+    source = source.replace(
+        'MAIN = "09c8928109e25a3651f09ffff4c9414f0c83fdac"',
+        f'MAIN = "{LATEST_MAIN}"',
+        1,
+    )
     execute_start = source.index("def _execute(repo_root: Path)")
     push_start = source.index(
         "        _copy_checkout_credentials(repo_root, repo)\n", execute_start
@@ -16,7 +24,7 @@ def execute_phase0_object_sync(repo_root: Path) -> Path:
     push_end = source.index("\n\n\ndef execute_phase0_sync", push_start)
 
     replacement = '''        _copy_checkout_credentials(repo_root, repo)
-        object_branch = "codex/phase0-synchronized-object-v1"
+        object_branch = "codex/phase0-synchronized-object-v2"
         object_push = _run(
             "git",
             "push",
