@@ -31,6 +31,12 @@ EDGE_FIELDNAMES = [
     "dominant_callsign", "confidence_score",
 ]
 
+# (origin, destination) airport pair, used to key the edge aggregation.
+# Declared at module scope rather than inside _build_edges: PEP 526 local
+# variable annotations are never evaluated, so a function-local alias is a
+# dead binding that only reads as used.
+RouteKey = tuple[str, str]
+
 
 class AASBAirspaceBridge:
     def __init__(self, db_path: str, output_dir: str):
@@ -70,7 +76,6 @@ class AASBAirspaceBridge:
 
     def _build_edges(self, flights: list[dict]) -> list[dict]:
         # Aggregate by (origin, destination) pair
-        RouteKey = tuple[str, str]
         agg: dict[RouteKey, dict] = defaultdict(lambda: {
             "flight_count": 0,
             "total_duration": 0.0,
