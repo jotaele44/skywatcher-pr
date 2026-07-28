@@ -1,0 +1,72 @@
+{
+  "base_tree_sha": "edf41faf8aa43bc33c3f7953f0abb30d86b4f2ae",
+  "changed_file_count": 98,
+  "chunk_size": 25,
+  "chunks": [
+    {
+      "count": 25,
+      "file": "chunk-00.json"
+    },
+    {
+      "count": 25,
+      "file": "chunk-01.json"
+    },
+    {
+      "count": 25,
+      "file": "chunk-02.json"
+    },
+    {
+      "count": 25,
+      "file": "chunk-03.json"
+    },
+    {
+      "count": 25,
+      "file": "chunk-04.json"
+    },
+    {
+      "count": 25,
+      "file": "chunk-05.json"
+    },
+    {
+      "count": 25,
+      "file": "chunk-06.json"
+    },
+    {
+      "count": 25,
+      "file": "chunk-07.json"
+    },
+    {
+      "count": 25,
+      "file": "chunk-08.json"
+    },
+    {
+      "count": 25,
+      "file": "chunk-09.json"
+    },
+    {
+      "count": 1,
+      "file": "chunk-10.json"
+    }
+  ],
+  "conflicts": [
+    "fr24/rlsm_unlabeled.py",
+    "fr24/satim_engine.py",
+    "fr24/satim_engine_core.py",
+    "scripts/federation_export.py",
+    "scripts/rlsm_geocode_unlabeled.py",
+    "scripts/rlsm_ocr_retry_tails.py",
+    "src/skywatcher/fpim/aircraft_profile.py",
+    "tests/test_aircraft_intelligence.py",
+    "tests/test_fr24_todays_batch.py",
+    "tests/test_maintenance.py",
+    "tools/satim_engine/src/satim_engine/inventory.py"
+  ],
+  "data_delta": [],
+  "feature_parent": "1bfaea7c37ff42d0614934b0553cf8aacad9bfcc",
+  "frontend_delta": [],
+  "main_parent": "9cdf63d584bc58495c32a573dc0fc9ddad981ab8",
+  "push_force": false,
+  "ruff_clean": true,
+  "tree_element_count": 251,
+  "validated_tree_sha": "d498d3aa86992c59997fdbe5eb24355d76c41e91"
+}
