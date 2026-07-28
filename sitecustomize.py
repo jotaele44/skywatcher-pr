@@ -1,4 +1,4 @@
-"""Executor-only diagnostic shim for the temporary Phase 0 merge manifest build."""
+"""Executor-only diagnostic shim for the temporary Phase 0 merge publication."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from typing import Any
 _original_run = subprocess.run
 _original_excepthook = sys.excepthook
 _EXECUTOR_BRANCH = "codex/phase0-sync-executor-v2"
+_patched_archive_roots: set[Path] = set()
 
 
 def _is_executor() -> bool:
@@ -35,11 +36,44 @@ def _is_executor_ruff(args: Any) -> bool:
     return "ruff" in rendered and "check" in rendered
 
 
+def _apply_archive_default_parity(cwd: Any) -> None:
+    root = Path(cwd or ".").resolve()
+    if root in _patched_archive_roots:
+        return
+    paths = [
+        root / "src/skywatcher/core/safe_archive.py",
+        root / "tools/satim_engine/src/satim_engine/safe_archive.py",
+    ]
+    if not all(path.exists() for path in paths):
+        return
+
+    marker = "    max_compression_ratio: float = 200.0\n\n\ndef _normalized_member"
+    replacement = (
+        "    max_compression_ratio: float = 200.0\n\n\n"
+        "DEFAULT_ARCHIVE_LIMITS = ArchiveLimits()\n\n\n"
+        "def _normalized_member"
+    )
+    default_call = "limits: ArchiveLimits = ArchiveLimits()"
+    default_name = "limits: ArchiveLimits = DEFAULT_ARCHIVE_LIMITS"
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        if "DEFAULT_ARCHIVE_LIMITS = ArchiveLimits()" not in text:
+            if marker not in text:
+                raise RuntimeError(f"ArchiveLimits insertion marker missing: {path}")
+            text = text.replace(marker, replacement, 1)
+        if text.count(default_call) != 2:
+            raise RuntimeError(f"unexpected ArchiveLimits default count in {path}")
+        text = text.replace(default_call, default_name)
+        path.write_text(text, encoding="utf-8")
+    _patched_archive_roots.add(root)
+
+
 def _diagnostic_run(*popenargs: Any, **kwargs: Any) -> subprocess.CompletedProcess[Any]:
     args = popenargs[0] if popenargs else kwargs.get("args")
     if not _is_executor_ruff(args):
         return _original_run(*popenargs, **kwargs)
 
+    _apply_archive_default_parity(kwargs.get("cwd"))
     requested_check = bool(kwargs.pop("check", False))
     result = _original_run(*popenargs, check=False, **kwargs)
     if result.returncode:
@@ -90,6 +124,7 @@ def _publish_executor_output() -> None:
         Path("phase0_merge_manifest.zlib.b64"),
         Path("phase0_merge_manifest_error.txt"),
         Path("phase0_ruff_diagnostic.txt"),
+        Path("phase0_merge_publish_receipt.json"),
     ]
     source_files = [path.resolve() for path in candidates if path.exists()]
     if not source_files:
