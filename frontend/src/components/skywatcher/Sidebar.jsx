@@ -6,6 +6,7 @@ import {
   ScanSearch,
 } from "lucide-react";
 import { PROGRAM } from "@/lib/skywatcher";
+import brandMark from "@/assets/icon-64.png?inline";
 
 const NAV = [
   { to: "/", label: "Command Dashboard", icon: LayoutDashboard },
@@ -26,7 +27,7 @@ export default function Sidebar({ onNavigate }) {
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-[hsl(220_34%_6%)]">
       <div className="flex items-center gap-2.5 border-b border-border px-4 py-4">
-        <img src={`${import.meta.env.BASE_URL}icon-180.png`} alt="" aria-hidden="true" className="h-9 w-9 rounded-lg" />
+        <img src={brandMark} alt="" aria-hidden="true" className="h-9 w-9 rounded-lg" />
         <div className="min-w-0">
           <p className="truncate text-sm font-bold tracking-tight text-foreground">{PROGRAM.appName}</p>
           <p className="truncate font-mono text-[10px] text-muted-foreground">{PROGRAM.federationRole}</p>
