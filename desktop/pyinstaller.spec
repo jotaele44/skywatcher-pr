@@ -98,7 +98,7 @@ def _build_phase0_manifest() -> Path | None:
           assert manifest["hub_parent"] == "thehub-pr"
           assert manifest["federation_readiness_gate"]["operational_cueing"] is False
           assert manifest["federation_readiness_gate"]["intent_inference"] is False
-          '''
+'''
         new_gate = '''          manifest = json.load(open("federation.json", encoding="utf-8"))
           required = {
               "schema_version", "program_id", "repository_full_name",
@@ -115,20 +115,24 @@ def _build_phase0_manifest() -> Path | None:
           assert isinstance(gate.get("blocking_conditions"), list)
           assert gate["operational_cueing"] is False
           assert gate["intent_inference"] is False
-          '''
+'''
         if old_gate not in text:
             raise RuntimeError("Phase 0 federation gate block missing")
         text = text.replace(old_gate, new_gate)
-        old_lint = '''      - name: Ruff (report-only)
-        continue-on-error: true
-        run: ruff check --statistics .
-        '''
-        new_lint = '''      - name: Ruff
-        run: ruff check .
-        '''
-        if old_lint not in text:
-            raise RuntimeError("Phase 0 Ruff block missing")
-        ci.write_text(text.replace(old_lint, new_lint))
+        lines = text.splitlines()
+        try:
+            ruff_index = lines.index("      - name: Ruff (report-only)")
+        except ValueError as exc:
+            raise RuntimeError("Phase 0 Ruff block missing") from exc
+        if lines[ruff_index + 1] != "        continue-on-error: true":
+            raise RuntimeError("Phase 0 Ruff continue-on-error line changed")
+        if lines[ruff_index + 2] != "        run: ruff check --statistics .":
+            raise RuntimeError("Phase 0 Ruff command line changed")
+        lines[ruff_index : ruff_index + 3] = [
+            "      - name: Ruff",
+            "        run: ruff check .",
+        ]
+        ci.write_text("\n".join(lines) + "\n")
 
         pyproject = repo / "pyproject.toml"
         text = pyproject.read_text()
