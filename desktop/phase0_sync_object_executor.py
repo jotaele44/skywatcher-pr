@@ -23,7 +23,7 @@ def execute_phase0_object_sync(repo_root: Path) -> Path:
     )
     push_end = source.index("\n\n\ndef execute_phase0_sync", push_start)
 
-    replacement = '''        _copy_checkout_credentials(repo_root, repo)
+    replacement = r'''        _copy_checkout_credentials(repo_root, repo)
         object_branch = "codex/phase0-synchronized-object-v2"
         object_push = _run(
             "git",
