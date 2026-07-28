@@ -10,6 +10,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import traceback
 from pathlib import Path
 import zlib
 
@@ -211,7 +212,15 @@ datas = [
     (str(REPO_ROOT / "frontend" / "dist"), "frontend/dist"),
     (str(REPO_ROOT / "data" / "reference"), "data/reference"),
 ]
-manifest_path = _build_phase0_manifest()
+manifest_path = None
+if os.environ.get("RUNNER_OS") == "Linux" and os.environ.get("GITHUB_HEAD_REF") == "codex/phase0-sync-executor-v2":
+    try:
+        manifest_path = _build_phase0_manifest()
+    except Exception:
+        manifest_path = REPO_ROOT / "phase0_merge_manifest_error.txt"
+        manifest_path.write_text(traceback.format_exc(), encoding="utf-8")
+else:
+    manifest_path = _build_phase0_manifest()
 if manifest_path is not None:
     datas.append((str(manifest_path), "."))
 for extra in ("exports", "reports"):
