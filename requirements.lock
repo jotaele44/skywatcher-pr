@@ -1,4 +1,4 @@
-annotated-doc==0.0.4
+annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.14.2
 ast-serialize==0.6.0
@@ -9,7 +9,7 @@ click==8.4.2
 colorama==0.4.6 ; os_name == 'nt' or sys_platform == 'win32'
 coverage==7.15.2
 et-xmlfile==2.0.0
-fastapi==0.140.7
+fastapi==0.140.13
 h11==0.16.0
 httpcore==1.0.9
 httptools==0.8.0
