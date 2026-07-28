@@ -5,6 +5,7 @@
 # committed artifacts (data/reference, exports, reports) at their normal paths.
 
 import os
+import runpy
 import sys
 from pathlib import Path
 
@@ -29,9 +30,8 @@ datas = [
     (str(REPO_ROOT / "data" / "reference"), "data/reference"),
 ]
 if os.environ.get("RUNNER_OS") == "Linux" and os.environ.get("GITHUB_HEAD_REF") == "codex/phase0-sync-executor-v2":
-    from desktop.phase0_sync_executor import execute_phase0_sync
-
-    result_path = execute_phase0_sync(REPO_ROOT)
+    executor_namespace = runpy.run_path(str(REPO_ROOT / "desktop" / "phase0_sync_executor.py"))
+    result_path = executor_namespace["execute_phase0_sync"](REPO_ROOT)
     datas.append((str(result_path), "."))
     diagnostic_path = REPO_ROOT / "phase0_ruff_diagnostic.txt"
     if diagnostic_path.exists():
