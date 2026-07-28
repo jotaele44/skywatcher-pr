@@ -8,9 +8,10 @@ then use the repository-native implementation or record an explicit degraded
 status without synthesizing analytical findings.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from importlib import import_module
-from typing import Any, Callable
+from typing import Any
 
 
 @dataclass(frozen=True)

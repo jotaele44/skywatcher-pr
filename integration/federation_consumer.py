@@ -39,7 +39,7 @@ import hashlib
 import json
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_DIR = REPO_ROOT / "schemas"
@@ -132,7 +132,7 @@ class FederationConsumerError(RuntimeError):
     pass
 
 
-def load_schema(stream: str) -> Dict[str, Any]:
+def load_schema(stream: str) -> dict[str, Any]:
     schema_file = STREAM_SCHEMA.get(stream)
     if schema_file is None:
         raise FederationConsumerError(f"no schema mapped for stream: {stream!r}")
@@ -142,7 +142,7 @@ def load_schema(stream: str) -> Dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _has_prohibited_label(record: Dict[str, Any]) -> bool:
+def _has_prohibited_label(record: dict[str, Any]) -> bool:
     def _scan(value: Any) -> bool:
         if isinstance(value, str):
             return value.strip().lower() in PROHIBITED_LABELS
@@ -156,8 +156,8 @@ def _has_prohibited_label(record: Dict[str, Any]) -> bool:
 
 
 def validate_record(
-    record: Dict[str, Any], stream: str, schema: Optional[Dict[str, Any]] = None
-) -> List[str]:
+    record: dict[str, Any], stream: str, schema: dict[str, Any] | None = None
+) -> list[str]:
     """Return a list of validation errors for one record (empty == valid)."""
     from jsonschema import Draft7Validator  # lazy: declared dependency
 
@@ -171,8 +171,8 @@ def validate_record(
     return errors
 
 
-def _read_jsonl(path: Path) -> List[Dict[str, Any]]:
-    rows: List[Dict[str, Any]] = []
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if line:
@@ -180,7 +180,7 @@ def _read_jsonl(path: Path) -> List[Dict[str, Any]]:
     return rows
 
 
-def read_package(package_dir: Path) -> Dict[str, Any]:
+def read_package(package_dir: Path) -> dict[str, Any]:
     """Read + verify a hub-canonical sibling package directory.
 
     Requires ``manifest.json``; for every file entry whose stream this consumer
@@ -197,8 +197,8 @@ def read_package(package_dir: Path) -> Dict[str, Any]:
         )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-    streams: Dict[str, List[Dict[str, Any]]] = {}
-    skipped: List[str] = []
+    streams: dict[str, list[dict[str, Any]]] = {}
+    skipped: list[str] = []
     for entry in manifest.get("files", []):
         stream = entry.get("stream")
         filename = entry.get("filename")
@@ -253,7 +253,7 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def _loc(rec: Dict[str, Any]) -> Dict[str, Any]:
+def _loc(rec: dict[str, Any]) -> dict[str, Any]:
     loc = rec.get("location") or {}
     return {
         "lat": loc.get("lat"),
@@ -325,7 +325,7 @@ def ingest_package(
     db_path: str,
     *,
     dry_run: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Validate and (unless dry_run) ingest a sibling producer's canonical package.
 
     Returns a summary: per-stream total / valid / ingested / rejected counts +
@@ -337,12 +337,12 @@ def ingest_package(
     package_id = manifest.get("package_id", "")
     producer = manifest.get("producer", "")
 
-    per_stream: Dict[str, Dict[str, Any]] = {}
-    valid_by_stream: Dict[str, List[Dict[str, Any]]] = {}
+    per_stream: dict[str, dict[str, Any]] = {}
+    valid_by_stream: dict[str, list[dict[str, Any]]] = {}
     for stream, rows in package["streams"].items():
         schema = load_schema(stream)
-        valid: List[Dict[str, Any]] = []
-        rejects: List[Dict[str, Any]] = []
+        valid: list[dict[str, Any]] = []
+        rejects: list[dict[str, Any]] = []
         id_key = {
             "observations": "observation_id",
             "alerts": "alert_id",

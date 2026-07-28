@@ -14,7 +14,6 @@ import numpy as np  # noqa: E402
 from gebco.io import validate_bounds  # noqa: E402
 from gebco.terrain import mona_passage_profile, underwater_ridges  # noqa: E402
 
-
 # ── validate_bounds ───────────────────────────────────────────────────────────
 
 def test_validate_bounds_valid_pr_region():

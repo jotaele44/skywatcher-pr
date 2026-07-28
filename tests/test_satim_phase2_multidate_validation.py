@@ -1,6 +1,5 @@
 from fr24.calibration.satim_multidate_validation import validate_candidate_across_dates
 
-
 BASE_CANDIDATE = {
     "visual_id": "SATIM-VIS-PHASE2_001",
     "classification": "probable_tile_seam",

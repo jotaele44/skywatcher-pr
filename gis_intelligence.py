@@ -21,7 +21,11 @@ from skywatcher.corrim.gis_intelligence import (
     InfrastructureType,
     Phase2Database,
     PuertoRicoInfrastructure,
-    _kml_color,
+    # Underscore-prefixed helpers are re-exported deliberately: this module is a
+    # backward-compat shim, so narrowing its import surface is a behavior change,
+    # not a cleanup. They are absent from __all__ because they are private, which
+    # is why ruff cannot see them as re-exports.
+    _kml_color,  # noqa: F401
     haversine_nm,
     intensity_to_color,
     point_to_line_distance,

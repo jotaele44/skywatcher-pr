@@ -34,7 +34,6 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
-from typing import Optional, Tuple
 
 os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
@@ -44,7 +43,7 @@ try:
     import pillow_heif
     pillow_heif.register_heif_opener()
 except ImportError:
-    pass
+    pass  # HEIC files unsupported if pillow_heif absent
 
 try:
     import pytesseract
@@ -55,14 +54,13 @@ except ImportError:
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from fr24.rlsm_preprocess import preprocess, scale_for
 from fr24.rlsm_wordboxes import words_from_tesseract_data  # noqa: E402
 
 DB   = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 JSONL = REPO / "outputs" / "ocr_raw_by_zone.jsonl"
 
 # Populated per-worker via _worker_init
-_worker_db_path: Optional[str] = None
+_worker_db_path: str | None = None
 
 
 _LANG_CACHE: str | None = None
@@ -115,7 +113,7 @@ def _worker_init(db_path: str) -> None:
 
 
 def _ocr_with_conf(img_crop: Image.Image, config: str,
-                   x_off: int = 0, y_off: int = 0, scale: float = 1.0) -> Tuple[str, list, float, float, int]:
+                   x_off: int = 0, y_off: int = 0) -> tuple[str, list, float, float, int]:
     """Run tesseract and return (raw_text, word_boxes, conf_mean, conf_min, n_words).
 
     ``x_off``/``y_off`` are the crop origin, so the returned word boxes are in
@@ -132,7 +130,7 @@ def _ocr_with_conf(img_crop: Image.Image, config: str,
         return "", [], 0.0, 0.0, 0
 
     words = [w for w in data["text"] if w.strip()]
-    confs = [c for c, w in zip(data["conf"], data["text"]) if w.strip() and c >= 0]
+    confs = [c for c, w in zip(data["conf"], data["text"], strict=True) if w.strip() and c >= 0]
     raw_text = " ".join(words)
     boxes = words_from_tesseract_data(data, x_off=x_off, y_off=y_off)
     conf_mean = float(sum(confs) / len(confs)) if confs else 0.0
@@ -140,9 +138,9 @@ def _ocr_with_conf(img_crop: Image.Image, config: str,
     return raw_text, boxes, conf_mean, conf_min, len(words)
 
 
-def _process_one(args: Tuple[int, str, int]) -> dict:
+def _process_one(args: tuple[int, str, int]) -> dict:
     """Worker function. Returns (sid, status, n_obs, elapsed_sec, err)."""
-    from fr24.rlsm_zones import zones_for, ZONE_OCR_CONFIG
+    from fr24.rlsm_zones import ZONE_OCR_CONFIG, zones_for
 
     sid, rel_path, run_id = args
     t0 = time.time()
@@ -182,8 +180,7 @@ def _process_one(args: Tuple[int, str, int]) -> dict:
             crop = preprocess(crops[zone.name], mode, scale)
 
             raw_text, lines_json, conf_mean, conf_min, n_words = _ocr_with_conf(
-                crop, config, x_off=zone.x, y_off=zone.y,
-                scale=scale if mode != "none" else 1.0)
+                crop, config, x_off=zone.x, y_off=zone.y)
             z_status = "ok" if raw_text.strip() else "empty"
             bbox = zone.crop_box()
 

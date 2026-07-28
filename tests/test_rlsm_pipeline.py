@@ -12,10 +12,7 @@ Verifies the structural invariants required by the spec:
 """
 from __future__ import annotations
 
-import csv
 import hashlib
-import json
-import os
 import sqlite3
 from pathlib import Path
 
@@ -227,7 +224,6 @@ def test_review_queue_pointers_resolve():
 
 def test_aircraft_observations_dedup_index_exists():
     """The ix_air_dedup partial-unique index must exist (B-dedup-unique)."""
-    import sqlite3 as _sqlite3
     c = _conn()
     row = c.execute(
         "SELECT sql FROM sqlite_master WHERE type='index' AND name='ix_air_dedup'"

@@ -13,9 +13,9 @@ if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
 from skywatcher.corrim.aasb_airspace_bridge import (
-    AASBAirspaceBridge,
     AIRPORT_COORDS,
     EDGE_FIELDNAMES,
+    AASBAirspaceBridge,
 )
 
 __all__ = [

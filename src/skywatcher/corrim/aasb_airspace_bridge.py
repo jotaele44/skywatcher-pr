@@ -9,11 +9,10 @@ import sqlite3
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
-
+from typing import Any
 
 # Known PR airport coordinates for node anchoring
-AIRPORT_COORDS: Dict[str, Tuple[float, float]] = {
+AIRPORT_COORDS: dict[str, tuple[float, float]] = {
     "SJU": (18.4373, -66.0018),
     "BQN": (18.4948, -67.1294),
     "PSE": (18.0083, -66.5632),
@@ -32,6 +31,12 @@ EDGE_FIELDNAMES = [
     "dominant_callsign", "confidence_score",
 ]
 
+# (origin, destination) airport pair, used to key the edge aggregation.
+# Declared at module scope rather than inside _build_edges: PEP 526 local
+# variable annotations are never evaluated, so a function-local alias is a
+# dead binding that only reads as used.
+RouteKey = tuple[str, str]
+
 
 class AASBAirspaceBridge:
     def __init__(self, db_path: str, output_dir: str):
@@ -39,14 +44,14 @@ class AASBAirspaceBridge:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def export_all(self) -> Dict[str, Any]:
+    def export_all(self) -> dict[str, Any]:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         flights = self._safe_query(conn, "SELECT * FROM flights")
         conn.close()
 
         edges = self._build_edges(flights)
-        edge_path = self._write_edges(edges)
+        self._write_edges(edges)
 
         # Gather all files produced by both bridges (ilap + aasb)
         all_files = self._inventory_output_files()
@@ -69,10 +74,9 @@ class AASBAirspaceBridge:
 
     # ------------------------------------------------------------------ edges
 
-    def _build_edges(self, flights: List[dict]) -> List[dict]:
+    def _build_edges(self, flights: list[dict]) -> list[dict]:
         # Aggregate by (origin, destination) pair
-        RouteKey = Tuple[str, str]
-        agg: Dict[RouteKey, Dict] = defaultdict(lambda: {
+        agg: dict[RouteKey, dict] = defaultdict(lambda: {
             "flight_count": 0,
             "total_duration": 0.0,
             "callsign_counts": defaultdict(int),
@@ -118,7 +122,7 @@ class AASBAirspaceBridge:
 
         return edges
 
-    def _write_edges(self, edges: List[dict]) -> Path:
+    def _write_edges(self, edges: list[dict]) -> Path:
         path = self.output_dir / "aasb_airspace_edges.csv"
         with open(path, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=EDGE_FIELDNAMES)
@@ -128,7 +132,7 @@ class AASBAirspaceBridge:
 
     # ----------------------------------------------------------------- manifest helpers
 
-    def _inventory_output_files(self) -> List[dict]:
+    def _inventory_output_files(self) -> list[dict]:
         target_files = [
             "airspace_poi_candidates.geojson",
             "airspace_ilap_candidates.geojson",
@@ -160,7 +164,7 @@ class AASBAirspaceBridge:
                 return 0
         return 0
 
-    def _safe_query(self, conn: sqlite3.Connection, sql: str) -> List[dict]:
+    def _safe_query(self, conn: sqlite3.Connection, sql: str) -> list[dict]:
         try:
             return [dict(r) for r in conn.execute(sql)]
         except Exception:

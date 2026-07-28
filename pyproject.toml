@@ -15,11 +15,13 @@ markers = [
 
 # ── ruff ─────────────────────────────────────────────────────────────────────
 # Same rule set as the rest of the federation so the target is identical
-# everywhere. This repo starts from a large backlog (~1.4k findings, mostly
-# UP006/UP035 annotation modernization and unsorted imports), so the CI lint job
-# is REPORT-ONLY for now — see .github/workflows/ci.yml. Clearing the backlog is
-# tracked separately; mass-autofixing a flat-layout numerics repo in one pass is
-# not safe to bundle with CI configuration work.
+# everywhere. The backlog this repo started with (1,369 findings) is cleared
+# apart from the two entries below, and the CI lint job is GATING — see ci.yml.
+#
+# target-version MUST stay py310: it is the lowest version in ci.yml's matrix,
+# and at a py312 target ruff's UP017 rewrites `timezone.utc` to `datetime.UTC`,
+# which does not exist before 3.11 and breaks the 3.10 leg at import time. That
+# regression already happened once, in ovnis-pr.
 [tool.ruff]
 line-length = 100
 target-version = "py310"
@@ -28,7 +30,25 @@ extend-exclude = ["Archive.zip", "gebco", "exports", "data"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "W"]
-ignore = ["E501"] # line length is handled by the formatter, not the linter
+# Every entry here is DELIBERATE, not a backlog. Nothing is parked pending
+# cleanup — the rest of the original 1,369 findings were fixed rather than
+# ignored. Do not add to this list to make a build pass: fix the finding, or if
+# the code is genuinely intentional, add a targeted `# noqa` with a reason at the
+# site so it is visible where it matters.
+ignore = [
+    # Line length is the formatter's concern, not the linter's.
+    "E501",
+    # 16 sites, all deliberate. The backward-compat shims at the repo root must
+    # bootstrap `src` onto sys.path BEFORE importing from `skywatcher.*`, so the
+    # import genuinely cannot come first. Enforcing this would mean breaking the
+    # shims. See docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md.
+    "E402",
+    # 4 sites, all in scripts/parse_flight_log.py, and VERIFIED BENIGN: the
+    # `cell = lambda c: ...` closure is called within the same loop iteration, so
+    # late binding cannot bite. Ruff cannot prove the lambda does not escape.
+    # Recorded here so nobody re-investigates it a third time.
+    "B023",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["B011"] # assert False is idiomatic in tests

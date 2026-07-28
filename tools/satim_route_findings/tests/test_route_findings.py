@@ -6,11 +6,9 @@ import sys
 from pathlib import Path
 
 import pytest
-
 from satim_route_findings.loaders import load_required_ledgers
 from satim_route_findings.report import run_analysis
 from satim_route_findings.schemas import REQUIRED_FILENAMES, validate_ledgers
-
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

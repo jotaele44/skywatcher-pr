@@ -11,9 +11,8 @@ not follow plausible real-world geometry.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Iterable, Mapping
-
 
 TILE_SEAM_PROBABLE = "TILE_SEAM_PROBABLE"
 TILE_SEAM_CANDIDATE = "TILE_SEAM_CANDIDATE"

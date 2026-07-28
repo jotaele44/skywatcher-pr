@@ -166,9 +166,12 @@ jobs:
           # PRII_FETCH_HUB: ensure shared federation libs resolve
           if [ ! -d ../thehub-pr ]; then git clone --depth 1 --branch "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" https://github.com/jotaele44/thehub-pr.git ../thehub-pr || git clone --depth 1 https://github.com/jotaele44/thehub-pr.git ../thehub-pr; fi
           python -m pip install ruff mypy -r requirements-dev.txt
-      - name: Ruff (report-only)
-        continue-on-error: true
-        run: ruff check --statistics .
+      # GATING as of the backlog cleanup: the repo is ruff-clean under the
+      # `ignore` list in pyproject.toml, which holds the remaining findings that
+      # need judgement rather than an autofix. Anything outside that list is a
+      # new violation and fails here.
+      - name: Ruff
+        run: ruff check .
       - name: Mypy (report-only)
         continue-on-error: true
         run: python -m mypy

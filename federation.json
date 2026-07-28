@@ -5,6 +5,11 @@
   "repository_legacy_name": "skywatcher-pr",
   "federation_role": "airspace_intelligence_node",
   "hub_parent": "thehub-pr",
+  "branding": {
+    "icon": "assets/branding/icon.png",
+    "icon_dir": "assets/branding",
+    "accent_color": "#0573e4"
+  },
   "jurisdiction": "Puerto Rico",
   "active_vector": "SKYWATCHER_AIRSPACE_AIRCRAFT_INTELLIGENCE",
   "production_status": "NON_PRODUCTION_DIAGNOSTIC",

@@ -1,9 +1,9 @@
 from satim_artifact_filter import (
+    NON_DESTRUCTIVE_CONFIDENCE_PATCH_STATUS,
     ArtifactClass,
     ArtifactLink,
     ArtifactObservation,
     ArtifactSignal,
-    NON_DESTRUCTIVE_CONFIDENCE_PATCH_STATUS,
     artifact_filter_schema,
     build_artifact_filter_ledger,
     build_detector_confidence_patch,

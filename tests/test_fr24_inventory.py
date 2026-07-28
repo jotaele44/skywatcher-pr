@@ -1,13 +1,11 @@
 """Tests for ScreenshotInventory: coverage, hashing, dedup, corrupt detection."""
 
 import hashlib
-import shutil
 from pathlib import Path
 
 import pytest
 
-from fr24.screenshot_inventory import ScreenshotInventory, scan_directory, MANIFEST_FIELDS
-
+from fr24.screenshot_inventory import MANIFEST_FIELDS, ScreenshotInventory, scan_directory
 
 # ------------------------------------------------------------------ fixtures
 

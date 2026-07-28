@@ -282,7 +282,15 @@ def public_settings() -> dict[str, Any]:
     return {
         "id": "skywatcher-pr",
         "name": "Skywatcher-PR — Airspace Intelligence",
-        "public_settings": {"requires_auth": False, "mode": "diagnostic"},
+        # write_token_required lets the UI distinguish "this server wants a bearer
+        # token on writes" from "this server accepts writes from my network". The
+        # browser cannot read PRII_WRITE_TOKEN, so without this both look identical
+        # until a write 401s. Only the boolean is exposed, never the token.
+        "public_settings": {
+            "requires_auth": False,
+            "mode": "diagnostic",
+            "write_token_required": bool(_WRITE_TOKEN),
+        },
     }
 
 

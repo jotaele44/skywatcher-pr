@@ -17,7 +17,6 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
-from typing import Tuple
 
 os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
@@ -38,7 +37,6 @@ except ImportError:
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from fr24.rlsm_preprocess import preprocess, scale_for
 from fr24.rlsm_wordboxes import words_from_tesseract_data  # noqa: E402
 
 DB   = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -49,40 +47,13 @@ def _iso_now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
-_LANG_CACHE: str | None = None
-_VERSION_CACHE: str | None = None
-
-
-def _tess_lang() -> str:
-    """Prefer ``spa+eng``; fall back to ``eng``. See fr24/rlsm_ocr_parallel.py."""
-    global _LANG_CACHE
-    if _LANG_CACHE is None:
-        try:
-            langs = set(pytesseract.get_languages(config="")) if pytesseract else set()
-        except Exception:
-            langs = set()
-        _LANG_CACHE = "spa+eng" if {"spa", "eng"} <= langs else ("spa" if "spa" in langs else "eng")
-    return _LANG_CACHE
-
-
-def _tess_version() -> str:
-    global _VERSION_CACHE
-    if _VERSION_CACHE is None:
-        try:
-            _VERSION_CACHE = str(pytesseract.get_tesseract_version())
-        except Exception:
-            _VERSION_CACHE = "unknown"
-    return _VERSION_CACHE
-
-
-def _ocr_zone(img: Image.Image, zone, config: str, mode: str = "none",
-              scale: float = 1.0) -> Tuple[str, list, float, float, int]:
+def _ocr_zone(img: Image.Image, zone, config: str) -> tuple[str, list, float, float, int]:
     """Return (raw_text, word_boxes, conf_mean, conf_min, n_words).
 
     ``word_boxes`` carries the per-word geometry image_to_data already computes;
     see fr24/rlsm_wordboxes.py for why it is kept rather than discarded.
     """
-    crop = preprocess(img.crop(zone.crop_box()), mode, scale)
+    crop = img.crop(zone.crop_box())
     if pytesseract is None:
         return "", [], 0.0, 0.0, 0
     try:
@@ -93,19 +64,18 @@ def _ocr_zone(img: Image.Image, zone, config: str, mode: str = "none",
     except Exception:
         return "", [], 0.0, 0.0, 0
     words = [w for w in data["text"] if w.strip()]
-    confs = [c for c, w in zip(data["conf"], data["text"]) if w.strip() and c >= 0]
+    confs = [c for c, w in zip(data["conf"], data["text"], strict=True) if w.strip() and c >= 0]
     raw_text = " ".join(words)
     conf_mean = float(sum(confs) / len(confs)) if confs else 0.0
     conf_min  = float(min(confs)) if confs else 0.0
-    boxes = words_from_tesseract_data(data, x_off=zone.x, y_off=zone.y,
-                                      scale=scale if mode != "none" else 1.0)
+    boxes = words_from_tesseract_data(data, x_off=zone.x, y_off=zone.y)
     return raw_text, boxes, conf_mean, conf_min, len(words)
 
 
 def process_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str,
                        run_id: int) -> dict:
     """OCR one screenshot; write ocr_observations rows; update screenshots.ocr_status."""
-    from fr24.rlsm_zones import zones_for, ZONE_OCR_CONFIG
+    from fr24.rlsm_zones import ZONE_OCR_CONFIG, zones_for
 
     full_path = REPO / rel_path
     if not full_path.exists():
