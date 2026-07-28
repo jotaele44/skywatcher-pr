@@ -4,10 +4,11 @@ import ReactDOM from 'react-dom/client'
 import '@fontsource-variable/inter'
 import '@fontsource/jetbrains-mono'
 import App from '@/App.jsx'
-import '@/index.css'
 // Shared PRII federation design layer, single-sourced from @pr-federation/react
 // (replaces the local federation.css copy).
 import '@pr-federation/react/styles.css'
+// Product tokens intentionally load last so the supplied sky-blue identity wins.
+import '@/index.css'
 
 // This app commits to its dark radar/command identity. Stamp the shared
 // federation.css signals so accent + dark tokens apply across the federation.

@@ -24,6 +24,7 @@ EXE_ICON = str(BRANDING / "icon.ico") if sys.platform == "win32" else None
 CONSOLE = os.environ.get("PRII_CONSOLE") == "1"
 
 datas = [
+    (str(BRANDING), "assets/branding"),
     (str(REPO_ROOT / "frontend" / "dist"), "frontend/dist"),
     (str(REPO_ROOT / "data" / "reference"), "data/reference"),
 ]
@@ -50,6 +51,7 @@ a = Analysis(
         "prii_desktop.launcher",
         "prii_desktop.appserver",
         "prii_desktop.config",
+        "prii_desktop.setup_ui",
     ],
     noarchive=False,
 )
@@ -77,4 +79,9 @@ if sys.platform == "darwin":
         name=f"{APP_NAME}.app",
         icon=str(BRANDING / "AppIcon.icns"),
         bundle_identifier="pr.prii.skywatcher",
+        info_plist={
+            "CFBundleDisplayName": "Skywatcher",
+            "CFBundleName": "Skywatcher",
+            "NSHighResolutionCapable": True,
+        },
     )

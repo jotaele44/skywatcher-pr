@@ -1,5 +1,5 @@
-import React from "react";
-import { Share2, Terminal, AlertOctagon } from "lucide-react";
+import React, { useState } from "react";
+import { Share2, Wrench, AlertOctagon } from "lucide-react";
 import { useSkywatcher } from "@/lib/SkywatcherData";
 import { useDrawers } from "@/components/skywatcher/drawers/DrawerHub";
 import PageHeader from "@/components/skywatcher/PageHeader";
@@ -8,14 +8,23 @@ import Panel from "@/components/skywatcher/Panel";
 import StatusChip from "@/components/skywatcher/StatusChip";
 import SyntheticDataBadge from "@/components/skywatcher/SyntheticDataBadge";
 import ExportValidationPanel from "@/components/skywatcher/ExportValidationPanel";
-import CommandReferenceCard from "@/components/skywatcher/CommandReferenceCard";
 import LoadingState from "@/components/skywatcher/LoadingState";
-import { REPO_COMMANDS, EXPORT_STATUS } from "@/lib/skywatcher";
+import { EXPORT_STATUS } from "@/lib/skywatcher";
 
 export default function ExportCenter() {
   const d = useSkywatcher();
   const { open } = useDrawers();
+  const [setupStatus, setSetupStatus] = useState("");
   if (d.loading) return <LoadingState />;
+
+  async function openNativeSetup() {
+    const api = window.pywebview?.api;
+    if (!api?.open_setup) {
+      setSetupStatus("Native setup is available in the packaged Skywatcher app.");
+      return;
+    }
+    await api.open_setup();
+  }
 
   return (
     <div className="space-y-5">
@@ -53,15 +62,21 @@ export default function ExportCenter() {
         })}
       </div>
 
-      <Panel title="Read-Only Repository Command References" icon={Terminal}>
+      <Panel title="Native Setup & Diagnostics" icon={Wrench}>
         <p className="mb-3 text-xs text-muted-foreground">
-          These are copyable references to repository-side commands. They do not execute here — Federation is a visualization & validation surface only.
+          Choose application storage, verify bundled resources, repair local
+          setup, and review loopback health from the packaged interface.
         </p>
-        <div className="space-y-2">
-          {REPO_COMMANDS.map((cmd, i) => (
-            <CommandReferenceCard key={i} command={cmd} />
-          ))}
-        </div>
+        <button
+          type="button"
+          onClick={openNativeSetup}
+          className="min-h-11 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          Open Setup & Diagnostics
+        </button>
+        <p className="mt-2 min-h-5 text-xs text-muted-foreground" role="status" aria-live="polite">
+          {setupStatus}
+        </p>
       </Panel>
     </div>
   );
