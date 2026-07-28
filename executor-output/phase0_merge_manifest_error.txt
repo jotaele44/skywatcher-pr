@@ -1,10 +1,31 @@
 Traceback (most recent call last):
-  File "/home/runner/work/skywatcher-pr/skywatcher-pr/desktop/phase0_sync_executor.py", line 403, in execute_phase0_sync
-  File "/home/runner/work/skywatcher-pr/skywatcher-pr/desktop/phase0_sync_executor.py", line 357, in _execute
-    "merge_sha": merge_sha,
-RuntimeError: validated merge object push failed:
+  File "/home/runner/work/skywatcher-pr/skywatcher-pr/desktop/phase0_sync_executor.py", line 384, in _api_post
+    return output
+                  
+  File "/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/urllib/request.py", line 216, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/urllib/request.py", line 525, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/urllib/request.py", line 634, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/urllib/request.py", line 563, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/urllib/request.py", line 496, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/urllib/request.py", line 643, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 403: Forbidden
 
-To https://github.com/jotaele44/skywatcher-pr.git
- ! [remote rejected] HEAD -> codex/phase0-synchronized-object-v2 (refusing to allow a GitHub App to create or update workflow `.github/workflows/ci.yml` without `workflows` permission)
-error: failed to push some refs to 'https://github.com/jotaele44/skywatcher-pr.git'
+The above exception was the direct cause of the following exception:
 
+Traceback (most recent call last):
+  File "/home/runner/work/skywatcher-pr/skywatcher-pr/desktop/phase0_sync_executor.py", line 502, in execute_phase0_sync
+  File "/home/runner/work/skywatcher-pr/skywatcher-pr/desktop/phase0_sync_executor.py", line 444, in _execute
+  File "/home/runner/work/skywatcher-pr/skywatcher-pr/desktop/phase0_sync_executor.py", line 388, in _api_post
+RuntimeError: GitHub Git Data API failed: 403 /git/trees
+{"message":"Resource not accessible by integration","documentation_url":"https://docs.github.com/rest/git/trees#create-a-tree","status":"403"}
