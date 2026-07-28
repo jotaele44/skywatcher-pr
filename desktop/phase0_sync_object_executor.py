@@ -1,4 +1,4 @@
-"""Temporary wrapper that preserves the validated Phase 0 merge commit object."""
+"""Temporary wrapper that creates the validated Phase 0 merge as Git objects."""
 
 from __future__ import annotations
 
@@ -23,49 +23,147 @@ def execute_phase0_object_sync(repo_root: Path) -> Path:
     )
     push_end = source.index("\n\n\ndef execute_phase0_sync", push_start)
 
-    replacement = r'''        _copy_checkout_credentials(repo_root, repo)
-        object_branch = "codex/phase0-synchronized-object-v2"
-        object_push = _run(
+    replacement = r'''        import base64 as _base64
+        import urllib.error as _urllib_error
+        import urllib.request as _urllib_request
+
+        credential_result = _run(
             "git",
-            "push",
-            "origin",
-            f"HEAD:refs/heads/{object_branch}",
-            cwd=repo,
+            "config",
+            "--local",
+            "--get-regexp",
+            r"^http\..*\.extraheader$",
+            cwd=repo_root,
             check=False,
         )
-        if object_push.returncode:
-            raise RuntimeError(
-                "validated merge object push failed:\n"
-                + object_push.stdout
-                + "\n"
-                + object_push.stderr
+        if credential_result.returncode or not credential_result.stdout.strip():
+            raise RuntimeError("persisted GitHub API credential header is unavailable")
+        authorization = None
+        for credential_line in credential_result.stdout.splitlines():
+            _key, header = credential_line.split(None, 1)
+            if header.lower().startswith("authorization:"):
+                authorization = header.split(":", 1)[1].strip()
+                break
+        if not authorization:
+            raise RuntimeError("GitHub Authorization header was not found")
+
+        def _api_post(path: str, payload: dict) -> dict:
+            request = _urllib_request.Request(
+                "https://api.github.com/repos/jotaele44/skywatcher-pr" + path,
+                data=json.dumps(payload).encode("utf-8"),
+                method="POST",
+                headers={
+                    "Authorization": authorization,
+                    "Accept": "application/vnd.github+json",
+                    "X-GitHub-Api-Version": "2022-11-28",
+                    "Content-Type": "application/json",
+                    "User-Agent": "skywatcher-phase0-sync-executor",
+                },
+            )
+            try:
+                with _urllib_request.urlopen(request, timeout=120) as response:
+                    return json.loads(response.read().decode("utf-8"))
+            except _urllib_error.HTTPError as exc:
+                body = exc.read().decode("utf-8", errors="replace")
+                raise RuntimeError(
+                    f"GitHub Git Data API failed: {exc.code} {path}\n{body}"
+                ) from exc
+
+        feature_tree = _run(
+            "git", "rev-parse", f"{FEATURE}^{{tree}}", cwd=repo
+        ).stdout.strip()
+        raw_diff = _run(
+            "git",
+            "diff-tree",
+            "-r",
+            "--no-renames",
+            "--raw",
+            feature_tree,
+            tree_sha,
+            cwd=repo,
+        ).stdout
+        tree_elements = []
+        uploaded_blobs = 0
+        for raw_line in raw_diff.splitlines():
+            metadata, path = raw_line.split("\t", 1)
+            fields = metadata.split()
+            old_mode = fields[0][1:]
+            new_mode = fields[1]
+            new_sha = fields[3]
+            status = fields[4]
+            if status == "D":
+                tree_elements.append(
+                    {"path": path, "mode": old_mode, "type": "blob", "sha": None}
+                )
+                continue
+            if new_mode == "160000":
+                tree_elements.append(
+                    {"path": path, "mode": new_mode, "type": "commit", "sha": new_sha}
+                )
+                continue
+            blob_bytes = subprocess.check_output(
+                ["git", "cat-file", "blob", new_sha], cwd=repo
+            )
+            blob_response = _api_post(
+                "/git/blobs",
+                {
+                    "content": _base64.b64encode(blob_bytes).decode("ascii"),
+                    "encoding": "base64",
+                },
+            )
+            blob_sha = blob_response["sha"]
+            if blob_sha != new_sha:
+                raise RuntimeError(
+                    f"remote blob SHA mismatch for {path}: {blob_sha} != {new_sha}"
+                )
+            uploaded_blobs += 1
+            tree_elements.append(
+                {"path": path, "mode": new_mode, "type": "blob", "sha": blob_sha}
             )
 
-        target_push = _run(
-            "git",
-            "push",
-            "origin",
-            f"HEAD:refs/heads/{TARGET_BRANCH}",
-            cwd=repo,
-            check=False,
+        tree_response = _api_post(
+            "/git/trees",
+            {"base_tree": feature_tree, "tree": tree_elements},
         )
+        api_tree_sha = tree_response["sha"]
+        if api_tree_sha != tree_sha:
+            raise RuntimeError(
+                f"remote tree SHA mismatch: {api_tree_sha} != validated {tree_sha}"
+            )
+        commit_response = _api_post(
+            "/git/commits",
+            {
+                "message": "Merge current main into Phase 0 branch",
+                "tree": api_tree_sha,
+                "parents": [FEATURE, MAIN],
+            },
+        )
+        api_commit_sha = commit_response["sha"]
+        commit_parents = [parent["sha"] for parent in commit_response.get("parents", [])]
+        if commit_parents != [FEATURE, MAIN]:
+            raise RuntimeError(f"remote commit parent mismatch: {commit_parents!r}")
+        if commit_response["tree"]["sha"] != tree_sha:
+            raise RuntimeError("remote commit tree does not match validated tree")
+
         remote_after = _run(
             "git", "ls-remote", "origin", f"refs/heads/{TARGET_BRANCH}", cwd=repo
         ).stdout.split()[0]
+        if remote_after != FEATURE:
+            raise RuntimeError(
+                f"feature branch moved before connector publication: {remote_after}"
+            )
 
         return {
             "feature_parent": FEATURE,
             "main_parent": MAIN,
-            "merge_sha": merge_sha,
+            "local_merge_sha": merge_sha,
+            "merge_sha": api_commit_sha,
             "merge_tree": tree_sha,
-            "object_branch": object_branch,
-            "object_push_return_code": object_push.returncode,
-            "object_push_stdout": object_push.stdout,
-            "object_push_stderr": object_push.stderr,
-            "target_push_return_code": target_push.returncode,
-            "target_push_stdout": target_push.stdout,
-            "target_push_stderr": target_push.stderr,
-            "target_updated": remote_after == merge_sha,
+            "api_tree_sha": api_tree_sha,
+            "api_commit_parents": commit_parents,
+            "uploaded_blob_count": uploaded_blobs,
+            "tree_element_count": len(tree_elements),
+            "target_updated": False,
             "remote_head": remote_after,
             "conflicts": CONFLICTS,
             "changed_file_count": len(changed_paths),
@@ -73,6 +171,7 @@ def execute_phase0_object_sync(repo_root: Path) -> Path:
             "data_delta": data_delta,
             "ruff_clean": True,
             "push_force": False,
+            "publication_method": "git_data_api_objects_then_connector_update_ref",
         }
 '''
     patched = source[:push_start] + replacement + source[push_end:]
