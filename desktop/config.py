@@ -11,7 +11,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 # Window title of the desktop app.
-APP_TITLE = "Skywatcher — PRII Airspace Intelligence"
+APP_TITLE = "Skywatcher"
+APP_ID = "skywatcher"
+APP_ACCENT = "#0B9DEE"
+APP_ICON = REPO_ROOT / "assets" / "branding" / "icon-256.png"
+RELEASES_URL = "https://github.com/jotaele44/skywatcher-pr/releases"
+SETUP_VERSION = 1
 
 # Dotted import path of the FastAPI application object.
 APP_IMPORT = "server.backend.main:app"

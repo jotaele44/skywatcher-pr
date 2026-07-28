@@ -15,15 +15,6 @@ export const PROGRAM = {
 export const DISCLAIMER =
   "Skywatcher maps aircraft activity, missions, and airspace–infrastructure relationships. It does not allege wrongdoing.";
 
-export const REPO_COMMANDS = [
-  "python -m pip install -r requirements-dev.txt",
-  "python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test",
-  "python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode production",
-  "python -m pytest -q",
-  "python3 scripts/federation_export.py --mode test",
-  "python3 scripts/ingest_airports.py",
-];
-
 // Confidence tiering
 export function confidenceTier(score) {
   if (score == null) return "unknown";

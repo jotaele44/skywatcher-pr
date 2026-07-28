@@ -1,0 +1,37 @@
+{
+  "accent": "#0B9DEE",
+  "derivatives": {
+    "AppIcon.icns": {
+      "sha256": "447174a611a4766c9ae4ffb6b437729395db111898e81f22688b3a94433c12bf"
+    },
+    "icon-180.png": {
+      "sha256": "422bf89bc1ae0fd21e23aaf20d2c3a4e4dbf6abe41e7f3b678718ff73c51e0e2"
+    },
+    "icon-192.png": {
+      "sha256": "94117225f655d95d9e4b548944b8bcdd82a5475c483a75774b330e8a281d13cc"
+    },
+    "icon-256.png": {
+      "sha256": "d1b380f4fd2711882780b6118aa6f8bd4189c73785847d47eb81b1fba52a5927"
+    },
+    "icon-32.png": {
+      "sha256": "c574b702f8e0b3d2a252d8929abacea2a3f9d0af80ef7265cd80084bca2108d7"
+    },
+    "icon-512.png": {
+      "sha256": "c44ef7681e697a0b4b155ef8e4fa73340b1c719e1b28dbead5ecc350c1b8034a"
+    },
+    "icon-64.png": {
+      "sha256": "fbfb7d3cf6719eca0649b2388d6b95a89355f252c2db83980640485b1241ed64"
+    },
+    "icon.ico": {
+      "sha256": "8f92e22457dd8bdcfccce834fe0a8e021022d423512e622f2fcefd2fc8611d21"
+    }
+  },
+  "schema": "prii-branding/v1",
+  "source": "icon.png",
+  "source_dimensions": [
+    1254,
+    1254
+  ],
+  "source_mode": "RGBA",
+  "source_sha256": "305fba8cd4e7bcef1b448f43a12daf2507a20feaa1079a07f2d91d6e07eeb5cd"
+}
