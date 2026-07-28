@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import traceback
 
 import pytest
 
@@ -93,5 +94,11 @@ def test_heic_decoder_declares_dependency(tmp_path: Path) -> None:
 def test_phase0_sync_manifest_bridge() -> None:
     import runpy
 
-    namespace = runpy.run_path(str(Path(__file__).with_name("test_phase0_sync_manifest.py")))
-    namespace["test_emit_phase0_sync_manifest"]()
+    try:
+        namespace = runpy.run_path(str(Path(__file__).with_name("test_phase0_sync_manifest.py")))
+        namespace["test_emit_phase0_sync_manifest"]()
+    except Exception:
+        Path("phase0_merge_manifest_error.txt").write_text(
+            traceback.format_exc(), encoding="utf-8"
+        )
+        raise
