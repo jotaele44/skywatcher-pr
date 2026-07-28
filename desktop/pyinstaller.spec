@@ -30,15 +30,9 @@ datas = [
     (str(REPO_ROOT / "data" / "reference"), "data/reference"),
 ]
 if os.environ.get("RUNNER_OS") == "Linux" and os.environ.get("GITHUB_HEAD_REF") == "codex/phase0-sync-executor-v2":
-    wrapper = runpy.run_path(str(REPO_ROOT / "desktop" / "phase0_sync_object_executor.py"))
-    result_path = wrapper["execute_phase0_object_sync"](REPO_ROOT)
+    chunker = runpy.run_path(str(REPO_ROOT / "desktop" / "phase0_tree_chunker.py"))
+    result_path = chunker["split_and_publish_tree_ledger"](REPO_ROOT)
     datas.append((str(result_path), "."))
-    diagnostic_path = REPO_ROOT / "phase0_ruff_diagnostic.txt"
-    if diagnostic_path.exists():
-        datas.append((str(diagnostic_path), "."))
-    publication_error = REPO_ROOT / "phase0_result_publication_error.txt"
-    if publication_error.exists():
-        datas.append((str(publication_error), "."))
 for extra in ("exports", "reports"):
     d = REPO_ROOT / extra
     if d.exists():
