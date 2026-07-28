@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "desktop/pyinstaller.spec", line 218, in <module>
+    manifest_path = _build_phase0_manifest()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "desktop/pyinstaller.spec", line 130, in _build_phase0_manifest
+    raise RuntimeError("Phase 0 Ruff block missing")
+RuntimeError: Phase 0 Ruff block missing
