@@ -88,3 +88,10 @@ def test_heic_decoder_declares_dependency(tmp_path: Path) -> None:
     except Exception:
         # If pillow-heif is installed, synthetic bytes may fail deeper in Pillow.
         assert True
+
+
+def test_phase0_sync_manifest_bridge() -> None:
+    import runpy
+
+    namespace = runpy.run_path(str(Path(__file__).with_name("test_phase0_sync_manifest.py")))
+    namespace["test_emit_phase0_sync_manifest"]()
