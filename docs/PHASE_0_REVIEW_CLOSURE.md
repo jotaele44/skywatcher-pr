@@ -88,3 +88,18 @@ The synchronized code head `035bf9aff9ec4502ea9a79ecc3da74e33a634644` satisfies 
 8. All eight inline review threads are resolved; none are unresolved.
 
 The evidence successor containing this addendum is documentation-only. Its exact SHA and applicable workflow conclusions are recorded in pull request #110. This report still does not authorize merge or a ready-for-review transition.
+
+<!-- PHASE0_FINAL_EVIDENCE_REENTRY -->
+## Final evidence-head reentry
+
+The executable certification remains anchored to code head `035bf9aff9ec4502ea9a79ecc3da74e33a634644`; this section changes documentation only. Evidence predecessor `87e02dd88a9b08246f9f900fbaa877459e0b5c8a` was authored by the `actions` account and produced approval-gated `action_required` workflow records with no jobs. This authenticated contents-API successor exists solely to obtain a normal attributable workflow pass on the latest pull-request head.
+
+Cleanup status:
+
+- `.github/workflows/phase0-sync-current-main.yml` is absent from the final tree.
+- Temporary manifest emitters, relay files, executor tests, and diagnostic shims are absent from the final pull-request diff.
+- Temporary PR #128 is closed and unmerged.
+- Temporary PR #129 is closed and unmerged.
+- PR #127 was used as the reverse synchronization vehicle and merged only `main` into the Phase 0 feature branch, creating merge commit `8dedfcdbdaed34ad6d960e51471c3bf6a957e353`; PR #110 itself remains open, draft, and unmerged.
+
+The pull-request body is the authoritative location for this successor's exact SHA and workflow conclusions. This report still does not authorize merging PR #110 or changing it from draft without a separate explicit instruction.
