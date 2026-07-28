@@ -88,3 +88,15 @@ lists remain empty, and operational-pattern cueing remains absent.
 `CALLSIGN_PREFIXES`. Quarantined inference symbols remain lazily reachable for
 legacy callers but are excluded from `__all__` and emit `DeprecationWarning`.
 No active Core, SATIM, FPIM, or CORRIM module imports the quarantine package.
+
+<!-- PHASE0_SYNC_CERTIFICATION_V2 -->
+## Current-main synchronization preservation
+
+FPIM was one of the explicitly adjudicated overlap surfaces during synchronization with `main@9cdf63d584bc58495c32a573dc0fc9ddad981ab8`. The synchronized implementation at `035bf9aff9ec4502ea9a79ecc3da74e33a634644` preserves the Phase 0 identity boundary:
+
+- `country` remains `Unknown` unless complete country-field provenance activates it.
+- Callsign prefixes remain compatibility constants only and are not consulted by active resolution.
+- Ordinary database flight rows enrich only observed counts and first/last-seen timestamps.
+- Active reports leave role unresolved, mission lists empty, and operational-pattern cueing absent.
+
+The conflict resolutions for `src/skywatcher/fpim/aircraft_profile.py` and `tests/test_aircraft_intelligence.py` were retained in merge tree `d498d3aa86992c59997fdbe5eb24355d76c41e91`. Backend core, Skywatcher CI, CodeQL, and the remaining workflow families all succeeded on `035bf9aff9ec4502ea9a79ecc3da74e33a634644`.

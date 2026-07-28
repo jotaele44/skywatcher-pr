@@ -65,3 +65,20 @@ All eleven workflow families completed successfully on certified code head `a773
 - SATIM Phase 2 Contracts — run `30313038691`
 
 Documentation-only successor heads must rerun every workflow applicable to their changed paths. The pull-request body is the authoritative record of the latest evidence head, final workflow conclusions, and review-thread closure.
+
+<!-- PHASE0_SYNC_CERTIFICATION_V2 -->
+## Current-main overlap adjudication v2
+
+- Synchronized merge head: `8dedfcdbdaed34ad6d960e51471c3bf6a957e353`
+- Phase 0 parent: `1bfaea7c37ff42d0614934b0553cf8aacad9bfcc`
+- Current-main parent: `9cdf63d584bc58495c32a573dc0fc9ddad981ab8`
+- Validated merge tree: `d498d3aa86992c59997fdbe5eb24355d76c41e91`
+- Final synchronized code head: `035bf9aff9ec4502ea9a79ecc3da74e33a634644`
+- Pull-request disposition: open, draft, mergeable, unmerged
+- Branch state: `behind_by=0`
+- Changed files: **98**
+- Net frontend and production-data deltas relative to main: **0 / 0**
+
+The 13-path overlap was adjudicated explicitly. Phase 0 security controls were retained on the conflicted CI, packaging, FPIM, FR24/SATIM, and test surfaces; current-main frontend, branding, FOIA canaries, desktop packaging, and later server-smoke coverage were inherited unchanged. Archive default parity was closed with the same frozen `DEFAULT_ARCHIVE_LIMITS` behavior in core and standalone SATIM implementations.
+
+The first synchronized workflow pass correctly exposed resolver drift. Artifact `8700628078` was committed verbatim, producing `035bf9aff9ec4502ea9a79ecc3da74e33a634644`. All eleven workflow families then succeeded with the run IDs recorded in `docs/PHASE_0_TEST_EVIDENCE.md`.

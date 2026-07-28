@@ -204,3 +204,20 @@ Use `skywatcher --root <repo> export-source ...` rather than Finder-created ZIP 
 - FR24 ingest migrated from `spiderweb-pr` into `fr24/`.
 - Export contract salvaged from the retired airspace tooling path.
 - Phase 0 hardening preserves analytical and schema compatibility while establishing reproducible packaging, immutable dependency resolution, recoverable archive handling, field-provenance-gated identity enrichment, API identity security, and continuous security gates.
+
+<!-- PHASE0_SYNC_CERTIFICATION_V2 -->
+## Current Phase 0 synchronization certification
+
+The authoritative synchronized code head is `035bf9aff9ec4502ea9a79ecc3da74e33a634644`. It descends from true two-parent merge `8dedfcdbdaed34ad6d960e51471c3bf6a957e353`, whose ordered parents are Phase 0 head `1bfaea7c37ff42d0614934b0553cf8aacad9bfcc` and current `main@9cdf63d584bc58495c32a573dc0fc9ddad981ab8`. The independently reconstructed and connector-verified merge tree is `d498d3aa86992c59997fdbe5eb24355d76c41e91`.
+
+- Pull request #110 is open, draft, mergeable, unmerged, and zero commits behind current main.
+- The pull-request diff remains **98 files**.
+- Current-main frontend, branding, FOIA canary workflows, desktop packaging, and `tests/test_server_smoke.py` are preserved.
+- Net differences relative to current main under `frontend/` and production `data/` are zero.
+- Field-level aircraft provenance remains fail-closed; callsign prefixes and ordinary flight-history rows cannot promote identity.
+- Role, mission, purpose, target, schedule, typical operating area, and operational cueing remain unresolved or absent.
+- Core and standalone SATIM archive implementations retain matching validation, bounded extraction, replacement rollback, and frozen-default behavior.
+- `requirements.lock` equals the authoritative normalized resolver output; exact TheHub references remain pinned at `f00f2da0e6abcc885a8133e5c8b7aeb9756f5df8`.
+- All eleven workflow families succeeded on the synchronized code head. The exact run ledger is in `docs/PHASE_0_TEST_EVIDENCE.md`.
+
+This certification does not authorize merge or a ready-for-review transition.

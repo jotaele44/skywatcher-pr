@@ -61,3 +61,26 @@
 - Phase 3: full-assets profiling, release automation, generated capability documentation, and gating the existing lint/type backlog.
 - Provenance expansion: add reviewed source adapters that emit field-level provenance records; never backfill from callsign structure or unproven history rows.
 - Later review-store phase: durable, user/session-scoped review records without weakening the read-only default.
+
+<!-- PHASE0_SYNC_CERTIFICATION_V2 -->
+## Current-main synchronization record
+
+Phase 0 was synchronized through true two-parent merge `8dedfcdbdaed34ad6d960e51471c3bf6a957e353` with current `main@9cdf63d584bc58495c32a573dc0fc9ddad981ab8`. The independently reconstructed terminal tree `d498d3aa86992c59997fdbe5eb24355d76c41e91` matched the connector-created tree byte-for-byte. The final code head `035bf9aff9ec4502ea9a79ecc3da74e33a634644` is zero commits behind main and retains 98 net changed files.
+
+The overlap audit covered these 13 paths:
+
+- `.github/workflows/ci.yml`
+- `pyproject.toml`
+- `fr24/rlsm_unlabeled.py`
+- `fr24/satim_engine.py`
+- `fr24/satim_engine_core.py`
+- `scripts/federation_export.py`
+- `scripts/rlsm_geocode_unlabeled.py`
+- `scripts/rlsm_ocr_retry_tails.py`
+- `src/skywatcher/fpim/aircraft_profile.py`
+- `tests/test_aircraft_intelligence.py`
+- `tests/test_fr24_todays_batch.py`
+- `tests/test_maintenance.py`
+- `tools/satim_engine/src/satim_engine/inventory.py`
+
+Adjudication preserved current-main frontend, branding, FOIA canaries, desktop packaging, and server-smoke coverage while retaining Phase 0 CI, packaging, FPIM provenance, regression tests, and archive-security contracts. Ruff modernization was applied without changing public analytical schemas. The resolver-equivalent lock was refreshed from the CI-produced authoritative artifact.

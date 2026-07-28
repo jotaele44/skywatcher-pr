@@ -86,3 +86,33 @@ The artifact was committed unchanged as `requirements.lock`. On the certified co
 ## Evidence policy
 
 Any code change after the certified code head invalidates this code certification. Documentation-only successor heads must rerun workflows applicable to their changed paths. The pull-request body records the final evidence head and final conclusions.
+
+<!-- PHASE0_SYNC_CERTIFICATION_V2 -->
+## Synchronized code-head certification
+
+- Synchronized merge commit: `8dedfcdbdaed34ad6d960e51471c3bf6a957e353`
+- Ordered merge parents: `1bfaea7c37ff42d0614934b0553cf8aacad9bfcc`, `9cdf63d584bc58495c32a573dc0fc9ddad981ab8`
+- Validated merge tree: `d498d3aa86992c59997fdbe5eb24355d76c41e91`
+- Certified synchronized code head after resolver refresh: `035bf9aff9ec4502ea9a79ecc3da74e33a634644`
+- Pull-request changed files: **98**
+- Net frontend delta relative to current main: **0**
+- Net production-data delta relative to current main: **0**
+- Inline review threads: **8 resolved, 0 unresolved**
+
+The initial synchronized Skywatcher CI run generated artifact `8700628078` (`resolved-lock-6385acd961cda43e64fae7b2ab4bc1fb67883b3c`) and failed only the byte-for-byte lock comparison. The uploaded authoritative resolver output changed `annotated-doc` from `0.0.4` to `0.0.5` and `fastapi` from `0.140.7` to `0.140.13`; all other entries, exact TheHub SHAs, and no-editable-path constraints were unchanged. That output was committed verbatim as `requirements.lock` in `035bf9aff9ec4502ea9a79ecc3da74e33a634644`.
+
+| Workflow family | Run | Conclusion |
+|---|---:|---|
+| Backend core | `30390641872` | success |
+| Skywatcher CI | `30390639144` | success |
+| CodeQL | `30390638197` | success |
+| Secret scan | `30390641514` | success |
+| pip-audit | `30390638250` | success |
+| Federation template drift | `30390642042` | success |
+| desktop-build | `30390638674` | success |
+| SATIM Engine CI | `30390638299` | success |
+| SATIM Route Findings CI | `30390638336` | success |
+| SATIM Runtime Smoke Tests | `30390638471` | success |
+| SATIM Phase 2 Contracts | `30390641903` | success |
+
+All eleven families concluded successfully on `035bf9aff9ec4502ea9a79ecc3da74e33a634644`. This documentation-only successor does not modify executable code and is identified as the evidence head in pull request #110.
