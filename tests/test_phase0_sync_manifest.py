@@ -7,7 +7,6 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-import urllib.request
 import zlib
 
 import pytest
@@ -16,7 +15,7 @@ import pytest
 FEATURE = "1bfaea7c37ff42d0614934b0553cf8aacad9bfcc"
 MAIN = "09c8928109e25a3651f09ffff4c9414f0c83fdac"
 EXECUTOR_BRANCH = "codex/phase0-sync-executor-v2"
-RELAY_KEY = "skywatcher-phase0-manifest-1bfaea7c-09c89281-v2"
+UPLOAD_ARTIFACT_COMMIT = "ea165f8d65b6e75b540449e92b4886f43607fa02"
 CONFLICTS = [
     "fr24/rlsm_unlabeled.py",
     "fr24/satim_engine.py",
@@ -41,7 +40,8 @@ def test_emit_phase0_sync_manifest() -> None:
         pytest.skip("one-time Phase 0 synchronization manifest emitter")
 
     with tempfile.TemporaryDirectory() as td:
-        repo = Path(td) / "repo"
+        temp_root = Path(td)
+        repo = temp_root / "repo"
         subprocess.run(
             ["git", "clone", "--no-checkout", "https://github.com/jotaele44/skywatcher-pr.git", str(repo)],
             check=True,
@@ -180,16 +180,26 @@ def test_emit_phase0_sync_manifest() -> None:
         encoded = base64.b64encode(
             zlib.compress(json.dumps(manifest, sort_keys=True).encode(), level=9)
         ).decode()
-        payload = json.dumps(
-            {"key": RELAY_KEY, "content": encoded, "expireAfter": 3600}
-        ).encode()
-        request = urllib.request.Request(
-            "https://setget.io/api/set",
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST",
+        artifact_path = temp_root / "phase0_merge_manifest.zlib.b64"
+        artifact_path.write_text(encoded)
+
+        action_dir = temp_root / "upload-artifact"
+        subprocess.run(
+            ["git", "clone", "--no-checkout", "https://github.com/actions/upload-artifact.git", str(action_dir)],
+            check=True,
         )
-        with urllib.request.urlopen(request, timeout=30) as response:
-            assert 200 <= response.status < 300
-        print(f"PHASE0_MANIFEST_RELAY_KEY={RELAY_KEY}", flush=True)
-        pytest.fail("intentional one-time manifest relay publication")
+        _run("git", "checkout", "--detach", UPLOAD_ARTIFACT_COMMIT, cwd=action_dir)
+        action_env = os.environ.copy()
+        action_env.update(
+            {
+                "INPUT_NAME": "phase0-merge-manifest",
+                "INPUT_PATH": str(artifact_path),
+                "INPUT_IF-NO-FILES-FOUND": "error",
+                "INPUT_RETENTION-DAYS": "1",
+                "INPUT_COMPRESSION-LEVEL": "9",
+                "INPUT_OVERWRITE": "true",
+                "INPUT_INCLUDE-HIDDEN-FILES": "false",
+            }
+        )
+        subprocess.run(["node", str(action_dir / "dist/index.js")], env=action_env, check=True)
+        pytest.fail("intentional one-time manifest artifact publication")
