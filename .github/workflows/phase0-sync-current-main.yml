@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - agent/repository-hardening-phase-0
-    types: [reopened]
+    types: [opened]
 
 permissions:
   contents: write
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   merge:
-    if: github.event.pull_request.number == 126
+    if: github.event.pull_request.head.ref == 'main' && github.event.pull_request.base.ref == 'agent/repository-hardening-phase-0'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -28,11 +28,12 @@ jobs:
           set -euo pipefail
           expected_main=09c8928109e25a3651f09ffff4c9414f0c83fdac
           branch=agent/repository-hardening-phase-0
+          sync_pr=${{ github.event.pull_request.number }}
           git fetch origin main
           actual_main=$(git rev-parse origin/main)
           test "$actual_main" = "$expected_main"
           feature_head=$(git rev-parse HEAD)
-          gh api repos/${{ github.repository }}/issues/126/comments \
+          gh api repos/${{ github.repository }}/issues/$sync_pr/comments \
             -f body="## Phase 0 targeted merge validation started\n\n- Feature head: \`$feature_head\`\n- Main head: \`$actual_main\`\n- Full eleven-family CI will run on the connector-authored evidence successor."
 
           git config user.name phase0-sync-bot
@@ -151,7 +152,7 @@ jobs:
           if [ "$validation_rc" -ne 0 ]; then
             tail_log=$(tail -n 160 "$validation_log")
             body=$(printf '## Phase 0 adjudicated merge failed targeted validation\n\n- Feature head: `%s`\n- Main head: `%s`\n\n```\n%s\n```\n\nNo merge commit was pushed.' "$feature_head" "$actual_main" "$tail_log")
-            gh api repos/${{ github.repository }}/issues/126/comments -f body="$body"
+            gh api repos/${{ github.repository }}/issues/$sync_pr/comments -f body="$body"
             exit "$validation_rc"
           fi
 
@@ -164,4 +165,4 @@ jobs:
           git push origin "HEAD:$branch"
 
           body=$(printf '## Phase 0 adjudicated synchronization pushed\n\n- Previous feature head: `%s`\n- Current-main parent: `%s`\n- Two-parent merge head: `%s`\n- Conflict set: 13 exact paths\n- Ruff gate: passing\n- Targeted Phase 0 test set: passing\n- Temporary synchronization workflow: removed from final tree\n\nPR #110 remains draft and was not merged.' "$feature_head" "$actual_main" "$merge_sha")
-          gh api repos/${{ github.repository }}/issues/126/comments -f body="$body"
+          gh api repos/${{ github.repository }}/issues/$sync_pr/comments -f body="$body"
