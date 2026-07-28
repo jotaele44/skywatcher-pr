@@ -1,0 +1,45 @@
+name: Phase 0 current-main merge probe
+
+on:
+  push:
+    branches:
+      - agent/repository-hardening-phase-0
+    paths:
+      - .github/workflows/phase0-sync-current-main.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          ref: agent/repository-hardening-phase-0
+      - name: Probe exact current-main merge
+        shell: bash
+        run: |
+          set -uo pipefail
+          expected_main=09c8928109e25a3651f09ffff4c9414f0c83fdac
+          git fetch origin main
+          actual_main=$(git rev-parse origin/main)
+          test "$actual_main" = "$expected_main"
+          git config user.name phase0-sync-probe
+          git config user.email actions@users.noreply.github.com
+          set +e
+          git merge --no-commit --no-ff "$actual_main"
+          rc=$?
+          set -e
+          echo "MERGE_EXIT=$rc"
+          echo "UNMERGED_PATHS_BEGIN"
+          git diff --name-only --diff-filter=U | sort
+          echo "UNMERGED_PATHS_END"
+          echo "STAGED_PATHS_BEGIN"
+          git diff --cached --name-only | sort
+          echo "STAGED_PATHS_END"
+          if [ "$rc" -eq 0 ]; then
+            git merge --abort
+          fi
+          exit "$rc"
