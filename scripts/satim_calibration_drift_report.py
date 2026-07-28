@@ -19,9 +19,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
-
 
 from satim_calibration import CANONICAL_FALSE_POSITIVE_CLASSES, load_calibration_set  # noqa: E402
 from satim_fit import THRESHOLD_ORDER, fit_calibration  # noqa: E402

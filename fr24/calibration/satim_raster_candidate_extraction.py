@@ -9,8 +9,9 @@ scikit-image, or GDAL-driven extraction.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 from .satim_candidate_extraction import DEFAULT_FEATURE_SCORES, normalize_candidate
 

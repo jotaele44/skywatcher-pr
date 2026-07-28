@@ -5,7 +5,6 @@ import zipfile
 from pathlib import Path
 
 import pytest
-
 import satim_engine.safe_archive as safe_archive_module
 
 UnsafeArchiveError = safe_archive_module.UnsafeArchiveError

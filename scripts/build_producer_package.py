@@ -28,10 +28,9 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -54,7 +53,7 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _iso_or_none(value: Any) -> Optional[str]:
+def _iso_or_none(value: Any) -> str | None:
     if not value:
         return None
     text = str(value).strip()
@@ -67,7 +66,7 @@ def _iso_or_none(value: Any) -> Optional[str]:
     return parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _blend_confidence(ocr: Optional[float], coord: Optional[float]) -> float:
+def _blend_confidence(ocr: float | None, coord: float | None) -> float:
     parts = [p for p in (ocr, coord) if isinstance(p, (int, float))]
     if not parts:
         return 0.5
@@ -99,9 +98,9 @@ class RlsmEnricher:
             )
         }
         self.geo_lookup = build_geo_lookup(self.conn)
-        self._cache: Dict[str, Optional[Dict[str, Any]]] = {}
+        self._cache: dict[str, dict[str, Any] | None] = {}
 
-    def for_sha(self, sha: Optional[str]) -> Optional[Dict[str, Any]]:
+    def for_sha(self, sha: str | None) -> dict[str, Any] | None:
         if not sha or sha not in self.by_sha:
             return None
         if sha in self._cache:
@@ -147,7 +146,7 @@ class RlsmEnricher:
         self._cache[sha] = result
         return result
 
-    def refit(self, lat: float, lon: float, enrichment: Dict[str, Any]):
+    def refit(self, lat: float, lon: float, enrichment: dict[str, Any]):
         """Re-project a fixed_pr_bounds stamp through the per-screenshot affine."""
         from integration.geo_calibration import invert_fixed_pr_bounds
 
@@ -156,7 +155,7 @@ class RlsmEnricher:
         return enrichment["cal"].pixel_to_coord(px, py, img_w, img_h)
 
 
-def read_screenshot_rows(db_path: Path) -> List[sqlite3.Row]:
+def read_screenshot_rows(db_path: Path) -> list[sqlite3.Row]:
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     try:
@@ -169,14 +168,14 @@ def read_screenshot_rows(db_path: Path) -> List[sqlite3.Row]:
 
 
 def build_records(
-    rows: List[sqlite3.Row], *, mark_synthetic: bool = False,
-    enricher: Optional[RlsmEnricher] = None,
-) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], List[str]]:
-    observations: List[Dict[str, Any]] = []
-    sources: List[Dict[str, Any]] = []
-    lineage: List[Dict[str, Any]] = []
-    confidence: List[Dict[str, Any]] = []
-    skipped: List[str] = []
+    rows: list[sqlite3.Row], *, mark_synthetic: bool = False,
+    enricher: RlsmEnricher | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[str]]:
+    observations: list[dict[str, Any]] = []
+    sources: list[dict[str, Any]] = []
+    lineage: list[dict[str, Any]] = []
+    confidence: list[dict[str, Any]] = []
+    skipped: list[str] = []
 
     for row in rows:
         sid = row["screenshot_id"]
@@ -279,14 +278,14 @@ def build_records(
 
 def write_package(
     out_dir: Path,
-    observations: List[Dict[str, Any]],
-    sources: List[Dict[str, Any]],
-    lineage: List[Dict[str, Any]],
-    confidence: List[Dict[str, Any]],
+    observations: list[dict[str, Any]],
+    sources: list[dict[str, Any]],
+    lineage: list[dict[str, Any]],
+    confidence: list[dict[str, Any]],
     *,
     mode: str,
     package_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     import csv
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -337,7 +336,7 @@ def write_package(
     return manifest
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Build the airspace producer package from the FR24 DB.")
     ap.add_argument("--db", required=True, help="Path to the FR24 pipeline SQLite DB")
     ap.add_argument("--out", required=True, help="Output package directory")

@@ -6,7 +6,6 @@ import sqlite3
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List
 
 from skywatcher.core.known_operators import IDENTIFIER_ALIASES, KNOWN_OPERATORS
 
@@ -72,14 +71,14 @@ class AircraftProfile:
     operator: str = "Unknown"
     country: str = "Unknown"
     primary_mission: str = "Unknown"
-    secondary_missions: List[str] = field(default_factory=list)
+    secondary_missions: list[str] = field(default_factory=list)
     confidence_level: float = 0.0
-    operational_patterns: Dict = field(default_factory=dict)
+    operational_patterns: dict = field(default_factory=dict)
     total_flights: int = 0
     first_seen: str = ""
     last_seen: str = ""
     data_source: str = "unknown"
-    provenance: Dict = field(default_factory=dict)
+    provenance: dict = field(default_factory=dict)
 
     def is_stale(self, threshold_days: int = 30) -> bool:
         if not self.last_seen:
@@ -204,8 +203,8 @@ class AircraftIntelligence:
             except (sqlite3.Error, OSError):
                 continue
 
-    def find_unknown(self, callsigns: List[str]) -> List[str]:
-        unknown: List[str] = []
+    def find_unknown(self, callsigns: list[str]) -> list[str]:
+        unknown: list[str] = []
         for callsign in callsigns:
             normalized = normalize_identifier(callsign)
             canonical = IDENTIFIER_ALIASES.get(normalized, normalized)

@@ -9,10 +9,11 @@ L5 classification. It never hard-rejects a candidate.
 from __future__ import annotations
 
 import csv
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from math import asin, cos, radians, sin, sqrt
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 from .boundary_geometry import as_float, clamp01
 

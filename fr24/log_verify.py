@@ -37,9 +37,9 @@ import csv
 import json
 import re
 from collections import defaultdict
+from collections.abc import Iterable
 from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
 
 VERIFIER_VERSION = "fr24_log_verify_v0.1.0"
 
@@ -59,7 +59,7 @@ TAIL_NOISE_RE = re.compile(r"\(.*?\)")
 TAIL_KEEP_RE = re.compile(r"[^A-Z0-9-]")
 
 
-def normalize_tail(raw) -> Optional[str]:
+def normalize_tail(raw) -> str | None:
     """Normalize "N196DM (“BlueBoy”)" → "N196DM". Returns None when empty."""
     if raw is None:
         return None
@@ -67,7 +67,7 @@ def normalize_tail(raw) -> Optional[str]:
     return cleaned or None
 
 
-def extract_replay_date(raw_excerpt: str, capture_date: date) -> Optional[date]:
+def extract_replay_date(raw_excerpt: str, capture_date: date) -> date | None:
     """Return the replay-bar flight date, or None for live views / noise.
 
     No historical floor is applied: replays may reference flights arbitrarily
@@ -88,7 +88,7 @@ def extract_replay_date(raw_excerpt: str, capture_date: date) -> Optional[date]:
     return candidate
 
 
-def true_flight_date(filename_ts: str, raw_excerpt: str) -> Tuple[date, bool]:
+def true_flight_date(filename_ts: str, raw_excerpt: str) -> tuple[date, bool]:
     """Return (flight_date, is_replay) for one observation row."""
     capture = datetime.fromisoformat(filename_ts).date()
     replay = extract_replay_date(raw_excerpt, capture)
@@ -97,10 +97,10 @@ def true_flight_date(filename_ts: str, raw_excerpt: str) -> Tuple[date, bool]:
     return capture, replay is not None
 
 
-def load_observations(path: Path) -> Dict[Tuple[str, str], List[dict]]:
+def load_observations(path: Path) -> dict[tuple[str, str], list[dict]]:
     """Index observations by (true_flight_date_iso, registration)."""
     csv.field_size_limit(10 ** 7)
-    index: Dict[Tuple[str, str], List[dict]] = defaultdict(list)
+    index: dict[tuple[str, str], list[dict]] = defaultdict(list)
     with path.open(newline="", encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
             reg = normalize_tail(row.get("registration"))
@@ -119,11 +119,11 @@ def load_observations(path: Path) -> Dict[Tuple[str, str], List[dict]]:
     return index
 
 
-def load_log_entries(paths: Iterable[Path]) -> List[dict]:
+def load_log_entries(paths: Iterable[Path]) -> list[dict]:
     """Flatten workbook rows to dicts. Layout: FN, UF, Date, Time, Tail, ..."""
     import openpyxl  # local import: heavy dependency
 
-    entries: List[dict] = []
+    entries: list[dict] = []
     for path in paths:
         workbook = openpyxl.load_workbook(path, read_only=True)
         for sheet_name in workbook.sheetnames:
@@ -149,9 +149,9 @@ def load_log_entries(paths: Iterable[Path]) -> List[dict]:
 
 
 def verify(
-    log_paths: List[Path],
+    log_paths: list[Path],
     observations_path: Path,
-    log_period_start: Optional[str] = None,
+    log_period_start: str | None = None,
 ) -> dict:
     """Match log entries to replay-aware observations."""
     obs_index = load_observations(observations_path)
@@ -190,7 +190,7 @@ def verify(
     }
 
 
-def _write_csv(path: Path, rows: List[dict]) -> None:
+def _write_csv(path: Path, rows: list[dict]) -> None:
     if not rows:
         path.write_text("", encoding="utf-8")
         return
@@ -200,7 +200,7 @@ def _write_csv(path: Path, rows: List[dict]) -> None:
         writer.writerows(rows)
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Replay-aware flight-log verification")
     parser.add_argument("--logs", nargs="+", required=True, help="Flight log .xlsx paths")
     parser.add_argument("--observations", required=True, help="aircraft_observations.csv")

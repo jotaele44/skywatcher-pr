@@ -20,7 +20,6 @@ import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-
 from fr24.manual_review_queue import ManualReviewQueue  # noqa: E402
 from satim_calibration import load_calibration_set  # noqa: E402
 from satim_ground_truth import (  # noqa: E402

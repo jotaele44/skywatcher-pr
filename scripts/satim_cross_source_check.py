@@ -22,7 +22,6 @@ import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-
 from satim_calibration import load_calibration_set  # noqa: E402
 from satim_ground_truth import (  # noqa: E402
     GROUND_TRUTH_FILE,

@@ -14,12 +14,13 @@ single seam for a production OCR backend to plug into.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 # A backend maps an image path to a partial metadata mapping. Any subset of the
 # canonical keys below may be returned; missing keys keep their filename default.
-VisualOcrBackend = Callable[[str], Dict[str, Any]]
+VisualOcrBackend = Callable[[str], dict[str, Any]]
 
 DEFAULT_PLUGIN = "visual_ocr.default_filename_adapter"
 
@@ -28,7 +29,7 @@ DEFAULT_PLUGIN = "visual_ocr.default_filename_adapter"
 _HINT_FIELDS = ("callsign_hint", "timestamp_hint", "tail_hint")
 
 
-def _filename_metadata(path: str) -> Dict[str, Any]:
+def _filename_metadata(path: str) -> dict[str, Any]:
     """Deterministic offline metadata derived purely from the filename."""
     p = Path(path)
     return {
@@ -44,8 +45,8 @@ def _filename_metadata(path: str) -> Dict[str, Any]:
 
 def extract_visual_metadata(
     path: str,
-    backend: Optional[VisualOcrBackend] = None,
-) -> Dict[str, Any]:
+    backend: VisualOcrBackend | None = None,
+) -> dict[str, Any]:
     """Return visual metadata for *path*.
 
     With no *backend* (the default) this is the offline filename adapter and its

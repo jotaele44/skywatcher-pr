@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
-from typing import Iterable
 
 from skywatcher.core.geo_utils import EARTH_RADIUS_M, haversine_m  # noqa: F401
 from skywatcher.registry.airspace_footprints import AirspaceFootprint

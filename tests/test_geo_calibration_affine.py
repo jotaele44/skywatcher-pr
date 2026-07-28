@@ -46,7 +46,7 @@ def test_fit_affine_recovers_known_transform():
     anchors = [_anchor(100, 200), _anchor(800, 1500), _anchor(400, 900)]
     affine = fit_affine([(a[0], a[1]) for a in anchors], [(a[2], a[3]) for a in anchors])
     assert affine is not None
-    for got, want in zip(affine, TRUE_AFFINE):
+    for got, want in zip(affine, TRUE_AFFINE, strict=True):
         assert got == pytest.approx(want, abs=1e-9)
     assert affine_median_residual_deg(
         affine, [(a[0], a[1]) for a in anchors], [(a[2], a[3]) for a in anchors]

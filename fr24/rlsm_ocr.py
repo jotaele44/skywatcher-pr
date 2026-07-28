@@ -17,7 +17,6 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
-from typing import Tuple
 
 os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
@@ -48,7 +47,7 @@ def _iso_now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
-def _ocr_zone(img: Image.Image, zone, config: str) -> Tuple[str, list, float, float, int]:
+def _ocr_zone(img: Image.Image, zone, config: str) -> tuple[str, list, float, float, int]:
     """Return (raw_text, word_boxes, conf_mean, conf_min, n_words).
 
     ``word_boxes`` carries the per-word geometry image_to_data already computes;
@@ -65,7 +64,7 @@ def _ocr_zone(img: Image.Image, zone, config: str) -> Tuple[str, list, float, fl
     except Exception:
         return "", [], 0.0, 0.0, 0
     words = [w for w in data["text"] if w.strip()]
-    confs = [c for c, w in zip(data["conf"], data["text"]) if w.strip() and c >= 0]
+    confs = [c for c, w in zip(data["conf"], data["text"], strict=True) if w.strip() and c >= 0]
     raw_text = " ".join(words)
     conf_mean = float(sum(confs) / len(confs)) if confs else 0.0
     conf_min  = float(min(confs)) if confs else 0.0
@@ -76,7 +75,7 @@ def _ocr_zone(img: Image.Image, zone, config: str) -> Tuple[str, list, float, fl
 def process_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str,
                        run_id: int) -> dict:
     """OCR one screenshot; write ocr_observations rows; update screenshots.ocr_status."""
-    from fr24.rlsm_zones import zones_for, ZONE_OCR_CONFIG
+    from fr24.rlsm_zones import ZONE_OCR_CONFIG, zones_for
 
     full_path = REPO / rel_path
     if not full_path.exists():

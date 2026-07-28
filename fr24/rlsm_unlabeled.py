@@ -23,6 +23,7 @@ modest confidence. Every candidate goes into manual_review_queue.
 CLI:
     python3 -m fr24.rlsm_unlabeled --budget-sec 35 [--limit N]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -30,10 +31,8 @@ import json
 import multiprocessing
 import os
 import sqlite3
-import sys
 import time
 from pathlib import Path
-from typing import Optional, Tuple
 
 os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
@@ -41,9 +40,12 @@ from PIL import Image, ImageFilter, ImageOps
 
 try:
     import pillow_heif
+
     pillow_heif.register_heif_opener()
 except ImportError:
     pass
+
+import contextlib
 
 from fr24.rlsm_zones import zones_for  # noqa: E402
 
@@ -56,9 +58,9 @@ def _iso_now() -> str:
 
 
 # Detection parameters (kept conservative — high precision over recall is preferred at this phase)
-PAD_AREA_MIN_PX = 16        # smallest pad
+PAD_AREA_MIN_PX = 16  # smallest pad
 PAD_AREA_MAX_PX = 600
-ROADSCAR_ASPECT_MIN = 4.0   # elongation
+ROADSCAR_ASPECT_MIN = 4.0  # elongation
 ANTENNA_ASPECT_MIN = 8.0
 TANK_ROUNDNESS_MIN = 0.65
 CANDIDATE_BRIGHTNESS_THRESHOLD = 180  # 0..255 luminance, bright-on-dark
@@ -110,18 +112,27 @@ def _connected_components_threshold(crop: Image.Image, thr: int = CANDIDATE_BRIG
                 visited[x][y] = True
                 area += 1
                 lum_sum += pixels[x, y]
-                if x < min_x: min_x = x
-                if y < min_y: min_y = y
-                if x > max_x: max_x = x
-                if y > max_y: max_y = y
+                if x < min_x:
+                    min_x = x
+                if y < min_y:
+                    min_y = y
+                if x > max_x:
+                    max_x = x
+                if y > max_y:
+                    max_y = y
                 stack.extend([(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)])
             if area < PAD_AREA_MIN_PX:
                 continue  # noise
-            components.append({
-                "bx": min_x, "by": min_y,
-                "bw": max_x - min_x + 1, "bh": max_y - min_y + 1,
-                "area": area, "mean_lum": lum_sum / area,
-            })
+            components.append(
+                {
+                    "bx": min_x,
+                    "by": min_y,
+                    "bw": max_x - min_x + 1,
+                    "bh": max_y - min_y + 1,
+                    "area": area,
+                    "mean_lum": lum_sum / area,
+                }
+            )
             if len(components) >= MAX_CANDIDATES_PER_IMAGE * 4:
                 # too many bright blobs — image is likely a non-map (e.g. UI screen)
                 return None
@@ -190,7 +201,8 @@ def detect_for_screenshot(conn, sid: int, rel_path: str, run_id: int):
             "mean_lum": round(c["mean_lum"], 1),
             "aspect": round(_bbox_aspect(c["bw"], c["bh"]), 2),
             "fill_ratio": round(c["area"] / max(c["bw"] * c["bh"], 1), 2),
-            "scale_x": round(scale_x, 3), "scale_y": round(scale_y, 3),
+            "scale_x": round(scale_x, 3),
+            "scale_y": round(scale_y, 3),
         }
         cur.execute(
             """INSERT INTO unlabeled_pin_candidates
@@ -198,26 +210,32 @@ def detect_for_screenshot(conn, sid: int, rel_path: str, run_id: int):
                 centroid_x, centroid_y, evidence_features, confidence, review_status,
                 notes, observed_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'unreviewed', NULL, ?)""",
-            (sid, run_id, ctype, bx, by, bw, bh, cx, cy,
-             json.dumps(evidence), conf, _iso_now()),
+            (sid, run_id, ctype, bx, by, bw, bh, cx, cy, json.dumps(evidence), conf, _iso_now()),
         )
         emitted += 1
     return {"ok": True, "emitted": emitted}
 
 
-
-
 def run(budget_sec: float, limit: int = 0):
     conn = sqlite3.connect(DB, timeout=30.0)
     conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA busy_timeout = 30000")  # wait up to 30s for the write lock (concurrency-safe)
+    conn.execute(
+        "PRAGMA busy_timeout = 30000"
+    )  # wait up to 30s for the write lock (concurrency-safe)
     cur = conn.cursor()
-    cur.execute("INSERT INTO processing_runs (run_kind, started_at, status, n_inputs, n_processed, n_failed) "
-                "VALUES ('unlabeled', ?, 'in_progress', 0, 0, 0)", (_iso_now(),))
-    run_id = cur.lastrowid  # missing assignment caused NameError at first detect_for_screenshot call
+    cur.execute(
+        "INSERT INTO processing_runs (run_kind, started_at, status, n_inputs, n_processed, n_failed) "
+        "VALUES ('unlabeled', ?, 'in_progress', 0, 0, 0)",
+        (_iso_now(),),
+    )
+    run_id = (
+        cur.lastrowid
+    )  # missing assignment caused NameError at first detect_for_screenshot call
     conn.commit()
-    where_sql = ("WHERE s.ingest_status='ok' "
-                 "AND NOT EXISTS (SELECT 1 FROM unlabeled_pin_candidates u WHERE u.screenshot_id = s.screenshot_id)")
+    where_sql = (
+        "WHERE s.ingest_status='ok' "
+        "AND NOT EXISTS (SELECT 1 FROM unlabeled_pin_candidates u WHERE u.screenshot_id = s.screenshot_id)"
+    )
     sql = f"SELECT s.screenshot_id, s.rel_path FROM screenshots s {where_sql} ORDER BY s.screenshot_id"
     if limit:
         sql += f" LIMIT {int(limit)}"
@@ -237,13 +255,24 @@ def run(budget_sec: float, limit: int = 0):
         conn.commit()
         if time.time() - start > budget_sec:
             break
-    conn.execute("UPDATE processing_runs SET ended_at=?, status='completed', n_inputs=?, n_processed=?, n_failed=?, "
-                 "notes=? WHERE run_id=?",
-                 (_iso_now(), n_targets, n_ok, n_fail,
-                  json.dumps({"candidates_emitted": n_emitted}), run_id))
+    conn.execute(
+        "UPDATE processing_runs SET ended_at=?, status='completed', n_inputs=?, n_processed=?, n_failed=?, "
+        "notes=? WHERE run_id=?",
+        (
+            _iso_now(),
+            n_targets,
+            n_ok,
+            n_fail,
+            json.dumps({"candidates_emitted": n_emitted}),
+            run_id,
+        ),
+    )
     conn.commit()
     snapshot = {
-        "run_id": run_id, "targets": n_targets, "processed": n_ok, "failed": n_fail,
+        "run_id": run_id,
+        "targets": n_targets,
+        "processed": n_ok,
+        "failed": n_fail,
         "candidates_emitted": n_emitted,
         "elapsed_sec": round(time.time() - start, 2),
     }
@@ -254,7 +283,7 @@ def run(budget_sec: float, limit: int = 0):
 # ── Parallel runner (N5) — mirrors fr24.rlsm_ocr_parallel ──────────────────
 
 # Set per-worker via _worker_init().
-_worker_db_path: Optional[str] = None
+_worker_db_path: str | None = None
 
 
 def _worker_init(db_path: str) -> None:
@@ -264,7 +293,7 @@ def _worker_init(db_path: str) -> None:
     os.environ["OMP_THREAD_LIMIT"] = "1"
 
 
-def _worker_process_one(args: Tuple[int, str, int]) -> dict:
+def _worker_process_one(args: tuple[int, str, int]) -> dict:
     """Worker function. Returns the same result dict shape as detect_for_screenshot,
     plus screenshot_id + elapsed_sec for the aggregator."""
     sid, rel_path, run_id = args
@@ -278,10 +307,8 @@ def _worker_process_one(args: Tuple[int, str, int]) -> dict:
         res = detect_for_screenshot(conn, sid, rel_path, run_id)
         conn.commit()
     except Exception as exc:
-        try:
+        with contextlib.suppress(Exception):
             conn.rollback()
-        except Exception:
-            pass
         res = {"ok": False, "reason": f"{type(exc).__name__}: {exc}"[:120]}
     finally:
         conn.close()
@@ -312,11 +339,15 @@ def run_parallel(budget_sec: float, limit: int = 0, workers: int = 4) -> dict:
     run_id = cur.lastrowid
     main_conn.commit()
 
-    where_sql = ("WHERE s.ingest_status='ok' "
-                 "AND NOT EXISTS (SELECT 1 FROM unlabeled_pin_candidates u "
-                 "                WHERE u.screenshot_id = s.screenshot_id)")
-    sql = (f"SELECT s.screenshot_id, s.rel_path FROM screenshots s {where_sql} "
-           "ORDER BY s.screenshot_id")
+    where_sql = (
+        "WHERE s.ingest_status='ok' "
+        "AND NOT EXISTS (SELECT 1 FROM unlabeled_pin_candidates u "
+        "                WHERE u.screenshot_id = s.screenshot_id)"
+    )
+    sql = (
+        f"SELECT s.screenshot_id, s.rel_path FROM screenshots s {where_sql} "
+        "ORDER BY s.screenshot_id"
+    )
     if limit:
         sql += f" LIMIT {int(limit)}"
     rows = main_conn.execute(sql).fetchall()
@@ -324,9 +355,20 @@ def run_parallel(budget_sec: float, limit: int = 0, workers: int = 4) -> dict:
     main_conn.close()
 
     if n_targets == 0:
-        print(json.dumps({"run_id": run_id, "targets": 0, "processed": 0,
-                          "failed": 0, "candidates_emitted": 0,
-                          "elapsed_sec": 0.0, "workers": workers}, indent=2))
+        print(
+            json.dumps(
+                {
+                    "run_id": run_id,
+                    "targets": 0,
+                    "processed": 0,
+                    "failed": 0,
+                    "candidates_emitted": 0,
+                    "elapsed_sec": 0.0,
+                    "workers": workers,
+                },
+                indent=2,
+            )
+        )
         return {"run_id": run_id, "targets": 0}
 
     work = [(sid, rel, run_id) for sid, rel in rows]
@@ -351,8 +393,11 @@ def run_parallel(budget_sec: float, limit: int = 0, workers: int = 4) -> dict:
                 elapsed = time.time() - t0
                 rate = (i + 1) / elapsed if elapsed else 0
                 remaining_min = (n_targets - i - 1) / rate / 60 if rate else 0
-                print(f"[unlabeled-parallel] {i+1}/{n_targets}  ok={n_ok} fail={n_fail}"
-                      f"  rate={rate:.2f} img/s  ETA={remaining_min:.1f} min", flush=True)
+                print(
+                    f"[unlabeled-parallel] {i + 1}/{n_targets}  ok={n_ok} fail={n_fail}"
+                    f"  rate={rate:.2f} img/s  ETA={remaining_min:.1f} min",
+                    flush=True,
+                )
 
     elapsed = time.time() - t0
     final_conn = sqlite3.connect(str(DB), timeout=30.0)
@@ -360,15 +405,25 @@ def run_parallel(budget_sec: float, limit: int = 0, workers: int = 4) -> dict:
     final_conn.execute(
         "UPDATE processing_runs SET ended_at=?, status='completed', "
         "n_inputs=?, n_processed=?, n_failed=?, notes=? WHERE run_id=?",
-        (_iso_now(), n_targets, n_ok, n_fail,
-         json.dumps({"candidates_emitted": n_emitted, "workers": workers}), run_id),
+        (
+            _iso_now(),
+            n_targets,
+            n_ok,
+            n_fail,
+            json.dumps({"candidates_emitted": n_emitted, "workers": workers}),
+            run_id,
+        ),
     )
     final_conn.commit()
     final_conn.close()
 
     snapshot = {
-        "run_id": run_id, "targets": n_targets, "processed": n_ok, "failed": n_fail,
-        "candidates_emitted": n_emitted, "elapsed_sec": round(elapsed, 2),
+        "run_id": run_id,
+        "targets": n_targets,
+        "processed": n_ok,
+        "failed": n_fail,
+        "candidates_emitted": n_emitted,
+        "elapsed_sec": round(elapsed, 2),
         "workers": workers,
     }
     print(json.dumps(snapshot, indent=2))
@@ -379,8 +434,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--budget-sec", type=float, default=35.0)
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--workers", type=int, default=1,
-                    help="Worker processes for parallel detection (1 = serial run()).")
+    ap.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Worker processes for parallel detection (1 = serial run()).",
+    )
     args = ap.parse_args()
     if args.workers > 1:
         run_parallel(args.budget_sec, args.limit, args.workers)

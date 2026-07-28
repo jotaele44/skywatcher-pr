@@ -30,9 +30,7 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
-import sys
 from pathlib import Path
-from typing import List, Optional
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -45,7 +43,7 @@ from integration.geo_calibration import (  # noqa: E402
 UPDATABLE_METHODS = {None, "", "unknown", "fixed_pr_bounds"}
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Refit operational screenshot coordinates from RLSM per-image anchors."
     )

@@ -10,7 +10,6 @@ from fr24.log_verify import (
     true_flight_date,
 )
 
-
 CAPTURE = date(2025, 10, 17)
 
 

@@ -1,14 +1,14 @@
 from copy import deepcopy
 
 from satim_ensemble_calibrator import (
-    CalibrationClass,
-    CalibrationSample,
-    DetectorCalibrationInput,
-    DetectorType,
     DETECTOR_PROVENANCE_SEPARATION,
     NO_CROSS_DETECTOR_FACT_SYNTHESIS,
     ORIGINAL_CLASSIFICATION_PRESERVATION,
     ORIGINAL_SCORE_PRESERVATION,
+    CalibrationClass,
+    CalibrationSample,
+    DetectorCalibrationInput,
+    DetectorType,
     build_calibration_ledger,
     build_calibration_reliability_report,
     build_detector_calibration_patch,
@@ -121,7 +121,7 @@ def test_calibration_patch_is_non_destructive_and_monotonic():
     patches = build_detector_calibration_patch([source])
     calibrated = [row["calibrated_score"] for row in patches]
     assert calibrated == sorted(calibrated)
-    for row, original in zip(patches, sorted(source.samples, key=lambda item: item.detector_score)):
+    for row, original in zip(patches, sorted(source.samples, key=lambda item: item.detector_score), strict=True):
         assert row["record_id"] == original.record_id
         assert row["original_score"] == original.detector_score
         assert row["original_classification"] == original.original_classification

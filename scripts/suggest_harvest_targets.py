@@ -30,9 +30,7 @@ import argparse
 import csv
 import json
 import re
-import sys
 from pathlib import Path
-from typing import Dict, List, Optional
 
 REPO = Path(__file__).resolve().parents[1]
 from scripts.fr24_harvest import (  # noqa: E402
@@ -56,9 +54,9 @@ OUT_FIELDS = [
 ]
 
 
-def load_wave_index(waves_csv: Path) -> Dict[str, dict]:
+def load_wave_index(waves_csv: Path) -> dict[str, dict]:
     """tail -> strongest wave (registration identity, >=MIN_WAVE_OBS frames)."""
-    index: Dict[str, dict] = {}
+    index: dict[str, dict] = {}
     if not waves_csv.exists() or waves_csv.stat().st_size == 0:
         return index
     with waves_csv.open(newline="") as fh:
@@ -90,7 +88,7 @@ def _near_expiry_priority(entry: dict) -> bool:
     return days is not None and 0 <= days <= EXPIRY_BUMP_DAYS
 
 
-def rank_queue(queue: List[dict], wave_index: Dict[str, dict]) -> List[dict]:
+def rank_queue(queue: list[dict], wave_index: dict[str, dict]) -> list[dict]:
     """Stable three-band ordering; every entry gains rank + rationale fields."""
     def band(entry: dict) -> int:
         if _near_expiry_priority(entry):
@@ -134,7 +132,7 @@ def rank_queue(queue: List[dict], wave_index: Dict[str, dict]) -> List[dict]:
     return ranked
 
 
-def read_carryover(path: Path) -> List[dict]:
+def read_carryover(path: Path) -> list[dict]:
     with path.open(newline="") as fh:
         return [
             {
@@ -147,7 +145,7 @@ def read_carryover(path: Path) -> List[dict]:
         ]
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Rank the harvest carryover queue by screenshot-wave backing."
     )

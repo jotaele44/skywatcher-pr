@@ -135,7 +135,7 @@ def main():
         seen = set()
         dedup_p = []
         dedup_g = []
-        for pixel, geo in zip(pixel_xy, geo_latlon):
+        for pixel, geo in zip(pixel_xy, geo_latlon, strict=False):
             key = (round(pixel[0], 1), round(pixel[1], 1))
             if key not in seen:
                 seen.add(key)
@@ -147,7 +147,7 @@ def main():
         if affine is None:
             continue
         residuals = []
-        for (px, py), (lat, lon) in zip(dedup_p, dedup_g):
+        for (px, py), (lat, lon) in zip(dedup_p, dedup_g, strict=False):
             est_lat, est_lon = apply_affine(affine, px, py)
             residuals.append(((est_lat - lat) ** 2 + (est_lon - lon) ** 2) ** 0.5)
         med_res = float(np.median(residuals))

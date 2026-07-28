@@ -181,7 +181,7 @@ def mine(dry_run: bool = False) -> dict:
     n_with_route = n_with_dep = n_with_arr = n_with_head = n_with_timeline = n_with_serial = 0
     iata_counter = Counter()
 
-    for obs_id, sid, text in rows:
+    for obs_id, _sid, text in rows:
         text = text or ""
         origin, dest = extract_route_iata(text)
         if origin:

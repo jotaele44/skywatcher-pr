@@ -23,10 +23,10 @@ CLI:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import re
 import sqlite3
-import sys
 import time
 from pathlib import Path
 
@@ -81,10 +81,8 @@ def _scan_text(text: str) -> dict:
 
     m = RE_ALT.search(text)
     if m:
-        try:
+        with contextlib.suppress(ValueError):
             result["altitude_ft"] = int(m.group(1).replace(",", ""))
-        except ValueError:
-            pass
 
     m = RE_SPEED_KT.search(text)
     if m:

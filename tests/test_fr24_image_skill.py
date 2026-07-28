@@ -12,6 +12,7 @@ from fr24_image_skill.orchestrator import (
     StageState,
     _correlate,
     _digest_tree,
+    _ocr_regions,
     _stage_2,
     inventory_sources,
     run_analysis,
@@ -119,3 +120,31 @@ def test_no_intent_or_purpose_inference(tmp_path: Path) -> None:
     findings = json.loads((output / "stage_2" / "STAGE_2_SATIM_FINDINGS.geojson").read_text())
     assert observation["intent_assessment"] == "not_assessed"
     assert findings["properties"]["facility_purpose_inference"] is False
+
+
+def test_ocr_degrades_when_tesseract_binary_is_absent(tmp_path: Path, monkeypatch) -> None:
+    """pytesseract installed but the tesseract BINARY missing must not crash.
+
+    The two are installed separately and pytesseract is not declared in any
+    manifest here, so this combination is a normal state. Importing the package
+    succeeds; it is image_to_string that raises TesseractNotFoundError at call
+    time. Before the probe in _ocr_regions, that escaped and took out every test
+    touching the OCR path.
+    """
+    pytesseract = pytest.importorskip("pytesseract")
+    frame = tmp_path / "frame.png"
+    _tiny_png(frame)
+
+    def _no_binary(*_args, **_kwargs):
+        raise pytesseract.TesseractNotFoundError()
+
+    # Fail the way a missing binary does, from both the probe and the call, so
+    # the test still holds if the probe is ever moved or removed.
+    monkeypatch.setattr(pytesseract, "get_tesseract_version", _no_binary)
+    monkeypatch.setattr(pytesseract, "image_to_string", _no_binary)
+
+    rows = _ocr_regions(frame, "frame-1")
+
+    assert [r["status"] for r in rows] == ["dependency_unavailable"]
+    assert rows[0]["method"] == "unavailable"
+    assert rows[0]["value"] == ""

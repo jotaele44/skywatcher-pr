@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-import argparse, csv, hashlib, sys
+import argparse
+import csv
+import hashlib
+import sys
 from pathlib import Path
 
 COLUMNS = ['Cell_ID','Row_Index','Column_Index','Pixel_X_Min','Pixel_Y_Min','Pixel_X_Max','Pixel_Y_Max','Centroid_X','Centroid_Y','Dark_Pixel_Count','Total_Pixel_Count','Land_Pixel_Ratio','Classification']
@@ -37,14 +40,20 @@ def main():
                 if row.get('Classification') not in CLASSES:
                     errors.append('unexpected classification')
                     break
-        if count != 98304: errors.append('unexpected row count')
-        if len(seen) != 98304: errors.append('unexpected unique Cell_ID count')
-        if rows != set(range(256)): errors.append('row coverage failed')
-        if cols != set(range(384)): errors.append('column coverage failed')
-        if a.require_sha and sha(path) != SHA: errors.append('unexpected SHA-256')
+        if count != 98304:
+            errors.append("unexpected row count")
+        if len(seen) != 98304:
+            errors.append("unexpected unique Cell_ID count")
+        if rows != set(range(256)):
+            errors.append("row coverage failed")
+        if cols != set(range(384)):
+            errors.append("column coverage failed")
+        if a.require_sha and sha(path) != SHA:
+            errors.append("unexpected SHA-256")
     if errors:
         print('[FAIL] PR baseline grid validation failed', file=sys.stderr)
-        for e in errors: print(f' - {e}', file=sys.stderr)
+        for e in errors:
+            print(f" - {e}", file=sys.stderr)
         return 1
     print('[OK] PR baseline grid validation passed')
     return 0

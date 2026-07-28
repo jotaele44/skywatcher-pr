@@ -25,6 +25,9 @@ class ArchiveLimits:
     max_compression_ratio: float = 200.0
 
 
+DEFAULT_ARCHIVE_LIMITS = ArchiveLimits()
+
+
 def _normalized_member(name: str) -> PurePosixPath:
     if not name or "\x00" in name:
         raise UnsafeArchiveError("archive member has an empty or NUL-containing name")
@@ -46,7 +49,7 @@ def _is_symlink(info: zipfile.ZipInfo) -> bool:
     return stat.S_ISLNK((info.external_attr >> 16) & 0xFFFF)
 
 
-def validate_zip(archive: zipfile.ZipFile, limits: ArchiveLimits = ArchiveLimits()) -> list[tuple[zipfile.ZipInfo, PurePosixPath]]:
+def validate_zip(archive: zipfile.ZipFile, limits: ArchiveLimits = DEFAULT_ARCHIVE_LIMITS) -> list[tuple[zipfile.ZipInfo, PurePosixPath]]:
     infos = archive.infolist()
     if len(infos) > limits.max_files:
         raise UnsafeArchiveError(f"archive has {len(infos)} entries; limit is {limits.max_files}")
@@ -81,7 +84,7 @@ def _remove(path: Path) -> None:
     shutil.rmtree(path) if path.is_dir() else path.unlink()
 
 
-def safe_extract_zip(source: str | Path, target: str | Path, *, limits: ArchiveLimits = ArchiveLimits(), replace: bool = False) -> Path:
+def safe_extract_zip(source: str | Path, target: str | Path, *, limits: ArchiveLimits = DEFAULT_ARCHIVE_LIMITS, replace: bool = False) -> Path:
     """Validate, stream-extract, and recoverably promote ``source`` into ``target``."""
     source_path = Path(source).expanduser().resolve()
     target_path = Path(target).expanduser().resolve()

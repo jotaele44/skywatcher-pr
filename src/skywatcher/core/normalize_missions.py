@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from skywatcher.core.normalize_locations import load_simple_yaml
 
@@ -17,11 +17,11 @@ def _norm(value: Any) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def _load_alias_map(path: Path, root_key: str) -> Dict[str, str]:
+def _load_alias_map(path: Path, root_key: str) -> dict[str, str]:
     if not path.exists():
         return {}
     data = load_simple_yaml(path)
-    out: Dict[str, str] = {}
+    out: dict[str, str] = {}
     root = data.get(root_key, {}) or {}
     if isinstance(root, dict):
         for canonical, body in root.items():
@@ -32,7 +32,7 @@ def _load_alias_map(path: Path, root_key: str) -> Dict[str, str]:
     return out
 
 
-def normalize_mission(raw_text: str, config_dir: Path = Path("configs")) -> Dict[str, Any]:
+def normalize_mission(raw_text: str, config_dir: Path = Path("configs")) -> dict[str, Any]:
     alias_map = _load_alias_map(config_dir / "mission_vocab.yaml", "mission_enums")
     key = _norm(raw_text)
     canonical = alias_map.get(key)
@@ -45,7 +45,7 @@ def normalize_mission(raw_text: str, config_dir: Path = Path("configs")) -> Dict
     }
 
 
-def normalize_blackout(raw_text: str, config_dir: Path = Path("configs")) -> Dict[str, Any]:
+def normalize_blackout(raw_text: str, config_dir: Path = Path("configs")) -> dict[str, Any]:
     alias_map = _load_alias_map(config_dir / "blackout_vocab.yaml", "blackout_classes")
     key = _norm(raw_text)
     canonical = alias_map.get(key)
@@ -59,7 +59,7 @@ def normalize_blackout(raw_text: str, config_dir: Path = Path("configs")) -> Dic
     }
 
 
-def normalize_behavior(raw_text: str, config_dir: Path = Path("configs")) -> Dict[str, Any]:
+def normalize_behavior(raw_text: str, config_dir: Path = Path("configs")) -> dict[str, Any]:
     if not (config_dir / "behavior_vocab.yaml").exists():
         return {"raw_text": raw_text, "behavior_tags": [], "resolution_status": "missing_vocab"}
     data = load_simple_yaml(config_dir / "behavior_vocab.yaml")
@@ -81,7 +81,7 @@ def normalize_behavior(raw_text: str, config_dir: Path = Path("configs")) -> Dic
     }
 
 
-def normalize_mission_record(event: Dict[str, Any], config_dir: Path = Path("configs")) -> Dict[str, Any]:
+def normalize_mission_record(event: dict[str, Any], config_dir: Path = Path("configs")) -> dict[str, Any]:
     result = dict(event)
     if event.get("mission_raw") or event.get("mission"):
         result["mission_normalized"] = normalize_mission(str(event.get("mission_raw") or event.get("mission")), config_dir=config_dir)

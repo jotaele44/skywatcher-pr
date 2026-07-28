@@ -9,7 +9,11 @@ from __future__ import annotations
 import warnings
 
 from skywatcher.core.known_operators import KNOWN_OPERATORS
-from skywatcher.fpim.aircraft_profile import AircraftIntelligence, AircraftProfile, CALLSIGN_PREFIXES
+from skywatcher.fpim.aircraft_profile import (
+    CALLSIGN_PREFIXES,
+    AircraftIntelligence,
+    AircraftProfile,
+)
 
 __all__ = [
     "KNOWN_OPERATORS",

@@ -22,10 +22,8 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
-
 
 from satim_calibration import load_calibration_set, score_calibration_set  # noqa: E402
 

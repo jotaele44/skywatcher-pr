@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from fr24.ocr_analysis_vector import _aircraft_identity, _parse_playback_dt
 
@@ -37,21 +36,21 @@ def _row_iso(row: dict) -> str:
     return parsed.isoformat() if parsed else ""
 
 
-def _float_or_none(value) -> Optional[float]:
+def _float_or_none(value) -> float | None:
     try:
         return float(str(value).strip())
     except (TypeError, ValueError):
         return None
 
 
-def _int_or_none(value) -> Optional[int]:
+def _int_or_none(value) -> int | None:
     try:
         return int(float(str(value).strip()))
     except (TypeError, ValueError):
         return None
 
 
-def _consensus(rows: List[dict], key: str) -> str:
+def _consensus(rows: list[dict], key: str) -> str:
     """Most common non-empty value for a field across the wave's rows."""
     counts = Counter(
         str(row.get(key)).strip() for row in rows
@@ -71,7 +70,7 @@ def _duration_minutes(first_iso: str, last_iso: str) -> float:
         return 0.0
 
 
-def fuse_wave(rows: List[dict]) -> dict:
+def fuse_wave(rows: list[dict]) -> dict:
     """Fuse one wave's rows (same aircraft identity) into a multi-point record.
 
     Rows are ordered by timestamp (timestamp-less rows sink to the end, ordered
@@ -141,9 +140,9 @@ def fuse_wave(rows: List[dict]) -> dict:
     }
 
 
-def fuse_rows(rows: List[dict]) -> List[dict]:
+def fuse_rows(rows: list[dict]) -> list[dict]:
     """Group rows by aircraft identity and fuse each group into one record."""
-    groups: Dict[str, List[dict]] = defaultdict(list)
+    groups: dict[str, list[dict]] = defaultdict(list)
     for row in rows:
         groups[aircraft_identity(row)].append(row)
     return [fuse_wave(group) for _, group in sorted(groups.items())]
@@ -151,7 +150,7 @@ def fuse_rows(rows: List[dict]) -> List[dict]:
 
 def to_adapter_row(fused: dict, *, candidate_id: str = "",
                    selection_status: str = "",
-                   endpoint_events: Optional[List[dict]] = None) -> dict:
+                   endpoint_events: list[dict] | None = None) -> dict:
     """Shape a fused record like an export row for fr24/spiderweb_adapter.py.
 
     origin/destination prefer the endpoint matcher's facility resolution

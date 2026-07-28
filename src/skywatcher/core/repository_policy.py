@@ -27,10 +27,6 @@ def hygiene_violations(paths: list[str]) -> list[str]:
     bad: list[str] = []
     for raw in paths:
         path = PurePosixPath(raw)
-        if raw in FORBIDDEN_PATHS or raw.startswith(FORBIDDEN_PREFIXES):
-            bad.append(raw)
-        elif any(part in FORBIDDEN_NAMES or part.endswith(".egg-info") for part in path.parts):
-            bad.append(raw)
-        elif path.suffix.lower() in FORBIDDEN_SUFFIXES or path.name.startswith("._"):
+        if raw in FORBIDDEN_PATHS or raw.startswith(FORBIDDEN_PREFIXES) or any(part in FORBIDDEN_NAMES or part.endswith(".egg-info") for part in path.parts) or path.suffix.lower() in FORBIDDEN_SUFFIXES or path.name.startswith("._"):
             bad.append(raw)
     return sorted(set(bad))

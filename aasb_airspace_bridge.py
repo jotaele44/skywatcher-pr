@@ -2,11 +2,10 @@
 See docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md."""
 from __future__ import annotations
 
-
 from skywatcher.corrim.aasb_airspace_bridge import (
-    AASBAirspaceBridge,
     AIRPORT_COORDS,
     EDGE_FIELDNAMES,
+    AASBAirspaceBridge,
 )
 
 __all__ = [

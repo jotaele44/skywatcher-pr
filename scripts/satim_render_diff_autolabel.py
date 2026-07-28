@@ -17,7 +17,6 @@ import csv
 import sys
 from pathlib import Path
 
-
 from satim_ground_truth import GROUND_TRUTH_FILE, append_ground_truth  # noqa: E402
 from satim_render_diff import autolabel_render_diff  # noqa: E402
 

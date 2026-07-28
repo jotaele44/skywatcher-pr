@@ -10,7 +10,6 @@ from satim_tile_seam_classifier import (
     evidence_from_mapping,
 )
 
-
 LEDGER = Path("data/calibration/satim_tile_seam_cases.csv")
 
 

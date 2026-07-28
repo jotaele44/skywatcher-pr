@@ -5,6 +5,7 @@ status column that never recomputed, so flights silently crossed the FR24
 365-day retention cliff while still labelled 'grab-now'.
 """
 import datetime as dt
+
 from fr24.todays_batch import RETENTION_DAYS, compute_status, days_to_expiry
 
 

@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 from pipeline.normalize_locations import load_simple_yaml
 
@@ -45,7 +44,7 @@ def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2.0 * EARTH_RADIUS_M * math.asin(math.sqrt(a))
 
 
-def load_airports(path: Optional[Path] = None) -> List[dict]:
+def load_airports(path: Path | None = None) -> list[dict]:
     """Airport rows from configs/airport_registry.yaml (dependency-free loader)."""
     data = load_simple_yaml(path or AIRPORT_REGISTRY_YAML)
     airports = []
@@ -64,9 +63,9 @@ def facility_code(airport: dict) -> str:
 
 
 def nearest_airport(lat: float, lon: float,
-                    airports: List[dict]) -> Optional[Tuple[dict, float]]:
+                    airports: list[dict]) -> tuple[dict, float] | None:
     """(airport, distance_m) of the closest registry facility, or None."""
-    best: Optional[Tuple[dict, float]] = None
+    best: tuple[dict, float] | None = None
     for airport in airports:
         distance = haversine_m(lat, lon, float(airport["lat"]), float(airport["lon"]))
         if best is None or distance < best[1]:
@@ -75,7 +74,7 @@ def nearest_airport(lat: float, lon: float,
 
 
 def match_endpoint(lat: float, lon: float,
-                   airports: List[dict]) -> Optional[Tuple[dict, float, float]]:
+                   airports: list[dict]) -> tuple[dict, float, float] | None:
     """(airport, distance_m, confidence) within the 10 km band, else None."""
     best = nearest_airport(lat, lon, airports)
     if best is None:
@@ -88,9 +87,9 @@ def match_endpoint(lat: float, lon: float,
     return None
 
 
-def endpoint_events_for_wave(fused: dict, airports: List[dict], *,
+def endpoint_events_for_wave(fused: dict, airports: list[dict], *,
                              observation_id: str, source_id: str,
-                             lineage_id: str, synthetic: bool) -> List[dict]:
+                             lineage_id: str, synthetic: bool) -> list[dict]:
     """Schema-conformant flight_endpoint_event dicts for a fused wave.
 
     Matches the first point ('start') and last point ('end') that carry both
@@ -111,7 +110,7 @@ def endpoint_events_for_wave(fused: dict, airports: List[dict], *,
     else:
         candidates = [(points[0], "start"), (points[-1], "end")]
 
-    events: List[dict] = []
+    events: list[dict] = []
     for point, endpoint_type in candidates:
         match = match_endpoint(float(point["lat"]), float(point["lon"]), airports)
         if match is None:

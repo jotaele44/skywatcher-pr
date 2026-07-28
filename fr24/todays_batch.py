@@ -35,10 +35,8 @@ from __future__ import annotations
 import argparse
 import csv
 import sqlite3
-import sys
 from datetime import date, datetime
 from pathlib import Path
-from typing import Optional
 
 REPO = Path(__file__).resolve().parents[1]
 from scripts.parse_flight_log import parse as parse_flight_log
@@ -113,7 +111,7 @@ def _is_captured(tail: str, fd: date, harvested: dict) -> bool:
     return False
 
 
-def _event_datetime(row: dict) -> Optional[datetime]:
+def _event_datetime(row: dict) -> datetime | None:
     raw = (row.get("at") or "").strip()
     if not raw:
         return None
@@ -141,10 +139,7 @@ def build_rows(xlsx_path: Path, sqlite_path: Path, today: date):
         if not tail or dtm is None:
             continue
         fd = dtm.date()
-        if _is_captured(tail, fd, harvested):
-            status = "HARVESTED"
-        else:
-            status = compute_status(fd, today)
+        status = "HARVESTED" if _is_captured(tail, fd, harvested) else compute_status(fd, today)
         candidates.append({
             "tail": tail,
             "date": fd.isoformat(),
