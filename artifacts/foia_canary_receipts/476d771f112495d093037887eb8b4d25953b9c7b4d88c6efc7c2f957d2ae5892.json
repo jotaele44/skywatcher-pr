@@ -1,0 +1,57 @@
+{
+  "payload": {
+    "canary": true,
+    "canary_branch": "canary/centinelas-foia-v0-5",
+    "canary_receipt_namespace": "artifacts/foia_canary_receipts",
+    "destination": "skywatcher",
+    "envelope": {
+      "decision": {
+        "decision_id": "decision-skywatcher",
+        "destination": "skywatcher",
+        "disposition": "export",
+        "finding_id": "synthetic-foia-canary-v0-5",
+        "reason_codes": [
+          "SYNTHETIC_CANARY"
+        ],
+        "reversible": true,
+        "score": 0.95
+      },
+      "destination": "skywatcher",
+      "event_id": "foia-canary-skywatcher",
+      "finding": {
+        "citations": [
+          {
+            "document_id": "synthetic-document",
+            "excerpt": "Synthetic non-private canary evidence.",
+            "page": 1
+          }
+        ],
+        "document_id": "synthetic-document",
+        "entity_collision": false,
+        "evidence_tier": "T1",
+        "extraction_confidence": 0.95,
+        "finding_id": "synthetic-foia-canary-v0-5",
+        "finding_type": "mixed_content",
+        "keywords": [
+          "aircraft",
+          "contract",
+          "utility",
+          "unidentified",
+          "Puerto Rico"
+        ],
+        "release_id": "synthetic-release",
+        "sensitive": false,
+        "summary": "Synthetic aircraft contract utility and anomalous report for Puerto Rico",
+        "title": "Synthetic FOIA canary"
+      },
+      "idempotency_key": "c347d3925c5a0760a100f2c502a1878cc894e10aea0760ad87cd979463ac36dc",
+      "producer": "centinelas-pr",
+      "schema_name": "prii.foia.finding",
+      "schema_version": "0.2.0"
+    },
+    "idempotency_key": "c347d3925c5a0760a100f2c502a1878cc894e10aea0760ad87cd979463ac36dc",
+    "no_production_promotion": true,
+    "target_repo": "skywatcher-pr"
+  },
+  "record_id": "skywatcher-canary-476d771f112495d09303"
+}
