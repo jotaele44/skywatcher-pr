@@ -1,4 +1,4 @@
-"""Temporary wrapper that creates the validated Phase 0 merge as Git objects."""
+"""Temporary wrapper that publishes the validated Phase 0 tree ledger."""
 
 from __future__ import annotations
 
@@ -121,30 +121,6 @@ def execute_phase0_object_sync(repo_root: Path) -> Path:
                 {"path": path, "mode": new_mode, "type": "blob", "sha": blob_sha}
             )
 
-        tree_response = _api_post(
-            "/git/trees",
-            {"base_tree": feature_tree, "tree": tree_elements},
-        )
-        api_tree_sha = tree_response["sha"]
-        if api_tree_sha != tree_sha:
-            raise RuntimeError(
-                f"remote tree SHA mismatch: {api_tree_sha} != validated {tree_sha}"
-            )
-        commit_response = _api_post(
-            "/git/commits",
-            {
-                "message": "Merge current main into Phase 0 branch",
-                "tree": api_tree_sha,
-                "parents": [FEATURE, MAIN],
-            },
-        )
-        api_commit_sha = commit_response["sha"]
-        commit_parents = [parent["sha"] for parent in commit_response.get("parents", [])]
-        if commit_parents != [FEATURE, MAIN]:
-            raise RuntimeError(f"remote commit parent mismatch: {commit_parents!r}")
-        if commit_response["tree"]["sha"] != tree_sha:
-            raise RuntimeError("remote commit tree does not match validated tree")
-
         remote_after = _run(
             "git", "ls-remote", "origin", f"refs/heads/{TARGET_BRANCH}", cwd=repo
         ).stdout.split()[0]
@@ -157,10 +133,9 @@ def execute_phase0_object_sync(repo_root: Path) -> Path:
             "feature_parent": FEATURE,
             "main_parent": MAIN,
             "local_merge_sha": merge_sha,
-            "merge_sha": api_commit_sha,
-            "merge_tree": tree_sha,
-            "api_tree_sha": api_tree_sha,
-            "api_commit_parents": commit_parents,
+            "validated_tree_sha": tree_sha,
+            "base_tree_sha": feature_tree,
+            "tree_elements": tree_elements,
             "uploaded_blob_count": uploaded_blobs,
             "tree_element_count": len(tree_elements),
             "target_updated": False,
@@ -171,7 +146,7 @@ def execute_phase0_object_sync(repo_root: Path) -> Path:
             "data_delta": data_delta,
             "ruff_clean": True,
             "push_force": False,
-            "publication_method": "git_data_api_objects_then_connector_update_ref",
+            "publication_method": "connector_create_tree_commit_update_ref",
         }
 '''
     patched = source[:push_start] + replacement + source[push_end:]
