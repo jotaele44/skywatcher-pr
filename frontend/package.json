@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
+    "test:gui-parity": "playwright test -c gui-parity.playwright.config.mjs",
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview"
   },
@@ -64,6 +65,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@playwright/test": "1.56.1",
     "@types/node": "^22.13.5",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
