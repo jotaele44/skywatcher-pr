@@ -53,6 +53,19 @@ Drive the pipeline with:
 python scripts/fr24_vision_ingest.py
 ```
 
+### RLSM screenshot extraction
+
+The screenshot corpus (OCR → aircraft → place labels → map icons → exports) runs from a
+single resumable command:
+
+```bash
+./run-rlsm.sh              # everything; --dry-run first to check preflight
+./run-rlsm.sh --status     # what is done, what is pending
+```
+
+Point `data/FR24_baseline` at the corpus first (a symlink is fine — preflight prints the
+exact command if it is missing). Full runbook: `data/rlsm/HANDOFF.md`.
+
 ## SATIM engine protocol interface
 
 SATIM can run against a new manifest, directory, or zip bundle through the repo-native protocol runner:
@@ -116,6 +129,9 @@ Install the same dependency set CI uses (`.github/workflows/ci.yml`) — the dev
 requirements plus `httpx` and the backend requirements the tests import:
 
 ```bash
+# thehub-pr must be a sibling checkout — requirements install the shared prii-*
+# libraries as editable local paths (../thehub-pr/packages/*):
+[ -d ../thehub-pr ] || git clone https://github.com/jotaele44/thehub-pr.git ../thehub-pr
 python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt
 pytest -q
 python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test

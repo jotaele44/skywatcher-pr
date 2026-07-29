@@ -15,7 +15,6 @@ import json
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List
 
 try:
     from PIL import Image, ImageOps
@@ -35,7 +34,7 @@ except ImportError:  # pragma: no cover
     pytesseract = None  # type: ignore
 
 
-def _append_bucket(selected: List[dict], seen: set, bucket: List[dict], remaining: int) -> int:
+def _append_bucket(selected: list[dict], seen: set, bucket: list[dict], remaining: int) -> int:
     if remaining <= 0:
         return 0
     added = 0
@@ -51,7 +50,7 @@ def _append_bucket(selected: List[dict], seen: set, bucket: List[dict], remainin
     return added
 
 
-def _write_probe_csv(output_csv: Path, rows: List[dict], selected: List[dict]) -> None:
+def _write_probe_csv(output_csv: Path, rows: list[dict], selected: list[dict]) -> None:
     output_csv.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = list(rows[0].keys()) if rows else [
         "image_path",
@@ -69,7 +68,7 @@ def _write_probe_csv(output_csv: Path, rows: List[dict], selected: List[dict]) -
             writer.writerow({k: row.get(k, "") for k in fieldnames})
 
 
-def select_probe(manifest_csv: Path, output_csv: Path, limit: int = 50, png_count: int = 30, heic_count: int = 15) -> List[dict]:
+def select_probe(manifest_csv: Path, output_csv: Path, limit: int = 50, png_count: int = 30, heic_count: int = 15) -> list[dict]:
     rows = list(csv.DictReader(manifest_csv.open(encoding="utf-8")))
     if limit <= 0:
         _write_probe_csv(output_csv, rows, [])
@@ -86,7 +85,7 @@ def select_probe(manifest_csv: Path, output_csv: Path, limit: int = 50, png_coun
     png = [r for r in strong if r.get("image_name", "").lower().endswith(".png")]
     other = [r for r in strong if not r.get("image_name", "").lower().endswith((".heic", ".png"))]
 
-    selected: List[dict] = []
+    selected: list[dict] = []
     seen = set()
 
     remaining = limit - len(selected)

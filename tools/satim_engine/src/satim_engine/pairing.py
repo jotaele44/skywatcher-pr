@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 import pandas as pd
+
 from .config import load_config
 from .graph import stable_id
 from .schema import PAIRING_COLUMNS

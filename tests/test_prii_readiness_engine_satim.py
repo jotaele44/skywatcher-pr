@@ -1,6 +1,6 @@
 import json
 
-from prii_readiness_engine import PRIIReadinessEngine, READINESS_STATUS_READY_FOR_OPS
+from prii_readiness_engine import READINESS_STATUS_READY_FOR_OPS, PRIIReadinessEngine
 
 
 def write_json(path, payload):

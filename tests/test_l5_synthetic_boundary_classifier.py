@@ -1,4 +1,7 @@
-from fr24.calibration.l5_synthetic_boundary_classifier import classify_candidate, classify_synthetic_boundary
+from fr24.calibration.l5_synthetic_boundary_classifier import (
+    classify_candidate,
+    classify_synthetic_boundary,
+)
 
 
 def test_strong_synthetic_boundary_classifies_as_probable_tile_seam() -> None:

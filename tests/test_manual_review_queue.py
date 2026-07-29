@@ -6,7 +6,6 @@ import pytest
 
 from fr24.manual_review_queue import EXPORT_FIELDNAMES, QUEUE_TYPES, ManualReviewQueue
 
-
 # ── add_item ──────────────────────────────────────────────────────────────────
 
 def test_add_item_returns_uuid(tmp_path):
@@ -144,7 +143,6 @@ def test_get_stats_mixed_statuses(tmp_path):
 # ── get_all ───────────────────────────────────────────────────────────────────
 
 def test_get_all_returns_items_across_statuses(tmp_path):
-    from pathlib import Path as _Path
     q = ManualReviewQueue(str(tmp_path))
     id1 = q.add_item("quality_issue", "/img/x.jpg", "r")
     q.add_item("quality_issue", "/img/y.jpg", "r")
@@ -154,7 +152,6 @@ def test_get_all_returns_items_across_statuses(tmp_path):
 
 # ── Path import for export_csv test ──────────────────────────────────────────
 from pathlib import Path
-
 
 # ── Phase 5: new ManualReviewQueue methods ────────────────────────────────────
 
@@ -218,7 +215,6 @@ def test_export_to_json_creates_file(tmp_path):
 
 
 def test_export_to_json_custom_path(tmp_path):
-    import json
     q = ManualReviewQueue(str(tmp_path))
     q.add_item("ocr_correction", "/img/f.jpg", "r")
     out = str(tmp_path / "custom_export.json")

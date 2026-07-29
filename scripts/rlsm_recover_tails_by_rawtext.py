@@ -47,7 +47,6 @@ import re
 import sqlite3
 import sys
 import time
-from collections import defaultdict
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]

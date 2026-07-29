@@ -1,14 +1,19 @@
 import React from "react";
 import { Inbox } from "lucide-react";
+import { FederationEmptyState } from "@pr-federation/react";
 
+// Delegates to the shared federation empty state (@pr-federation/react) so
+// "no records" reads identically across the federation. The dashed-card
+// container is kept here because this renders as a self-contained card, not a
+// full-height panel. The `icon` prop stays a component so existing call sites
+// are unchanged; it's instantiated here and handed to the package as a node.
 export default function EmptyState({ icon: Icon = Inbox, title = "No records", message }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/40 px-6 py-12 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
-        <Icon className="h-5 w-5 text-muted-foreground" />
-      </div>
-      <p className="mt-3 text-sm font-semibold text-foreground">{title}</p>
-      {message && <p className="mt-1 max-w-sm text-xs text-muted-foreground">{message}</p>}
-    </div>
+    <FederationEmptyState
+      className="rounded-lg border border-dashed border-border bg-card/40"
+      icon={<Icon className="h-5 w-5" />}
+      title={title}
+      description={message}
+    />
   );
 }

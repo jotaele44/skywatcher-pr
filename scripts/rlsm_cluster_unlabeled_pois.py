@@ -164,7 +164,7 @@ def main():
     for c in clusters:
         by_type[c["candidate_type"]] += 1
 
-    md = [f"# Unlabeled POI clusters — recurring map features without names\n",
+    md = ["# Unlabeled POI clusters — recurring map features without names\n",
           f"Generated: {_iso_now()}\n",
           f"\n**Source**: {len(rows):,} raw unlabeled candidates from Phase 6 vision pass.",
           f"\n**Method**: bucket centroids by {grid}-pixel grid, keep buckets with ≥ {args.min_recur} distinct screenshots.",

@@ -13,10 +13,9 @@ from __future__ import annotations
 import argparse
 import csv
 import re
-from dataclasses import dataclass
+from collections.abc import Iterable
 from datetime import date
 from pathlib import Path
-from typing import Iterable
 
 REQUIRED_COLUMNS = {
     "airfield",

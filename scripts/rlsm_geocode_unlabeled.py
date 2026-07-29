@@ -43,13 +43,16 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 from integration.geo_calibration import apply_affine, fit_affine  # noqa: E402
+
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 OUTS = REPO / "outputs"
 PR_BBOX = (17.7, 18.65, -67.55, -65.15)  # (lat_min, lat_max, lon_min, lon_max)
 
 # Global-affine fallback constants for FR24 default PR-wide view on iPhone-portrait
-# (1170x2532). Approximate — replace with per-screenshot fit after running
-# scripts/rlsm_reocr_label_layer.py (which populates true word-level centroids).
+# (1170x2532). Approximate — used only for screenshots that still lack per-word
+# pin centroids. The label extractor now writes true word-level geometry at
+# extraction time (fr24/rlsm_extractors.extract_labeled_pins), so a corpus
+# processed by the current pipeline gets a per-screenshot fit instead.
 # Derived from PR-overview map zoom level: 1170px wide ≈ 1.8° lon (~200km)
 GLOBAL_AFFINE_1170_2532 = (
     -67.35,    # lon0 (at px=0)
@@ -60,7 +63,8 @@ GLOBAL_AFFINE_1170_2532 = (
 
 
 def _ascii_up(s: str) -> str:
-    if not s: return ""
+    if not s:
+        return ""
     return "".join(c for c in unicodedata.normalize("NFKD", s)
                    if not unicodedata.combining(c)).upper().strip()
 
@@ -88,8 +92,10 @@ def main():
         props = f.get("properties", {})
         name = (props.get("NAME") or "").upper().strip()
         try:
-            lat = float(props.get("INTPTLAT") or 0); lon = float(props.get("INTPTLON") or 0)
-        except (TypeError, ValueError): continue
+            lat = float(props.get("INTPTLAT") or 0)
+            lon = float(props.get("INTPTLON") or 0)
+        except (TypeError, ValueError):
+            continue
         if name and lat and lon:
             geo_lookup[_ascii_up(name)] = (lat, lon)
     for r in conn.execute("SELECT name, lat, lon FROM geo_anchors WHERE lat IS NOT NULL"):
@@ -118,11 +124,15 @@ def main():
         pixel_xy = [(a[0], a[1]) for a in anchors]
         geo_latlon = [(a[2], a[3]) for a in anchors]
         # Drop duplicates (same anchor labeled twice in a screenshot)
-        seen = set(); dedup_p = []; dedup_g = []
-        for p, g in zip(pixel_xy, geo_latlon):
+        seen = set()
+        dedup_p = []
+        dedup_g = []
+        for p, g in zip(pixel_xy, geo_latlon, strict=False):
             key = (round(p[0], 1), round(p[1], 1))
             if key not in seen:
-                seen.add(key); dedup_p.append(p); dedup_g.append(g)
+                seen.add(key)
+                dedup_p.append(p)
+                dedup_g.append(g)
         if len(dedup_p) < 2:
             continue
         af = fit_affine(dedup_p, dedup_g)
@@ -130,7 +140,7 @@ def main():
             continue
         # Compute residuals
         residuals = []
-        for (px, py), (lat, lon) in zip(dedup_p, dedup_g):
+        for (px, py), (lat, lon) in zip(dedup_p, dedup_g, strict=False):
             est_lat, est_lon = apply_affine(af, px, py)
             residuals.append(((est_lat - lat) ** 2 + (est_lon - lon) ** 2) ** 0.5)
         med_res = float(np.median(residuals))
@@ -148,8 +158,8 @@ def main():
     dims_by_sid = {r[0]: (r[1], r[2]) for r in conn.execute("SELECT screenshot_id, width, height FROM screenshots")}
     global_affine_sids = 0
     if not affines:
-        print(f"[geocode] no per-screenshot affines available — falling back to "
-              f"global PR-wide approximation for 1170x2532 default-zoom screenshots")
+        print("[geocode] no per-screenshot affines available — falling back to "
+              "global PR-wide approximation for 1170x2532 default-zoom screenshots")
         for sid, (w, h) in dims_by_sid.items():
             if (w, h) == (1170, 2532):
                 affines[sid] = GLOBAL_AFFINE_1170_2532
@@ -181,7 +191,8 @@ def main():
         c["hits"].append((cid, sid, conf))
         c["sids"].add(sid)
         c["ctypes"][ctype] += 1
-        c["lats"].append(lat); c["lons"].append(lon)
+        c["lats"].append(lat)
+        c["lons"].append(lon)
 
     # Aircraft per screenshot for diversity filter
     aircraft_by_sid = defaultdict(set)
@@ -243,29 +254,32 @@ def main():
     # Audit summary
     median_residual = round(float(np.median(list(fit_residuals.values()))), 5) if fit_residuals else None
     p90_residual    = round(float(np.percentile(list(fit_residuals.values()), 90)), 5) if fit_residuals else None
+    accuracy_note = (
+        "\n> **Accuracy note:** Screenshots counted below under the GLOBAL PR-wide affine"
+        " fallback have no per-word pin centroids — they were extracted before the label"
+        " extractor recorded word-level geometry. To upgrade them to per-screenshot fits,"
+        " re-run OCR with word boxes and re-extract pins"
+        " (`./run-rlsm.sh --stage ocr --reocr-boxes` then `./run-rlsm.sh --stage pins`),"
+        " then run this script again.\n"
+    )
     md = ["# Geocoded unlabeled POI clusters — audit\n",
-          "\n> **Accuracy note:** This run uses the GLOBAL PR-wide affine fallback because "
-          "the original POI extractor stored zone-center as centroid for all labels on a "
-          "screenshot (not per-word boxes). For per-screenshot accuracy, run "
-          "`scripts/rlsm_reocr_label_layer.py` on your Mac first — that populates "
-          "true word-level pixel centroids, then re-running this script will use the "
-          "much more accurate per-screenshot affine fits.\n",
+          accuracy_note,
           f"\n- Screenshots assigned the global-affine fallback: **{global_affine_sids:,}**",
-          f"\n## Affine-fit pipeline\n",
+          "\n## Affine-fit pipeline\n",
           f"- Screenshots with ≥2 anchors: {fits_attempted:,}",
           f"- Screenshots with successful affine fit: **{fits_succeeded:,}**",
           f"- Dropped (residual > {args.max_affine_residual_deg}°): {fits_dropped_residual:,}",
           f"- Median fit residual: **{median_residual}°** (~{(median_residual or 0)*111:.1f} km)",
           f"- P90 fit residual: {p90_residual}°",
-          f"\n## Geocoding\n",
+          "\n## Geocoding\n",
           f"- Unlabeled candidates with usable affine: {geocoded + dropped_outside_pr:,}",
           f"- Candidates outside PR bbox: {dropped_outside_pr:,}",
           f"- Candidates without per-screenshot affine: {no_affine:,}",
           f"- Successfully geocoded inside PR: **{geocoded:,}**",
-          f"\n## Clusters\n",
+          "\n## Clusters\n",
           f"- Total geocoded grid cells: {len(cells):,}",
           f"- After min-screenshot ({args.min_screenshots}) + min-aircraft ({args.min_aircraft}) filter: **{len(clusters):,}**",
-          f"\n## Top 25 clusters\n",
+          "\n## Top 25 clusters\n",
           "| lat | lon | type | screenshots | aircraft | hits | top aircraft |",
           "|---|---|---|---|---|---|---|"]
     for c in clusters[:25]:

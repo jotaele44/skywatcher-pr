@@ -1,9 +1,9 @@
 from satim_patchwork import (
+    VISIBLE_SURFACE_ONLY_STATUS,
     FlightLink,
     PatchworkClass,
     PatchworkObservation,
     PatchworkSignal,
-    VISIBLE_SURFACE_ONLY_STATUS,
     build_p_route_confidence_patch,
     build_patchwork_poi_ledger,
     patchwork_schema,

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Post-freeze Flight/SATIM Correlation",
+  "type": "object",
+  "required": ["correlation_id", "flight_finding_id", "satim_finding_id", "relationship", "temporal_status", "causal_status"],
+  "properties": {
+    "correlation_id": {"type": "string"},
+    "flight_finding_id": {"type": "string"},
+    "satim_finding_id": {"type": "string"},
+    "relationship": {"enum": ["intersects", "within_uncertainty_corridor", "near", "disjoint", "unresolved"]},
+    "distance_m": {"type": ["number", "null"], "minimum": 0},
+    "distance_uncertainty_m": {"type": ["number", "null"], "minimum": 0},
+    "temporal_status": {"enum": ["known", "unknown", "not_comparable"]},
+    "causal_status": {"const": "not_assessed"},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+  }
+}

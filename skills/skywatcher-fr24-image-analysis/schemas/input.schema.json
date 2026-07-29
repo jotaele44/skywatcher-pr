@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/fr24-image-skill-input.schema.json",
+  "title": "Skywatcher FR24 Image Skill Input",
+  "type": "object",
+  "required": ["primary_media", "mode"],
+  "properties": {
+    "primary_media": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "supplemental": {"type": "array", "items": {"type": "string"}, "default": []},
+    "mode": {"enum": ["triage", "standard", "forensic"]},
+    "execute_stage_1": {"type": "boolean", "default": true},
+    "execute_stage_2": {"type": "boolean", "default": true},
+    "external_verification": {"enum": ["none", "provided_only", "acquire_when_available"], "default": "provided_only"},
+    "target_registration_rmse_m": {"type": "number", "exclusiveMinimum": 0, "default": 10},
+    "output_geometry": {"enum": ["none", "pixel_space", "geojson"], "default": "geojson"}
+  },
+  "additionalProperties": false
+}

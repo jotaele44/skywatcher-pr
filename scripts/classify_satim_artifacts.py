@@ -59,7 +59,7 @@ def classify_csv(input_csv: Path, output_csv: Path) -> None:
     with input_csv.open(newline="", encoding="utf-8") as f:
         rows = [classify_row(dict(row)) for row in csv.DictReader(f)]
 
-    fieldnames = sorted({key for row in rows for key in row.keys()})
+    fieldnames = sorted({key for row in rows for key in row})
     output_csv.parent.mkdir(parents=True, exist_ok=True)
     with output_csv.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)

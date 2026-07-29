@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 VALID_VISIBILITY = {"V0", "V1", "V2", "V3", "V4"}
 
@@ -23,7 +23,7 @@ def _norm(value: Any) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def _record_identity(record: Dict[str, Any]) -> str:
+def _record_identity(record: dict[str, Any]) -> str:
     for field in ("airport_id", "canonical_id", "lz_id", "hangar_id", "corridor_id", "project_location_id"):
         if record.get(field):
             return str(record[field])
@@ -44,7 +44,7 @@ def _parse_scalar(raw: str) -> Any:
         return raw
 
 
-def _parse_inline_list(raw: str) -> List[str]:
+def _parse_inline_list(raw: str) -> list[str]:
     raw = raw.strip()
     if not (raw.startswith("[") and raw.endswith("]")):
         return [raw]
@@ -62,8 +62,8 @@ def _strip_comment(line: str) -> str:
     return line.split("#", 1)[0].rstrip()
 
 
-def _prepared_lines(path: Path) -> List[Tuple[int, str]]:
-    out: List[Tuple[int, str]] = []
+def _prepared_lines(path: Path) -> list[tuple[int, str]]:
+    out: list[tuple[int, str]] = []
     for raw in path.read_text(encoding="utf-8").splitlines():
         line = _strip_comment(raw)
         if not line.strip():
@@ -73,7 +73,7 @@ def _prepared_lines(path: Path) -> List[Tuple[int, str]]:
     return out
 
 
-def load_simple_yaml(path: Path) -> Dict[str, Any]:
+def load_simple_yaml(path: Path) -> dict[str, Any]:
     """Load the small YAML subset used by configs without external dependencies."""
     if not path.exists():
         raise FileNotFoundError(path)
@@ -88,13 +88,13 @@ def load_simple_yaml(path: Path) -> Dict[str, Any]:
             return _parse_inline_list(value)
         return _parse_scalar(value)
 
-    def parse_block(index: int, indent: int) -> Tuple[Any, int]:
+    def parse_block(index: int, indent: int) -> tuple[Any, int]:
         if index >= len(lines):
             return {}, index
 
         is_list = lines[index][0] == indent and lines[index][1].startswith("- ")
         if is_list:
-            result: List[Any] = []
+            result: list[Any] = []
             while index < len(lines):
                 current_indent, text = lines[index]
                 if current_indent < indent:
@@ -116,7 +116,7 @@ def load_simple_yaml(path: Path) -> Dict[str, Any]:
 
                 if ":" in item_text:
                     key, value = item_text.split(":", 1)
-                    item: Dict[str, Any] = {}
+                    item: dict[str, Any] = {}
                     key = key.strip()
                     value = value.strip()
                     if value:
@@ -151,7 +151,7 @@ def load_simple_yaml(path: Path) -> Dict[str, Any]:
                     result.append(parse_value(item_text))
             return result, index
 
-        result_dict: Dict[str, Any] = {}
+        result_dict: dict[str, Any] = {}
         while index < len(lines):
             current_indent, text = lines[index]
             if current_indent < indent:
@@ -185,10 +185,10 @@ def load_simple_yaml(path: Path) -> Dict[str, Any]:
 
 class AliasIndex:
     def __init__(self) -> None:
-        self.alias_to_record: Dict[str, Dict[str, Any]] = {}
-        self.collisions: Dict[str, List[Dict[str, Any]]] = {}
+        self.alias_to_record: dict[str, dict[str, Any]] = {}
+        self.collisions: dict[str, list[dict[str, Any]]] = {}
 
-    def add(self, alias: str, record: Dict[str, Any]) -> None:
+    def add(self, alias: str, record: dict[str, Any]) -> None:
         key = _norm(alias)
         if not key:
             return
@@ -202,7 +202,7 @@ class AliasIndex:
             return
         self.alias_to_record[key] = record
 
-    def resolve(self, raw_text: str, namespace: str = "location") -> Dict[str, Any]:
+    def resolve(self, raw_text: str, namespace: str = "location") -> dict[str, Any]:
         key = _norm(raw_text)
         if key in self.collisions:
             return {
@@ -262,7 +262,7 @@ def build_location_index(config_dir: Path = Path("configs")) -> AliasIndex:
     return index
 
 
-def normalize_location(raw_text: str, config_dir: Path = Path("configs"), namespace: str = "location") -> Dict[str, Any]:
+def normalize_location(raw_text: str, config_dir: Path = Path("configs"), namespace: str = "location") -> dict[str, Any]:
     return build_location_index(config_dir).resolve(raw_text, namespace=namespace)
 
 
@@ -289,7 +289,7 @@ def build_natural_feature_index(config_dir: Path = Path("configs")) -> AliasInde
     # dedup same-name/different-id as one record and silently keep the first; here
     # we group by normalized key and flag any key mapping to >1 canonical_id as a
     # collision so resolve() returns collision_review_required instead of guessing.
-    key_to_records: Dict[str, Dict[str, Dict[str, Any]]] = {}
+    key_to_records: dict[str, dict[str, dict[str, Any]]] = {}
     for record in data.get("natural_features", []) or []:
         cid = record.get("canonical_id")
         for alias in [record.get("canonical_name"), *(record.get("aliases", []) or [])]:
@@ -308,13 +308,13 @@ def normalize_natural_feature(
     raw_text: str,
     config_dir: Path = Path("configs"),
     namespace: str = "natural_feature",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Resolve a raw place string to a canonical PR natural feature. Returns the
     same shape as normalize_location(); normalized_id is the feature canonical_id."""
     return build_natural_feature_index(config_dir).resolve(raw_text, namespace=namespace)
 
 
-def normalize_flight_locations(event: Dict[str, Any], config_dir: Path = Path("configs")) -> Dict[str, Any]:
+def normalize_flight_locations(event: dict[str, Any], config_dir: Path = Path("configs")) -> dict[str, Any]:
     result = dict(event)
     for raw_field, normalized_field in [
         ("origin_raw", "origin_normalized"),
