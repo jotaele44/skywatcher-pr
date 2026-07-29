@@ -14,7 +14,7 @@ package imports without geospatial deps.
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple
+from typing import Any
 
 from fr24.field_select import FIELD_SELECT_VERSION, choose_field, select_row, values_disagree
 from fr24.region_parse import (
@@ -33,7 +33,10 @@ __all__ = [
     "values_disagree",
     "parse_telemetry",
     "coordinate_from_pixel",
-    "CoordResult",
+    # Resolved by the module __getattr__ below rather than imported at module
+    # scope, so that importing this module does not pull in numpy. Ruff reads
+    # __all__ statically and cannot see the lazy binding.
+    "CoordResult",  # noqa: F822
 ]
 
 
@@ -64,8 +67,8 @@ def coordinate_from_pixel(
     image_width: int,
     image_height: int,
     *,
-    calibration: Optional[object] = None,
-) -> "Any":
+    calibration: object | None = None,
+) -> Any:
     """Resolve a pixel coordinate to lat/lon with method + confidence.
 
     Delegates to ``integration.geo_calibration.GeoCalibration`` (lazy import).

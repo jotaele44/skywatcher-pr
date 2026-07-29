@@ -13,8 +13,6 @@ safe to import eagerly. Track-point sampling is delegated to
 
 from __future__ import annotations
 
-from typing import List
-
 from fr24.endpoint_matcher import (
     endpoint_events_for_wave,
     haversine_m,
@@ -46,7 +44,7 @@ __all__ = [
 ]
 
 
-def reconstruct_flights(rows: List[dict]) -> List[dict]:
+def reconstruct_flights(rows: list[dict]) -> list[dict]:
     """Reconstruct flight records from normalized per-screenshot observation rows.
 
     Groups rows by aircraft identity and fuses each group into a flight record.

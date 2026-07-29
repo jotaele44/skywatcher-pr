@@ -19,7 +19,7 @@ def test_migration_order_is_deterministic():
     versions = [m.version for m in migrations.MIGRATIONS]
     assert versions == sorted(versions)
     assert versions[0] == 1
-    assert migrations.LATEST_VERSION == versions[-1]
+    assert versions[-1] == migrations.LATEST_VERSION
 
 
 def test_validate_only_reports_empty_db(tmp_path):

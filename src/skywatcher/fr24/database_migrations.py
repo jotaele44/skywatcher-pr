@@ -22,10 +22,10 @@ temporary databases only.
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, List, Optional, Union
 
 from . import database as db
 
@@ -62,7 +62,7 @@ def _migration_0001_base_schema(conn: sqlite3.Connection) -> None:
 
 # Ordered migration ledger. Append new migrations with the next integer version;
 # never edit or reorder an already-released migration.
-MIGRATIONS: List[Migration] = [
+MIGRATIONS: list[Migration] = [
     Migration(1, "base FR24 canonical schema (10 tables)", _migration_0001_base_schema),
 ]
 
@@ -87,8 +87,8 @@ def _ensure_version_table(conn: sqlite3.Connection) -> None:
 def apply_migrations(
     conn: sqlite3.Connection,
     *,
-    target: Optional[int] = None,
-) -> List[int]:
+    target: int | None = None,
+) -> list[int]:
     """Apply all pending migrations up to ``target`` (default: latest).
 
     Returns the list of version numbers actually applied (empty if up to date).
@@ -97,7 +97,7 @@ def apply_migrations(
     _ensure_version_table(conn)
     current = db.get_schema_version(conn)
     ceiling = LATEST_VERSION if target is None else target
-    applied: List[int] = []
+    applied: list[int] = []
     for migration in MIGRATIONS:
         if migration.version <= current or migration.version > ceiling:
             continue
@@ -123,8 +123,8 @@ class InitResult:
     db_path: str
     validate_only: bool
     schema_version: int
-    applied: List[int]
-    problems: List[str]
+    applied: list[int]
+    problems: list[str]
 
     @property
     def ok(self) -> bool:
@@ -132,7 +132,7 @@ class InitResult:
 
 
 def initialize_database(
-    db_path: Union[str, Path],
+    db_path: str | Path,
     *,
     validate_only: bool = False,
     create_parent: bool = True,

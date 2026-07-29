@@ -10,7 +10,7 @@ Both are testable without operational data (synthetic rows / synthetic bytes).
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Optional, Tuple
+from collections.abc import Iterable
 
 from fr24.fused_dedup import (
     DEDUP_VERSION,
@@ -31,15 +31,15 @@ __all__ = [
 
 
 def find_exact_duplicates(
-    items: Iterable[Tuple[str, bytes]]
-) -> Dict[str, List[str]]:
+    items: Iterable[tuple[str, bytes]]
+) -> dict[str, list[str]]:
     """Group ``(name, data)`` items by SHA-256, returning only the groups that
     have more than one member (i.e. the exact duplicates).
 
     Pure/in-memory; used for content-address dedup of synthetic byte payloads in
     tests and for real screenshots at runtime.
     """
-    by_hash: Dict[str, List[str]] = {}
+    by_hash: dict[str, list[str]] = {}
     for name, data in items:
         by_hash.setdefault(sha256_of_bytes(data), []).append(name)
     return {h: names for h, names in by_hash.items() if len(names) > 1}

@@ -14,7 +14,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Union
 
 # FR24 export filenames commonly embed an ISO-like timestamp, e.g.
 # "FR24_2026-05-28_14-03-11.png" or "2026-05-28 14.03.11.jpg".
@@ -26,7 +25,7 @@ _FILENAME_TS_RE = re.compile(
 __all__ = ["ScreenshotMetadata", "parse_filename_timestamp", "extract_metadata"]
 
 
-def parse_filename_timestamp(filename: str) -> Optional[str]:
+def parse_filename_timestamp(filename: str) -> str | None:
     """Return an ISO-8601 timestamp parsed from ``filename``, or None.
 
     Pure string parsing; does not touch the filesystem.
@@ -44,9 +43,9 @@ class ScreenshotMetadata:
     path: str
     filename: str
     size_bytes: int
-    filename_timestamp: Optional[str] = None
-    width: Optional[int] = None
-    height: Optional[int] = None
+    filename_timestamp: str | None = None
+    width: int | None = None
+    height: int | None = None
     ext: str = ""
     extra: dict = field(default_factory=dict)
 
@@ -64,7 +63,7 @@ class ScreenshotMetadata:
 
 
 def extract_metadata(
-    path: Union[str, Path], *, probe_dimensions: bool = False
+    path: str | Path, *, probe_dimensions: bool = False
 ) -> ScreenshotMetadata:
     """Build :class:`ScreenshotMetadata` for ``path``.
 

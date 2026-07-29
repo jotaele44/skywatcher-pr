@@ -14,9 +14,9 @@ screenshot folders.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, Union
 
 # Canonical union of the previously divergent extension sets. ``.pdf`` and
 # ``.heif`` come from the packet ingester; the rest from the inventory scanner.
@@ -32,7 +32,7 @@ __all__ = [
 ]
 
 
-def is_supported_extension(path: Union[str, Path]) -> bool:
+def is_supported_extension(path: str | Path) -> bool:
     """True if ``path`` has a supported image extension (case-insensitive)."""
     return Path(path).suffix.lower() in SUPPORTED_EXTENSIONS
 
@@ -58,7 +58,7 @@ class DirectoryScreenshotSource(ScreenshotSource):
     (sorted) order and does NOT read file contents.
     """
 
-    def __init__(self, root: Union[str, Path], recursive: bool = True):
+    def __init__(self, root: str | Path, recursive: bool = True):
         object.__setattr__(self, "root", Path(root))
         object.__setattr__(self, "recursive", recursive)
 

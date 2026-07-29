@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from typing import Union
 
 __all__ = [
     "sha256_of_bytes",
@@ -31,7 +30,7 @@ def sha256_of_bytes(data: bytes) -> str:
     return hashlib.sha256(bytes(data)).hexdigest()
 
 
-def sha256_of_file(path: Union[str, Path]) -> str:
+def sha256_of_file(path: str | Path) -> str:
     """Return the lowercase hex SHA-256 digest of the file at ``path``.
 
     Reads the file in chunks so identity computation does not depend on loading
@@ -53,5 +52,5 @@ def screenshot_id_for_bytes(data: bytes) -> str:
     return sha256_of_bytes(data)
 
 
-def screenshot_id_for_file(path: Union[str, Path]) -> str:
+def screenshot_id_for_file(path: str | Path) -> str:
     return sha256_of_file(path)

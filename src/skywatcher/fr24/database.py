@@ -18,7 +18,6 @@ from __future__ import annotations
 import os
 import sqlite3
 from pathlib import Path
-from typing import List, Optional, Union
 
 __all__ = [
     "DatabaseError",
@@ -63,9 +62,9 @@ class SchemaValidationError(DatabaseError):
 
 
 def resolve_db_path(
-    db: Optional[Union[str, Path]] = None,
+    db: str | Path | None = None,
     *,
-    env: Optional[dict] = None,
+    env: dict | None = None,
 ) -> Path:
     """Resolve the DB path using the documented precedence.
 
@@ -81,7 +80,7 @@ def resolve_db_path(
 
 
 def connect(
-    db_path: Union[str, Path],
+    db_path: str | Path,
     *,
     create_parent: bool = True,
     readonly: bool = False,
@@ -140,7 +139,7 @@ def get_schema_version(conn: sqlite3.Connection) -> int:
     return int(val) if val is not None else 0
 
 
-def list_tables(conn: sqlite3.Connection) -> List[str]:
+def list_tables(conn: sqlite3.Connection) -> list[str]:
     rows = conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
     ).fetchall()
@@ -153,13 +152,13 @@ def foreign_keys_enabled(conn: sqlite3.Connection) -> bool:
     return bool(val)
 
 
-def validate_schema(conn: sqlite3.Connection) -> List[str]:
+def validate_schema(conn: sqlite3.Connection) -> list[str]:
     """Return a list of schema problems (empty == valid).
 
     Checks that every expected table exists and that foreign keys are enabled.
     Does not write anything.
     """
-    problems: List[str] = []
+    problems: list[str] = []
     present = set(list_tables(conn))
     for table in EXPECTED_TABLES:
         if table not in present:

@@ -22,7 +22,6 @@ always applied.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 __all__ = [
     "HIGH_THRESHOLD",
@@ -53,7 +52,7 @@ class MissionClassification:
     exceeds :data:`HIGH_THRESHOLD`, in which case it is ``evidence_gated``.
     """
 
-    value: Optional[str]
+    value: str | None
     evidence_score: float
     status: str
     threshold: float = HIGH_THRESHOLD
@@ -68,7 +67,7 @@ class MissionClassification:
 
 
 def classify(
-    value: Optional[str],
+    value: str | None,
     evidence_score: float,
     *,
     threshold: float = HIGH_THRESHOLD,

@@ -24,7 +24,7 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from . import database as db
 from . import mission_classification as mc
@@ -50,27 +50,27 @@ def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def load_bridge_schema() -> Dict[str, Any]:
+def load_bridge_schema() -> dict[str, Any]:
     return json.loads(BRIDGE_SCHEMA_PATH.read_text(encoding="utf-8"))
 
 
 def make_export_id(source_snapshot_id: str, generated_at_utc: str) -> str:
     """Deterministic hub-style package id: pkg_ + 32 hex chars."""
     digest = hashlib.md5(  # noqa: S324 - id derivation, not security
-        f"{source_snapshot_id}|{generated_at_utc}".encode("utf-8")
+        f"{source_snapshot_id}|{generated_at_utc}".encode()
     ).hexdigest()
     return f"pkg_{digest}"
 
 
-def _as_float(value: Any) -> Optional[float]:
+def _as_float(value: Any) -> float | None:
     try:
         return float(value)
     except (TypeError, ValueError):
         return None
 
 
-def _line_string(track_points: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    coords: List[List[float]] = []
+def _line_string(track_points: list[dict[str, Any]]) -> dict[str, Any] | None:
+    coords: list[list[float]] = []
     for tp in track_points:
         lon = _as_float(tp.get("longitude"))
         lat = _as_float(tp.get("latitude"))
@@ -83,16 +83,16 @@ def _line_string(track_points: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]
 
 
 def build_bridge_record(
-    flight: Dict[str, Any],
-    track_points: Optional[List[Dict[str, Any]]] = None,
+    flight: dict[str, Any],
+    track_points: list[dict[str, Any]] | None = None,
     *,
     export_id: str,
     source_snapshot_id: str,
     generated_at_utc: str,
-    anomaly_flags: Optional[List[Dict[str, Any]]] = None,
-    lineage: Optional[List[Dict[str, Any]]] = None,
+    anomaly_flags: list[dict[str, Any]] | None = None,
+    lineage: list[dict[str, Any]] | None = None,
     schema_version: str = BRIDGE_SCHEMA_VERSION,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build a single ``spiderweb_bridge`` record from a flight row (pure)."""
     track_points = track_points or []
     confidence_score = _as_float(flight.get("confidence"))
@@ -120,7 +120,7 @@ def build_bridge_record(
     _aid = flight.get("registration") or flight.get("aircraft_id")
     aircraft_id = str(_aid) if _aid is not None and str(_aid) != "" else None
 
-    record: Dict[str, Any] = {
+    record: dict[str, Any] = {
         "schema_version": schema_version,
         "export_id": export_id,
         "generated_at_utc": generated_at_utc,
@@ -154,10 +154,10 @@ def _iso_ok(value: Any) -> bool:
         return False
 
 
-def _datetime_problems(record: Dict[str, Any]) -> List[str]:
+def _datetime_problems(record: dict[str, Any]) -> list[str]:
     """Deterministic ISO-8601 checks for the date-time fields (jsonschema's
     `format` assertions are advisory and need a backing lib, so we verify here)."""
-    problems: List[str] = []
+    problems: list[str] = []
     if not _iso_ok(record.get("generated_at_utc")):
         problems.append("generated_at_utc: not an ISO-8601 datetime")
     interval = record.get("validated_time_interval") or {}
@@ -167,19 +167,19 @@ def _datetime_problems(record: Dict[str, Any]) -> List[str]:
     return problems
 
 
-def validate_bridge_record(record: Dict[str, Any]) -> List[str]:
+def validate_bridge_record(record: dict[str, Any]) -> list[str]:
     """Validate a bridge record against the shared schema + datetime formats
     (empty == valid)."""
     return tv.validate_against_schema(record, load_bridge_schema()) + _datetime_problems(record)
 
 
 def export_package(
-    db_path: Union[str, Path],
-    out_dir: Union[str, Path],
+    db_path: str | Path,
+    out_dir: str | Path,
     *,
-    source_snapshot_id: Optional[str] = None,
+    source_snapshot_id: str | None = None,
     mode: str = "test",
-    generated_at_utc: Optional[str] = None,
+    generated_at_utc: str | None = None,
 ) -> str:
     """Read flights from ``db_path`` (read-only) and write a bridge package to
     ``out_dir`` (bridge JSONL + manifest). Returns ``out_dir``.
@@ -195,7 +195,7 @@ def export_package(
     export_id = make_export_id(source_snapshot_id, generated_at_utc)
 
     conn = db.connect(db_path, create_parent=False)
-    records: List[Dict[str, Any]] = []
+    records: list[dict[str, Any]] = []
     try:
         # LEFT JOIN aircraft so the bridge can carry the registration string
         # rather than the integer FK (see build_bridge_record).

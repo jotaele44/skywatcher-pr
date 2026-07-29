@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional, Union
 
 from . import database as db
 
@@ -36,9 +35,9 @@ class ImageDirUnavailableError(RuntimeError):
 
 
 def resolve_image_dir(
-    image_dir: Optional[Union[str, Path]] = None,
+    image_dir: str | Path | None = None,
     *,
-    env: Optional[dict] = None,
+    env: dict | None = None,
     require_exists: bool = True,
 ) -> Path:
     """Resolve the screenshot input directory using the documented precedence.
@@ -67,7 +66,7 @@ def resolve_image_dir(
     return resolved
 
 
-def database_status(db_path: Union[str, Path]) -> dict:
+def database_status(db_path: str | Path) -> dict:
     """Return a read-only status summary of the DB (row counts per table).
 
     Does not write. If the DB/schema is absent, reports schema_version 0 and

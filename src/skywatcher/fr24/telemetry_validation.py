@@ -11,7 +11,7 @@ module imports without it; it is a declared dependency and available at runtime.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fr24.wave_validator import (
     MAX_CLIMB_FT_PER_MIN,
@@ -38,16 +38,16 @@ class FailureLedger:
     ``processing_failures`` table columns. Deterministic and testable; callers
     persist ``entries`` via the database layer."""
 
-    entries: List[Dict[str, Any]] = field(default_factory=list)
+    entries: list[dict[str, Any]] = field(default_factory=list)
 
     def record(
         self,
         *,
         stage: str,
         reason: str,
-        screenshot_id: Optional[str] = None,
-        detail: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        screenshot_id: str | None = None,
+        detail: str | None = None,
+    ) -> dict[str, Any]:
         entry = {
             "stage": stage,
             "reason": reason,
@@ -60,14 +60,14 @@ class FailureLedger:
     def count(self) -> int:
         return len(self.entries)
 
-    def by_stage(self) -> Dict[str, int]:
-        out: Dict[str, int] = {}
+    def by_stage(self) -> dict[str, int]:
+        out: dict[str, int] = {}
         for e in self.entries:
             out[e["stage"]] = out.get(e["stage"], 0) + 1
         return out
 
 
-def validate_against_schema(instance: Any, schema: Dict[str, Any]) -> List[str]:
+def validate_against_schema(instance: Any, schema: dict[str, Any]) -> list[str]:
     """Validate ``instance`` against a JSON ``schema``; return a list of human
     -readable error strings (empty == valid). Uses ``jsonschema`` lazily and
     supports both draft-07 and 2020-12 schemas (auto-selected by ``$schema``)."""

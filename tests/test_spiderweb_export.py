@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 
-from skywatcher.fr24 import database_migrations as migrations
 from skywatcher.fr24 import database as db
+from skywatcher.fr24 import database_migrations as migrations
 from skywatcher.fr24 import spiderweb_export as se
 
 
@@ -62,8 +62,8 @@ def test_export_package_roundtrip(tmp_path):
     finally:
         conn.close()
 
-    out = se.export_package(dbp, tmp_path / "pkg", source_snapshot_id="snap1",
-                            generated_at_utc="2026-01-01T01:00:00Z")
+    se.export_package(dbp, tmp_path / "pkg", source_snapshot_id="snap1",
+                      generated_at_utc="2026-01-01T01:00:00Z")
     manifest = json.loads((tmp_path / "pkg" / "manifest.json").read_text())
     assert manifest["record_counts"]["flights"] == 1
     assert manifest["export_id"].startswith("pkg_")
@@ -101,7 +101,7 @@ def test_bad_datetime_is_rejected():
 def test_empty_export_reports_zero(tmp_path):
     dbp = tmp_path / "s.db"
     migrations.initialize_database(dbp)
-    out = se.export_package(dbp, tmp_path / "pkg", source_snapshot_id="snap0",
-                            generated_at_utc="2026-01-01T01:00:00Z")
+    se.export_package(dbp, tmp_path / "pkg", source_snapshot_id="snap0",
+                      generated_at_utc="2026-01-01T01:00:00Z")
     manifest = json.loads((tmp_path / "pkg" / "manifest.json").read_text())
     assert manifest["record_counts"]["flights"] == 0  # empty, honestly reported
