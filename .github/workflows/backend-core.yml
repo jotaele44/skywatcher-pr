@@ -27,16 +27,26 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install -e ".[dev,api]"
-      - name: Correct temporary generator EOF normalization
+      - name: Correct temporary runner publication boundaries
         run: |
           python - <<'PY'
           from pathlib import Path
           path = Path("scripts/apply_phase0_p2_remediation.py")
           text = path.read_text(encoding="utf-8")
-          old = '    path.write_text(text + "\\n", encoding="utf-8")\n'
-          new = '    path.write_text(text.rstrip() + "\\n", encoding="utf-8")\n'
-          assert text.count(old) == 1
-          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          eof_old = '    path.write_text(text + "\\n", encoding="utf-8")\n'
+          eof_new = '    path.write_text(text.rstrip() + "\\n", encoding="utf-8")\n'
+          restore_block = '''    workflow = subprocess.check_output(
+              ["git", "show", f"{RESTORE_WORKFLOW_FROM}:.github/workflows/backend-core.yml"],
+              cwd=ROOT,
+              text=True,
+          )
+          (ROOT / ".github/workflows/backend-core.yml").write_text(workflow, encoding="utf-8")
+
+'''
+          assert text.count(eof_old) == 1
+          assert text.count(restore_block) == 1
+          text = text.replace(eof_old, eof_new, 1).replace(restore_block, "", 1)
+          path.write_text(text, encoding="utf-8")
           PY
       - run: python scripts/apply_phase0_p2_remediation.py
 
