@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
+from typing import Any
 
 SATIM_SCHEMA_VERSION = "satim.calibration.v1"
 LAYER_STATUSES = {"READY", "PARTIAL", "DEGRADED", "MISSING"}
@@ -18,29 +19,29 @@ ADVISORY_LAYERS = ["L4_aircraft_intelligence", "L5_tile_seam_shadow"]
 class LayerCalibrationResult:
     layer: str
     status: str
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    thresholds: Dict[str, Any] = field(default_factory=dict)
-    findings: List[Dict[str, Any]] = field(default_factory=list)
+    metrics: dict[str, Any] = field(default_factory=dict)
+    thresholds: dict[str, Any] = field(default_factory=dict)
+    findings: list[dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if self.status not in LAYER_STATUSES:
             raise ValueError(f"invalid SATIM layer status: {self.status}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
 @dataclass
 class SATIMCalibrationReport:
-    layers: Dict[str, Dict[str, Any]]
+    layers: dict[str, dict[str, Any]]
     generated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
     repo: str = "skywatcher-pr"
     schema_version: str = SATIM_SCHEMA_VERSION
-    blocking_gaps: List[Dict[str, Any]] = field(default_factory=list)
-    recommended_next_actions: List[str] = field(default_factory=list)
-    overall_status: Optional[str] = None
+    blocking_gaps: list[dict[str, Any]] = field(default_factory=list)
+    recommended_next_actions: list[str] = field(default_factory=list)
+    overall_status: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["overall_status"] = self.overall_status or derive_overall_status(self.layers)
         derived_blocking_gaps, derived_next_actions = derive_gap_accounting(self.layers)
@@ -49,7 +50,7 @@ class SATIMCalibrationReport:
         return payload
 
 
-def layer_status_to_readiness(status: Optional[str]) -> str:
+def layer_status_to_readiness(status: str | None) -> str:
     if status == "READY":
         return "PASS"
     if status == "PARTIAL":
@@ -78,7 +79,7 @@ def derive_overall_status(layers: Mapping[str, Mapping[str, Any]]) -> str:
     return "PARTIAL"
 
 
-def derive_gap_accounting(layers: Mapping[str, Mapping[str, Any]]) -> Tuple[List[Dict[str, Any]], List[str]]:
+def derive_gap_accounting(layers: Mapping[str, Mapping[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
     """Derive operator-facing gaps from SATIM layer readiness.
 
     L1-L3 are base SATIM readiness gates. Any non-ready L1-L3 layer is a
@@ -87,8 +88,8 @@ def derive_gap_accounting(layers: Mapping[str, Mapping[str, Any]]) -> Tuple[List
     enrichment quality and imagery-artifact workflows rather than base FR24
     screenshot parsing.
     """
-    blocking_gaps: List[Dict[str, Any]] = []
-    recommended_next_actions: List[str] = []
+    blocking_gaps: list[dict[str, Any]] = []
+    recommended_next_actions: list[str] = []
 
     for layer in REQUIRED_BASE_LAYERS:
         status = layers.get(layer, {}).get("status")
@@ -110,7 +111,7 @@ def derive_gap_accounting(layers: Mapping[str, Mapping[str, Any]]) -> Tuple[List
     return blocking_gaps, recommended_next_actions
 
 
-def read_json(path: str | Path) -> Dict[str, Any]:
+def read_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
@@ -120,7 +121,7 @@ def write_json(path: str | Path, payload: Mapping[str, Any]) -> None:
     out.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
-def normalize_layer_payload(payload: Mapping[str, Any]) -> Dict[str, Any]:
+def normalize_layer_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     if "layer" in payload and "status" in payload:
         name = str(payload["layer"])
         data = dict(payload)
@@ -131,8 +132,8 @@ def normalize_layer_payload(payload: Mapping[str, Any]) -> Dict[str, Any]:
     raise ValueError("layer report must contain either {layer,status} or {layers}")
 
 
-def merge_layer_reports(paths: Iterable[str | Path], output_path: str | Path) -> Dict[str, Any]:
-    layers: Dict[str, Dict[str, Any]] = {}
+def merge_layer_reports(paths: Iterable[str | Path], output_path: str | Path) -> dict[str, Any]:
+    layers: dict[str, dict[str, Any]] = {}
     for path in paths:
         payload = read_json(path)
         layers.update(normalize_layer_payload(payload))

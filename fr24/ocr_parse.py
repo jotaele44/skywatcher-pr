@@ -13,8 +13,8 @@ import csv
 import json
 import re
 from collections import Counter
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List
 
 
 def clean(text: str) -> str:
@@ -167,7 +167,7 @@ def parse_record(record: dict) -> dict:
 
 
 def parse_jsonl(input_jsonl: Path, output_csv: Path, review_csv: Path) -> dict:
-    records: List[dict] = []
+    records: list[dict] = []
     with input_jsonl.open(encoding="utf-8") as f:
         for line in f:
             if line.strip():

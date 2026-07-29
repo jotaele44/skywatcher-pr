@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping
+from typing import Any
 
 from .models import LayerCalibrationResult, write_json
 
@@ -76,7 +77,7 @@ def corroborating_tile_signal_count(
     return sum(1 for item in signals if item)
 
 
-def classify_candidate(row: Mapping[str, Any]) -> Dict[str, Any]:
+def classify_candidate(row: Mapping[str, Any]) -> dict[str, Any]:
     """Classify one candidate from normalized feature scores.
 
     Existing columns remain supported:
@@ -161,12 +162,12 @@ def classify_candidate(row: Mapping[str, Any]) -> Dict[str, Any]:
     return {**scores, "decision": decision}
 
 
-def load_candidates(path: str | Path) -> List[Dict[str, str]]:
+def load_candidates(path: str | Path) -> list[dict[str, str]]:
     with Path(path).open(newline="", encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
 
 
-def summarize(results: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
+def summarize(results: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     rows = list(results)
     counts = {decision: 0 for decision in DECISIONS}
     for row in rows:
@@ -175,7 +176,7 @@ def summarize(results: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
     return {"candidate_count": len(rows), "decision_counts": counts}
 
 
-def calibrate(candidates_csv: str) -> Dict[str, Any]:
+def calibrate(candidates_csv: str) -> dict[str, Any]:
     candidates = load_candidates(candidates_csv)
     scored = [classify_candidate(row) for row in candidates]
     metrics = summarize(scored)
@@ -211,7 +212,7 @@ STRICT_GROUND_FEATURE_MAX = 0.55
 STRICT_OVERLAP_SUPPRESS = 0.55
 
 
-def classify_candidate_strict(row: Mapping[str, Any]) -> Dict[str, Any]:
+def classify_candidate_strict(row: Mapping[str, Any]) -> dict[str, Any]:
     """Spec-faithful conjunctive tile-seam gate.
 
     A candidate is ``probable_tile_seam`` only if ALL hold:
@@ -258,7 +259,7 @@ def classify_candidate_strict(row: Mapping[str, Any]) -> Dict[str, Any]:
     return {**base, "decision": decision, "strict_clauses": clauses, "screen_locked_score": round(screen_locked, 4)}
 
 
-def calibrate_strict(candidates_csv: str) -> Dict[str, Any]:
+def calibrate_strict(candidates_csv: str) -> dict[str, Any]:
     """L5 calibration using the strict AND-gate. Emits an explicit finding when
     screen_locked_score is absent/zero across all candidates (the gate is then
     inert pending a screen-lock feature extractor)."""

@@ -10,7 +10,6 @@ from satim_engine.plugins.visual_ocr_filename_backend import (
     parse_filename_hints,
 )
 
-
 # ── parser in isolation ─────────────────────────────────────────────────────
 
 def test_parses_tail_callsign_and_iso_timestamp():

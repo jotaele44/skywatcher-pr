@@ -21,9 +21,17 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from satim_calibration import CANONICAL_FALSE_POSITIVE_CLASSES
+
+if TYPE_CHECKING:
+    # Only the CLI half of this module needs these, and it imports them inside
+    # the functions that use them so importing satim_fit stays cheap. Annotations
+    # are strings anyway under `from __future__ import annotations`, so naming
+    # them here costs nothing at runtime and lets linters resolve them.
+    import argparse
+    from pathlib import Path
 
 # Precision each promotion band must clear, low -> high.
 DEFAULT_PRECISION_TARGETS = {
@@ -206,14 +214,14 @@ def emit_fp_classes_yaml(
 # CLI — reproducible fit harness (measure thresholds instead of hand-setting)
 # ---------------------------------------------------------------------------
 
-def _read_ground_truth_csv(path: "Path") -> list[dict[str, Any]]:
+def _read_ground_truth_csv(path: Path) -> list[dict[str, Any]]:
     import csv
 
     with open(path, newline="", encoding="utf-8") as fh:
         return list(csv.DictReader(fh))
 
 
-def fit_result_to_dict(result: "FitResult") -> dict[str, Any]:
+def fit_result_to_dict(result: FitResult) -> dict[str, Any]:
     """Deterministic, JSON-serializable view of a FitResult."""
     return {
         "n_rows": result.n_rows,
@@ -225,7 +233,7 @@ def fit_result_to_dict(result: "FitResult") -> dict[str, Any]:
     }
 
 
-def build_arg_parser() -> "argparse.ArgumentParser":
+def build_arg_parser() -> argparse.ArgumentParser:
     import argparse
 
     p = argparse.ArgumentParser(
@@ -238,7 +246,7 @@ def build_arg_parser() -> "argparse.ArgumentParser":
     return p
 
 
-def main(argv: "list[str] | None" = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     import json
     from pathlib import Path
 

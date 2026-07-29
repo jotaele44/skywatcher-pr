@@ -13,9 +13,10 @@ import hashlib
 import json
 import shutil
 import zipfile
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from pipeline.normalize_locations import load_simple_yaml
 
@@ -291,7 +292,9 @@ def run_l5(l5_mode: str, candidates_csv: str) -> dict[str, Any]:
     if l5_mode not in L5_MODES:
         raise ValueError(f"unknown l5_mode {l5_mode!r}; expected one of {L5_MODES}")
     if l5_mode == "synthetic_boundary":
-        from .calibration.l5_synthetic_boundary_classifier import calibrate as calibrate_l5_synthetic
+        from .calibration.l5_synthetic_boundary_classifier import (
+            calibrate as calibrate_l5_synthetic,
+        )
 
         payload = calibrate_l5_synthetic(candidates_csv)
     elif l5_mode == "strict":

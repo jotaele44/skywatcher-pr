@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
-
-from .models import LayerCalibrationResult, write_json
 
 from skywatcher.core.route_visual_constants import COLOR_RANGES, MIN_ROUTE_PIXELS
+
+from .models import LayerCalibrationResult, write_json
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 
 
-def pixel_in_range(pixel: Sequence[int], ranges: Mapping[str, Mapping[str, Tuple[int, int]]]) -> bool:
+def pixel_in_range(pixel: Sequence[int], ranges: Mapping[str, Mapping[str, tuple[int, int]]]) -> bool:
     r, g, b = int(pixel[0]), int(pixel[1]), int(pixel[2])
     for spec in ranges.values():
         if spec["r"][0] <= r <= spec["r"][1] and spec["g"][0] <= g <= spec["g"][1] and spec["b"][0] <= b <= spec["b"][1]:
@@ -21,7 +21,7 @@ def pixel_in_range(pixel: Sequence[int], ranges: Mapping[str, Mapping[str, Tuple
     return False
 
 
-def count_route_pixels(image_path: str | Path, ranges: Mapping[str, Mapping[str, Tuple[int, int]]] = COLOR_RANGES) -> int:
+def count_route_pixels(image_path: str | Path, ranges: Mapping[str, Mapping[str, tuple[int, int]]] = COLOR_RANGES) -> int:
     try:
         from PIL import Image  # type: ignore
     except Exception as exc:  # pragma: no cover
@@ -34,19 +34,19 @@ def count_route_pixels(image_path: str | Path, ranges: Mapping[str, Mapping[str,
     return count
 
 
-def list_images(path: str | Path) -> List[Path]:
+def list_images(path: str | Path) -> list[Path]:
     root = Path(path)
     if not root.exists():
         return []
     return sorted(p for p in root.rglob("*") if p.suffix.lower() in IMAGE_EXTENSIONS)
 
 
-def sweep_min_route_pixels(counts: Iterable[int], candidates: Iterable[int] = (4, 6, 8, 12, 20)) -> Dict[int, int]:
+def sweep_min_route_pixels(counts: Iterable[int], candidates: Iterable[int] = (4, 6, 8, 12, 20)) -> dict[int, int]:
     values = list(counts)
     return {threshold: sum(1 for value in values if value >= threshold) for threshold in candidates}
 
 
-def calibrate(input_dir: str, blank_input: str | None = None, min_route_pixels: int = MIN_ROUTE_PIXELS) -> Dict[str, object]:
+def calibrate(input_dir: str, blank_input: str | None = None, min_route_pixels: int = MIN_ROUTE_PIXELS) -> dict[str, object]:
     images = list_images(input_dir)
     blanks = list_images(blank_input) if blank_input else []
     route_counts = [count_route_pixels(p) for p in images]

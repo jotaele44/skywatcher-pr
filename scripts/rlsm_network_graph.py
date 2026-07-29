@@ -32,9 +32,12 @@ FAA_CSV = REPO / "data" / "faa_registry_consolidated.csv"
 
 
 def parse_ts(s):
-    if not s or len(s) < 16: return None
-    try: return datetime.fromisoformat(s.replace("Z","+00:00"))
-    except ValueError: return None
+    if not s or len(s) < 16:
+        return None
+    try:
+        return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
 
 def greedy_communities(adj: dict, edge_weights: dict) -> dict:
@@ -114,7 +117,7 @@ def main():
     aircraft_sightings = Counter(r for r, _ in rows)
     window = timedelta(minutes=args.window_min)
 
-    for d, items in by_date.items():
+    for _d, items in by_date.items():
         items.sort(key=lambda x: x[1])
         # Sliding window
         n = len(items)
@@ -134,8 +137,9 @@ def main():
 
     # Build adjacency
     adj = defaultdict(set)
-    for a, b, w in edges:
-        adj[a].add(b); adj[b].add(a)
+    for a, b, _w in edges:
+        adj[a].add(b)
+        adj[b].add(a)
 
     # Community detection
     communities = greedy_communities(adj, {tuple(sorted([a,b])): w for a,b,w in edges}) if adj else {}
@@ -193,7 +197,6 @@ def main():
                "#660066","#009933","#cc3399","#003366","#996633","#669900"]
     node_objs = []
     for n in nodes_csv[:120]:  # cap for browser
-        size = 8 + min(40, n["weighted_degree"] * 0.5)
         color = palette[n["community_id"] % len(palette)] if n["community_id"] >= 0 else "#cccccc"
         node_objs.append({
             "id": n["registration"],

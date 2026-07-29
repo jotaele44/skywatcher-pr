@@ -3,8 +3,6 @@
 import json
 from pathlib import Path
 
-import pytest
-
 from fr24.spiderweb_adapter import (
     ADAPTER_VERSION,
     PROHIBITED_LABELS,
@@ -12,7 +10,6 @@ from fr24.spiderweb_adapter import (
     map_to_flight_event,
     run,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

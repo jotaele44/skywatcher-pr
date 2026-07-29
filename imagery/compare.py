@@ -16,9 +16,8 @@ from .models import ChangeResult, ImageryResult
 
 
 def _grayscale_array(data: bytes):
-    from PIL import Image  # local import: Pillow is an imagery extra
-
     import numpy as np
+    from PIL import Image  # local import: Pillow is an imagery extra
 
     with Image.open(io.BytesIO(data)) as img:
         arr = np.asarray(img.convert("L"), dtype="float32") / 255.0

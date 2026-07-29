@@ -34,7 +34,6 @@ CLI:
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import sqlite3
 import time
@@ -54,13 +53,20 @@ def detect_features_masked(file_path, sw, sh, debug_dir=None, sid=None):
         import cv2
         import numpy as np
         from PIL import Image
-        try: import pillow_heif; pillow_heif.register_heif_opener()
-        except ImportError: pass
+
+        try:
+            import pillow_heif
+
+            pillow_heif.register_heif_opener()
+        except ImportError:
+            pass  # HEIC files unsupported if pillow_heif absent
 
         img = Image.open(file_path).convert("RGB")
         # Crop map zone
-        x0 = int(sw * MAP_ZONE_PCT[0]); y0 = int(sh * MAP_ZONE_PCT[1])
-        x1 = int(sw * MAP_ZONE_PCT[2]); y1 = int(sh * MAP_ZONE_PCT[3])
+        x0 = int(sw * MAP_ZONE_PCT[0])
+        y0 = int(sh * MAP_ZONE_PCT[1])
+        x1 = int(sw * MAP_ZONE_PCT[2])
+        y1 = int(sh * MAP_ZONE_PCT[3])
         map_crop = img.crop((x0, y0, x1, y1))
         arr = np.array(map_crop)
         gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
@@ -175,7 +181,8 @@ def main():
         for sid, candidates, err in results:
             n_done += 1
             if err:
-                n_fail += 1; continue
+                n_fail += 1
+                continue
             for c in candidates or []:
                 cur.execute("""
                     INSERT INTO unlabeled_pin_candidates
@@ -200,7 +207,8 @@ def main():
             for f in as_completed(ex.submit(process_one, w) for w in work_args):
                 batch.append(f.result())
                 if len(batch) >= 30:
-                    handle(batch); batch = []
+                    handle(batch)
+                    batch = []
             if batch:
                 handle(batch)
     conn.commit()

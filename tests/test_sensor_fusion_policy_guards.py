@@ -1,5 +1,5 @@
-from skywatcher.normalizers.air_event_normalizer import normalize_air_event
 from skywatcher.fusion.cross_domain_overlap import find_cross_domain_overlaps
+from skywatcher.normalizers.air_event_normalizer import normalize_air_event
 
 
 def test_air_event_output_has_required_policy_metadata():

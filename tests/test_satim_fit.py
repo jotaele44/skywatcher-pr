@@ -8,7 +8,6 @@ import json
 
 import satim_fit
 
-
 SYNTHETIC_ROWS = [
     {"image_id": "a1", "false_positive_class": "PALM", "confidence": "0.90", "is_false_positive": "1", "source": "syn"},
     {"image_id": "a2", "false_positive_class": "PALM", "confidence": "0.80", "is_false_positive": "1", "source": "syn"},

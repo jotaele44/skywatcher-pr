@@ -9,8 +9,6 @@ import sqlite3
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
-
 
 QUEUE_TYPES = ("route_georef", "ocr_correction", "quality_issue", "coord_calibration")
 
@@ -58,7 +56,7 @@ class ManualReviewQueue:
                  queue_type: str,
                  image_path: str,
                  reason: str,
-                 metadata: Optional[Dict] = None) -> str:
+                 metadata: dict | None = None) -> str:
         """
         Add a new item to the queue. Returns the assigned item_id.
         Duplicate (image_path, queue_type) entries for items still pending
@@ -94,7 +92,7 @@ class ManualReviewQueue:
 
     # ----------------------------------------------------------------- query
 
-    def get_pending(self, queue_type: Optional[str] = None) -> List[dict]:
+    def get_pending(self, queue_type: str | None = None) -> list[dict]:
         conn = self._connect()
         if queue_type:
             rows = conn.execute(
@@ -109,8 +107,8 @@ class ManualReviewQueue:
         conn.close()
         return [_row_to_dict(r) for r in rows]
 
-    def get_all(self, queue_type: Optional[str] = None,
-                status: Optional[str] = None) -> List[dict]:
+    def get_all(self, queue_type: str | None = None,
+                status: str | None = None) -> list[dict]:
         conn = self._connect()
         clauses = []
         params = []
@@ -158,8 +156,8 @@ class ManualReviewQueue:
     # ----------------------------------------------------------------- export
 
     def export_csv(self,
-                   queue_type: Optional[str] = None,
-                   output_path: Optional[str] = None) -> str:
+                   queue_type: str | None = None,
+                   output_path: str | None = None) -> str:
         items = self.get_all(queue_type=queue_type)
         if output_path is None:
             suffix = f"_{queue_type}" if queue_type else ""
@@ -172,7 +170,7 @@ class ManualReviewQueue:
             writer.writerows(items)
         return output_path
 
-    def get_pending_count(self, queue_type: Optional[str] = None) -> int:
+    def get_pending_count(self, queue_type: str | None = None) -> int:
         """Return the number of pending items (optionally filtered by type)."""
         conn = self._connect()
         if queue_type:
@@ -187,7 +185,7 @@ class ManualReviewQueue:
         conn.close()
         return row[0] if row else 0
 
-    def bulk_approve(self, item_ids: List[str], resolution: str = "bulk_approved") -> int:
+    def bulk_approve(self, item_ids: list[str], resolution: str = "bulk_approved") -> int:
         """Mark multiple items as reviewed in one transaction.
 
         Returns the number of items actually updated (skips unknown IDs).
@@ -207,8 +205,8 @@ class ManualReviewQueue:
         conn.close()
         return affected
 
-    def export_to_json(self, output_path: Optional[str] = None,
-                       queue_type: Optional[str] = None) -> str:
+    def export_to_json(self, output_path: str | None = None,
+                       queue_type: str | None = None) -> str:
         """Export all items (optionally filtered by type) to a JSON file.
 
         Returns the path of the written file.
@@ -228,7 +226,7 @@ class ManualReviewQueue:
 
     # ----------------------------------------------------------------- stats
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         conn = self._connect()
         rows = conn.execute(
             "SELECT queue_type, status, COUNT(*) FROM review_queue "
@@ -236,7 +234,7 @@ class ManualReviewQueue:
         ).fetchall()
         conn.close()
 
-        stats: Dict = {}
+        stats: dict = {}
         for qtype, status, count in rows:
             stats.setdefault(qtype, {})[status] = count
 
