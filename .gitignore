@@ -1,17 +1,30 @@
-# Python
+# Python / build
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+build/
+dist/
+*.whl
 
-# Virtualenvs
+# Virtual environments
 .venv/
 venv/
 
-# macOS / session junk
+# macOS, session, and archive contamination
 .DS_Store
+._*
+__MACOSX/
 .remember/
+Archive.zip
+Archive/
+_superseded/
 
 # Secrets — never track credentials
 .env
@@ -21,74 +34,42 @@ venv/
 *.p12
 secrets/
 
-# Local airspace data / outputs (only the synthetic example is tracked).
-# The directory itself is tracked via .gitkeep so `run-rlsm.sh` has somewhere to
-# write on a fresh clone; everything inside it stays local.
-*.db
+# Runtime workspace
+var/
 outputs/*
 !outputs/.gitkeep
 tile_cache/
+*.db
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+flight_database.db
 
-# generated canonical export (scripts/federation_export.py)
+# Generated exports and reports
 exports/federation/
+reports/maintenance/
+reports/runtime/
+*.log
 
-# FR24 ingest data — large baseline corpus + run manifests.
-# Owned by skywatcher (relocated here from spiderweb-pr); large + machine-local,
-# so tracked out of git. The empty directory is tracked (.gitkeep) so the
-# operator has an obvious place to point the corpus at — see data/rlsm/HANDOFF.md.
+# Large or machine-local data packs
 data/FR24_baseline/*
 !data/FR24_baseline/.gitkeep
 data/_manifests/
 data/.migration_trash/
-
-# RLSM screenshot inventory DB (fr24/screenshot_inventory.py output over
-# data/FR24_baseline). Machine-local, and NOT reproducible by re-running the
-# inventory: it holds sha256 + phash for 13,321 screenshots, ~1,020 of which
-# (month bucket 2026-03) no longer exist on disk. Back it up, don't delete it.
 data/rlsm/*.sqlite*
-
-flight_database.db
-
-# FR24 ground-truth track harvest (controller: scripts/fr24_harvest.py)
-# Machine-local harvested CSVs + ledger/carryover; migrated from spiderweb-pr.
 data/ground_truth/
-
-# generated federation maintenance report (audit artifact, not committed)
-reports/maintenance/
-
-# Fetched GEBCO terrain layer (scripts/fetch_gebco_pr.py output) — data, not source
 data/gebco/
 
-# Desktop wrapper (see desktop/README.md)
-.venv/
+# RLSM corpus-derived artifacts
+data/FR24_ocr_cache/
+data/places.geojson
+.fuse_hidden*
+
+# Frontend and desktop build products
 frontend/node_modules/
 frontend/dist/
 desktop/.setup-complete
-dist-desktop/
-build/
 desktop/.running
+dist-desktop/
 dist-smoke/
 !desktop/pyinstaller.spec
-
-# Coverage artifacts (pytest --cov / coverage.py)
-.coverage
-.coverage.*
-htmlcov/
-coverage.xml
-
-# Superseded FR24 tree. Kept out of git as a 534 KB binary blob nobody could
-# diff; the working copies below are what people actually unzip it into, and
-# they kept turning up in stashes.
-Archive.zip
-Archive/
-_superseded/
-
-# RLSM corpus-derived artifacts. All regenerable — see data/rlsm/HANDOFF.md.
-# FR24_ocr_cache is ~13.7k per-screenshot .txt files; places.geojson is a 1.2 MB
-# gazetteer built by scripts/rlsm_build_places_geojson.py.
-data/FR24_ocr_cache/
-data/places.geojson
-
-# SQLite leaves these behind when a file is deleted while a handle is still open
-# (the rlsm.sqlite migration produced a pile of them).
-.fuse_hidden*
