@@ -14,7 +14,7 @@ package imports without geospatial deps.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fr24.field_select import FIELD_SELECT_VERSION, choose_field, select_row, values_disagree
 from fr24.region_parse import (
@@ -22,6 +22,13 @@ from fr24.region_parse import (
     PARSER_VERSION,
     parse_region_record,
 )
+
+if TYPE_CHECKING:
+    # Declares CoordResult for static analysis only — the block never executes,
+    # so the name stays absent at runtime and the module __getattr__ below still
+    # fires for it. Without this, both ruff (F822) and CodeQL (py/undefined-export)
+    # read __all__ statically, see no binding, and flag the export.
+    from integration.geo_calibration import CoordResult
 
 __all__ = [
     "PARSER_VERSION",
@@ -33,10 +40,10 @@ __all__ = [
     "values_disagree",
     "parse_telemetry",
     "coordinate_from_pixel",
-    # Resolved by the module __getattr__ below rather than imported at module
-    # scope, so that importing this module does not pull in numpy. Ruff reads
-    # __all__ statically and cannot see the lazy binding.
-    "CoordResult",  # noqa: F822
+    # Bound at runtime by the module __getattr__ below, not at import time, so
+    # that importing this module does not pull in numpy. See the TYPE_CHECKING
+    # block above for why it still resolves statically.
+    "CoordResult",
 ]
 
 
