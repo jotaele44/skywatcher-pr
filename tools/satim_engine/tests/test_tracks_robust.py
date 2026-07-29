@@ -1,7 +1,6 @@
-from pathlib import Path
-import pandas as pd
 import pytest
-from satim_engine.tracks import parse_csv_track, NonTrackCSV
+from satim_engine.tracks import NonTrackCSV, parse_csv_track
+
 
 def test_parse_lat_lon_aliases(tmp_path):
     f = tmp_path / "track.csv"

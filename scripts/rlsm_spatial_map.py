@@ -64,7 +64,7 @@ def color_for(operator: str, palette_idx: list[int]) -> str:
 
 def main():
     ap = argparse.ArgumentParser()
-    args = ap.parse_args()
+    ap.parse_args()
 
     conn = sqlite3.connect(DB)
 
@@ -92,7 +92,8 @@ def main():
             for key in (r.get("anchor_id",""), r.get("name","")):
                 k = key.upper().strip()
                 try:
-                    lat = float(r["lat"]); lon = float(r["lon"])
+                    lat = float(r["lat"])
+                    lon = float(r["lon"])
                     if k and lat and lon:
                         poi_geo.setdefault(k, (lat, lon, "airport_or_anchor"))
                 except (KeyError, TypeError, ValueError):
@@ -110,8 +111,10 @@ def main():
         norm, reg, op = r
         d = poi_data[_ascii_up(norm)]
         d["sightings"] += 1
-        if reg: d["aircraft"][reg] += 1
-        if op: d["operators"][op] += 1
+        if reg:
+            d["aircraft"][reg] += 1
+        if op:
+            d["operators"][op] += 1
 
     # Merge to (lat, lon, sightings, ...) using ASCII-tolerant lookup
     plotted_pois = []
@@ -169,7 +172,8 @@ def main():
         w.writerow(["name", "lat", "lon", "sightings", "n_unique_aircraft",
                     "top_operator", "top_aircraft"])
         for p in sorted(plotted_pois, key=lambda x: -x["sightings"]):
-            if p["type"] != "municipality": continue
+            if p["type"] != "municipality":
+                continue
             w.writerow([p["name"], p["lat"], p["lon"], p["sightings"],
                         p["n_aircraft"], p["top_operator"], p["top_aircraft"]])
 

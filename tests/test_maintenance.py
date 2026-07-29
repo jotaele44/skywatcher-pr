@@ -16,9 +16,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from maintenance.adapters import local  # noqa: E402
 from prii_maintenance import run_maintenance  # noqa: E402
 from prii_maintenance import state as state_mod  # noqa: E402
+
+from maintenance.adapters import local  # noqa: E402
 
 
 def _federation(root, *, blocking=None, export_dir="exports/federation"):

@@ -73,7 +73,7 @@ def test_discovery_finds_the_set() -> None:
 # --- scoring ----------------------------------------------------------------
 def test_score_label_fr24_render_is_suppressed() -> None:
     cs = load_calibration_set(MOCA_SET)
-    label = next(l for l in cs.labels if l.feature_class == "roof_or_building_edge")
+    label = next(lbl for lbl in cs.labels if lbl.feature_class == "roof_or_building_edge")
     scored = score_label(label, cs.scoring_adjustments, cs.promotion_thresholds)
     assert scored.raw_confidence == 0.70
     assert scored.adjustment == -0.35
@@ -84,7 +84,7 @@ def test_score_label_fr24_render_is_suppressed() -> None:
 
 def test_score_label_palm_lands_in_review() -> None:
     cs = load_calibration_set(MOCA_SET)
-    label = next(l for l in cs.labels if l.false_positive_class == "PALM")
+    label = next(lbl for lbl in cs.labels if lbl.false_positive_class == "PALM")
     scored = score_label(label, cs.scoring_adjustments, cs.promotion_thresholds)
     # 0.90 + (-0.25) = 0.65 -> review band
     assert scored.adjusted_score == 0.65
@@ -94,7 +94,7 @@ def test_score_label_palm_lands_in_review() -> None:
 def test_alias_resolves_to_canonical_class() -> None:
     cs = load_calibration_set(MOCA_SET)
     # TREE_CROWN -> PALM (-0.25); raw 0.35 -> 0.10 suppressed.
-    label = next(l for l in cs.labels if l.false_positive_class == "TREE_CROWN")
+    label = next(lbl for lbl in cs.labels if lbl.false_positive_class == "TREE_CROWN")
     scored = score_label(
         label, cs.scoring_adjustments, cs.promotion_thresholds, cs.false_positive_aliases
     )
@@ -120,7 +120,7 @@ def test_unmapped_class_is_unknown_with_zero_adjustment() -> None:
 
 def test_canonical_class_resolution_status() -> None:
     cs = load_calibration_set(MOCA_SET)
-    label = next(l for l in cs.labels if l.false_positive_class == "PALM")
+    label = next(lbl for lbl in cs.labels if lbl.false_positive_class == "PALM")
     scored = score_label(
         label, cs.scoring_adjustments, cs.promotion_thresholds, cs.false_positive_aliases
     )

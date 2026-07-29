@@ -27,8 +27,7 @@ import csv
 import json
 import re
 import sqlite3
-import time
-from collections import Counter, defaultdict
+from collections import Counter
 from itertools import product
 from pathlib import Path
 
@@ -85,7 +84,7 @@ def gen_ocr_variants(s: str, max_subs: int = 3):
                 chars_options.append([s[i]] + list(opts))
             for product_tuple in product(*chars_options):
                 variant = list(s)
-                for (i, _), new_char in zip(combo, product_tuple):
+                for (i, _), new_char in zip(combo, product_tuple, strict=False):
                     variant[i] = new_char
                 results.add("".join(variant))
     return results
@@ -103,7 +102,8 @@ def main():
     if FAA_CSV.exists():
         for r in csv.DictReader(FAA_CSV.open()):
             t = (r.get("registration") or "").upper().strip()
-            if t: faa_set.add(t)
+            if t:
+                faa_set.add(t)
     print(f"[tail-recover] FAA registry size: {len(faa_set):,}")
 
     conn = sqlite3.connect(DB)
@@ -131,10 +131,12 @@ def main():
     by_variant_kind = Counter()
 
     for obs_id, sid, text in rows:
-        if not text: continue
+        if not text:
+            continue
         # Find all REG. matches
         matches = REG_PAT.findall(text)
-        if not matches: continue
+        if not matches:
+            continue
         n_with_reg_text += 1
         # Pick the most plausible registration token (longest with digits + N prefix)
         candidates_in_text = []

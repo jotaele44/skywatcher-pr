@@ -5,8 +5,6 @@ import json
 import sqlite3
 from pathlib import Path
 
-import pytest
-
 REPO = Path(__file__).resolve().parents[1]
 SCHEMA = REPO / "data" / "rlsm" / "schema.sql"
 

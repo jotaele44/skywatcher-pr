@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SATIM Finding",
+  "type": "object",
+  "required": ["finding_id", "observation_class", "source_frame", "pixel_bbox", "confidence", "status", "purpose_inference"],
+  "properties": {
+    "finding_id": {"type": "string"},
+    "observation_class": {
+      "enum": ["UI_OVERLAY", "ROUTE_LINE_CONTAMINATION", "MAP_LABEL", "ZOOM_BLUR", "SCREENSHOT_RESAMPLING", "COMPRESSION_ARTIFACT", "TILE_SEAM", "POSSIBLE_TILE_SEAM", "RADIOMETRIC_BOUNDARY", "MOSAIC_DATE_BOUNDARY", "ORTHORECTIFICATION_MISMATCH", "TERRAIN_SHADOW", "VEGETATION_SHADOW", "DARK_SURFACE_POLYGON", "EXPOSED_GROUND", "VEGETATION_BOUNDARY", "PERSISTENT_SURFACE_FEATURE", "UNRESOLVED"]
+    },
+    "source_frame": {"type": "string"},
+    "pixel_bbox": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "number"}},
+    "geometry": {"type": ["object", "null"]},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "registration_error_m": {"type": ["number", "null"], "minimum": 0},
+    "status": {"enum": ["candidate", "corroborated", "contradicted", "unresolved", "rejected"]},
+    "purpose_inference": {"const": false},
+    "supporting_frames": {"type": "array", "items": {"type": "string"}},
+    "contradicting_frames": {"type": "array", "items": {"type": "string"}}
+  }
+}

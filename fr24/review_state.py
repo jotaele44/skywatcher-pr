@@ -7,11 +7,15 @@ sibling/local-state JSON overlays used for analyst workflow state.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Mapping
 
-from fr24.dashboard_data import ALLOWED_QUEUE_STATUSES, LOCAL_STATE_POLICY, LOCAL_STATE_SCHEMA_VERSION
+from fr24.dashboard_data import (
+    ALLOWED_QUEUE_STATUSES,
+    LOCAL_STATE_POLICY,
+    LOCAL_STATE_SCHEMA_VERSION,
+)
 
 
 def utc_now_iso() -> str:
@@ -24,7 +28,7 @@ def build_local_state_payload(entries: Mapping[str, str], *, generated_at: str |
     ``entries`` maps stable queue row identity -> allowed queue status. Open rows
     may be omitted by callers; if included, they remain valid.
     """
-    for identity in entries.keys():
+    for identity in entries:
         if not isinstance(identity, str) or not identity:
             raise ValueError("Local-state entry identity must be a non-empty string")
     invalid = sorted({status for status in entries.values() if status not in ALLOWED_QUEUE_STATUSES})

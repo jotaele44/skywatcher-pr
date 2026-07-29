@@ -54,7 +54,6 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
-from typing import Optional
 
 REPO = Path(__file__).resolve().parents[1]
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -110,7 +109,7 @@ def _classify_screenshot(observations: list) -> tuple:
 
 
 def run(budget_sec: float = 35.0, limit: int = 0,
-        image_root: Optional[Path] = None) -> dict:
+        image_root: Path | None = None) -> dict:
     """Classify path_shape for every 'ok' screenshot not yet in flight_track_features.
 
     When *image_root* is given and the screenshot file exists under it, the

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, Mapping
+from collections.abc import Iterable, Mapping
 
 from skywatcher.fusion.historical_baselines import index_baselines
 
@@ -36,10 +36,7 @@ def score_against_historical_baselines(
         historical_count = float(baseline.get("historical_count", 0.0))
         current_count = float(record.get("event_count", 1.0))
         confidence = float(record.get("confidence", 0.0))
-        if historical_count <= 0:
-            ratio = 1.0
-        else:
-            ratio = current_count / historical_count
+        ratio = 1.0 if historical_count <= 0 else current_count / historical_count
         ratio_component = min(1.0, max(0.0, abs(ratio - 1.0)))
         confidence_component = min(1.0, max(0.0, confidence))
         anomaly_score = round((0.65 * ratio_component) + (0.35 * confidence_component), 3)

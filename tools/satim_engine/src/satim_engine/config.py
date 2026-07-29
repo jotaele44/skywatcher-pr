@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from pathlib import Path
+
 import yaml
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "config" / "satim_default.yml"

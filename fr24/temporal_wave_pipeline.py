@@ -15,8 +15,8 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, List
 
 from fr24.field_select import run as field_select_run
 from fr24.ocr_analysis_vector import run as analysis_vector_run
@@ -35,15 +35,15 @@ PROHIBITED_LABELS = {
 }
 
 
-def _read_csv(path: Path) -> List[dict]:
+def _read_csv(path: Path) -> list[dict]:
     if not path.exists() or path.stat().st_size == 0:
         return []
     with path.open(encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
-def _scan_rows_for_prohibited_labels(rows: Iterable[dict]) -> List[str]:
-    findings: List[str] = []
+def _scan_rows_for_prohibited_labels(rows: Iterable[dict]) -> list[str]:
+    findings: list[str] = []
     for row_idx, row in enumerate(rows, 1):
         for key, value in row.items():
             token = str(value or "").strip()
@@ -56,12 +56,12 @@ def _csv_row_count(path: Path) -> int:
     return len(_read_csv(path))
 
 
-def _validate_policy(output_paths: Dict[str, Path]) -> dict:
+def _validate_policy(output_paths: dict[str, Path]) -> dict:
     csv_outputs = {
         key: path for key, path in output_paths.items()
         if path.suffix.lower() == ".csv"
     }
-    findings: Dict[str, List[str]] = {}
+    findings: dict[str, list[str]] = {}
     for key, path in csv_outputs.items():
         bad = _scan_rows_for_prohibited_labels(_read_csv(path))
         if bad:

@@ -4,13 +4,20 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any
 
 from .models import LayerCalibrationResult, write_json
 
 try:  # pragma: no cover - exercised when repo module is importable
-    from fr24.ui_segmenter import MAP_BOTTOM_FRAC, MAP_TOP_FRAC, PANEL_TOP_FRAC, UI_LEFT_FRAC, UI_RIGHT_FRAC
+    from fr24.ui_segmenter import (
+        MAP_BOTTOM_FRAC,
+        MAP_TOP_FRAC,
+        PANEL_TOP_FRAC,
+        UI_LEFT_FRAC,
+        UI_RIGHT_FRAC,
+    )
 except Exception:  # fallback keeps calibration tests independent
     MAP_TOP_FRAC = 0.08
     MAP_BOTTOM_FRAC = 0.72
@@ -21,7 +28,7 @@ except Exception:  # fallback keeps calibration tests independent
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".heic"}
 
 
-def compute_fractional_boxes(width: int, height: int) -> Dict[str, Tuple[int, int, int, int]]:
+def compute_fractional_boxes(width: int, height: int) -> dict[str, tuple[int, int, int, int]]:
     if width <= 0 or height <= 0:
         raise ValueError("width and height must be positive")
     return {
@@ -40,14 +47,14 @@ def compute_fractional_boxes(width: int, height: int) -> Dict[str, Tuple[int, in
     }
 
 
-def list_images(path: str | Path) -> List[Path]:
+def list_images(path: str | Path) -> list[Path]:
     root = Path(path)
     if not root.exists():
         return []
     return sorted(p for p in root.rglob("*") if p.suffix.lower() in IMAGE_EXTENSIONS)
 
 
-def score_annotations(rows: Iterable[Dict[str, Any]]) -> Dict[str, float]:
+def score_annotations(rows: Iterable[dict[str, Any]]) -> dict[str, float]:
     total_route = 0.0
     route_in_map = 0.0
     panel_overlap = 0.0
@@ -61,7 +68,7 @@ def score_annotations(rows: Iterable[Dict[str, Any]]) -> Dict[str, float]:
     }
 
 
-def load_annotation_json(path: str | None) -> List[Dict[str, Any]]:
+def load_annotation_json(path: str | None) -> list[dict[str, Any]]:
     if not path:
         return []
     p = Path(path)
@@ -73,14 +80,14 @@ def load_annotation_json(path: str | None) -> List[Dict[str, Any]]:
     return list(data.get("annotations", []))
 
 
-def calibrate(input_dir: str, annotations: str | None = None) -> Dict[str, Any]:
+def calibrate(input_dir: str, annotations: str | None = None) -> dict[str, Any]:
     images = list_images(input_dir)
     annotation_metrics = score_annotations(load_annotation_json(annotations))
     thresholds = {
         "route_pixel_coverage_min": 0.90,
         "panel_text_overlap_max": 0,
     }
-    findings: List[Dict[str, Any]] = []
+    findings: list[dict[str, Any]] = []
     if not images:
         findings.append({"severity": "warning", "detail": "no screenshot images found"})
     if annotation_metrics["route_pixel_coverage"] and annotation_metrics["route_pixel_coverage"] < thresholds["route_pixel_coverage_min"]:

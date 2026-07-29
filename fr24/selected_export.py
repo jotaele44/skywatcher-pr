@@ -14,7 +14,6 @@ import json
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List
 
 EXPORT_VERSION = "fr24_selected_export_v0.1.0"
 
@@ -52,13 +51,13 @@ PROVENANCE_VERSION_FIELDS = (
 )
 
 
-def read_csv(path: Path) -> List[dict]:
+def read_csv(path: Path) -> list[dict]:
     if not path.exists() or path.stat().st_size == 0:
         return []
     return list(csv.DictReader(path.open(encoding="utf-8")))
 
 
-def write_csv(path: Path, rows: List[dict], fieldnames: List[str]) -> None:
+def write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not rows:
         path.write_text("", encoding="utf-8")
@@ -70,7 +69,7 @@ def write_csv(path: Path, rows: List[dict], fieldnames: List[str]) -> None:
             writer.writerow({k: row.get(k, "") for k in fieldnames})
 
 
-def write_jsonl(path: Path, rows: List[dict]) -> None:
+def write_jsonl(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         for row in rows:
@@ -126,9 +125,9 @@ def enrich_row(row: dict, source_csv: Path, ledger_index: dict[str, dict]) -> di
     return out
 
 
-def export_fieldnames() -> List[str]:
+def export_fieldnames() -> list[str]:
     base = ["candidate_id", "image_path", "image_name"]
-    field_columns: List[str] = []
+    field_columns: list[str] = []
     for field in SELECT_FIELDS:
         field_columns.append(field)
         field_columns.append(f"{field}_selected_source")
@@ -158,7 +157,7 @@ def write_source_manifest(
     path: Path,
     inputs: dict[str, int],
     outputs: dict[str, int],
-    upstream_versions: dict[str, List[str]],
+    upstream_versions: dict[str, list[str]],
 ) -> None:
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -188,7 +187,7 @@ def run(
     ledger_rows = read_csv(ledger_csv)
     ledger_index = build_ledger_index(ledger_csv)
 
-    enriched: List[dict] = []
+    enriched: list[dict] = []
     dropped = 0
     for row in selected_rows:
         if has_prohibited_label(row):
@@ -200,7 +199,7 @@ def run(
     write_csv(output_csv, enriched, fieldnames)
     write_jsonl(output_jsonl, enriched)
 
-    upstream_versions: dict[str, List[str]] = {k: [] for k in PROVENANCE_VERSION_FIELDS}
+    upstream_versions: dict[str, list[str]] = {k: [] for k in PROVENANCE_VERSION_FIELDS}
     for row in enriched:
         for key in PROVENANCE_VERSION_FIELDS:
             value = (row.get(key) or "").strip()

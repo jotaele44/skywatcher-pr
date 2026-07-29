@@ -21,7 +21,7 @@ and has no CLI surface (added in a later phase).
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     from fr24.calibration.readiness_adapter import satim_report_to_legacy_calibration
@@ -58,17 +58,17 @@ class PRIIReadinessEngine:
     def __init__(self, export_dir: str):
         self.export_dir = Path(export_dir)
 
-    def assess(self) -> Dict[str, Any]:
+    def assess(self) -> dict[str, Any]:
         integration = self._load_json("integration_report.json")
         calibration  = self._load_json("calibration_report.json")
 
-        missing_inputs: List[str] = []
-        blockers: List[Dict[str, Any]] = []
-        warnings: List[Dict[str, Any]] = []
+        missing_inputs: list[str] = []
+        blockers: list[dict[str, Any]] = []
+        warnings: list[dict[str, Any]] = []
 
         # ── PRII gate assessment ──────────────────────────────────────────────
-        prii_overall: Optional[str] = None
-        prii_gates:   Dict[str, Any] = {}
+        prii_overall: str | None = None
+        prii_gates:   dict[str, Any] = {}
 
         if integration is None:
             missing_inputs.append("integration_report.json")
@@ -88,10 +88,10 @@ class PRIIReadinessEngine:
                     })
 
         # ── Calibration assessment ────────────────────────────────────────────
-        cal_status:  Optional[str] = None
-        cal_mode:    Optional[str] = None
-        cal_flags:   List[dict]    = []
-        cal_count:   Optional[int] = None
+        cal_status:  str | None = None
+        cal_mode:    str | None = None
+        cal_flags:   list[dict]    = []
+        cal_count:   int | None = None
 
         if calibration is None:
             missing_inputs.append("calibration_report.json")
@@ -170,7 +170,7 @@ class PRIIReadinessEngine:
 
     # ── helpers ───────────────────────────────────────────────────────────────
 
-    def _load_json(self, filename: str) -> Optional[Dict[str, Any]]:
+    def _load_json(self, filename: str) -> dict[str, Any] | None:
         path = self.export_dir / filename
         if not path.exists():
             return None
@@ -181,7 +181,7 @@ class PRIIReadinessEngine:
         return self._normalise_loaded_json(filename, payload)
 
     @staticmethod
-    def _normalise_loaded_json(filename: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalise_loaded_json(filename: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Normalize newer artifact schemas into contracts expected by assess()."""
         if (
             filename == "calibration_report.json"
@@ -193,7 +193,7 @@ class PRIIReadinessEngine:
         return payload
 
     @staticmethod
-    def _gate_detail(gate_name: str, gate: Dict[str, Any]) -> str:
+    def _gate_detail(gate_name: str, gate: dict[str, Any]) -> str:
         if gate_name == "coordinate_coverage":
             return (
                 f"pct_with_coords={gate.get('pct_with_coords')} "
@@ -218,8 +218,8 @@ class PRIIReadinessEngine:
         return f"gate {gate_name} failed"
 
     def assess_satellite_manifests(
-        self, manifest_dir: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, manifest_dir: str | None = None
+    ) -> dict[str, Any]:
         """Return a schema gateResult for satellite manifest presence."""
         search_dir = Path(manifest_dir) if manifest_dir else self.export_dir
         if not search_dir.exists():
@@ -236,7 +236,7 @@ class PRIIReadinessEngine:
             "message": f"{len(manifests)} satellite manifest(s) found",
         }
 
-    def get_gate_status_text(self, gate_name: str, gate: Dict[str, Any]) -> str:
+    def get_gate_status_text(self, gate_name: str, gate: dict[str, Any]) -> str:
         """Return a compact human-readable summary for a single gate."""
         status = gate.get("status", "UNKNOWN")
         if gate_name == "coordinate_coverage":
@@ -262,9 +262,9 @@ class PRIIReadinessEngine:
 
     def to_schema_report(
         self,
-        assess_result: Dict[str, Any],
-        manifest_dir: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        assess_result: dict[str, Any],
+        manifest_dir: str | None = None,
+    ) -> dict[str, Any]:
         """Convert assess() output to prii_readiness_report schema format.
 
         The schema uses flat gate objects with {status, message} instead of
@@ -334,7 +334,7 @@ class PRIIReadinessEngine:
             "notes":    None,
         }
 
-    def format_readiness_text(self, report: Dict[str, Any]) -> str:
+    def format_readiness_text(self, report: dict[str, Any]) -> str:
         """Return a human-readable multi-line summary of a readiness report."""
         lines = [
             f"Readiness Status: {report.get('readiness_status', report.get('status', 'UNKNOWN'))}",
@@ -376,9 +376,9 @@ class PRIIReadinessEngine:
 
     def export_dashboard_json(
         self,
-        assess_result: Dict[str, Any],
+        assess_result: dict[str, Any],
         output_path: str,
-        manifest_dir: Optional[str] = None,
+        manifest_dir: str | None = None,
     ) -> None:
         """Write schema-compliant dashboard JSON to *output_path*."""
         schema_report = self.to_schema_report(assess_result, manifest_dir=manifest_dir)
@@ -386,13 +386,13 @@ class PRIIReadinessEngine:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(schema_report, indent=2), encoding="utf-8")
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Return a compact health-check dict for the export directory.
 
         status is "healthy" if both input artifacts are present and readable,
         "degraded" if one is missing, "unhealthy" if neither is readable.
         """
-        checks: Dict[str, Any] = {}
+        checks: dict[str, Any] = {}
 
         for fname in ("integration_report.json", "calibration_report.json"):
             path = self.export_dir / fname
@@ -438,7 +438,7 @@ class PRIIReadinessEngine:
             and not report.get("blockers")
         )
 
-    def _write_report(self, report: Dict[str, Any]) -> None:
+    def _write_report(self, report: dict[str, Any]) -> None:
         self.export_dir.mkdir(parents=True, exist_ok=True)
         (self.export_dir / "prii_readiness_report.json").write_text(
             json.dumps(report, indent=2), encoding="utf-8"
