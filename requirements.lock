@@ -10,6 +10,8 @@ attrs==26.1.0
     #   referencing
 colorama==0.4.6 ; sys_platform == 'win32'
     # via pytest
+defusedxml==0.7.1
+    # via -r requirements.txt
 et-xmlfile==2.0.0
     # via openpyxl
 iniconfig==2.3.0
