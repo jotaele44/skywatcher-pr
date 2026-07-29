@@ -15,31 +15,58 @@ describe('StatusChip', () => {
     expect(screen.getByText('Verified')).toBeInTheDocument();
   });
 
-  it('carries the federation tone attributes for a known tone', () => {
-    // Colour comes from the shared design system's .fd-status tokens via
-    // federationTone(), not from classes this component owns. Asserting on the
-    // emitted data-* attributes pins the contract with @pr-federation/react
-    // without pinning the palette.
-    const { container } = render(<StatusChip tone="blocked" label="Blocked" />);
-    const chip = container.firstChild;
+  // Colour comes from the shared design system's .fd-status tokens via
+  // federationTone(), not from classes this component owns. federationTone
+  // returns { className: 'fd-status', 'data-status': <canonical role> }, so
+  // data-status is the whole observable contract — assert its value, not its
+  // presence. StatusChip always sets a className regardless of tone, so any
+  // check that merely looks for attributes passes even when every tone has
+  // collapsed to the neutral fallback.
+  const EXPECTED_ROLE = {
+    ready: 'success',
+    warn: 'warning',
+    blocked: 'danger',
+    synthetic: 'process',
+    info: 'info',
+    primary: 'tier',
+    muted: 'neutral',
+  };
 
-    expect(chip).toBeInTheDocument();
-    const toneAttrs = Object.fromEntries(
-      [...chip.attributes].map((a) => [a.name, a.value]),
-    );
-    const hasToneSignal = Object.keys(toneAttrs).some(
-      (name) => name.startsWith('data-') || name === 'class',
-    );
-    expect(hasToneSignal).toBe(true);
+  const roleOf = (tone, label = 'X') => {
+    const { container, unmount } = render(<StatusChip tone={tone} label={label} />);
+    const role = container.firstChild.getAttribute('data-status');
+    const className = container.firstChild.className;
+    unmount();
+    return { role, className };
+  };
+
+  it.each(Object.entries(EXPECTED_ROLE))(
+    'renders tone %s as the federation role %s',
+    (tone, expected) => {
+      const { role, className } = roleOf(tone);
+
+      expect(role).toBe(expected);
+      expect(className).toContain('fd-status');
+    },
+  );
+
+  it('keeps distinct tones distinct', () => {
+    // The fallback is `neutral`, so the most likely way this contract breaks is
+    // everything collapsing to it at once. Each per-tone expectation above
+    // catches that too, but only this one says why the suite went red.
+    const roles = Object.keys(EXPECTED_ROLE).map((tone) => roleOf(tone).role);
+
+    expect(new Set(roles).size).toBeGreaterThan(1);
+    expect(new Set(roles).size).toBe(new Set(Object.values(EXPECTED_ROLE)).size);
   });
 
-  it('falls back rather than throwing on an unrecognised tone', () => {
-    // The fallback is deliberate, but it is also why an unknown tone is
-    // invisible — see the tone-vocabulary test in lib/skywatcher.test.js,
-    // which is what actually catches a status added with a bad tone.
-    expect(() => render(<StatusChip tone="not-a-tone" label="Odd" />)).not.toThrow();
-    expect(screen.getByText('Odd')).toBeInTheDocument();
+  it('falls back to neutral for an unrecognised tone, distinguishably', () => {
+    // Both halves matter: without the second, a total collapse to neutral would
+    // satisfy this test rather than fail it.
+    expect(roleOf('not-a-tone').role).toBe('neutral');
+    expect(roleOf('not-a-tone').role).not.toBe(roleOf('blocked').role);
   });
+
 
   it('renders without a tone at all', () => {
     render(<StatusChip label="Default" />);
