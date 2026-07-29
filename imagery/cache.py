@@ -23,9 +23,16 @@ _EXT_BY_MEDIA = {
 
 
 def cache_key(*parts: object) -> str:
-    """Stable hash of the request parameters."""
+    """Stable hash of the request parameters.
+
+    SHA256 rather than SHA1. Nothing here is a signature — the digest only names
+    a file — so collision resistance is not load-bearing, but SHA1 trips the
+    security baseline and there is no reason to keep it: the key is never
+    persisted anywhere but the filename, so the only cost of changing it is that
+    tiles cached under the old scheme are re-fetched once.
+    """
     raw = "|".join("" if p is None else str(p) for p in parts)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 def cache_path(key: str, media_type: str) -> Path:
