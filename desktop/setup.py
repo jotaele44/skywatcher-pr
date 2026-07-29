@@ -12,18 +12,38 @@ Usage:
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import shutil
 import subprocess
 import sys
 import venv
 from pathlib import Path
+from types import ModuleType
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from desktop import config  # noqa: E402
-from desktop.config import DIST_DIR, FRONTEND_DIR, REPO_ROOT, REQUIREMENT_FILES  # noqa: E402
+def _load_config() -> ModuleType:
+    try:
+        from desktop import config as desktop_config
 
+        return desktop_config
+    except ModuleNotFoundError as exc:
+        if exc.name not in {"desktop", "desktop.config"}:
+            raise
+        config_path = Path(__file__).resolve().with_name("config.py")
+        spec = importlib.util.spec_from_file_location("skywatcher_desktop_config", config_path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"Unable to load desktop configuration: {config_path}") from exc
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+
+config = _load_config()
+DIST_DIR = config.DIST_DIR
+FRONTEND_DIR = config.FRONTEND_DIR
+REPO_ROOT = config.REPO_ROOT
+REQUIREMENT_FILES = config.REQUIREMENT_FILES
 VENV_DIR = REPO_ROOT / ".venv"
 MARKER = Path(__file__).resolve().parent / ".setup-complete"
 
@@ -52,29 +72,7 @@ def is_complete() -> bool:
 MIN_PYTHON = (3, 10)
 
 
-HUB_SIBLING = REPO_ROOT.parent / "thehub-pr"
-HUB_CLONE_URL = "https://github.com/jotaele44/thehub-pr.git"
-
-
-def ensure_hub_sibling() -> None:
-    """Requirement files reference shared packages by a sibling path
-    (``-e ../thehub-pr/packages/*``). For a dev launch from a fresh clone the
-    sibling may be absent, so fetch it once. Frozen builds bundle the package and
-    never hit this path."""
-    if HUB_SIBLING.exists():
-        return
-    git = shutil.which("git")
-    if git is None:
-        raise SystemExit(
-            "git not found: the desktop wrapper needs a sibling thehub-pr checkout "
-            f"at {HUB_SIBLING}. Clone {HUB_CLONE_URL} there and re-run."
-        )
-    print(f"Fetching shared federation packages into {HUB_SIBLING} …")
-    run([git, "clone", "--depth", "1", HUB_CLONE_URL, str(HUB_SIBLING)])
-
-
 def setup_python() -> None:
-    ensure_hub_sibling()
     if sys.version_info < MIN_PYTHON:
         raise SystemExit(f"Python 3.10+ required, found {sys.version.split()[0]}")
     if not venv_python().exists():

@@ -30,11 +30,9 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
-import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO))
 
 from fr24.rlsm_anchors import anchors_for_screenshot, build_geo_lookup  # noqa: E402
 from integration.geo_calibration import (  # noqa: E402

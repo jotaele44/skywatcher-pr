@@ -22,8 +22,6 @@ import shutil
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
 from satim_fit import emit_fp_classes_yaml, fit_calibration  # noqa: E402
 from satim_ground_truth import GROUND_TRUTH_FILE, read_ground_truth  # noqa: E402
 

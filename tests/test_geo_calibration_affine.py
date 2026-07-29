@@ -138,11 +138,7 @@ def test_existing_modes_unchanged():
 
 
 def test_geocoder_script_reexports_shared_affine():
-    sys.path.insert(0, str(REPO_ROOT / "scripts"))
-    try:
-        import rlsm_geocode_unlabeled as geocoder
-    finally:
-        sys.path.pop(0)
+    from scripts import rlsm_geocode_unlabeled as geocoder
     assert geocoder.fit_affine is fit_affine
     assert geocoder.apply_affine is apply_affine
 

@@ -17,8 +17,6 @@ import csv
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
 from satim_ground_truth import GROUND_TRUTH_FILE, append_ground_truth  # noqa: E402
 from satim_render_diff import autolabel_render_diff  # noqa: E402
 

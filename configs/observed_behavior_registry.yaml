@@ -1,0 +1,22 @@
+version: 1
+policy:
+  assertion_type: observed_behavior
+  source_declared_only_for_purpose: true
+  operational_cueing: false
+behaviors:
+  - name: direct_transit
+    description: Predominantly point-to-point movement without repeated turns.
+  - name: repeated_corridor
+    description: Repeated traversal of a similar corridor across observations.
+  - name: closed_loop
+    description: Track geometry returns near its starting region.
+  - name: orbit_or_hold
+    description: Repeated turns within a bounded area; purpose unresolved.
+  - name: grid_like_track
+    description: Multiple approximately parallel track segments; purpose unresolved.
+  - name: coastal_track
+    description: Track follows a coastal corridor; purpose unresolved.
+  - name: inland_track
+    description: Track remains predominantly inland; purpose unresolved.
+  - name: unresolved
+    description: Insufficient geometry or metadata for a descriptive class.

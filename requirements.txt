@@ -1,17 +1,3 @@
-Pillow>=10.0
-PyMuPDF>=1.23
-pytest>=8.0
-pillow-heif>=0.16; platform_system != "Windows"
-# Manual flight-log workbooks (.xlsx) read by fr24/log_verify.py. Imported lazily
-# at the call site, so only log-verification runs pay the import cost.
-openpyxl>=3.1
-# Draft 2020-12 JSON Schema validation for the SATIM artifact-assessment protocol
-# (src/skywatcher/satim/artifacts) and the federation contract-compat tests.
-jsonschema>=4.20
-# Shared federation libraries from thehub-pr, resolved via a local editable path
-# instead of a pinned commit SHA: edit the package once in thehub-pr/packages and
-# every consumer picks it up with no per-repo bump. Requires thehub-pr checked out
-# as a sibling of this repo (paths are relative to the repo root, where
-# `pip install -r requirements.txt` runs).
--e ../thehub-pr/packages/prii_maintenance
--e ../thehub-pr/packages/prii_export_utils
+# Compatibility installer; dependency ownership lives in pyproject.toml.
+# Federation packages are exact-commit direct references.
+-e .[api,federation]

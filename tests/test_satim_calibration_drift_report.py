@@ -7,9 +7,8 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from satim_calibration_drift_report import build_report  # noqa: E402
+from scripts.satim_calibration_drift_report import build_report
 
 ACTIVE_SET = REPO_ROOT / "data" / "satim_calibration" / "moca_fr24_2025"
 CONTROL_SET = REPO_ROOT / "data" / "satim_calibration" / "control_moca_groundtruth"

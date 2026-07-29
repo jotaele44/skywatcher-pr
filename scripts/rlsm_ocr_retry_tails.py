@@ -18,6 +18,7 @@ CLI:
     python3 scripts/rlsm_ocr_retry_tails.py --workers 4 # parallel
     python3 scripts/rlsm_ocr_retry_tails.py --limit 50  # quick test
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,7 +26,6 @@ import csv
 import json
 import re
 import sqlite3
-import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
@@ -49,7 +49,7 @@ def ocr_card_robust(file_path: str, sw: int, sh: int) -> str:
 
         pillow_heif.register_heif_opener()
     except ImportError:
-        pass  # HEIC files unsupported if pillow_heif absent
+        pass
     import numpy as np
     import pytesseract
 
@@ -64,7 +64,7 @@ def ocr_card_robust(file_path: str, sw: int, sh: int) -> str:
     crop = img.crop((0, y0, sw, y1))
 
     # Variant A: 2x upscale + binarization
-    crop_2x = crop.resize((crop.size[0]*2, crop.size[1]*2), Image.LANCZOS)
+    crop_2x = crop.resize((crop.size[0] * 2, crop.size[1] * 2), Image.LANCZOS)
     texts = []
 
     # Path 1: PIL grayscale + threshold
@@ -131,8 +131,7 @@ def main():
                 faa_set.add(t)
 
     # Reuse OCR_SUBS variant generator from the textmine script
-    sys.path.insert(0, str(REPO / "scripts"))
-    from rlsm_recover_tails_textmine import TAIL_PAT, gen_ocr_variants
+    from scripts.rlsm_recover_tails_textmine import TAIL_PAT, gen_ocr_variants
 
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
@@ -152,13 +151,18 @@ def main():
     # Resolve rel_path → absolute path under REPO root
     rows = [(oid, sid, str(REPO / rp), w, h) for (oid, sid, rp, w, h) in rows]
     if args.limit:
-        rows = rows[:args.limit]
-    print(f"[retry-OCR] processing {len(rows):,} unresolved observations with {args.workers} workers")
+        rows = rows[: args.limit]
+    print(
+        f"[retry-OCR] processing {len(rows):,} unresolved observations with {args.workers} workers"
+    )
 
-    cur.execute("""
+    cur.execute(
+        """
         INSERT INTO processing_runs (run_kind, started_at, status, n_inputs, n_processed, n_failed)
         VALUES ('ocr_retry_tails', ?, 'in_progress', ?, 0, 0)
-    """, (time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), len(rows)))
+    """,
+        (time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), len(rows)),
+    )
     run_id = cur.lastrowid
 
     n_done = n_fail = n_recovered = 0
@@ -185,16 +189,21 @@ def main():
             if best:
                 n_recovered += 1
                 recovered.append((obs_id, sid, ",".join(candidates), best))
-                cur.execute("""
+                cur.execute(
+                    """
                     UPDATE aircraft_observations
                     SET registration = ?, registration_provenance = 'ocr_retry_strong_preproc'
                     WHERE aircraft_obs_id = ?
-                """, (best, obs_id))
+                """,
+                    (best, obs_id),
+                )
             if n_done % 100 == 0:
                 conn.commit()
                 rate = n_done / max(time.time() - t0, 0.001)
                 eta = (len(rows) - n_done) / max(rate, 0.001) / 60
-                print(f"  [{n_done}/{len(rows)}] {rate:.1f}/s, {n_recovered} recovered, ETA {eta:.1f}min")
+                print(
+                    f"  [{n_done}/{len(rows)}] {rate:.1f}/s, {n_recovered} recovered, ETA {eta:.1f}min"
+                )
 
     if args.workers <= 1:
         for r in rows:
@@ -211,10 +220,17 @@ def main():
                 handle(batch)
 
     conn.commit()
-    cur.execute("""UPDATE processing_runs SET ended_at=?, status='completed',
+    cur.execute(
+        """UPDATE processing_runs SET ended_at=?, status='completed',
                    n_processed=?, n_failed=?, notes=? WHERE run_id=?""",
-                (time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                 n_done, n_fail, json.dumps({"recovered": n_recovered}), run_id))
+        (
+            time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            n_done,
+            n_fail,
+            json.dumps({"recovered": n_recovered}),
+            run_id,
+        ),
+    )
     conn.commit()
     conn.close()
 
@@ -222,17 +238,22 @@ def main():
     OUTS.mkdir(parents=True, exist_ok=True)
     with (OUTS / "intel_tail_recovery_ocr_retry.csv").open("w", newline="") as f:
         w = csv.writer(f, quoting=csv.QUOTE_ALL)
-        w.writerow(["obs_id","screenshot_id","ocr_candidates","recovered_tail"])
+        w.writerow(["obs_id", "screenshot_id", "ocr_candidates", "recovered_tail"])
         for r in recovered:
             w.writerow(r)
 
-    print(json.dumps({
-        "obs_processed": n_done,
-        "obs_failed": n_fail,
-        "tails_recovered": n_recovered,
-        "elapsed_minutes": round((time.time() - t0) / 60, 1),
-        "outputs": ["outputs/intel_tail_recovery_ocr_retry.csv"],
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "obs_processed": n_done,
+                "obs_failed": n_fail,
+                "tails_recovered": n_recovered,
+                "elapsed_minutes": round((time.time() - t0) / 60, 1),
+                "outputs": ["outputs/intel_tail_recovery_ocr_retry.csv"],
+            },
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

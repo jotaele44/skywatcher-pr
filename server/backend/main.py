@@ -1,44 +1,38 @@
-"""Read-only FastAPI backend for the Skywatcher-PR dashboard.
-
-Implements the PRII federation entity contract (/api/entities/{name} +
-/api/apps/public-settings + /api/auth/me) over the artifacts committed in
-this repository — airport registry, the synthetic airspace export package,
-SATIM calibration summaries, and the federation evidence ledger. The repo
-files are never mutated: entity updates/creates from the review UI are kept
-in a session-scoped in-memory overlay that disappears on restart.
-
-Start with:
-    python -m uvicorn server.backend.main:app --port 8000
-(from the skywatcher-pr repo root, with fastapi/uvicorn installed)
-"""
+"""FastAPI diagnostic backend over committed Skywatcher artifacts."""
 
 from __future__ import annotations
 
 import csv
-import ipaddress
+import hashlib
 import json
 import logging
 import os
 import secrets
+import threading
 import uuid
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
 
 ROOT = Path(__file__).resolve().parents[2]
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
 EXPORTS_DIR = ROOT / "exports"
 SYNTHETIC_PACKAGE = EXPORTS_DIR / "examples" / "synthetic_airspace_package"
 EVIDENCE_PATH = ROOT / "reports" / "federation" / "evidence_skywatcher-pr.jsonl"
+MAX_PAGE_SIZE = 1_000
+MAX_PAYLOAD_BYTES = 64 * 1024
+MAX_PAYLOAD_FIELDS = 128
+RESERVED_FIELDS = {"id", "_process_overlay"}
 
 app = FastAPI(
     title="Skywatcher-PR Dashboard API",
-    description="Read-only federation entity API over committed Skywatcher artifacts.",
-    version="0.1.0",
+    description="Diagnostic federation entity API.",
+    version="0.3.0",
 )
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -46,104 +40,113 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Session-scoped mutations from the review UI; never written to disk.
-_overlay: dict[str, dict[str, dict[str, Any]]] = {}
-_created: dict[str, list[dict[str, Any]]] = {}
-
 log = logging.getLogger("skywatcher.backend")
-
-# ── Write authorization ────────────────────────────────────────────────────────
-# Diagnostic mode ships without authentication: /api/auth/me always 401s and
-# public-settings reports requires_auth=false, so nothing else stands between a
-# caller and the mutating routes. The overlay above is in-memory and never
-# reaches disk, so the blast radius is one process — but every reader of this
-# server still sees another client's unauthenticated edits until restart.
-#
-#   PRII_WRITE_TOKEN set    -> mutating routes require Authorization: Bearer <token>
-#   PRII_WRITE_TOKEN unset  -> mutating routes are served to clients on a local
-#                              network (loopback, RFC1918 private, link-local)
-#                              and refused for public addresses
-#
-# The private-range allowance is deliberate: containerized or LAN deployments see
-# a bridge address (typically 172.17.0.1) rather than 127.0.0.1, and a strict
-# loopback-only rule would 403 every write from the shipped UI in those setups.
-# Refusing public addresses still closes the case this is meant to close.
-#
-# Caveat when the token IS set: the browser UI has no write-credential input
-# (federationClient sources only the federation access token, and AuthContext
-# drops that when /api/auth/me 401s), so token mode currently suits API/CLI
-# callers rather than the shipped UI. Tracked in docs/MATURITY_AUDIT.md.
-#
-# Reads are unaffected in every case.
+_WRITE_ENABLED = os.environ.get("PRII_ENABLE_WRITES", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 _WRITE_TOKEN = os.environ.get("PRII_WRITE_TOKEN", "")
 
 
-def _is_local_network(host: str) -> bool:
-    """True for loopback, RFC1918 private, and link-local client addresses."""
-    if host in ("localhost", ""):
-        return host == "localhost"
-    try:
-        ip = ipaddress.ip_address(host)
-    except ValueError:
-        return False
-    return ip.is_loopback or ip.is_private or ip.is_link_local
+class EntityPayload(RootModel[dict[str, Any]]):
+    @model_validator(mode="after")
+    def validate_payload(self):
+        keys = set(self.root)
+        reserved = sorted(keys & RESERVED_FIELDS)
+        if reserved:
+            raise ValueError(f"reserved fields are server-owned: {reserved}")
+        if len(self.root) > MAX_PAYLOAD_FIELDS:
+            raise ValueError("too many payload fields")
+        if len(json.dumps(self.root, default=str).encode("utf-8")) > MAX_PAYLOAD_BYTES:
+            raise ValueError("payload exceeds size limit")
+        return self
+
+
+class FilterRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    filters: dict[str, Any] = Field(default_factory=dict)
+    sort: str = ""
+    limit: int = Field(default=500, ge=0, le=MAX_PAGE_SIZE)
+
+
+class ReviewStore:
+    def __init__(self):
+        self._lock = threading.RLock()
+        self._created = {}
+        self._patches = {}
+
+    def merge(self, entity_name, rows):
+        with self._lock:
+            combined = [dict(row) for row in rows] + [
+                dict(row) for row in self._created.get(entity_name, ())
+            ]
+            patches = self._patches.get(entity_name, {})
+            return [{**row, **patches.get(str(row.get("id")), {})} for row in combined]
+
+    def create(self, entity_name, payload, reserved_ids):
+        with self._lock:
+            existing = set(reserved_ids) | {
+                str(row.get("id")) for row in self._created.get(entity_name, ())
+            }
+            identifier = uuid.uuid4().hex
+            while identifier in existing:
+                identifier = uuid.uuid4().hex
+            row = {**payload, "id": identifier, "_process_overlay": True}
+            self._created.setdefault(entity_name, []).append(row)
+            return dict(row)
+
+    def patch(self, entity_name, entity_id, payload):
+        with self._lock:
+            self._patches.setdefault(entity_name, {}).setdefault(entity_id, {}).update(payload)
+
+    def clear(self):
+        with self._lock:
+            self._created.clear()
+            self._patches.clear()
+
+
+REVIEW_STORE = ReviewStore()
 
 
 def require_write_access(request: Request) -> None:
-    """Authorize a mutating request, by bearer token or by local-network origin."""
-    if _WRITE_TOKEN:
-        scheme, _, presented = request.headers.get("authorization", "").partition(" ")
-        if scheme.lower() != "bearer" or not secrets.compare_digest(
-            presented, _WRITE_TOKEN
-        ):
-            raise HTTPException(status_code=401, detail="Missing or invalid write token")
-        return
-
-    if not _is_local_network(request.client.host if request.client else ""):
+    if not _WRITE_ENABLED:
         raise HTTPException(
-            status_code=403,
-            detail=(
-                "Writes from public addresses are refused while PRII_WRITE_TOKEN "
-                "is unset. Set it to enable authenticated writes from anywhere."
-            ),
+            403, "Review-overlay writes are disabled. Set PRII_ENABLE_WRITES=true to enable them."
         )
+    if not _WRITE_TOKEN:
+        raise HTTPException(
+            503, "PRII_ENABLE_WRITES is set but PRII_WRITE_TOKEN is not configured."
+        )
+    scheme, _, presented = request.headers.get("authorization", "").partition(" ")
+    if scheme.lower() != "bearer" or not secrets.compare_digest(presented, _WRITE_TOKEN):
+        raise HTTPException(401, "Missing or invalid write token")
 
 
 _WRITE_GUARD = [Depends(require_write_access)]
 
-if not _WRITE_TOKEN:
-    log.warning(
-        "PRII_WRITE_TOKEN is unset — mutating /api routes accept any client on "
-        "a local network and are refused for public addresses. Set the token "
-        "before exposing this server beyond a trusted network."
-    )
 
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
+def read_jsonl(path):
     if not path.exists():
         return []
-    rows: list[dict[str, Any]] = []
-    for line_no, line in enumerate(
-        path.read_text(encoding="utf-8").splitlines(), start=1
-    ):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            value = json.loads(line)
-        except json.JSONDecodeError as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Invalid JSON in {path.relative_to(ROOT)} line {line_no}: {exc.msg}",
-            ) from exc
-        if isinstance(value, dict):
-            rows.append(value)
+    rows = []
+    with path.open("r", encoding="utf-8") as handle:
+        for line_no, raw in enumerate(handle, 1):
+            if not raw.strip():
+                continue
+            try:
+                value = json.loads(raw)
+            except json.JSONDecodeError as exc:
+                raise HTTPException(
+                    500, f"Invalid JSON in {path.name} line {line_no}: {exc.msg}"
+                ) from exc
+            if isinstance(value, dict):
+                rows.append(value)
     return rows
 
 
-def coerce(value: str) -> Any:
-    """Give CSV strings their natural JSON types (bool/int/float)."""
+def coerce(value):
     lowered = value.lower()
     if lowered in ("true", "false"):
         return lowered == "true"
@@ -156,29 +159,31 @@ def coerce(value: str) -> Any:
             return value
 
 
-def read_csv(path: Path) -> list[dict[str, Any]]:
+def read_csv(path):
     if not path.exists():
         return []
     with path.open("r", encoding="utf-8", newline="") as handle:
         return [
-            {
-                key: coerce(value) if isinstance(value, str) else value
-                for key, value in row.items()
-            }
+            {k: coerce(v) if isinstance(v, str) else v for k, v in row.items()}
             for row in csv.DictReader(handle)
         ]
 
 
-def with_id(rows: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
-    for row in rows:
-        row.setdefault("id", row.get(key) or uuid.uuid4().hex)
-    return rows
+def _stable_id(row, key):
+    existing = row.get(key)
+    identity = {key: existing} if existing not in (None, "") else row
+    return hashlib.sha256(
+        json.dumps(identity, sort_keys=True, separators=(",", ":"), default=str).encode()
+    ).hexdigest()[:32]
 
 
-def load_airports() -> list[dict[str, Any]]:
+def with_id(rows, key):
+    return [{**row, "id": row.get("id") or row.get(key) or _stable_id(row, key)} for row in rows]
+
+
+@lru_cache(maxsize=1)
+def load_airports():
     rows = with_id(read_jsonl(AIRPORTS_PATH), "airport_id")
-    # The registry schema names differ from the dashboard's native fields;
-    # alias without dropping the originals.
     for row in rows:
         row.setdefault("airport_name", row.get("name"))
         row.setdefault("icao_code", row.get("icao"))
@@ -187,13 +192,12 @@ def load_airports() -> list[dict[str, Any]]:
         row.setdefault("latitude", row.get("lat"))
         row.setdefault("longitude", row.get("lon"))
         row.setdefault("synthetic_flag", False)
-    return rows
+    return tuple(rows)
 
 
-def load_observations() -> list[dict[str, Any]]:
+@lru_cache(maxsize=1)
+def load_observations():
     rows = with_id(read_csv(SYNTHETIC_PACKAGE / "observations.csv"), "observation_id")
-    # The export package schema names differ from the dashboard's native
-    # fields; alias without dropping the originals.
     for row in rows:
         row.setdefault("synthetic_flag", row.get("synthetic"))
         row.setdefault("confidence_score", row.get("confidence"))
@@ -201,34 +205,36 @@ def load_observations() -> list[dict[str, Any]]:
         row.setdefault("observed_at", row.get("event_datetime"))
         row.setdefault("latitude", row.get("lat"))
         row.setdefault("longitude", row.get("lon"))
-    return rows
+    return tuple(rows)
 
 
-def load_export_packages() -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
+@lru_cache(maxsize=1)
+def load_export_packages():
+    rows = []
     if EXPORTS_DIR.exists():
-        for manifest in sorted(EXPORTS_DIR.rglob("manifest.json")):
+        for path in sorted(EXPORTS_DIR.rglob("manifest.json")) + sorted(
+            EXPORTS_DIR.rglob("summary.json")
+        ):
             try:
-                data = json.loads(manifest.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
                 continue
             if isinstance(data, dict):
-                data.setdefault("path", str(manifest.parent.relative_to(ROOT)))
+                data.setdefault("path", str(path.parent.relative_to(ROOT)))
+                if path.name == "summary.json":
+                    data.setdefault("package_kind", "satim_calibration")
                 rows.append(data)
-        for summary in sorted(EXPORTS_DIR.rglob("summary.json")):
-            try:
-                data = json.loads(summary.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
-                continue
-            if isinstance(data, dict):
-                data.setdefault("path", str(summary.parent.relative_to(ROOT)))
-                data.setdefault("package_kind", "satim_calibration")
-                rows.append(data)
-    return with_id(rows, "package_id")
+    return tuple(with_id(rows, "package_id"))
 
 
-def load_readiness() -> list[dict[str, Any]]:
-    return with_id(read_jsonl(EVIDENCE_PATH), "path")
+@lru_cache(maxsize=1)
+def load_readiness():
+    return tuple(with_id(read_jsonl(EVIDENCE_PATH), "path"))
+
+
+def clear_artifact_caches():
+    for loader in (load_airports, load_observations, load_export_packages, load_readiness):
+        loader.cache_clear()
 
 
 LOADERS = {
@@ -236,116 +242,123 @@ LOADERS = {
     "AirspaceObservations": load_observations,
     "ExportPackages": load_export_packages,
     "ReadinessReports": load_readiness,
-    # Declared by the dashboard but with no committed source yet; empty until
-    # the corresponding pipelines emit repo artifacts.
-    "AircraftProfiles": list,
-    "FR24Captures": list,
-    "RouteSegments": list,
-    "InfrastructureAssets": list,
-    "AirspaceAssetLinks": list,
-    "ManualReviewItems": list,
-    "FederationSyncEvents": list,
+    "AircraftProfiles": tuple,
+    "FR24Captures": tuple,
+    "RouteSegments": tuple,
+    "InfrastructureAssets": tuple,
+    "AirspaceAssetLinks": tuple,
+    "ManualReviewItems": tuple,
+    "FederationSyncEvents": tuple,
 }
 
 
-def entity_rows(name: str) -> list[dict[str, Any]]:
+def _loader_for(name):
     loader = LOADERS.get(name)
-    rows = loader() if loader else []
-    rows = rows + list(_created.get(name, []))
-    patches = _overlay.get(name, {})
-    if patches:
-        rows = [{**row, **patches.get(str(row.get("id")), {})} for row in rows]
-    return rows
+    if loader is None:
+        raise HTTPException(404, f"Unknown entity type: {name}")
+    return loader
 
 
-def sort_rows(rows: list[dict[str, Any]], sort: str) -> list[dict[str, Any]]:
+def entity_rows(name):
+    return REVIEW_STORE.merge(name, [dict(row) for row in _loader_for(name)()])
+
+
+def _sort_value(value):
+    if value is None or value == "":
+        return (1, 0, "")
+    if isinstance(value, bool):
+        return (0, 0, int(value))
+    if isinstance(value, (int, float)):
+        return (0, 1, float(value))
+    return (0, 2, str(value).casefold())
+
+
+def sort_rows(rows, sort):
     if not sort:
         return rows
     reverse = sort.startswith("-")
     key = sort.lstrip("-")
-    return sorted(rows, key=lambda row: str(row.get(key) or ""), reverse=reverse)
+    present = [row for row in rows if row.get(key) not in (None, "")]
+    missing = [row for row in rows if row.get(key) in (None, "")]
+    return sorted(
+        present,
+        key=lambda row: _sort_value(row.get(key)),
+        reverse=reverse,
+    ) + missing
 
 
 @app.get("/health")
-def health() -> dict[str, Any]:
-    counts = {name: len(entity_rows(name)) for name in LOADERS}
-    return {"status": "ok", "mode": "read_only_diagnostic", "counts": counts}
+def health():
+    capabilities = {name: {"count": len(entity_rows(name))} for name in LOADERS}
+    return {
+        "status": "healthy" if capabilities["PRAirports"]["count"] else "degraded",
+        "mode": "diagnostic_read_only" if not _WRITE_ENABLED else "diagnostic_review_overlay",
+        "writes_enabled": _WRITE_ENABLED,
+        "capabilities": capabilities,
+        "counts": {k: v["count"] for k, v in capabilities.items()},
+    }
 
 
 @app.get("/api/health")
-def api_health() -> dict[str, Any]:
+def api_health():
     return health()
 
 
 @app.get("/api/apps/public-settings")
-def public_settings() -> dict[str, Any]:
+def public_settings():
     return {
         "id": "skywatcher-pr",
-        "name": "Skywatcher-PR — Airspace Intelligence",
-        # write_token_required lets the UI distinguish "this server wants a bearer
-        # token on writes" from "this server accepts writes from my network". The
-        # browser cannot read PRII_WRITE_TOKEN, so without this both look identical
-        # until a write 401s. Only the boolean is exposed, never the token.
+        "name": "Skywatcher-PR — Airspace Evidence",
         "public_settings": {
             "requires_auth": False,
             "mode": "diagnostic",
+            "review_overlay_writes": _WRITE_ENABLED and bool(_WRITE_TOKEN),
             "write_token_required": bool(_WRITE_TOKEN),
         },
     }
 
 
 @app.get("/api/auth/me")
-def auth_me() -> dict[str, Any]:
-    raise HTTPException(status_code=401, detail="No auth in local diagnostic mode")
+def auth_me():
+    raise HTTPException(401, "No auth in local diagnostic mode")
 
 
 @app.get("/api/entities/{entity_name}")
 def list_entities(
     entity_name: str,
-    sort: str = Query("-created_date"),
-    limit: int = Query(500),
-) -> list[dict[str, Any]]:
-    return sort_rows(entity_rows(entity_name), sort)[: max(limit, 0)]
+    sort: str = Query("-created_date", max_length=128),
+    limit: int = Query(500, ge=0, le=MAX_PAGE_SIZE),
+):
+    return sort_rows(entity_rows(entity_name), sort)[:limit]
 
 
 @app.post("/api/entities/{entity_name}/filter")
-def filter_entities(
-    entity_name: str, payload: dict[str, Any] | None = None
-) -> list[dict[str, Any]]:
-    payload = payload or {}
-    filters = payload.get("filters") or {}
+def filter_entities(entity_name: str, payload: FilterRequest | None = None):
+    request = payload or FilterRequest()
     rows = entity_rows(entity_name)
-    for key, expected in filters.items():
+    for key, expected in request.filters.items():
         rows = [row for row in rows if row.get(key) == expected]
-    limit = int(payload.get("limit") or 500)
-    return sort_rows(rows, str(payload.get("sort") or ""))[: max(limit, 0)]
+    return sort_rows(rows, request.sort)[: request.limit]
 
 
 @app.get("/api/entities/{entity_name}/{entity_id}")
-def get_entity(entity_name: str, entity_id: str) -> dict[str, Any]:
+def get_entity(entity_name: str, entity_id: str):
     for row in entity_rows(entity_name):
         if str(row.get("id")) == entity_id:
             return row
-    raise HTTPException(status_code=404, detail=f"{entity_name} not found: {entity_id}")
+    raise HTTPException(404, f"{entity_name} not found: {entity_id}")
 
 
 @app.post("/api/entities/{entity_name}", dependencies=_WRITE_GUARD)
-def create_entity(entity_name: str, payload: dict[str, Any]) -> dict[str, Any]:
-    row = dict(payload)
-    row.setdefault("id", uuid.uuid4().hex)
-    row.setdefault("_session_only", True)
-    _created.setdefault(entity_name, []).append(row)
-    return row
+def create_entity(entity_name: str, payload: EntityPayload):
+    base = [dict(row) for row in _loader_for(entity_name)()]
+    return REVIEW_STORE.create(entity_name, payload.root, {str(row.get("id")) for row in base})
 
 
 @app.patch("/api/entities/{entity_name}/{entity_id}", dependencies=_WRITE_GUARD)
-def update_entity(
-    entity_name: str, entity_id: str, payload: dict[str, Any]
-) -> dict[str, Any]:
+def update_entity(entity_name: str, entity_id: str, payload: EntityPayload):
     for row in entity_rows(entity_name):
         if str(row.get("id")) == entity_id:
-            _overlay.setdefault(entity_name, {}).setdefault(entity_id, {}).update(
-                payload
-            )
-            return {**row, **payload}
-    raise HTTPException(status_code=404, detail=f"{entity_name} not found: {entity_id}")
+            REVIEW_STORE.patch(entity_name, entity_id, payload.root)
+            return {**row, **payload.root}
+    raise HTTPException(404, f"{entity_name} not found: {entity_id}")

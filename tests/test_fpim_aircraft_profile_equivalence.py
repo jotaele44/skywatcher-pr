@@ -1,6 +1,4 @@
-"""Equivalence test for the FPIM extraction: aircraft_intelligence.py is now a
-backward-compat shim over skywatcher.fpim.aircraft_profile. See
-docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md."""
+"""Equivalence guard for the root FPIM compatibility facade."""
 
 from aircraft_intelligence import AircraftIntelligence as OldIntel
 from aircraft_intelligence import AircraftProfile as OldProfile
@@ -17,4 +15,5 @@ def test_shim_functional_equivalence():
     old_profile = OldIntel("/nonexistent.db").lookup_aircraft("N5854Z")
     new_profile = NewIntel("/nonexistent.db").lookup_aircraft("N5854Z")
     assert old_profile == new_profile
-    assert old_profile.operator == "PREPA"
+    assert old_profile.operator == "Unknown"
+    assert old_profile.primary_mission == "Unknown"

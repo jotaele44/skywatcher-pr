@@ -31,9 +31,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from prii_export_utils import fid as _fid
-from prii_export_utils import norm as _norm
-from prii_export_utils import sha256 as _sha256
+try:
+    from prii_export_utils import fid as _fid
+    from prii_export_utils import norm as _norm
+    from prii_export_utils import sha256 as _sha256
+except ImportError:  # clean core checkout without federation extras
+    from skywatcher.federation.export_utils import fid as _fid
+    from skywatcher.federation.export_utils import norm as _norm
+    from skywatcher.federation.export_utils import sha256 as _sha256
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PRODUCER = "skywatcher-pr"

@@ -25,11 +25,9 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
 
 # PR extent must match gebco/io.py's hardcoded subset bounds.
 PR_LAT = (17.92, 18.65)

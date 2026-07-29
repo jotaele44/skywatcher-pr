@@ -1,76 +1,181 @@
-"""Tests for AircraftIntelligence lookup and unknown deduction."""
+"""Tests for exact aircraft identity lookup without mission inference."""
+
+from aircraft_intelligence import AircraftIntelligence, AircraftProfile
+from skywatcher.core.known_operators import KNOWN_OPERATORS
+
+COMPLETE_PROVENANCE = {
+    "source_uri": "https://example.test/registry",
+    "source_record_id": "record-1",
+    "captured_at": "2026-07-27T20:00:00Z",
+    "sha256": "a" * 64,
+}
 
 
-from aircraft_intelligence import AircraftIntelligence
-
-
-def test_lookup_known_callsign(populated_db):
-    ai = AircraftIntelligence(populated_db)
-    result = ai.lookup_aircraft("N5854Z")
-    assert result is not None
-
-
-def test_lookup_unknown_callsign_returns_result(populated_db):
-    ai = AircraftIntelligence(populated_db)
-    ai.lookup_aircraft("ZZZZZ")
-    # Should return something (None or a dict/object) without raising
-    # The key requirement is no exception
-    assert True
-
-
-def test_compile_intelligence_report_known(populated_db):
-    ai = AircraftIntelligence(populated_db)
-    report = ai.compile_intelligence_report("N5854Z")
-    assert report is not None
-
-
-def test_compile_intelligence_report_returns_result(populated_db):
-    ai = AircraftIntelligence(populated_db)
-    result = ai.compile_intelligence_report("C6062")
-    # Must not raise; may return string, dict, or None depending on implementation
-    assert result is None or isinstance(result, (dict, str))
-
-
-def test_lookup_callsign_with_no_operator_returns_profile(populated_db):
-    from aircraft_intelligence import AircraftProfile
-    ai = AircraftIntelligence(populated_db)
-    result = ai.lookup_aircraft("XUNKNOWN99")
-    assert result is not None
+def test_lookup_known_identifier_is_retained_but_unverified(populated_db):
+    result = AircraftIntelligence(populated_db).lookup_aircraft("N5854Z")
     assert isinstance(result, AircraftProfile)
-    assert result.callsign == "XUNKNOWN99"
+    assert result.callsign == "N5854Z"
+    assert result.data_source == "unverified_registry"
+    assert result.aircraft_type == ""
+    assert result.owner == "Unknown"
+    assert result.operator == "Unknown"
+    assert result.country == "Unknown"
+    assert result.primary_mission == "Unknown"
+    assert result.secondary_missions == []
+    assert result.operational_patterns == {}
+    assert result.total_flights == 1
 
 
-# ── Task 38: profile_completeness metric ─────────────────────────────────────
+def test_incomplete_provenance_keeps_identity_inactive(monkeypatch, tmp_path):
+    monkeypatch.setitem(
+        KNOWN_OPERATORS,
+        "NPROV1",
+        {
+            "identifier": "NPROV1",
+            "verified_fields": {
+                "aircraft_type": "Test Type",
+                "owner": "Unproven Owner",
+                "operator": "Unproven Operator",
+            },
+            "provenance": {
+                **COMPLETE_PROVENANCE,
+                "sha256": None,
+            },
+        },
+    )
+    result = AircraftIntelligence(str(tmp_path / "none.sqlite")).lookup_aircraft("NPROV1")
+    assert result.data_source == "unverified_registry"
+    assert result.aircraft_type == ""
+    assert result.owner == "Unknown"
+    assert result.operator == "Unknown"
 
-def test_profile_completeness_returns_float(populated_db):
-    """AircraftIntelligence.profile_completeness must return float in [0,1] (Task 38)."""
-    ai = AircraftIntelligence(populated_db)
-    completeness = ai.profile_completeness
+
+def test_complete_field_provenance_activates_only_supported_fields(monkeypatch, tmp_path):
+    monkeypatch.setitem(
+        KNOWN_OPERATORS,
+        "NPROV2",
+        {
+            "identifier": "NPROV2",
+            "verified_fields": {
+                "aircraft_type": "Verified Type",
+                "owner": "Verified Owner",
+                "operator": "Still Unproven",
+                "primary_mission": "Must Never Activate",
+            },
+            "field_provenance": {
+                "aircraft_type": COMPLETE_PROVENANCE,
+                "owner": {**COMPLETE_PROVENANCE, "source_record_id": "owner-record"},
+                "operator": {**COMPLETE_PROVENANCE, "captured_at": None},
+                "primary_mission": COMPLETE_PROVENANCE,
+            },
+        },
+    )
+    result = AircraftIntelligence(str(tmp_path / "none.sqlite")).lookup_aircraft("NPROV2")
+    assert result.data_source == "verified_registry"
+    assert result.aircraft_type == "Verified Type"
+    assert result.owner == "Verified Owner"
+    assert result.operator == "Unknown"
+    assert result.primary_mission == "Unknown"
+    assert set(result.provenance["fields"]) == {"aircraft_type", "owner"}
+
+
+def test_unknown_n_prefix_country_remains_unknown(tmp_path):
+    result = AircraftIntelligence(str(tmp_path / "none.sqlite")).lookup_aircraft("N000XX")
+    assert result.data_source == "observed_history"
+    assert result.country == "Unknown"
+
+
+def test_unknown_yn_prefix_country_remains_unknown(tmp_path):
+    result = AircraftIntelligence(str(tmp_path / "none.sqlite")).lookup_aircraft("YN0001")
+    assert result.data_source == "observed_history"
+    assert result.country == "Unknown"
+
+
+def test_incomplete_country_provenance_remains_unknown(monkeypatch, tmp_path):
+    monkeypatch.setitem(
+        KNOWN_OPERATORS,
+        "NCOUNTRY1",
+        {
+            "identifier": "NCOUNTRY1",
+            "verified_fields": {"country": "United States"},
+            "field_provenance": {
+                "country": {**COMPLETE_PROVENANCE, "sha256": None},
+            },
+        },
+    )
+    result = AircraftIntelligence(str(tmp_path / "none.sqlite")).lookup_aircraft("NCOUNTRY1")
+    assert result.data_source == "unverified_registry"
+    assert result.country == "Unknown"
+
+
+def test_complete_country_provenance_activates_only_country(monkeypatch, tmp_path):
+    monkeypatch.setitem(
+        KNOWN_OPERATORS,
+        "NCOUNTRY2",
+        {
+            "identifier": "NCOUNTRY2",
+            "verified_fields": {
+                "country": "United States",
+                "owner": "Unproven Owner",
+            },
+            "field_provenance": {
+                "country": COMPLETE_PROVENANCE,
+                "owner": {**COMPLETE_PROVENANCE, "captured_at": None},
+            },
+        },
+    )
+    result = AircraftIntelligence(str(tmp_path / "none.sqlite")).lookup_aircraft("NCOUNTRY2")
+    assert result.data_source == "verified_registry"
+    assert result.country == "United States"
+    assert result.owner == "Unknown"
+    assert result.aircraft_type == ""
+    assert set(result.provenance["fields"]) == {"country"}
+
+
+def test_active_report_keeps_country_unknown_without_provenance(tmp_path):
+    report = AircraftIntelligence(str(tmp_path / "none.sqlite")).compile_intelligence_report(
+        "NREPORT1"
+    )
+    assert "Country: Unknown" in report
+    assert "Country: United States" not in report
+
+
+def test_lookup_unknown_callsign_returns_profile(populated_db):
+    result = AircraftIntelligence(populated_db).lookup_aircraft("ZZZZZ")
+    assert isinstance(result, AircraftProfile)
+    assert result.callsign == "ZZZZZ"
+    assert result.primary_mission == "Unknown"
+
+
+def test_compile_report_disclaims_role_and_omits_unproven_identity(populated_db):
+    report = AircraftIntelligence(populated_db).compile_intelligence_report("N5854Z")
+    assert "Role: Unknown (not inferred)" in report
+    assert "Aircraft Type: Unknown" in report
+    assert "Owner: Unknown" in report
+    assert "Operator: Unknown" in report
+    assert "Country: Unknown" in report
+    assert "Puerto Rico Electric Power Authority" not in report
+    assert "H125" not in report
+    assert "high activity" not in report.lower()
+    assert "operating hours" not in report.lower()
+
+
+def test_partial_identifier_does_not_match_registry(populated_db):
+    result = AircraftIntelligence(populated_db).lookup_aircraft("N5854")
+    assert result.data_source == "observed_history"
+    assert result.country == "Unknown"
+
+
+def test_profile_completeness_requires_field_provenance(populated_db):
+    completeness = AircraftIntelligence(populated_db).profile_completeness
     assert isinstance(completeness, float)
-    assert 0.0 <= completeness <= 1.0
+    assert completeness == 0.0
 
 
-def test_profile_completeness_full_profiles():
-    """All 14 KNOWN_OPERATORS entries are complete — completeness should equal 1.0."""
-    from aircraft_intelligence import AircraftIntelligence
-    # AircraftIntelligence can be instantiated with a non-existent path
-    # (profile_completeness doesn't query the DB)
-    ai = AircraftIntelligence(":memory:")
-    assert ai.profile_completeness == 1.0
-
-
-# ── Task 53: find_unknown() ───────────────────────────────────────────────────
-
-def test_find_unknown_known_callsign(populated_db):
-    """Known callsigns must not appear in find_unknown() results."""
-    ai = AircraftIntelligence(populated_db)
-    unknown = ai.find_unknown(["N5854Z", "N767PD"])
-    assert "N5854Z" not in unknown
-    assert "N767PD" not in unknown
-
-
-def test_find_unknown_unknown_callsign(populated_db):
-    """Callsigns with no profile match must appear in find_unknown() results."""
-    ai = AircraftIntelligence(populated_db)
-    unknown = ai.find_unknown(["N5854Z", "XUNKNOWN_ZZZZ"])
-    assert "XUNKNOWN_ZZZZ" in unknown
+def test_find_unknown_uses_exact_normalized_identifier(populated_db):
+    intelligence = AircraftIntelligence(populated_db)
+    assert intelligence.find_unknown(["N5854Z", "N767PD"]) == []
+    assert intelligence.find_unknown(["N5854", "XUNKNOWN_ZZZZ"]) == [
+        "N5854",
+        "XUNKNOWN_ZZZZ",
+    ]

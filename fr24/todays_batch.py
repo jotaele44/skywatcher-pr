@@ -35,13 +35,11 @@ from __future__ import annotations
 import argparse
 import csv
 import sqlite3
-import sys
 from datetime import date, datetime
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "scripts"))
-from parse_flight_log import parse as parse_flight_log  # noqa: E402
+from scripts.parse_flight_log import parse as parse_flight_log
 
 # ---- policy knobs ----------------------------------------------------------
 RETENTION_DAYS = 365          # FR24 Gold granular-track retention window

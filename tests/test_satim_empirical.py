@@ -11,10 +11,6 @@ import pytest
 
 # Script modules live under scripts/, not an importable package.
 REPO_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
-
-import satim_cross_source_check as xsrc  # noqa: E402
-import satim_harvest_review_labels as harvest  # noqa: E402
 
 from fr24.manual_review_queue import ManualReviewQueue  # noqa: E402
 from satim_calibration import load_calibration_set  # noqa: E402
@@ -30,6 +26,8 @@ from satim_ground_truth import (  # noqa: E402
     read_ground_truth,
 )
 from satim_render_diff import autolabel_render_diff, classify_render_diff  # noqa: E402
+from scripts import satim_cross_source_check as xsrc
+from scripts import satim_harvest_review_labels as harvest
 
 MOCA_SET = REPO_ROOT / "data" / "satim_calibration" / "moca_fr24_2025"
 CONTROL_SET = REPO_ROOT / "data" / "satim_calibration" / "control_moca_groundtruth"

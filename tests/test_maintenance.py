@@ -11,15 +11,16 @@ local_checks=local.run_checks)`) actually invokes this repo's adapter.
 from __future__ import annotations
 
 import json
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import pytest
 
-from prii_maintenance import run_maintenance  # noqa: E402
-from prii_maintenance import state as state_mod  # noqa: E402
+pytestmark = pytest.mark.requires_thehub
+pytest.importorskip("prii_maintenance")
 
-from maintenance.adapters import local  # noqa: E402
+from prii_maintenance import run_maintenance
+from prii_maintenance import state as state_mod
+
+from maintenance.adapters import local
 
 
 def _federation(root, *, blocking=None, export_dir="exports/federation"):

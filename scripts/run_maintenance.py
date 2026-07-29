@@ -8,11 +8,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO_ROOT))  # maintenance.adapters.local is still vendored here
 
 from prii_maintenance import run_maintenance  # noqa: E402
 

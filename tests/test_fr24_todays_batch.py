@@ -5,11 +5,8 @@ status column that never recomputed, so flights silently crossed the FR24
 365-day retention cliff while still labelled 'grab-now'.
 """
 import datetime as dt
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "fr24"))
-from todays_batch import RETENTION_DAYS, compute_status, days_to_expiry  # noqa: E402
+from fr24.todays_batch import RETENTION_DAYS, compute_status, days_to_expiry
 
 
 def test_fresh_flight_is_available():

@@ -12,7 +12,7 @@ Core; it must not import SATIM or CORRIM.
 
 | Path | Responsibility |
 |---|---|
-| `src/skywatcher/fpim/aircraft_profile.py` | `AircraftProfile`, `AircraftIntelligence` — N-number to owner/operator lookup and profile enrichment. |
+| `src/skywatcher/fpim/aircraft_profile.py` | `AircraftProfile`, `AircraftIntelligence` — exact-identifier, provenance-gated owner/operator/country lookup plus observed history enrichment. |
 | `fr24/route_extractor.py` | FR24 route-color/aircraft-icon extraction from screenshots. |
 | `fr24/track_vectorizer.py` | Route-candidate to track-feature vectorization. |
 | `fr24/flight_fusion.py` | Same-flight multi-screenshot fusion into one multi-point record. |
@@ -66,26 +66,37 @@ compatibility with the pre-existing `aircraft_intelligence.FlightMissionAnalyzer
 import path only, and must not be reintroduced into FPIM. Enforced by
 `tests/test_fpim_quarantine.py`.
 
-## Known technical debt
+## Active fallback behavior
 
-`AircraftIntelligence._deduce_profile()`'s fallback path (used when a
-callsign has no `KNOWN_OPERATORS` match) maps aircraft type to a guessed
-`primary_mission` via `AIRCRAFT_TYPE_MISSIONS`, with `confidence_level=0.60`.
-This is a secondary, lower-confidence mission inference distinct from the
-operator-provided `KNOWN_OPERATORS` ground truth, and — unlike
-`FlightMissionAnalyzer` — it sits inside the actively-used
-`lookup_aircraft()` path exercised by existing tests. Quarantining it would
-change existing behavior, which this reorg's requirement to preserve all
-existing functionality does not permit. It is preserved unchanged and
-flagged here as a follow-up decision (e.g. gating it behind a config flag,
-or migrating callers away from relying on `primary_mission` for
-`data_source="deduced"` profiles) rather than silently described as
-inference-free.
+`AircraftIntelligence._deduce_profile()` resolves no aircraft identity field
+from callsign structure or ordinary flight history. Callsign-prefix tables are
+retained only as backward-compatible constants; active lookup does not consult
+them to populate `country` or any other identity field. Aircraft type, owner,
+operator, country, confidence, route geometry, time, speed, altitude, and
+proximity remain unresolved unless the individual identity field has complete
+source URI, source record ID, capture time, and SHA-256 provenance.
+
+Ordinary flight-history rows enrich only observed flight count, first-seen time,
+and last-seen time. Unresolved `primary_mission` values remain `Unknown`, mission
+lists remain empty, and operational-pattern cueing remains absent.
+`AIRCRAFT_TYPE_MISSIONS` is retained as an empty compatibility constant.
 
 ## Backward compatibility
 
-`aircraft_intelligence.py` at its original path is a thin re-export shim
-covering `AircraftProfile`/`AircraftIntelligence` (from FPIM),
-`KNOWN_OPERATORS` (from Core), and the quarantined mission-inference symbols
-(from `skywatcher.legacy`) — all four continue to import successfully from
-the old path.
+`aircraft_intelligence.py` at its original path is a compatibility facade for
+`AircraftProfile`, `AircraftIntelligence`, `KNOWN_OPERATORS`, and
+`CALLSIGN_PREFIXES`. Quarantined inference symbols remain lazily reachable for
+legacy callers but are excluded from `__all__` and emit `DeprecationWarning`.
+No active Core, SATIM, FPIM, or CORRIM module imports the quarantine package.
+
+<!-- PHASE0_SYNC_CERTIFICATION_V2 -->
+## Current-main synchronization preservation
+
+FPIM was one of the explicitly adjudicated overlap surfaces during synchronization with `main@9cdf63d584bc58495c32a573dc0fc9ddad981ab8`. The synchronized implementation at `035bf9aff9ec4502ea9a79ecc3da74e33a634644` preserves the Phase 0 identity boundary:
+
+- `country` remains `Unknown` unless complete country-field provenance activates it.
+- Callsign prefixes remain compatibility constants only and are not consulted by active resolution.
+- Ordinary database flight rows enrich only observed counts and first/last-seen timestamps.
+- Active reports leave role unresolved, mission lists empty, and operational-pattern cueing absent.
+
+The conflict resolutions for `src/skywatcher/fpim/aircraft_profile.py` and `tests/test_aircraft_intelligence.py` were retained in merge tree `d498d3aa86992c59997fdbe5eb24355d76c41e91`. Backend core, Skywatcher CI, CodeQL, and the remaining workflow families all succeeded on `035bf9aff9ec4502ea9a79ecc3da74e33a634644`.
