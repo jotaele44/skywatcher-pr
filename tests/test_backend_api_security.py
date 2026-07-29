@@ -82,3 +82,42 @@ def test_payload_size_and_deterministic_id():
             "score",
         )
     ] == ["b", "a"]
+
+
+def test_sort_rows_keeps_missing_values_last_in_both_directions():
+    rows = [
+        {"id": "missing-none", "created_date": None},
+        {"id": "older", "created_date": "2026-01-01"},
+        {"id": "missing-empty", "created_date": ""},
+        {"id": "newer", "created_date": "2026-02-01"},
+    ]
+
+    assert [row["id"] for row in main.sort_rows(rows, "created_date")] == [
+        "older",
+        "newer",
+        "missing-none",
+        "missing-empty",
+    ]
+    assert [row["id"] for row in main.sort_rows(rows, "-created_date")] == [
+        "newer",
+        "older",
+        "missing-none",
+        "missing-empty",
+    ]
+
+
+def test_descending_sort_pagination_does_not_drop_recent_rows(monkeypatch):
+    rows = (
+        {"id": "missing", "created_date": None},
+        {"id": "old", "created_date": "2026-01-01"},
+        {"id": "new", "created_date": "2026-03-01"},
+        {"id": "middle", "created_date": "2026-02-01"},
+    )
+    monkeypatch.setitem(main.LOADERS, "ManualReviewItems", lambda: rows)
+
+    response = client.get(
+        "/api/entities/ManualReviewItems?sort=-created_date&limit=2"
+    )
+
+    assert response.status_code == 200
+    assert [row["id"] for row in response.json()] == ["new", "middle"]

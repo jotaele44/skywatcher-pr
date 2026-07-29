@@ -183,7 +183,7 @@ def prepare_input_root(input_path: str | Path, output_dir: str | Path) -> Path:
     if source.suffix.lower() != ".zip":
         return source
     target = Path(output_dir).expanduser().resolve() / "_input_unpacked"
-    safe_extract_zip(source, target)
+    safe_extract_zip(source, target, replace=True)
     children = [p for p in target.iterdir() if p.is_dir()]
     files = [p for p in target.iterdir() if p.is_file()]
     if len(children) == 1 and not files:

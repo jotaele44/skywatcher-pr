@@ -278,7 +278,13 @@ def sort_rows(rows, sort):
         return rows
     reverse = sort.startswith("-")
     key = sort.lstrip("-")
-    return sorted(rows, key=lambda row: _sort_value(row.get(key)), reverse=reverse)
+    present = [row for row in rows if row.get(key) not in (None, "")]
+    missing = [row for row in rows if row.get(key) in (None, "")]
+    return sorted(
+        present,
+        key=lambda row: _sort_value(row.get(key)),
+        reverse=reverse,
+    ) + missing
 
 
 @app.get("/health")
