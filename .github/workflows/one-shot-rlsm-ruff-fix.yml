@@ -1,0 +1,53 @@
+name: One-shot RLSM Ruff fix
+
+on:
+  push:
+    branches:
+      - agent/screenshot-intelligence-audit-v0-1-full
+    paths:
+      - .github/workflows/one-shot-rlsm-ruff-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: agent/screenshot-intelligence-audit-v0-1-full
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - run: python -m pip install ruff==0.16.0
+      - name: Apply deterministic import fixes
+        run: |
+          ruff check --fix \
+            fr24/rlsm_intelligence_audit.py \
+            fr24/rlsm_intelligence_pipeline.py \
+            fr24/rlsm_partial_extract.py \
+            fr24/rlsm_provenance.py \
+            tests/test_rlsm_screenshot_intelligence.py
+          ruff format \
+            fr24/rlsm_intelligence_audit.py \
+            fr24/rlsm_intelligence_pipeline.py \
+            fr24/rlsm_partial_extract.py \
+            fr24/rlsm_provenance.py \
+            tests/test_rlsm_screenshot_intelligence.py
+      - name: Commit fixes
+        run: |
+          if git diff --quiet; then
+            echo "No Ruff changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            fr24/rlsm_intelligence_audit.py \
+            fr24/rlsm_intelligence_pipeline.py \
+            fr24/rlsm_partial_extract.py \
+            fr24/rlsm_provenance.py \
+            tests/test_rlsm_screenshot_intelligence.py
+          git commit -m "Apply Ruff fixes to screenshot intelligence audit"
+          git push origin HEAD:agent/screenshot-intelligence-audit-v0-1-full
