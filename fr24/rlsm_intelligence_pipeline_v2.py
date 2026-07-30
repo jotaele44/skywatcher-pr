@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from pathlib import Path
 
 from fr24 import rlsm_intelligence_pipeline as pipeline
 
 REPO = pipeline.REPO
 DB = pipeline.DB
 BASELINE = pipeline.BASELINE
+_BASE_COLLECT_STATUS = pipeline.collect_status
 
 
 def stage_ocr(ctx: dict) -> None:
@@ -92,7 +92,7 @@ def refresh_derived() -> dict[str, int]:
 
 
 def collect_status() -> dict:
-    status = pipeline.collect_status()
+    status = _BASE_COLLECT_STATUS()
     if not DB.exists() or not status.get("schema"):
         return status
     conn = sqlite3.connect(str(DB), timeout=30.0)
