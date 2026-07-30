@@ -37,12 +37,106 @@ def _optional_count(conn: sqlite3.Connection, table: str, where: str = "") -> in
     return audit._count(conn, f"SELECT COUNT(*) FROM {table} {where}")
 
 
+def _disk_manifest(corpus_root: Path) -> dict[str, Path]:
+    """Return canonical repository-style paths even when corpus_root is a symlink."""
+    if not corpus_root.exists():
+        return {}
+    manifest: dict[str, Path] = {}
+    canonical_prefix = Path("data") / "FR24_baseline"
+    for path in sorted(corpus_root.rglob("*")):
+        if not path.is_file() or path.suffix.casefold() not in audit.IMAGE_EXTENSIONS:
+            continue
+        try:
+            rel = path.relative_to(REPO).as_posix()
+        except ValueError:
+            rel = (canonical_prefix / path.relative_to(corpus_root)).as_posix()
+        manifest[rel] = path
+    return manifest
+
+
+def audit_accounting(
+    conn: sqlite3.Connection,
+    corpus_root: Path,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Certify the active corpus while preserving explicitly missing ledger rows."""
+    disk = _disk_manifest(corpus_root)
+    rows = audit._db_screenshots(conn)
+    all_paths = {str(row["rel_path"]): row for row in rows}
+    active_paths = {
+        path: row
+        for path, row in all_paths.items()
+        if str(row.get("ingest_status") or "") == "ok"
+    }
+    unregistered = sorted(set(disk) - set(all_paths))
+    active_missing = sorted(set(active_paths) - set(disk))
+    explicit_missing = sorted(
+        path
+        for path, row in all_paths.items()
+        if str(row.get("ingest_status") or "") != "ok"
+    )
+    duplicate_paths = audit._count(
+        conn,
+        """SELECT COUNT(*) FROM (
+               SELECT rel_path FROM screenshots GROUP BY rel_path HAVING COUNT(*) > 1
+           )""",
+    )
+    duplicate_sha_rows = audit._count(
+        conn,
+        """SELECT COALESCE(SUM(n - 1), 0) FROM (
+               SELECT COUNT(*) n FROM screenshots GROUP BY sha256 HAVING COUNT(*) > 1
+           )""",
+    )
+    complete = not unregistered and not active_missing and duplicate_paths == 0
+    errors = [
+        {
+            "kind": "disk_file_absent_from_database",
+            "severity": "high",
+            "rel_path": path,
+        }
+        for path in unregistered
+    ]
+    errors.extend(
+        {
+            "kind": "active_database_file_absent_from_disk",
+            "severity": "high",
+            "rel_path": path,
+        }
+        for path in active_missing
+    )
+    return (
+        {
+            "policy": "active_corpus_with_explicit_historical_missing_rows_v2",
+            "corpus_root": corpus_root.as_posix(),
+            "disk_images": len(disk),
+            "database_rows": len(rows),
+            "active_database_rows": len(active_paths),
+            "registered_disk_images": len(disk) - len(unregistered),
+            "disk_files_absent_from_database": len(unregistered),
+            "active_database_files_absent_from_disk": len(active_missing),
+            "explicit_missing_or_failed_rows": len(explicit_missing),
+            "duplicate_rel_paths": duplicate_paths,
+            "duplicate_sha_rows": duplicate_sha_rows,
+            "coverage_percent": audit._pct(
+                len(disk) - len(unregistered),
+                len(disk),
+            ),
+            "complete": complete,
+            "unregistered_sample": unregistered[:25],
+            "active_missing_on_disk_sample": active_missing[:25],
+            "explicit_missing_sample": explicit_missing[:25],
+        },
+        errors,
+    )
+
+
 def audit_ocr_integrity(
     conn: sqlite3.Connection,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     result, errors = _BASE_AUDIT_OCR_INTEGRITY(conn)
     in_progress = int(result.get("runs_left_in_progress", 0))
-    result["silent_failure_count"] = int(result.get("silent_failure_count", 0)) + in_progress
+    result["silent_failure_count"] = (
+        int(result.get("silent_failure_count", 0)) + in_progress
+    )
     result["complete"] = result["silent_failure_count"] == 0
     result["policy"] = "in_progress_runs_are_failures_v2"
     return result, errors
@@ -64,7 +158,11 @@ def audit_capabilities(conn: sqlite3.Connection) -> dict[str, Any]:
         "WHERE cv_status IN ('ok','no_track_detected')",
     )
     capabilities["track_extraction_receipts"] = {
-        "status": "complete" if track_receipts == ingest_ok and track_failures == 0 else "incomplete",
+        "status": (
+            "complete"
+            if track_receipts == ingest_ok and track_failures == 0
+            else "incomplete"
+        ),
         "rows": track_receipts,
         "valid_negative_or_positive": track_ok,
         "failures": track_failures,
@@ -78,7 +176,11 @@ def audit_capabilities(conn: sqlite3.Connection) -> dict[str, Any]:
         "WHERE scan_status='failed'",
     )
     capabilities["standalone_icon_scan"] = {
-        "status": "complete" if icon_receipts == ingest_ok and icon_scan_failures == 0 else "incomplete",
+        "status": (
+            "complete"
+            if icon_receipts == ingest_ok and icon_scan_failures == 0
+            else "incomplete"
+        ),
         "rows": icon_receipts,
         "failures": icon_scan_failures,
         "coverage_percent": audit._pct(icon_receipts, ingest_ok),
@@ -93,7 +195,8 @@ def audit_capabilities(conn: sqlite3.Connection) -> dict[str, Any]:
         )
         gui_failed_rows = audit._count(
             conn,
-            "SELECT COUNT(*) FROM gui_artifact_observations WHERE extraction_status='failed'",
+            """SELECT COUNT(*) FROM gui_artifact_observations
+               WHERE extraction_status='failed'""",
         )
     capabilities["gui_artifacts"]["screenshot_frames"] = gui_frames
     capabilities["gui_artifacts"]["failed_rows"] = gui_failed_rows
@@ -238,6 +341,7 @@ def run(
     outputs_dir: Path | None = None,
     sample_limit: int = 25,
 ) -> dict[str, Any]:
+    audit.audit_accounting = audit_accounting
     audit.audit_ocr_integrity = audit_ocr_integrity
     audit.audit_capabilities = audit_capabilities
     audit.build_gates = build_gates
