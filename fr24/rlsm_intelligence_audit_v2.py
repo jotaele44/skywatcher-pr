@@ -12,6 +12,9 @@ from fr24 import rlsm_intelligence_audit as audit
 DB = audit.DB
 CORPUS = audit.CORPUS
 GOLD = audit.GOLD
+_BASE_AUDIT_OCR_INTEGRITY = audit.audit_ocr_integrity
+_BASE_AUDIT_CAPABILITIES = audit.audit_capabilities
+_BASE_BUILD_GATES = audit.build_gates
 
 REQUIRED_GATES = (
     "screenshot_accounting_100",
@@ -36,7 +39,7 @@ def _optional_count(conn: sqlite3.Connection, table: str, where: str = "") -> in
 def audit_ocr_integrity(
     conn: sqlite3.Connection,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    result, errors = audit.audit_ocr_integrity(conn)
+    result, errors = _BASE_AUDIT_OCR_INTEGRITY(conn)
     in_progress = int(result.get("runs_left_in_progress", 0))
     result["silent_failure_count"] = int(result.get("silent_failure_count", 0)) + in_progress
     result["complete"] = result["silent_failure_count"] == 0
@@ -45,7 +48,7 @@ def audit_ocr_integrity(
 
 
 def audit_capabilities(conn: sqlite3.Connection) -> dict[str, Any]:
-    capabilities = audit.audit_capabilities(conn)
+    capabilities = _BASE_AUDIT_CAPABILITIES(conn)
     ingest_ok = int(capabilities["ingestion"]["screenshots"])
 
     track_receipts = _optional_count(conn, "track_extraction_receipts")
@@ -108,7 +111,7 @@ def build_gates(
     provenance: dict[str, Any],
     gold: dict[str, Any],
 ) -> dict[str, dict[str, Any]]:
-    gates = audit.build_gates(
+    gates = _BASE_BUILD_GATES(
         accounting,
         ocr,
         capabilities,
