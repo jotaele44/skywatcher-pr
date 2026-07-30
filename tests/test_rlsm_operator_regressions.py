@@ -4,6 +4,8 @@ import os
 import sqlite3
 from pathlib import Path
 
+from PIL import Image
+
 from fr24 import (
     rlsm_icons_certified,
     rlsm_intelligence_audit_v2,
@@ -152,6 +154,8 @@ def test_refresh_derived_remains_deferred_during_dry_run(monkeypatch) -> None:
 
 def test_standalone_icon_filter_rejects_saturated_texture() -> None:
     saturated = {
+        "x": 4,
+        "y": 4,
         "w": 52,
         "h": 52,
         "area": 1800,
@@ -161,6 +165,8 @@ def test_standalone_icon_filter_rejects_saturated_texture() -> None:
         "value": 0.5,
     }
     plausible = {
+        "x": 12,
+        "y": 12,
         "w": 18,
         "h": 20,
         "area": 160,
@@ -169,9 +175,90 @@ def test_standalone_icon_filter_rejects_saturated_texture() -> None:
         "saturation": 0.5,
         "value": 0.8,
     }
+    border_touching = {**plausible, "x": 1}
     window = (0, 0, 64, 64)
     assert not rlsm_standalone_icons_certified._plausible(saturated, window)
     assert rlsm_standalone_icons_certified._plausible(plausible, window)
+    assert not rlsm_standalone_icons_certified._plausible(border_touching, window)
+
+
+def test_standalone_candidate_budget_is_explicit_truncation(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    repo = tmp_path / "repo"
+    source = repo / "data" / "FR24_baseline" / "frame.png"
+    source.parent.mkdir(parents=True)
+    Image.new("RGB", (800, 800), (32, 32, 32)).save(source)
+
+    db = repo / "data" / "rlsm" / "ledger.sqlite"
+    db.parent.mkdir(parents=True)
+    conn = sqlite3.connect(db)
+    _ledger_schema(conn)
+    conn.execute(
+        """INSERT INTO screenshots
+           (screenshot_id, rel_path, ingest_status, ingest_error, ocr_status)
+           VALUES (1, 'data/FR24_baseline/frame.png', 'ok', NULL, 'ok')"""
+    )
+    conn.commit()
+    conn.close()
+
+    windows = []
+    for index in range(rlsm_standalone_icons_certified.DETECTION_BUDGET_PER_SCREENSHOT):
+        x = (index % 10) * 72
+        y = (index // 10) * 72
+        windows.append((x, y, x + 64, y + 64))
+
+    monkeypatch.setattr(
+        rlsm_standalone_icons_certified.legacy,
+        "_regions",
+        lambda _width, _height: [("map", (0, 0, 800, 800))],
+    )
+    monkeypatch.setattr(
+        rlsm_standalone_icons_certified.legacy,
+        "_windows",
+        lambda _box: windows,
+    )
+    monkeypatch.setattr(
+        rlsm_standalone_icons_certified.detector,
+        "detect_in_window",
+        lambda _rgb, _hsv: {
+            "x": 12,
+            "y": 12,
+            "w": 12,
+            "h": 12,
+            "area": 80,
+            "aspect": 1.0,
+            "fill_ratio": 0.56,
+            "hue_deg": 30.0,
+            "saturation": 0.6,
+            "value": 0.8,
+            "ahash": "0123456789abcdef",
+        },
+    )
+
+    result = rlsm_standalone_icons_certified.run(
+        db_path=db,
+        repo_root=repo,
+        limit=1,
+    )
+
+    conn = sqlite3.connect(db)
+    receipt = conn.execute(
+        """SELECT scan_status, scan_error
+           FROM icon_scan_receipts
+           WHERE screenshot_id=1 AND method=?""",
+        (rlsm_standalone_icons_certified.METHOD,),
+    ).fetchone()
+    conn.close()
+
+    assert result["status"] == "completed"
+    assert result["failed"] == 0
+    assert result["truncations"] == 1
+    assert result["raw_detections"] == (
+        rlsm_standalone_icons_certified.DETECTION_BUDGET_PER_SCREENSHOT
+    )
+    assert receipt == ("truncated", "candidate_budget_exhausted")
 
 
 def test_empty_icon_channel_clusters_without_stage_failure(tmp_path: Path) -> None:
