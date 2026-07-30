@@ -7,18 +7,19 @@ from pathlib import Path
 
 import pytest
 
-from fr24 import rlsm_flight_track_certified
-from fr24 import rlsm_frame_artifacts
-from fr24 import rlsm_intelligence_audit
-from fr24 import rlsm_intelligence_audit_v2
-from fr24 import rlsm_intelligence_export
-from fr24 import rlsm_intelligence_pipeline
-from fr24 import rlsm_intelligence_pipeline_v2
-from fr24 import rlsm_ocr_certified
-from fr24 import rlsm_provenance
-from fr24 import rlsm_standalone_icons
+from fr24 import (
+    rlsm_flight_track_certified,
+    rlsm_frame_artifacts,
+    rlsm_intelligence_audit,
+    rlsm_intelligence_audit_v2,
+    rlsm_intelligence_export,
+    rlsm_intelligence_pipeline,
+    rlsm_intelligence_pipeline_v2,
+    rlsm_ocr_certified,
+    rlsm_provenance,
+    rlsm_standalone_icons,
+)
 from fr24.track_vectorizer_strict import VectorizationReceipt, vectorize_image_receipt
-
 
 REPO = Path(__file__).resolve().parents[1]
 SCHEMA = REPO / "data" / "rlsm" / "schema.sql"
@@ -87,8 +88,7 @@ def test_certified_ocr_finish_marks_unprocessed_as_failed(tmp_path: Path) -> Non
         unexpected_error=None,
     )
     row = conn.execute(
-        "SELECT status, n_inputs, n_processed, n_failed, notes "
-        "FROM processing_runs WHERE run_id=?",
+        "SELECT status, n_inputs, n_processed, n_failed, notes FROM processing_runs WHERE run_id=?",
         (run_id,),
     ).fetchone()
     conn.close()
@@ -139,8 +139,7 @@ def test_certified_track_failure_is_receipted_and_falls_back(
         "SELECT path_shape, confidence, bbox_x FROM flight_track_features"
     ).fetchone()
     receipt = conn.execute(
-        "SELECT cv_status, cv_error, heuristic_fallback "
-        "FROM track_extraction_receipts"
+        "SELECT cv_status, cv_error, heuristic_fallback FROM track_extraction_receipts"
     ).fetchone()
     conn.close()
 
@@ -187,17 +186,13 @@ def test_frame_gui_and_map_state_are_persisted_without_invented_coordinates(
 
     result = rlsm_frame_artifacts.run(db_path)
     conn = sqlite3.connect(db_path)
-    frame = conn.execute(
-        "SELECT frame_type, provider FROM frame_observations"
-    ).fetchone()
+    frame = conn.execute("SELECT frame_type, provider FROM frame_observations").fetchone()
     map_state = conn.execute(
         """SELECT center_lat, center_lon, zoom, bearing_deg,
                   extent_geojson, geolocation_status
            FROM map_state_observations"""
     ).fetchone()
-    gui_count = conn.execute(
-        "SELECT COUNT(*) FROM gui_artifact_observations"
-    ).fetchone()[0]
+    gui_count = conn.execute("SELECT COUNT(*) FROM gui_artifact_observations").fetchone()[0]
     conn.close()
 
     assert result["failed"] == 0
@@ -436,17 +431,9 @@ def test_extended_export_is_deterministic(tmp_path: Path) -> None:
 
     out = tmp_path / "exports"
     first = rlsm_intelligence_export.export_all(db_path, out)
-    first_sha = {
-        item["table"]: item["sha256"]
-        for item in first["exports"]
-        if item["sha256"]
-    }
+    first_sha = {item["table"]: item["sha256"] for item in first["exports"] if item["sha256"]}
     second = rlsm_intelligence_export.export_all(db_path, out)
-    second_sha = {
-        item["table"]: item["sha256"]
-        for item in second["exports"]
-        if item["sha256"]
-    }
+    second_sha = {item["table"]: item["sha256"] for item in second["exports"] if item["sha256"]}
 
     assert first_sha == second_sha
     assert (out / "manifest.json").exists()
@@ -459,8 +446,7 @@ def test_v2_pipeline_policy_promotes_certified_stages() -> None:
     try:
         rlsm_intelligence_pipeline_v2.install_policy()
         assert (
-            rlsm_intelligence_pipeline.STAGE_FUNCS["ocr"]
-            is rlsm_intelligence_pipeline_v2.stage_ocr
+            rlsm_intelligence_pipeline.STAGE_FUNCS["ocr"] is rlsm_intelligence_pipeline_v2.stage_ocr
         )
         assert (
             rlsm_intelligence_pipeline.STAGE_FUNCS["tracks"]

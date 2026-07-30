@@ -1,4 +1,5 @@
 """Extract structured aircraft and labels from partially successful OCR frames."""
+
 from __future__ import annotations
 
 import argparse
@@ -27,11 +28,20 @@ def _start_run(conn: sqlite3.Connection, kind: str, targets: int) -> int:
     return int(cursor.lastrowid)
 
 
-def _finish_run(conn: sqlite3.Connection, run_id: int, processed: int, failed: int, notes: dict[str, Any]) -> None:
+def _finish_run(
+    conn: sqlite3.Connection, run_id: int, processed: int, failed: int, notes: dict[str, Any]
+) -> None:
     conn.execute(
         """UPDATE processing_runs SET ended_at=?, status=?, n_processed=?,
                   n_failed=?, notes=? WHERE run_id=?""",
-        (_iso_now(), "completed" if failed == 0 else "failed", processed, failed, json.dumps(notes, sort_keys=True), run_id),
+        (
+            _iso_now(),
+            "completed" if failed == 0 else "failed",
+            processed,
+            failed,
+            json.dumps(notes, sort_keys=True),
+            run_id,
+        ),
     )
     conn.commit()
 
@@ -50,7 +60,11 @@ def extract_aircraft(conn: sqlite3.Connection, limit: int = 0) -> dict[str, int]
     emitted = failed = 0
     for sid in targets:
         try:
-            rows = [row for row in _latest_zone_observations(conn, sid) if row[0] in {"aircraft_card", "top_bar", "map_center", "label_layer"} and row[1]]
+            rows = [
+                row
+                for row in _latest_zone_observations(conn, sid)
+                if row[0] in {"aircraft_card", "top_bar", "map_center", "label_layer"} and row[1]
+            ]
             combined = " ".join(str(row[1]) for row in rows)
             if not combined:
                 continue
@@ -72,10 +86,22 @@ def extract_aircraft(conn: sqlite3.Connection, limit: int = 0) -> dict[str, int]
                     altitude_ft, speed_kt, heading_deg, operator_text,
                     identity_status, confidence, source_zone, raw_excerpt, observed_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (sid, run_id, registration, fields.get("callsign"), aircraft_type,
-                 fields.get("altitude_ft"), fields.get("speed_kt"), fields.get("heading_deg"),
-                 fields.get("operator_text"), identity_status, confidence,
-                 "+".join(str(row[0]) for row in rows), combined[:200], _iso_now()),
+                (
+                    sid,
+                    run_id,
+                    registration,
+                    fields.get("callsign"),
+                    aircraft_type,
+                    fields.get("altitude_ft"),
+                    fields.get("speed_kt"),
+                    fields.get("heading_deg"),
+                    fields.get("operator_text"),
+                    identity_status,
+                    confidence,
+                    "+".join(str(row[0]) for row in rows),
+                    combined[:200],
+                    _iso_now(),
+                ),
             )
             conn.commit()
             emitted += 1
@@ -86,7 +112,12 @@ def extract_aircraft(conn: sqlite3.Connection, limit: int = 0) -> dict[str, int]
 
 
 def extract_labels(conn: sqlite3.Connection, limit: int = 0) -> dict[str, int]:
-    from fr24.rlsm_extractors import LABEL_ZONE_WEIGHTS, _latest_zone_observations, _normalize_label, scan_words_for_pois
+    from fr24.rlsm_extractors import (
+        LABEL_ZONE_WEIGHTS,
+        _latest_zone_observations,
+        _normalize_label,
+        scan_words_for_pois,
+    )
     from fr24.rlsm_wordboxes import load_words, union_box
 
     sql = """SELECT s.screenshot_id FROM screenshots s
@@ -102,7 +133,9 @@ def extract_labels(conn: sqlite3.Connection, limit: int = 0) -> dict[str, int]:
         try:
             best: dict[str, dict[str, Any]] = {}
             saw_boxes = False
-            for zone, _raw_text, raw_lines_json, _confidence in _latest_zone_observations(conn, sid):
+            for zone, _raw_text, raw_lines_json, _confidence in _latest_zone_observations(
+                conn, sid
+            ):
                 weight = LABEL_ZONE_WEIGHTS.get(zone)
                 if weight is None:
                     continue
@@ -127,14 +160,39 @@ def extract_labels(conn: sqlite3.Connection, limit: int = 0) -> dict[str, int]:
                         bbox_x, bbox_y, bbox_w, bbox_h, centroid_x, centroid_y,
                         pin_type_guess, confidence, review_status, observed_at)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'unreviewed', ?)""",
-                    (sid, run_id, hit["label"], _normalize_label(hit["label"]), bx, by, bw, bh, cx, cy, hit["pin_type"], hit["confidence"], _iso_now()),
+                    (
+                        sid,
+                        run_id,
+                        hit["label"],
+                        _normalize_label(hit["label"]),
+                        bx,
+                        by,
+                        bw,
+                        bh,
+                        cx,
+                        cy,
+                        hit["pin_type"],
+                        hit["confidence"],
+                        _iso_now(),
+                    ),
                 )
                 emitted += 1
             conn.commit()
         except (sqlite3.DatabaseError, ValueError, TypeError):
             failed += 1
-    _finish_run(conn, run_id, len(targets)-failed, failed, {"targets": len(targets), "emitted": emitted, "skipped_no_word_boxes": skipped_no_boxes})
-    return {"targets": len(targets), "emitted": emitted, "failed": failed, "skipped_no_word_boxes": skipped_no_boxes}
+    _finish_run(
+        conn,
+        run_id,
+        len(targets) - failed,
+        failed,
+        {"targets": len(targets), "emitted": emitted, "skipped_no_word_boxes": skipped_no_boxes},
+    )
+    return {
+        "targets": len(targets),
+        "emitted": emitted,
+        "failed": failed,
+        "skipped_no_word_boxes": skipped_no_boxes,
+    }
 
 
 def run(db_path: Path = DB, limit: int = 0) -> dict[str, Any]:

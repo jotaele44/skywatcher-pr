@@ -1,12 +1,14 @@
 """Backfill field-level provenance for screenshot-derived structured objects."""
+
 from __future__ import annotations
 
 import argparse
 import json
 import sqlite3
 import time
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 REPO = Path(__file__).resolve().parents[1]
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -42,10 +44,13 @@ def _iso_now() -> str:
 
 
 def _table_exists(conn: sqlite3.Connection, name: str) -> bool:
-    return conn.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
-        (name,),
-    ).fetchone() is not None
+    return (
+        conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+            (name,),
+        ).fetchone()
+        is not None
+    )
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
@@ -474,9 +479,7 @@ def _frames_and_gui(
                 ),
                 method=str(row[13]),
                 confidence=confidence,
-                validation_outcome=(
-                    "UNVERIFIED" if row[11] != "failed" else "INVALID"
-                ),
+                validation_outcome=("UNVERIFIED" if row[11] != "failed" else "INVALID"),
                 observed_at=observed_at,
             )
             objects += 1
@@ -517,9 +520,7 @@ def _map_states(
         geolocation_status = str(row[12])
         has_coords = row[7] is not None or row[8] is not None or row[11] is not None
         outcome = (
-            "CONFLICTED"
-            if geolocation_status == "unsupported" and has_coords
-            else "UNVERIFIED"
+            "CONFLICTED" if geolocation_status == "unsupported" and has_coords else "UNVERIFIED"
         )
         fields += _insert_fields(
             conn,

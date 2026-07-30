@@ -1,12 +1,13 @@
 """End-to-end RLSM screenshot-intelligence pipeline and certification entry point."""
+
 from __future__ import annotations
 
 import argparse
 import json
 import sqlite3
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
@@ -18,9 +19,21 @@ BASELINE = base.BASELINE
 GOLD = REPO / "data" / "rlsm" / "gold_sample_300.jsonl"
 
 ALL_STAGES = [
-    "preflight", "inventory", "ocr", "aircraft", "pins", "icons",
-    "tracks", "frames", "icon_crops", "geocode", "provenance",
-    "review", "export", "audit", "report",
+    "preflight",
+    "inventory",
+    "ocr",
+    "aircraft",
+    "pins",
+    "icons",
+    "tracks",
+    "frames",
+    "icon_crops",
+    "geocode",
+    "provenance",
+    "review",
+    "export",
+    "audit",
+    "report",
 ]
 OPTIONAL_STAGES = ["unlabeled"]
 DEFAULT_STAGES = list(ALL_STAGES)
@@ -179,7 +192,7 @@ def resolve_stages(args: argparse.Namespace) -> list[str]:
     if args.from_stage:
         if args.from_stage not in stages:
             raise SystemExit(f"unknown stage {args.from_stage!r}; choose from {', '.join(stages)}")
-        stages = ["preflight"] + stages[stages.index(args.from_stage):]
+        stages = ["preflight"] + stages[stages.index(args.from_stage) :]
         stages = list(dict.fromkeys(stages))
     if args.skip_icons:
         stages = [stage for stage in stages if stage not in {"icons", "icon_crops"}]
@@ -204,9 +217,14 @@ def collect_status() -> dict:
         if base._table_exists(conn, table):
             status[key] = base._count(conn, f"SELECT COUNT(*) FROM {table}")
     if base._table_exists(conn, "flight_track_features"):
-        status["pixel_derived_tracks"] = base._count(conn, "SELECT COUNT(*) FROM flight_track_features WHERE bbox_x IS NOT NULL AND confidence>=0.6")
+        status["pixel_derived_tracks"] = base._count(
+            conn,
+            "SELECT COUNT(*) FROM flight_track_features WHERE bbox_x IS NOT NULL AND confidence>=0.6",
+        )
     if base._table_exists(conn, "icon_artifacts"):
-        status["icon_capture_failures"] = base._count(conn, "SELECT COUNT(*) FROM icon_artifacts WHERE capture_status!='ok'")
+        status["icon_capture_failures"] = base._count(
+            conn, "SELECT COUNT(*) FROM icon_artifacts WHERE capture_status!='ok'"
+        )
     conn.close()
     audit_path = REPO / "outputs" / "screenshot_intelligence_audit.json"
     if audit_path.exists():
@@ -225,9 +243,15 @@ def _refresh_derived() -> dict[str, int]:
     conn = sqlite3.connect(str(DB), timeout=60.0)
     conn.execute("PRAGMA foreign_keys = OFF")
     tables = (
-        "extraction_field_provenance", "icon_artifacts", "icon_observations",
-        "flight_track_features", "aircraft_observations", "labeled_pins",
-        "frame_observations", "map_state_observations", "gui_artifact_observations",
+        "extraction_field_provenance",
+        "icon_artifacts",
+        "icon_observations",
+        "flight_track_features",
+        "aircraft_observations",
+        "labeled_pins",
+        "frame_observations",
+        "map_state_observations",
+        "gui_artifact_observations",
     )
     deleted: dict[str, int] = {}
     with conn:
@@ -269,11 +293,17 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     stages = resolve_stages(args)
     ctx = {
-        "workers": max(1, args.workers), "budget_sec": max(1.0, args.budget_sec),
-        "limit": max(0, args.limit), "stages": stages, "dry_run": args.dry_run,
-        "skip_icons": args.skip_icons, "retry_failed_ocr": args.retry_failed_ocr,
-        "upgrade_tracks": args.upgrade_tracks, "gold_sample": args.gold_sample,
-        "certify": args.certify, "preflight": {},
+        "workers": max(1, args.workers),
+        "budget_sec": max(1.0, args.budget_sec),
+        "limit": max(0, args.limit),
+        "stages": stages,
+        "dry_run": args.dry_run,
+        "skip_icons": args.skip_icons,
+        "retry_failed_ocr": args.retry_failed_ocr,
+        "upgrade_tracks": args.upgrade_tracks,
+        "gold_sample": args.gold_sample,
+        "certify": args.certify,
+        "preflight": {},
     }
     print("RLSM screenshot-intelligence pipeline", flush=True)
     print(f"  stages: {' → '.join(stages)}", flush=True)
