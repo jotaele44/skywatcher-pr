@@ -25,7 +25,13 @@ def stage_preflight(ctx: dict) -> None:
     global _REFRESH_DONE
     pipeline.stage_preflight(ctx)
     has_mutating_stage = any(stage != "preflight" for stage in ctx.get("stages", []))
-    if _REFRESH_REQUESTED and has_mutating_stage and not _REFRESH_DONE:
+    should_refresh = (
+        _REFRESH_REQUESTED
+        and has_mutating_stage
+        and not ctx.get("dry_run", False)
+        and not _REFRESH_DONE
+    )
+    if should_refresh:
         deleted = refresh_derived()
         _REFRESH_DONE = True
         print(
