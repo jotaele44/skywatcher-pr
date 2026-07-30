@@ -4,11 +4,14 @@ import os
 import sqlite3
 from pathlib import Path
 
-from fr24 import rlsm_icons_certified
-from fr24 import rlsm_intelligence_audit_v2
-from fr24 import rlsm_ocr_certified
-from fr24 import rlsm_source_reconcile
-from fr24 import rlsm_standalone_icons_certified
+from fr24 import (
+    rlsm_icons_certified,
+    rlsm_intelligence_audit_v2,
+    rlsm_intelligence_pipeline_v2,
+    rlsm_ocr_certified,
+    rlsm_source_reconcile,
+    rlsm_standalone_icons_certified,
+)
 
 
 def _ledger_schema(conn: sqlite3.Connection) -> None:
@@ -120,6 +123,31 @@ def test_failed_ocr_frames_fail_the_processing_run() -> None:
     conn.close()
     assert result["status"] == "failed"
     assert persisted == ("failed", 200)
+
+
+def test_refresh_derived_remains_deferred_during_dry_run(monkeypatch) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr(
+        rlsm_intelligence_pipeline_v2.pipeline,
+        "stage_preflight",
+        lambda ctx: calls.append("preflight"),
+    )
+    monkeypatch.setattr(
+        rlsm_intelligence_pipeline_v2,
+        "refresh_derived",
+        lambda: calls.append("refresh") or {},
+    )
+    monkeypatch.setattr(rlsm_intelligence_pipeline_v2, "_REFRESH_REQUESTED", True)
+    monkeypatch.setattr(rlsm_intelligence_pipeline_v2, "_REFRESH_DONE", False)
+
+    rlsm_intelligence_pipeline_v2.stage_preflight(
+        {
+            "dry_run": True,
+            "stages": ["preflight", "inventory", "ocr"],
+        }
+    )
+
+    assert calls == ["preflight"]
 
 
 def test_standalone_icon_filter_rejects_saturated_texture() -> None:
