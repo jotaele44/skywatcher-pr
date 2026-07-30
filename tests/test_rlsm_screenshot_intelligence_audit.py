@@ -5,12 +5,14 @@ import json
 import sqlite3
 from pathlib import Path
 
-from fr24 import rlsm_flight_track_certified
-from fr24 import rlsm_frame_artifacts
-from fr24 import rlsm_intelligence_audit
-from fr24 import rlsm_intelligence_audit_v2
-from fr24 import rlsm_intelligence_pipeline
-from fr24 import rlsm_standalone_icons
+from fr24 import (
+    rlsm_flight_track_certified,
+    rlsm_frame_artifacts,
+    rlsm_intelligence_audit,
+    rlsm_intelligence_audit_v2,
+    rlsm_intelligence_pipeline,
+    rlsm_standalone_icons,
+)
 
 
 REPO = Path(__file__).resolve().parents[1]
@@ -197,9 +199,12 @@ def test_v2_capabilities_and_gates_require_receipt_coverage(tmp_path: Path) -> N
     capabilities = rlsm_intelligence_audit_v2.audit_capabilities(conn)
     conn.close()
     gates = rlsm_intelligence_audit_v2.build_gates(
-        {"complete": True, "coverage_percent": 100.0,
-         "disk_files_absent_from_database": 0,
-         "database_files_absent_from_disk": 0},
+        {
+            "complete": True,
+            "coverage_percent": 100.0,
+            "disk_files_absent_from_database": 0,
+            "database_files_absent_from_disk": 0,
+        },
         {"complete": True, "silent_failure_count": 0},
         capabilities,
         {"complete": True, "unsupported_rows_with_coordinates": 0},
