@@ -68,7 +68,12 @@ def stage_pins(ctx: dict) -> None:
 
 
 def stage_icons(ctx: dict) -> None:
-    base.stage_icons(ctx)
+    args = ["--budget-sec", str(ctx["budget_sec"])]
+    if ctx["limit"]:
+        args += ["--limit", str(ctx["limit"])]
+    base._run_module("fr24.rlsm_icons", args)
+    base._run_module("fr24.rlsm_standalone_icons", args)
+    base._run_script(REPO / "scripts" / "rlsm_icon_cluster.py", [])
 
 
 def _delete_upgradeable_tracks() -> int:
