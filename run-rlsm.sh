@@ -11,9 +11,9 @@
 #   ./run-rlsm.sh --refresh-derived       # rebuild derived rows; raw OCR is preserved
 #   ./run-rlsm.sh --help                  # all options
 #
-# The fail-closed OCR runner records per-zone errors. Certification never treats
-# missing gold annotations, unsupported geolocation, or incomplete accounting as
-# a pass.
+# The certified OCR and track runners preserve per-frame failures. Certification
+# never treats missing gold annotations, unsupported geolocation, incomplete
+# receipts, or unprocessed corpus rows as a pass.
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -27,4 +27,4 @@ fi
 # One thread per tesseract process; the process pool provides parallelism.
 export OMP_THREAD_LIMIT="${OMP_THREAD_LIMIT:-1}"
 
-exec "$PY" -m fr24.rlsm_intelligence_pipeline "$@"
+exec "$PY" -m fr24.rlsm_intelligence_pipeline_v2 "$@"
