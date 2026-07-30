@@ -303,3 +303,17 @@ def test_symlinked_corpus_uses_canonical_repository_paths(tmp_path: Path) -> Non
         rlsm_intelligence_audit_v2.REPO = prior_repo
 
     assert set(manifest) == {"data/FR24_baseline/frame.png"}
+
+
+def test_icon_crop_stage_does_not_cap_icon_rows(monkeypatch) -> None:
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        rlsm_intelligence_pipeline_v2.pipeline.base,
+        "_run_script",
+        lambda _path, args: calls.append(list(args)),
+    )
+
+    rlsm_intelligence_pipeline_v2.stage_icon_crops({"limit": 200})
+
+    assert len(calls) == 1
+    assert "--limit" not in calls[0]
