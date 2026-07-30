@@ -28,6 +28,8 @@ This pipeline converts each screenshot into reviewable observations while preser
 | GUI artifacts | Zone-level panel/control observations | Per-frame GUI observation coverage |
 | Icons | Label-adjacent detection plus standalone tiled map/GUI scan | One scan receipt per frame; provisional candidates require review |
 | Icon library | Deterministic PNG crops and source/crop hashes | Detected-to-captured accounting and zero capture failures |
+| Satellite semantic features | Provider-neutral extraction contract exists; no benchmarked semantic detector is certified | Separate labeled satellite-imagery gold set and detector benchmark required |
+| Cross-frame tracking | Not implemented in the current repair branch | Ordered screenshot sequences with independently reviewed identity links required |
 | Provenance | Field-level source, method, confidence, and validation outcome | 100% coverage of non-null core fields |
 | Structured exports | Deterministic JSONL files and SHA-256 manifest | Stable repeated export hashes |
 
@@ -72,6 +74,8 @@ The 300 records must be stratified across provider/layout, portrait and landscap
 - Geographic coordinates remain null when the screenshot lacks a supported calibration transform.
 - Standalone icon candidates use provisional classes and `needs_review`; they are not promoted to confirmed POIs.
 - Heuristic flight-path fallback is retained for information recovery but cannot satisfy a failed pixel-extraction receipt.
+- Semantic interpretations of buildings, runways, roads, vessels, terrain, or other satellite-image content remain uncertified until a labeled imagery benchmark exists.
+- Cross-frame identity continuity remains uncertified until ordered sequences and reviewed association truth are available.
 
 ## Current operational dependency
 
