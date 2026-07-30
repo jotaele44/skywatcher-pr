@@ -14,6 +14,10 @@ recent behavior, here's where each aircraft is most likely to show up."
 Outputs:
   - outputs/intel_forecast_7day.csv
   - outputs/intel_forecast_summary.md
+
+The (dow, hour_bucket) cell + forecast logic lives in
+``skywatcher.fpim.schedule`` so the per-craft profile builder can reuse it;
+this script is a thin CLI wrapper that preserves the original outputs.
 """
 from __future__ import annotations
 
@@ -21,21 +25,24 @@ import argparse
 import csv
 import json
 import sqlite3
-from collections import Counter, defaultdict
-from datetime import datetime, timedelta, date
+import sys
+from collections import defaultdict
+from datetime import timedelta
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "src"))
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 OUTS = REPO / "outputs"
 
-DOW_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
-
-def parse_ts(s):
-    if not s or len(s) < 16: return None
-    try: return datetime.fromisoformat(s.replace("Z","+00:00"))
-    except ValueError: return None
+from skywatcher.fpim.schedule import (  # noqa: E402
+    HOUR_BUCKET_SIZE,
+    build_cells,
+    forecast_rows,
+    load_observations,
+    max_corpus_ts,
+    top_registrations,
+)
 
 
 def main():
@@ -46,73 +53,31 @@ def main():
     args = ap.parse_args()
 
     conn = sqlite3.connect(DB)
-    cols = {r[1] for r in conn.execute("PRAGMA table_info(screenshots)")}
-    ts_expr = "COALESCE(s.true_flight_ts, s.filename_ts)" if "true_flight_ts" in cols else "s.filename_ts"
-
-    # Find max date in corpus
-    max_ts_row = conn.execute(f"SELECT MAX({ts_expr}) FROM aircraft_observations a JOIN screenshots s USING(screenshot_id)").fetchone()
-    if not max_ts_row or not max_ts_row[0]:
+    all_rows = load_observations(conn)
+    max_dt = max_corpus_ts(all_rows)
+    if max_dt is None:
         print("[forecast] no data")
         return
-    max_dt = parse_ts(max_ts_row[0])
+
     start_lookback = max_dt - timedelta(weeks=args.lookback_weeks)
+    rows = load_observations(conn, since=start_lookback.isoformat())
 
-    # Pull recent aircraft observations
-    rows = conn.execute(f"""
-        SELECT a.registration, {ts_expr} AS ts
-        FROM aircraft_observations a
-        JOIN screenshots s USING(screenshot_id)
-        WHERE a.registration IS NOT NULL AND {ts_expr} IS NOT NULL
-          AND {ts_expr} >= ?
-    """, (start_lookback.isoformat(),)).fetchall()
+    top_regs = top_registrations(rows, args.top_aircraft)
+    cells = build_cells(rows, keep_regs=set(top_regs))
 
-    # Top aircraft by recent volume
-    counts = Counter(r[0] for r in rows)
-    top_regs = [r for r, _ in counts.most_common(args.top_aircraft)]
-
-    # Build (reg, dow, hour_bucket) -> rate per (lookback weeks)
-    hour_bucket_size = 3
-    cells = defaultdict(int)
-    for reg, ts in rows:
-        if reg not in top_regs: continue
-        dt = parse_ts(ts)
-        if not dt: continue
-        dow = dt.weekday()
-        hb = (dt.hour // hour_bucket_size) * hour_bucket_size
-        cells[(reg, dow, hb)] += 1
-
-    # Build forecast over next N days
-    weeks = args.lookback_weeks  # cells / weeks = expected per-week
+    weeks = args.lookback_weeks
     today = (max_dt + timedelta(days=1)).date()
-    forecast_rows = []
-    for offset in range(args.forecast_days):
-        d = today + timedelta(days=offset)
-        dow = d.weekday()
-        for reg in top_regs:
-            for hb in range(0, 24, hour_bucket_size):
-                hits = cells.get((reg, dow, hb), 0)
-                if hits == 0: continue
-                expected = hits / weeks
-                if expected < 0.25: continue  # filter noise
-                forecast_rows.append({
-                    "date": d.isoformat(),
-                    "dow": DOW_NAMES[dow],
-                    "hour_bucket": f"{hb:02d}-{hb+hour_bucket_size:02d}",
-                    "registration": reg,
-                    "expected_sightings": round(expected, 2),
-                    "based_on_hits": hits,
-                    "lookback_weeks": weeks,
-                })
-
-    forecast_rows.sort(key=lambda r: (r["date"], -r["expected_sightings"]))
+    fc_rows = forecast_rows(cells, top_regs, max_dt, weeks, args.forecast_days,
+                            hour_bucket_size=HOUR_BUCKET_SIZE)
 
     OUTS.mkdir(parents=True, exist_ok=True)
     with (OUTS / "intel_forecast_7day.csv").open("w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["date","dow","hour_bucket","registration",
-                                           "expected_sightings","based_on_hits","lookback_weeks"],
+        w = csv.DictWriter(f, fieldnames=["date", "dow", "hour_bucket", "registration",
+                                          "expected_sightings", "based_on_hits", "lookback_weeks"],
                            quoting=csv.QUOTE_ALL)
         w.writeheader()
-        for r in forecast_rows: w.writerow(r)
+        for r in fc_rows:
+            w.writerow(r)
 
     # Summary
     md = [f"# RLSM 7-day operational forecast\n",
@@ -121,7 +86,7 @@ def main():
           "\n## Top 30 high-probability cells\n",
           "| Date | DOW | Hour | Aircraft | Expected | Based on |",
           "|---|---|---|---|---|---|"]
-    for r in sorted(forecast_rows, key=lambda x: -x["expected_sightings"])[:30]:
+    for r in sorted(fc_rows, key=lambda x: -x["expected_sightings"])[:30]:
         md.append(f"| {r['date']} | {r['dow']} | {r['hour_bucket']} | {r['registration']} | "
                   f"{r['expected_sightings']} | {r['based_on_hits']} hits in {weeks} weeks |")
     md.append("\n## Per-day expected sightings (sum over top aircraft)\n")
@@ -129,7 +94,7 @@ def main():
     md.append("|---|---|---|")
     daily_sum = defaultdict(float)
     daily_dow = {}
-    for r in forecast_rows:
+    for r in fc_rows:
         daily_sum[r["date"]] += r["expected_sightings"]
         daily_dow[r["date"]] = r["dow"]
     for d in sorted(daily_sum):
@@ -141,9 +106,9 @@ def main():
         "lookback_weeks": args.lookback_weeks,
         "max_corpus_ts": max_dt.isoformat(),
         "forecast_window": [today.isoformat(),
-                             (today + timedelta(days=args.forecast_days-1)).isoformat()],
+                            (today + timedelta(days=args.forecast_days - 1)).isoformat()],
         "top_aircraft": top_regs[:10],
-        "forecast_cells_emitted": len(forecast_rows),
+        "forecast_cells_emitted": len(fc_rows),
         "outputs": ["outputs/intel_forecast_7day.csv",
                     "outputs/intel_forecast_summary.md"],
     }, indent=2))

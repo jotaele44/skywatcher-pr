@@ -327,6 +327,81 @@ def pr_fixture_db(tmp_path):
     return db_path
 
 
+# ── RLSM fixture for the craft-profile builder / query layer ──────────────────
+# NB: distinct from `populated_db` above, which uses the legacy flights/track_points
+# schema. This seeds the *RLSM* schema (data/rlsm/schema.sql) plus the optional
+# later-migration columns the builder probes for, with hand-verifiable data:
+#   N5854Z (PREPA, known_db): 5 consecutive Mondays, 2 obs/day, recurring SJU -> PSE,
+#                             a genuine weekly cadence, has georef
+#   N999XY (deduced/FAA):     2 flight-days, BQN -> SIG, no georef
+
+@pytest.fixture
+def rlsm_db(tmp_path):
+    import sqlite3
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[1]
+    db_path = str(tmp_path / "rlsm_test.sqlite")
+    conn = sqlite3.connect(db_path)
+    conn.executescript((repo / "data" / "rlsm" / "schema.sql").read_text())
+    conn.executescript(
+        """
+        ALTER TABLE aircraft_observations ADD COLUMN origin_iata TEXT;
+        ALTER TABLE aircraft_observations ADD COLUMN destination_iata TEXT;
+        ALTER TABLE aircraft_observations ADD COLUMN operator_text_manual TEXT;
+        ALTER TABLE screenshots ADD COLUMN true_flight_ts TEXT;
+        """
+    )
+
+    def add_screot(sid, ts):
+        conn.execute(
+            "INSERT INTO screenshots (screenshot_id, sha256, filename, rel_path, ext, "
+            "size_bytes, ingest_status, ocr_status, ingested_at, filename_ts, true_flight_ts) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (sid, f"sha{sid}", f"f{sid}.jpg", f"p/f{sid}.jpg", "jpg", 1000, "ok", "ok", ts, ts, ts),
+        )
+
+    def add_obs(sid, reg, atype, op, oia, dia):
+        conn.execute(
+            "INSERT INTO aircraft_observations (screenshot_id, registration, callsign, "
+            "aircraft_type, operator_text, identity_status, observed_at, origin_iata, "
+            "destination_iata, operator_text_manual) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (sid, reg, reg, atype, op, "confirmed", "2025-06-01T10:00:00", oia, dia, op),
+        )
+
+    def add_pin(sid, label):
+        conn.execute(
+            "INSERT INTO labeled_pins (screenshot_id, raw_label, normalized_label, "
+            "pin_type_guess, review_status, observed_at) VALUES (?,?,?,?,?,?)",
+            (sid, label, label, "airport", "unreviewed", "2025-06-01T10:00:00"),
+        )
+
+    sid = 1
+    mondays = ["2025-06-02", "2025-06-09", "2025-06-16", "2025-06-23", "2025-06-30"]
+    for d in mondays:
+        add_screot(sid, f"{d}T08:00:00"); add_obs(sid, "N5854Z", "H125", "PREPA", "SJU", "PSE")
+        add_pin(sid, "SJU"); sid += 1
+        add_screot(sid, f"{d}T08:30:00"); add_obs(sid, "N5854Z", "H125", "PREPA", "SJU", "PSE")
+        add_pin(sid, "PSE"); sid += 1
+    for d in ["2025-06-03", "2025-06-10"]:
+        add_screot(sid, f"{d}T14:00:00"); add_obs(sid, "N999XY", "R44", "Unknown", "BQN", "SIG")
+        sid += 1
+
+    conn.execute(
+        "INSERT INTO aircraft_registry (n_number, name, manufacturer, model, fetched_at, source) "
+        "VALUES (?,?,?,?,?,?)",
+        ("N999XY", "SOME OWNER LLC", "ROBINSON", "R44", "2025-01-01", "FAA"),
+    )
+    conn.execute(
+        "INSERT INTO geo_anchors (screenshot_id, anchor_kind, lat, lon, observed_at) "
+        "VALUES (?,?,?,?,?)",
+        (1, "static", 18.44, -66.0, "2025-06-01T08:00:00"),
+    )
+    conn.commit()
+    conn.close()
+    return db_path
+
+
 # ── Task 3: CONFIDENCE_WEIGHTS integrity assertion ────────────────────────────
 
 def test_confidence_weights_sum_to_one():

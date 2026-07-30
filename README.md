@@ -32,8 +32,24 @@ Skywatcher is the active owner of the FR24 pipeline migrated out of `spiderweb-p
 | `prii_readiness_engine.py` | Operational readiness scoring/reporting |
 | `gis_intelligence.py` | Puerto Rico infrastructure model and geodesy helpers |
 | `fr24/` | FR24 screenshot inventory, segmentation, route extraction, review queue, event export |
+| `src/skywatcher/fpim/craft_profile.py` | Per-craft profile builder (identity, home base, preferred LZs, schedule, recurring routes) |
+| `src/skywatcher/query/` | Grounded query layer over craft profiles (deterministic engine + optional LLM) |
 
 The core is designed to run with stdlib-first dependencies. Optional geospatial layers are isolated behind separate requirements.
+
+## Craft profiles & querying
+
+Consolidate the corpus into continuously-enrichable per-craft profiles and query them
+(structured or natural language) without inferring intent:
+
+```bash
+python scripts/build_craft_profiles.py                 # build profiles/craft/*.json + craft_profiles table
+python scripts/skywatcher_query.py "schedule and home base for N5854Z"
+python scripts/skywatcher_query.py --deterministic "what recurring routes are new?"
+```
+
+See [docs/CRAFT_PROFILES_AND_QUERY.md](docs/CRAFT_PROFILES_AND_QUERY.md) for the data
+flow, confidence grading, and the `POST /api/query` endpoint.
 
 ## FR24 ingest subsystem
 

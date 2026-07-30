@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 import uuid
 from pathlib import Path
 from typing import Any
@@ -24,10 +25,16 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 ROOT = Path(__file__).resolve().parents[2]
+# The skywatcher package lives under src/ (pyproject pythonpath); make it
+# importable when the app is launched with uvicorn from the repo root.
+if str(ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT / "src"))
+
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
 EXPORTS_DIR = ROOT / "exports"
 SYNTHETIC_PACKAGE = EXPORTS_DIR / "examples" / "synthetic_airspace_package"
 EVIDENCE_PATH = ROOT / "reports" / "federation" / "evidence_skywatcher-pr.jsonl"
+CRAFT_PROFILE_DIR = ROOT / "profiles" / "craft"
 
 app = FastAPI(
     title="Skywatcher-PR Dashboard API",
@@ -159,14 +166,42 @@ def load_readiness() -> list[dict[str, Any]]:
     return with_id(read_jsonl(EVIDENCE_PATH), "path")
 
 
+def load_craft_profiles() -> list[dict[str, Any]]:
+    """Per-craft profiles from profiles/craft/*.json, aliased to the dashboard's
+    AircraftProfileCard shape. Inferred missions are never surfaced: mission is
+    exposed only when the profile marks it operator-declared (authoritative)."""
+    rows: list[dict[str, Any]] = []
+    if not CRAFT_PROFILE_DIR.exists():
+        return rows
+    for path in sorted(CRAFT_PROFILE_DIR.glob("*.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if not isinstance(data, dict) or not data.get("registration"):
+            continue
+        mission = data.get("primary_mission") if data.get("mission_is_authoritative") else None
+        data.setdefault("id", data["registration"])
+        data.setdefault("callsign", data.get("callsign"))
+        data.setdefault("operator_category", data.get("operator"))
+        data.setdefault("mission_category", mission)
+        data.setdefault("profile_confidence", data.get("confidence_level"))
+        data.setdefault("synthetic_flag", False)
+        data.setdefault("last_seen_at", data.get("last_seen"))
+        data.setdefault("observation_count", data.get("total_observations"))
+        data.setdefault("registry_source", data.get("data_source"))
+        rows.append(data)
+    return rows
+
+
 LOADERS = {
     "PRAirports": load_airports,
     "AirspaceObservations": load_observations,
     "ExportPackages": load_export_packages,
     "ReadinessReports": load_readiness,
+    "AircraftProfiles": load_craft_profiles,
     # Declared by the dashboard but with no committed source yet; empty until
     # the corresponding pipelines emit repo artifacts.
-    "AircraftProfiles": list,
     "FR24Captures": list,
     "RouteSegments": list,
     "InfrastructureAssets": list,
@@ -217,6 +252,34 @@ def public_settings() -> dict[str, Any]:
 @app.get("/api/auth/me")
 def auth_me() -> dict[str, Any]:
     raise HTTPException(status_code=401, detail="No auth in local diagnostic mode")
+
+
+@app.post("/api/query")
+def query(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Grounded query over the committed craft profiles.
+
+    Deterministic by default; set ``payload.natural_language = true`` to phrase
+    via the LLM wrapper (falls back to deterministic text without an API key).
+    Never infers intent/mission — answers only from the profiles.
+    """
+    payload = payload or {}
+    prompt = str(payload.get("prompt") or payload.get("q") or "").strip()
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Missing 'prompt'")
+    try:
+        from skywatcher.query.engine import QueryEngine
+    except ImportError as exc:  # pragma: no cover - import wiring
+        raise HTTPException(status_code=500, detail=f"query engine unavailable: {exc}") from exc
+
+    engine = QueryEngine(profile_dir=CRAFT_PROFILE_DIR)
+    answer = engine.answer(prompt)
+    result = answer.to_dict()
+    if payload.get("natural_language"):
+        from skywatcher.query.llm import ask
+        result["text"] = ask(prompt, engine=engine)
+    else:
+        result["text"] = answer.to_text()
+    return result
 
 
 @app.get("/api/entities/{entity_name}")
