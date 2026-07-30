@@ -32,14 +32,17 @@ def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
     ).fetchone() is not None
 
 
-def _columns(conn: sqlite3.Connection, table: str) -> list[str]:
-    return [str(row[1]) for row in conn.execute(f"PRAGMA table_info({table})")]
-
-
 def _json_value(value: Any) -> Any:
     if isinstance(value, bytes):
         return {"encoding": "hex", "value": value.hex()}
     return value
+
+
+def _portable_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(REPO.resolve()).as_posix()
+    except ValueError:
+        return path.resolve().as_posix()
 
 
 def _write_table(
@@ -79,7 +82,7 @@ def _write_table(
         "table": table,
         "status": "ok",
         "rows": row_count,
-        "path": path.relative_to(REPO).as_posix(),
+        "path": _portable_path(path),
         "sha256": sha256,
         "columns": columns,
         "order_by": primary,
@@ -109,7 +112,7 @@ def export_all(
         json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
-    manifest["manifest"] = manifest_path.relative_to(REPO).as_posix()
+    manifest["manifest"] = _portable_path(manifest_path)
     return manifest
 
 
