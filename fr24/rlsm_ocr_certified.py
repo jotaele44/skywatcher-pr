@@ -2,8 +2,9 @@
 
 This module keeps the extraction implementation in :mod:`fr24.rlsm_ocr_strict`
 but closes the multiprocessing lifecycle and run-ledger edge cases. A worker
-exception, budget cutoff, or unprocessed target always leaves an explicit failed
-processing run; the pool is never joined while it is still accepting work.
+exception, failed frame, budget cutoff, or unprocessed target always leaves an
+explicit failed processing run; the pool is never joined while it is still
+accepting work.
 """
 from __future__ import annotations
 
@@ -18,6 +19,12 @@ from typing import Any
 from fr24 import rlsm_ocr_strict as worker
 
 DB = worker.DB
+REPO = Path(__file__).resolve().parents[1]
+
+
+def _init_worker(repo_root: str) -> None:
+    """Pin the repository root inside spawn-based multiprocessing workers."""
+    worker.REPO = Path(repo_root).resolve()
 
 
 def _finish_run(
@@ -31,9 +38,13 @@ def _finish_run(
     unexpected_error: str | None,
 ) -> dict[str, Any]:
     unprocessed = targets - processed
-    run_status = "completed" if unprocessed == 0 and unexpected_error is None else "failed"
+    run_status = (
+        "completed"
+        if unprocessed == 0 and unexpected_error is None and counts["failed"] == 0
+        else "failed"
+    )
     notes = {
-        "contract": "fail_closed_v2",
+        "contract": "fail_closed_v3",
         "ok": counts["ok"],
         "partial": counts["partial"],
         "failed": counts["failed"],
@@ -70,6 +81,7 @@ def _finish_run(
 def run(
     *,
     db_path: Path = DB,
+    repo_root: Path = REPO,
     workers: int = 4,
     budget_sec: float = 86400.0,
     limit: int = 0,
@@ -77,9 +89,12 @@ def run(
     retry_failed: bool = False,
     reocr_boxes: bool = False,
 ) -> dict[str, Any]:
+    db_path = db_path.resolve()
+    repo_root = repo_root.resolve()
     if not db_path.exists():
         raise FileNotFoundError(f"RLSM DB not found: {db_path}")
 
+    worker.REPO = repo_root
     conn = worker._connect(db_path)
     targets = worker._select_targets(
         conn,
@@ -100,6 +115,8 @@ def run(
             "unprocessed": 0,
             "status": "completed",
             "unexpected_error": None,
+            "database": str(db_path),
+            "repo_root": str(repo_root),
             "elapsed_sec": 0.0,
         }
 
@@ -109,7 +126,11 @@ def run(
     processed = 0
     stopped_for_budget = False
     unexpected_error: str | None = None
-    pool = multiprocessing.Pool(processes=max(1, workers))
+    pool = multiprocessing.Pool(
+        processes=max(1, workers),
+        initializer=_init_worker,
+        initargs=(str(repo_root),),
+    )
     terminated = False
 
     try:
@@ -148,6 +169,8 @@ def run(
         unexpected_error=unexpected_error,
     )
     conn.close()
+    result["database"] = str(db_path)
+    result["repo_root"] = str(repo_root)
     result["elapsed_sec"] = round(time.monotonic() - started, 2)
     return result
 
@@ -161,11 +184,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--retry-failed", action="store_true")
     parser.add_argument("--reocr-boxes", action="store_true")
     parser.add_argument("--db", type=Path, default=DB)
+    parser.add_argument("--repo-root", type=Path, default=REPO)
     args = parser.parse_args(argv)
 
     try:
         result = run(
             db_path=args.db,
+            repo_root=args.repo_root,
             workers=args.workers,
             budget_sec=args.budget_sec,
             limit=args.limit,
