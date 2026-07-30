@@ -14,7 +14,6 @@ from fr24 import (
     rlsm_standalone_icons,
 )
 
-
 REPO = Path(__file__).resolve().parents[1]
 SCHEMA = REPO / "data" / "rlsm" / "schema.sql"
 
