@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sqlite3
 from pathlib import Path
 from typing import Any
 
 from fr24 import rlsm_icons as adjacent
-from fr24 import rlsm_standalone_icons as standalone
+from fr24 import rlsm_standalone_icons as standalone_schema
+from fr24 import rlsm_standalone_icons_certified as standalone
 
 REPO = Path(__file__).resolve().parents[1]
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -51,13 +51,18 @@ def _cluster(conn: sqlite3.Connection, naming_file: Path) -> dict[str, Any]:
 
     representatives: list[dict[str, Any]] = []
     assignments: dict[str, int] = {}
-    for ahash, count, mean_hue, _mean_sat in sorted(rows, key=lambda row: -int(row[1])):
+    ordered_rows = sorted(rows, key=lambda row: -int(row[1]))
+    for ahash, count, mean_hue, _mean_sat in ordered_rows:
         assigned = None
         for representative in representatives:
-            if (
-                _hamming(str(ahash), str(representative["ahash"])) <= HAMMING_THRESHOLD
-                and _hue_gap(mean_hue, representative["hue"]) <= HUE_SPLIT_DEG
-            ):
+            hash_close = (
+                _hamming(str(ahash), str(representative["ahash"]))
+                <= HAMMING_THRESHOLD
+            )
+            hue_close = (
+                _hue_gap(mean_hue, representative["hue"]) <= HUE_SPLIT_DEG
+            )
+            if hash_close and hue_close:
                 assigned = int(representative["id"])
                 representative["members"] += int(count)
                 break
@@ -113,7 +118,8 @@ def _cluster(conn: sqlite3.Connection, naming_file: Path) -> dict[str, Any]:
     }
     naming_file.parent.mkdir(parents=True, exist_ok=True)
     naming_file.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
     )
     return {
         "distinct_hashes": len(rows),
@@ -138,14 +144,12 @@ def run(
 
     adjacent.DB = db_path
     adjacent.REPO = repo_root
-    standalone.DB = db_path
-    standalone.REPO = repo_root
 
     conn = sqlite3.connect(str(db_path), timeout=60.0)
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA busy_timeout = 60000")
     adjacent.ensure_schema(conn)
-    standalone.ensure_schema(conn)
+    standalone_schema.ensure_schema(conn)
     before = _count(conn)
     conn.close()
 
@@ -156,7 +160,12 @@ def run(
     adjacent_delta = after_adjacent - before
     adjacent_reported = int(adjacent_result.get("icons", 0))
 
-    standalone_result = standalone.run(budget_sec=budget_sec, limit=limit)
+    standalone_result = standalone.run(
+        db_path=db_path,
+        repo_root=repo_root,
+        budget_sec=budget_sec,
+        limit=limit,
+    )
     conn = sqlite3.connect(str(db_path), timeout=60.0)
     after_standalone = _count(conn)
     standalone_delta = after_standalone - after_adjacent
