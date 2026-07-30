@@ -38,18 +38,24 @@ def _optional_count(conn: sqlite3.Connection, table: str, where: str = "") -> in
 
 
 def _disk_manifest(corpus_root: Path) -> dict[str, Path]:
-    """Return canonical repository-style paths even when corpus_root is a symlink."""
+    """Return canonical paths for the operator corpus and generic test corpora."""
     if not corpus_root.exists():
         return {}
     manifest: dict[str, Path] = {}
     canonical_prefix = Path("data") / "FR24_baseline"
+    operator_corpus = corpus_root.name == "FR24_baseline"
     for path in sorted(corpus_root.rglob("*")):
         if not path.is_file() or path.suffix.casefold() not in audit.IMAGE_EXTENSIONS:
             continue
         try:
             rel = path.relative_to(REPO).as_posix()
         except ValueError:
-            rel = (canonical_prefix / path.relative_to(corpus_root)).as_posix()
+            corpus_relative = path.relative_to(corpus_root)
+            rel = (
+                (canonical_prefix / corpus_relative).as_posix()
+                if operator_corpus
+                else corpus_relative.as_posix()
+            )
         manifest[rel] = path
     return manifest
 
@@ -112,6 +118,7 @@ def audit_accounting(
             "active_database_rows": len(active_paths),
             "registered_disk_images": len(disk) - len(unregistered),
             "disk_files_absent_from_database": len(unregistered),
+            "database_files_absent_from_disk": len(active_missing),
             "active_database_files_absent_from_disk": len(active_missing),
             "explicit_missing_or_failed_rows": len(explicit_missing),
             "duplicate_rel_paths": duplicate_paths,
@@ -122,6 +129,7 @@ def audit_accounting(
             ),
             "complete": complete,
             "unregistered_sample": unregistered[:25],
+            "missing_on_disk_sample": active_missing[:25],
             "active_missing_on_disk_sample": active_missing[:25],
             "explicit_missing_sample": explicit_missing[:25],
         },
@@ -262,8 +270,13 @@ def build_gates(
     provenance: dict[str, Any],
     gold: dict[str, Any],
 ) -> dict[str, dict[str, Any]]:
+    compatible_accounting = dict(accounting)
+    compatible_accounting.setdefault(
+        "database_files_absent_from_disk",
+        compatible_accounting.get("active_database_files_absent_from_disk", 0),
+    )
     gates = _BASE_BUILD_GATES(
-        accounting,
+        compatible_accounting,
         ocr,
         capabilities,
         geolocation,
