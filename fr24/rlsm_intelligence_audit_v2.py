@@ -9,6 +9,7 @@ from typing import Any
 
 from fr24 import rlsm_intelligence_audit as audit
 
+REPO = Path(__file__).resolve().parents[1]
 DB = audit.DB
 CORPUS = audit.CORPUS
 GOLD = audit.GOLD
@@ -100,6 +101,53 @@ def audit_capabilities(conn: sqlite3.Connection) -> dict[str, Any]:
         gui_frames,
         ingest_ok,
     )
+
+    satellite_tables = (
+        "satellite_pixel_features",
+        "imagery_feature_observations",
+    )
+    satellite_observations = sum(
+        _optional_count(conn, table) for table in satellite_tables
+    )
+    vision_contract = (
+        REPO
+        / "schemas"
+        / "ai_imagery"
+        / "aviation_vision_extraction.v1.schema.json"
+    )
+    capabilities["satellite_pixel_features"] = {
+        "status": (
+            "implemented_unbenchmarked"
+            if satellite_observations
+            else "contract_only_unbenchmarked"
+            if vision_contract.exists()
+            else "not_implemented"
+        ),
+        "observations": satellite_observations,
+        "contract_present": vision_contract.exists(),
+        "certification_dependency": (
+            "separate labeled satellite-imagery gold set and semantic-detector benchmark"
+        ),
+    }
+
+    cross_frame_tables = (
+        "cross_frame_tracks",
+        "cross_frame_associations",
+    )
+    cross_frame_associations = sum(
+        _optional_count(conn, table) for table in cross_frame_tables
+    )
+    capabilities["cross_frame_tracking"] = {
+        "status": (
+            "implemented_unbenchmarked"
+            if cross_frame_associations
+            else "not_implemented"
+        ),
+        "associations": cross_frame_associations,
+        "certification_dependency": (
+            "ordered screenshot sequences with independently reviewed identity links"
+        ),
+    }
     return capabilities
 
 
