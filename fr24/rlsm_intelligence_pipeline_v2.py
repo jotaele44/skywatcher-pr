@@ -159,8 +159,10 @@ def stage_icon_crops(ctx: dict) -> None:
         "--manifest",
         str(REPO / "outputs" / "icon_library_manifest.jsonl"),
     ]
-    if ctx["limit"]:
-        args += ["--limit", str(ctx["limit"])]
+    # A pipeline limit scopes screenshots in upstream extraction stages. At this
+    # point every persisted icon belongs to that bounded screenshot set, so all
+    # current icon rows must be materialized; limiting icon rows would create a
+    # false artifact-accounting failure.
     pipeline.base._run_script(REPO / "scripts" / "rlsm_capture_icon_crops.py", args)
 
 
@@ -270,6 +272,10 @@ def collect_status() -> dict:
         status["icon_scan_failures"] = pipeline.base._count(
             conn,
             "SELECT COUNT(*) FROM icon_scan_receipts WHERE scan_status='failed'",
+        )
+        status["icon_scan_truncations"] = pipeline.base._count(
+            conn,
+            "SELECT COUNT(*) FROM icon_scan_receipts WHERE scan_status='truncated'",
         )
     conn.close()
     return status
