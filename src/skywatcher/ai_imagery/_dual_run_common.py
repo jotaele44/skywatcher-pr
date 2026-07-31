@@ -11,6 +11,7 @@ from typing import Any
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
 _RUN_ID_RE = re.compile(r"^[0-9a-f]{32}$")
+_TRIAL_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]+$")
 _ARTIFACT_ID_RE = re.compile(r"^artifact-sha256-([0-9a-f]{64})$")
 _SECRET_KEY_RE = re.compile(
     r"(?:api[_-]?key|access[_-]?token|refresh[_-]?token|password|secret|authorization|private[_-]?key)",
@@ -76,6 +77,19 @@ def ensure_run_id(value: Any) -> str:
     if not _RUN_ID_RE.fullmatch(text):
         raise DualRunProjectionError("execution receipt run_id must be 32 lowercase hex")
     return text
+
+
+def ensure_trial_id(value: Any, label: str = "trial_id") -> str:
+    """Require one H08-compatible, filesystem-safe path component."""
+    text = str(value or "")
+    if not _TRIAL_ID_RE.fullmatch(text):
+        raise DualRunProjectionError(
+            f"{label} must match ^[a-z0-9][a-z0-9._-]+$"
+        )
+    cleaned = clean_relative_path(text, label)
+    if len(PurePosixPath(cleaned).parts) != 1:
+        raise DualRunProjectionError(f"{label} must be one path component")
+    return cleaned
 
 
 def artifact_sha256(artifact_id: Any) -> str:
@@ -149,14 +163,47 @@ def compute_pins_sha256(campaign: Mapping[str, Any]) -> str:
     return sha256_json(require_mapping(campaign.get("pins"), "campaign pins"))
 
 
-def compute_campaign_id(campaign: Mapping[str, Any]) -> str:
+def canonical_campaign_identity_payload(campaign: Mapping[str, Any]) -> dict[str, Any]:
+    """Canonicalize H08 arrays that are semantic sets before identity hashing."""
     payload = dict(campaign)
     payload.pop("campaign_id", None)
-    return "dual-run-campaign-sha256-" + sha256_json(payload)
+
+    sources = unique_index(
+        require_list(payload.get("source_artifacts"), "campaign source_artifacts"),
+        "artifact_id",
+        "campaign source artifact",
+    )
+    payload["source_artifacts"] = [sources[key] for key in sorted(sources)]
+
+    trials = unique_index(
+        require_list(payload.get("trials"), "campaign trials"),
+        "trial_id",
+        "trial",
+    )
+    for identity in trials:
+        ensure_trial_id(identity, "campaign trial_id")
+    payload["trials"] = [trials[key] for key in sorted(trials)]
+
+    for key, label in (
+        ("required_deterministic_outputs", "campaign required deterministic outputs"),
+        ("required_model_fields", "campaign required model fields"),
+    ):
+        values = [str(value) for value in require_list(payload.get(key), label)]
+        if len(values) != len(set(values)):
+            raise DualRunProjectionError(f"{label} must not contain duplicates")
+        payload[key] = sorted(values)
+    return payload
+
+
+def compute_campaign_id(campaign: Mapping[str, Any]) -> str:
+    return "dual-run-campaign-sha256-" + sha256_json(
+        canonical_campaign_identity_payload(campaign)
+    )
 
 
 def validate_campaign(campaign: Mapping[str, Any], trial_id: str) -> dict[str, Any]:
     record = require_mapping(campaign, "campaign")
+    selected_trial_id = ensure_trial_id(trial_id)
     ensure_revision(record.get("thehub_revision"), "campaign thehub_revision")
     ensure_revision(record.get("skywatcher_revision"), "campaign skywatcher_revision")
     if record.get("campaign_id") != compute_campaign_id(record):
@@ -167,13 +214,28 @@ def validate_campaign(campaign: Mapping[str, Any], trial_id: str) -> dict[str, A
     pins_sha = compute_pins_sha256(record)
     if record.get("pins_sha256") != pins_sha:
         raise DualRunProjectionError("campaign pins_sha256 mismatch")
-    trials = unique_index(require_list(record.get("trials"), "campaign trials"), "trial_id", "trial")
+    trials = unique_index(
+        require_list(record.get("trials"), "campaign trials"), "trial_id", "trial"
+    )
     if len(trials) < 2:
         raise DualRunProjectionError("campaign requires at least two distinct trials")
-    if trial_id not in trials:
+    for identity, trial in trials.items():
+        ensure_trial_id(identity, "campaign trial_id")
+        if set(trial) != {"trial_id"}:
+            raise DualRunProjectionError("campaign trial fields are not exact")
+    if selected_trial_id not in trials:
         raise DualRunProjectionError("trial_id is not declared by campaign")
     reject_secret_or_unsafe_paths(record, path="campaign")
-    return record
+    canonical = dict(record)
+    identity_payload = canonical_campaign_identity_payload(record)
+    for key in (
+        "source_artifacts",
+        "trials",
+        "required_deterministic_outputs",
+        "required_model_fields",
+    ):
+        canonical[key] = identity_payload[key]
+    return canonical
 
 
 def validate_execution_receipt_ref(reference: Mapping[str, Any]) -> dict[str, Any]:
