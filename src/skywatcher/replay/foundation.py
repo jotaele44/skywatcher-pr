@@ -6,10 +6,11 @@ import hashlib
 import json
 import os
 import sqlite3
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 _TRUE_VALUES = {"1", "true", "yes", "on"}
 
@@ -53,7 +54,7 @@ class QueryBounds:
     MAX_LIMIT = 100_000
     MAX_INTERVAL_SECONDS = 7 * 24 * 60 * 60
 
-    def validate(self) -> "QueryBounds":
+    def validate(self) -> QueryBounds:
         for value in (self.start_utc, self.end_utc):
             if value.tzinfo is None or value.utcoffset() is None:
                 raise ReplayQueryError("query timestamps must be timezone-aware")
