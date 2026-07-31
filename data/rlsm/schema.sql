@@ -23,6 +23,11 @@ CREATE TABLE IF NOT EXISTS screenshots (
     ingest_status      TEXT NOT NULL,                     -- 'ok' | 'corrupt' | 'unreadable'
     ingest_error       TEXT,
     ocr_status         TEXT NOT NULL DEFAULT 'pending',   -- 'pending'|'ok'|'partial'|'failed'
+    source_availability TEXT NOT NULL DEFAULT 'present'
+        CHECK (source_availability IN ('present','missing_on_disk','restored','archived')),
+    availability_checked_at TEXT,
+    availability_detail TEXT,
+    availability_source TEXT,
     ingested_at        TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS ix_screenshots_filename     ON screenshots(filename);
@@ -30,6 +35,8 @@ CREATE INDEX IF NOT EXISTS ix_screenshots_month        ON screenshots(month_buck
 CREATE INDEX IF NOT EXISTS ix_screenshots_status       ON screenshots(ingest_status);
 CREATE INDEX IF NOT EXISTS ix_screenshots_ocr_status   ON screenshots(ocr_status);
 CREATE INDEX IF NOT EXISTS ix_screenshots_phash        ON screenshots(phash);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_screenshots_rel_path ON screenshots(rel_path);
+CREATE INDEX IF NOT EXISTS ix_screenshots_source_availability ON screenshots(source_availability);
 
 -- Bookkeeping for each run.
 CREATE TABLE IF NOT EXISTS processing_runs (
