@@ -1,0 +1,34 @@
+# Dependency, cache, build, and generated paths
+.git/
+.github/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+node_modules/
+coverage/
+htmlcov/
+archive/
+artifacts/
+captures/
+data/raw/
+data/cache/
+data/generated/
+datasets/
+evidence/
+exports/
+models/
+output/
+outputs/
+screenshots/
+# Generated imagery tiles (imagery/config.py CACHE_DIR). The imagery/ package
+# itself is source — server.py and the provider clients — and must be scanned.
+tile_cache/
+*.gpkg
+*.geojson
+*.parquet
