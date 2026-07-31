@@ -8,15 +8,6 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft202012Validator
 
-from skywatcher.ai_imagery._dual_run_common import DualRunProjectionError
-from skywatcher.ai_imagery.dual_run_projection import (
-    S05_OUTPUT_IDS,
-    build_candidate_lane_projection_input,
-    build_legacy_lane_projection_input,
-    project_s05_deterministic_outputs,
-    write_dual_run_evidence_staging,
-)
-from skywatcher.ai_imagery.legacy_shadow_export import build_legacy_shadow_export
 from s06_support import (
     CREATED_AT,
     SKYWATCHER_REVISION,
@@ -27,6 +18,15 @@ from s06_support import (
     legacy_normalized_records,
     s05_package,
 )
+from skywatcher.ai_imagery._dual_run_common import DualRunProjectionError
+from skywatcher.ai_imagery.dual_run_projection import (
+    S05_OUTPUT_IDS,
+    build_candidate_lane_projection_input,
+    build_legacy_lane_projection_input,
+    project_s05_deterministic_outputs,
+    write_dual_run_evidence_staging,
+)
+from skywatcher.ai_imagery.legacy_shadow_export import build_legacy_shadow_export
 
 
 def _legacy_export() -> dict:
