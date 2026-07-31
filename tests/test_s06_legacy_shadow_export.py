@@ -8,13 +8,6 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft202012Validator
 
-from skywatcher.ai_imagery._dual_run_common import DualRunProjectionError
-from skywatcher.ai_imagery.dual_run_projection import project_s05_deterministic_outputs
-from skywatcher.ai_imagery.legacy_shadow_export import (
-    build_legacy_shadow_export,
-    canonical_legacy_shadow_export_bytes,
-    normalize_legacy_csv_checkpoint_and_logs,
-)
 from s06_support import (
     CREATED_AT,
     SKYWATCHER_REVISION,
@@ -24,6 +17,13 @@ from s06_support import (
     legacy_model_fields,
     legacy_normalized_records,
     s05_package,
+)
+from skywatcher.ai_imagery._dual_run_common import DualRunProjectionError
+from skywatcher.ai_imagery.dual_run_projection import project_s05_deterministic_outputs
+from skywatcher.ai_imagery.legacy_shadow_export import (
+    build_legacy_shadow_export,
+    canonical_legacy_shadow_export_bytes,
+    normalize_legacy_csv_checkpoint_and_logs,
 )
 
 
