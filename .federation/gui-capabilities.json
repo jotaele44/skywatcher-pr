@@ -1,0 +1,157 @@
+{
+  "schema_version": "prii.gui-capability/v1",
+  "repository": "jotaele44/skywatcher-pr",
+  "policy": {
+    "mode": "ratchet",
+    "baseline": ".federation/gui-parity-baseline.json",
+    "require_discoverable_gui": true,
+    "require_e2e": true,
+    "terminal_free_user_path": true
+  },
+  "discovery": {
+    "backend_roots": [
+      "server/backend"
+    ],
+    "production_roots": [
+      "src/skywatcher",
+      "fr24",
+      "desktop",
+      "maintenance"
+    ],
+    "analysis_roots": [
+      "pipeline",
+      "imagery",
+      "scripts",
+      "tools"
+    ],
+    "frontend_roots": [
+      "frontend/src"
+    ],
+    "frontend_capability_roots": [
+      "frontend/src/pages"
+    ],
+    "frontend_api_roots": [
+      "frontend/src/api",
+      "frontend/src/lib/SkywatcherData.jsx"
+    ],
+    "route_files": [
+      "frontend/src/App.jsx"
+    ],
+    "navigation_files": [
+      "frontend/src/components/skywatcher/Sidebar.jsx"
+    ],
+    "implicit_routes": [],
+    "exclude": [
+      "**/tests/**",
+      "**/*.test.*",
+      "**/*.spec.*",
+      "**/components/ui/**",
+      "scripts/check_gui_parity.py"
+    ]
+  },
+  "capabilities": [
+    {
+      "id": "airspace-intelligence-console",
+      "classification": "analysis",
+      "status": "active",
+      "requires_terminal": false,
+      "backend": {
+        "files": [
+          "server/backend/main.py"
+        ],
+        "endpoints": [
+          "GET /api/apps/public-settings",
+          "GET /api/auth/me",
+          "GET /api/entities/{entity_name}",
+          "POST /api/entities/{entity_name}/filter",
+          "GET /api/entities/{entity_name}/{entity_id}",
+          "POST /api/entities/{entity_name}",
+          "PATCH /api/entities/{entity_name}/{entity_id}"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/",
+          "/observations",
+          "/aircraft",
+          "/fr24",
+          "/routes",
+          "/infrastructure",
+          "/airports",
+          "/review",
+          "/export",
+          "/readiness",
+          "/calibration"
+        ],
+        "e2e_routes": [
+          "/",
+          "/observations",
+          "/aircraft",
+          "/fr24",
+          "/routes",
+          "/infrastructure",
+          "/airports",
+          "/review",
+          "/export",
+          "/readiness",
+          "/calibration"
+        ],
+        "components": [
+          "frontend/src/api/federationClient.js",
+          "frontend/src/lib/AuthContext.jsx",
+          "frontend/src/lib/SkywatcherData.jsx",
+          "frontend/src/pages/Dashboard.jsx",
+          "frontend/src/pages/Observations.jsx",
+          "frontend/src/pages/Aircraft.jsx",
+          "frontend/src/pages/FR24Intake.jsx",
+          "frontend/src/pages/Routes.jsx",
+          "frontend/src/pages/Infrastructure.jsx",
+          "frontend/src/pages/Airports.jsx",
+          "frontend/src/pages/ManualReview.jsx",
+          "frontend/src/pages/ExportCenter.jsx",
+          "frontend/src/pages/Readiness.jsx",
+          "frontend/src/pages/Calibration.jsx"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_flight_fusion_endpoints.py",
+          "tests/test_manual_review_queue.py",
+          "tests/test_fr24_dashboard_data.py",
+          "tests/test_satim_calibration.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      }
+    },
+    {
+      "id": "service-health",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Health probes support CI, launch diagnostics, and supervision rather than a separate user workflow.",
+      "backend": {
+        "files": [
+          "server/backend/main.py"
+        ],
+        "endpoints": [
+          "GET /health",
+          "GET /api/health"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_server_smoke.py"
+        ]
+      }
+    }
+  ],
+  "exceptions": []
+}
