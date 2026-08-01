@@ -150,13 +150,15 @@ def process_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str,
                     """INSERT INTO ocr_observations
                        (screenshot_id, run_id, zone, bbox_x, bbox_y, bbox_w, bbox_h,
                         raw_text, raw_lines_json, confidence_mean, confidence_min, n_words,
-                        engine, engine_version, psm, ocr_status, ocr_error, observed_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'tesseract', ?, ?, ?, ?, ?)""",
+                        engine, engine_version, psm, preprocess, preprocess_scale,
+                        ocr_status, ocr_error, observed_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'tesseract', ?, ?, ?, ?, ?, ?, ?)""",
                     (sid, run_id, zone.name, bbox[0], bbox[1],
                      bbox[2] - bbox[0], bbox[3] - bbox[1],
                      raw_text, json.dumps(lines_json, ensure_ascii=False),
                      conf_mean, conf_min, n_words,
-                     engine_version, psm, z_status, None, _iso_now()),
+                     engine_version, psm, mode, scale,
+                     z_status, None, _iso_now()),
                 )
                 n_obs += 1
             except sqlite3.IntegrityError:

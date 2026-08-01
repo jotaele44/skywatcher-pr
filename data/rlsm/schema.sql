@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS ocr_observations (
     engine           TEXT NOT NULL DEFAULT 'tesseract',
     engine_version   TEXT,
     psm              INTEGER,
+    preprocess       TEXT,                                 -- fr24.rlsm_preprocess mode: 'none'|'high_contrast'|'label_mask'
+    preprocess_scale REAL,                                 -- upscale applied before OCR; word boxes already divide it out
     ocr_status       TEXT NOT NULL,                        -- 'ok'|'empty'|'failed'
     ocr_error        TEXT,
     observed_at      TEXT NOT NULL
