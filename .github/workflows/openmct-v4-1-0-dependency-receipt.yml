@@ -80,10 +80,12 @@ jobs:
         with:
           name: openmct-v4-1-0-dependency-receipt
           if-no-files-found: warn
+          include-hidden-files: true
           retention-days: 30
           path: |
             outputs/openmct_v4_1_0_dependency_receipt.zip
             outputs/openmct_v4_1_0_dependency_receipt/**
+            outputs/openmct_v4_1_0_dependency_receipt/source_evidence/.nvmrc
             openmct_v4_1_0_dependency_receipt.zip.sha256
             operator_stdout.txt
             operator_stderr.txt
