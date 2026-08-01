@@ -146,11 +146,13 @@ def _validate_observation(
                 "provider-rendered frame observation requires "
                 "product_type=provider_rendered_frame"
             )
-    elif sensor_type in {"geomagnetic_timeseries", "weather_timeseries"}:
-        if not {"parameter", "value", "unit"} <= payload.keys():
-            raise ReplayError(
-                "timeseries payload requires parameter, value and unit"
-            )
+    elif (
+        sensor_type in {"geomagnetic_timeseries", "weather_timeseries"}
+        and not {"parameter", "value", "unit"} <= payload.keys()
+    ):
+        raise ReplayError(
+            "timeseries payload requires parameter, value and unit"
+        )
 
     result = dict(value)
     result["source_id"] = source_id
