@@ -15,7 +15,7 @@ Usage (from the repo root):
     ./run-rlsm.sh --limit 200          # smoke test over 200 images
     ./run-rlsm.sh --stage pins         # re-run one stage
     ./run-rlsm.sh --from icons         # resume from a stage onward
-    ./run-rlsm.sh --skip-icons         # OCR + pins + exports only
+    ./run-rlsm.sh --skip-icons         # skip generic labeled-POI glyphs
 
 Every stage is idempotent and resumable: OCR only touches screenshots still
 marked pending, extractors only touch screenshots with no derived rows yet, and
@@ -41,12 +41,15 @@ SCHEMA = REPO / "data" / "rlsm" / "schema.sql"
 BASELINE = REPO / "data" / "FR24_baseline"
 OUTPUTS = REPO / "outputs"
 REPORT = OUTPUTS / "rlsm_run_report.md"
+SPATIAL_MARKER_VERSION = "rlsm-aircraft-marker-v1"
+SPATIAL_GEOREF_VERSION = "rlsm-spatial-georef-v1"
+MAX_POSITION_ERROR_M = 500
 
 # Stage order. `blob` (the ~500k-candidate ground-feature pass) is deliberately
 # not in the default set — see DEFAULT_STAGES.
 ALL_STAGES = [
     "preflight", "inventory", "ocr", "aircraft", "pins", "icons",
-    "geocode", "review", "export", "report",
+    "aircraft_markers", "georeference", "geocode", "review", "export", "report",
 ]
 
 # `unlabeled` is available as an explicit --stage but excluded by default: it
@@ -122,7 +125,10 @@ def preflight(ctx: dict) -> dict:
     # Everything downstream of the sqlite — pins, review, export, report — runs
     # off the DB alone, which is the operator-Mac / CI split described in
     # docs/SCREENSHOT_DATA_STRATEGY.md §6.
-    needs_pixels = bool({"inventory", "ocr", "icons", "unlabeled"} & set(ctx["stages"]))
+    needs_pixels = bool(
+        {"inventory", "ocr", "icons", "aircraft_markers", "unlabeled"}
+        & set(ctx["stages"])
+    )
     info["needs_pixels"] = needs_pixels
 
     # 1) Corpus reachable.
@@ -197,6 +203,11 @@ def preflight(ctx: dict) -> dict:
             from fr24.rlsm_icons import ensure_schema
             ensure_schema(conn)
             info["icon_observations"] = "created"
+        if not ctx["dry_run"] and _table_exists(conn, "aircraft_observations"):
+            from fr24.rlsm_spatial_schema import ensure_spatial_schema
+
+            ensure_spatial_schema(conn)
+            info["spatial_truth_schema"] = "present"
 
     # 5) Word-box migration needed?
     if conn is not None and _table_exists(conn, "ocr_observations"):
@@ -285,6 +296,17 @@ def stage_icons(ctx: dict) -> None:
     _run_script(REPO / "scripts" / "rlsm_icon_cluster.py", [])
 
 
+def stage_aircraft_markers(ctx: dict) -> None:
+    args = ["--budget-sec", str(ctx["budget_sec"])]
+    if ctx["limit"]:
+        args += ["--limit", str(ctx["limit"])]
+    _run_module("fr24.rlsm_aircraft_markers", args)
+
+
+def stage_georeference(ctx: dict) -> None:
+    _run_module("fr24.rlsm_georeference", [])
+
+
 def stage_geocode(ctx: dict) -> None:
     _run_script(REPO / "scripts" / "rlsm_geocode_unlabeled.py", [])
 
@@ -318,6 +340,8 @@ STAGE_FUNCS: dict = {
     "aircraft":  stage_aircraft,
     "pins":      stage_pins,
     "icons":     stage_icons,
+    "aircraft_markers": stage_aircraft_markers,
+    "georeference": stage_georeference,
     "geocode":   stage_geocode,
     "review":    stage_review,
     "export":    stage_export,
@@ -349,6 +373,131 @@ def collect_status() -> dict:
         conn, "SELECT COUNT(*) FROM ocr_observations "
               "WHERE COALESCE(raw_lines_json,'') NOT IN ('','[]')")
     st["aircraft_observations"] = _count(conn, "SELECT COUNT(*) FROM aircraft_observations")
+    st["aircraft_target_frames"] = _count(
+        conn, "SELECT COUNT(DISTINCT screenshot_id) FROM aircraft_observations"
+    )
+    st["aircraft_positions"] = 0
+    if _table_exists(conn, "aircraft_marker_frames"):
+        st["aircraft_marker_frames"] = {
+            row[0]: row[1]
+            for row in conn.execute(
+                """SELECT status, COUNT(*) FROM aircraft_marker_frames
+                   WHERE detector_version=?
+                     AND EXISTS (
+                         SELECT 1 FROM aircraft_observations a
+                         WHERE a.screenshot_id=aircraft_marker_frames.screenshot_id
+                     )
+                   GROUP BY status""",
+                (SPATIAL_MARKER_VERSION,),
+            )
+        }
+        st["aircraft_marker_candidates"] = _count(
+            conn,
+            """SELECT COUNT(*) FROM aircraft_marker_detections d
+               JOIN aircraft_marker_frames f USING(marker_frame_id)
+               WHERE f.detector_version=?
+                 AND EXISTS (
+                     SELECT 1 FROM aircraft_observations a
+                     WHERE a.screenshot_id=f.screenshot_id
+                 )""",
+            (SPATIAL_MARKER_VERSION,),
+        )
+        marker_total = sum(st["aircraft_marker_frames"].values())
+        st["aircraft_marker_accounting_complete"] = (
+            marker_total == st["aircraft_target_frames"]
+        )
+    if _table_exists(conn, "screenshot_georeferences"):
+        st["georeferences"] = {
+            row[0]: row[1]
+            for row in conn.execute(
+                """SELECT status, COUNT(*) FROM screenshot_georeferences
+                   WHERE georef_version=?
+                     AND EXISTS (
+                         SELECT 1 FROM aircraft_observations a
+                         WHERE a.screenshot_id=screenshot_georeferences.screenshot_id
+                     )
+                   GROUP BY status""",
+                (SPATIAL_GEOREF_VERSION,),
+            )
+        }
+        st["georeference_accounting_complete"] = (
+            sum(st["georeferences"].values()) == st["aircraft_target_frames"]
+        )
+        st["one_anchor_georeferences"] = _count(
+            conn, "SELECT COUNT(*) FROM screenshot_georeferences "
+                  "WHERE georef_version=? AND status='located' "
+                  "AND method='one_anchor_zoom_rung' "
+                  "AND EXISTS (SELECT 1 FROM aircraft_observations a "
+                  "WHERE a.screenshot_id=screenshot_georeferences.screenshot_id)",
+            (SPATIAL_GEOREF_VERSION,),
+        )
+        recoverable_sql = """FROM screenshot_georeferences g
+            WHERE g.georef_version=? AND g.anchor_count >= 1
+              AND EXISTS (
+                  SELECT 1 FROM aircraft_marker_frames f
+                  WHERE f.screenshot_id=g.screenshot_id
+                    AND f.detector_version=? AND f.status='selected'
+              )"""
+        st["scale_bar_recoverable_frames"] = _count(
+            conn,
+            "SELECT COUNT(*) " + recoverable_sql,
+            (SPATIAL_GEOREF_VERSION, SPATIAL_MARKER_VERSION),
+        )
+        st["scale_bar_unresolved_recoverable_frames"] = _count(
+            conn,
+            "SELECT COUNT(*) " + recoverable_sql + " AND g.status != 'located'",
+            (SPATIAL_GEOREF_VERSION, SPATIAL_MARKER_VERSION),
+        )
+        recoverable = st["scale_bar_recoverable_frames"]
+        unresolved = st["scale_bar_unresolved_recoverable_frames"]
+        st["scale_bar_unresolved_recoverable_rate"] = (
+            unresolved / recoverable if recoverable else 0.0
+        )
+        st["scale_bar_ocr_recommended"] = (
+            st["scale_bar_unresolved_recoverable_rate"] > 0.15
+        )
+    if (
+        _table_exists(conn, "aircraft_marker_detections")
+        and _table_exists(conn, "screenshot_georeferences")
+    ):
+        st["aircraft_positions"] = _count(
+            conn,
+            """SELECT COUNT(*) FROM aircraft_observations a
+               JOIN aircraft_marker_frames f
+                 ON f.screenshot_id=a.screenshot_id
+                AND f.detector_version=a.marker_method
+                AND f.status='selected'
+               JOIN aircraft_marker_detections d
+                 ON d.marker_frame_id=f.marker_frame_id
+                AND d.aircraft_obs_id=a.aircraft_obs_id AND d.selected=1
+               JOIN screenshot_georeferences g
+                 ON g.screenshot_id=a.screenshot_id
+                AND g.georef_version=? AND g.status='located'
+                AND g.method=a.position_method
+               WHERE a.marker_method=?
+                 AND a.position_lat IS NOT NULL AND a.position_lon IS NOT NULL
+                 AND a.position_error_m IS NOT NULL
+                 AND a.position_error_m <= ?
+                 AND g.estimated_error_m IS NOT NULL
+                 AND g.estimated_error_m <= ?""",
+            (
+                SPATIAL_GEOREF_VERSION,
+                SPATIAL_MARKER_VERSION,
+                MAX_POSITION_ERROR_M,
+                MAX_POSITION_ERROR_M,
+            ),
+        )
+    if _table_exists(conn, "zoom_ladder_rungs"):
+        st["zoom_rungs"] = _count(
+            conn,
+            "SELECT COUNT(*) FROM zoom_ladder_rungs WHERE georef_version=?",
+            (SPATIAL_GEOREF_VERSION,),
+        )
+        st["transfer_eligible_zoom_rungs"] = _count(
+            conn, "SELECT COUNT(*) FROM zoom_ladder_rungs "
+                  "WHERE georef_version=? AND eligible_for_transfer=1",
+            (SPATIAL_GEOREF_VERSION,),
+        )
 
     st["labeled_pins"] = _count(conn, "SELECT COUNT(*) FROM labeled_pins")
     st["labeled_pins_located"] = _count(
@@ -401,6 +550,47 @@ def build_report() -> str:
           f"| OCR observations | {st['ocr_observations']:,} |",
           f"| ...carrying word boxes | {st['ocr_with_word_boxes']:,} |",
           f"| aircraft observations | {st['aircraft_observations']:,} |", ""]
+
+    marker_statuses = st.get("aircraft_marker_frames") or {}
+    georef_statuses = st.get("georeferences") or {}
+    if marker_statuses or georef_statuses:
+        marker_total = sum(marker_statuses.values())
+        georef_total = sum(georef_statuses.values())
+        L += ["## Aircraft spatial truth", "",
+              "| metric | value |", "|---|---|",
+              f"| marker frames accounted | {marker_total:,} / "
+              f"{st.get('aircraft_target_frames', 0):,} |",
+              f"| marker accounting complete | "
+              f"{'yes' if st.get('aircraft_marker_accounting_complete') else 'no'} |",
+              f"| selected marker frames | {marker_statuses.get('selected', 0):,} |",
+              f"| ambiguous marker frames | "
+              f"{marker_statuses.get('ambiguous_candidates', 0) + marker_statuses.get('ambiguous_observation', 0):,} |",
+              f"| marker candidates preserved | {st.get('aircraft_marker_candidates', 0):,} |",
+              f"| screenshot georeferences accounted | {georef_total:,} |",
+              f"| georeference accounting complete | "
+              f"{'yes' if st.get('georeference_accounting_complete') else 'no'} |",
+              f"| located screenshot georeferences | {georef_statuses.get('located', 0):,} |",
+              f"| ...recovered by one anchor + zoom rung | "
+              f"{st.get('one_anchor_georeferences', 0):,} |",
+              f"| relative zoom rungs | {st.get('zoom_rungs', 0):,} |",
+              f"| ...eligible for evidence transfer | "
+              f"{st.get('transfer_eligible_zoom_rungs', 0):,} |",
+              f"| aircraft observations with <=500 m position | "
+              f"{st.get('aircraft_positions', 0):,} |", "",
+              "> Ambiguous candidates and unsupported zoom rungs remain unlocated.",
+              "> `heading_deg` is not overwritten by glyph rotation.", ""]
+        recoverable = st.get("scale_bar_recoverable_frames", 0)
+        unresolved = st.get("scale_bar_unresolved_recoverable_frames", 0)
+        rate = st.get("scale_bar_unresolved_recoverable_rate", 0.0)
+        decision = (
+            "dedicated scale-bar OCR recommended"
+            if st.get("scale_bar_ocr_recommended")
+            else "dedicated scale-bar OCR remains deferred"
+        )
+        L += ["### Scale-bar deferral gate", "",
+              f"{unresolved:,} of {recoverable:,} otherwise-recoverable frames "
+              f"remain unresolved ({rate:.1%}); **{decision}**. The trigger is "
+              "strictly greater than 15%.", ""]
 
     total = st["labeled_pins"] or 0
     located = st["labeled_pins_located"] or 0

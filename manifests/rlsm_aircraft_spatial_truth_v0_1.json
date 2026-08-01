@@ -1,0 +1,106 @@
+{
+  "capability_id": "rlsm_aircraft_spatial_truth_v0_1",
+  "status": "implemented_operator_run_pending",
+  "coordinate_contract": {
+    "pixel_frame": "exif_transposed_source_image",
+    "origin": "upper_left",
+    "x_axis": "right",
+    "y_axis": "down",
+    "rotation_zero": "image_up",
+    "rotation_direction": "clockwise",
+    "rotation_nullable_when_direction_unresolved": true,
+    "heading_field_overwritten": false,
+    "maximum_located_error_m": 500
+  },
+  "marker_contract": {
+    "detector_version": "rlsm-aircraft-marker-v1",
+    "selection_confidence_min": 0.78,
+    "selection_margin_min": 0.1,
+    "terminal_statuses": [
+      "selected",
+      "ambiguous_candidates",
+      "ambiguous_observation",
+      "no_marker",
+      "missing_source",
+      "unreadable"
+    ]
+  },
+  "georeference_contract": {
+    "georef_version": "rlsm-spatial-georef-v1",
+    "multi_anchor_minimum": 2,
+    "maximum_axis_scale_disagreement": 0.35,
+    "minimum_affine_error_m": 50,
+    "minimum_one_anchor_error_m": 100
+  },
+  "zoom_contract": {
+    "scope": "relative_per_viewport_profile",
+    "power_of_two_log2_tolerance": 0.18,
+    "minimum_transfer_support": 3,
+    "evidence_only_rungs_assigned_to_frames": false,
+    "one_anchor_source": "same_near_duplicate_group_independent_multi_anchor_fit"
+  },
+  "uncertainty_contract": {
+    "position_confidence": "min(marker_confidence,georeference_confidence)",
+    "position_error": "hypot(georeference_error_m,centroid_pixel_uncertainty_times_scale_m_per_px)"
+  },
+  "pipeline_stages": [
+    "aircraft_markers",
+    "georeference"
+  ],
+  "storage": {
+    "schema": "data/rlsm/schema.sql",
+    "migration": "fr24/rlsm_spatial_schema.py",
+    "observation_table": "aircraft_observations",
+    "accounting_table": "aircraft_marker_frames",
+    "candidate_table": "aircraft_marker_detections",
+    "georeference_table": "screenshot_georeferences",
+    "zoom_table": "zoom_ladder_rungs"
+  },
+  "implementation": {
+    "marker_detector": "fr24/rlsm_aircraft_markers.py",
+    "georeference": "fr24/rlsm_georeference.py",
+    "pipeline": "fr24/rlsm_pipeline.py",
+    "exporter": "fr24/rlsm_export.py",
+    "backend": "server/backend/main.py",
+    "data_provider": "frontend/src/lib/SkywatcherData.jsx",
+    "page": "frontend/src/pages/SpatialTruth.jsx",
+    "route": "/spatial-truth",
+    "route_file": "frontend/src/App.jsx",
+    "navigation_file": "frontend/src/components/skywatcher/Sidebar.jsx"
+  },
+  "api_entities": [
+    "AirspaceObservations",
+    "AircraftProfiles",
+    "RLSMSpatialObservations",
+    "RLSMSpatialFrames",
+    "RLSMZoomRungs"
+  ],
+  "exports": [
+    "outputs/aircraft_observations.csv",
+    "outputs/aircraft_marker_frames.csv",
+    "outputs/aircraft_marker_detections.csv",
+    "outputs/screenshot_georeferences.csv",
+    "outputs/zoom_ladder_rungs.csv"
+  ],
+  "acceptance": {
+    "terminal_marker_accounting_required": true,
+    "ambiguous_binding_fails_closed": true,
+    "unsupported_zoom_unassigned": true,
+    "static_projected_anchors_train_zoom": false,
+    "one_anchor_transfer_requires_independent_multi_anchor_source": true,
+    "gold_sample_false_bindings": 0,
+    "maximum_located_error_m": 500
+  },
+  "deferred": {
+    "scale_bar_ocr": {
+      "trigger": "unresolved_otherwise_recoverable_rate_gt_0.15"
+    },
+    "track_polyline": true
+  },
+  "tests": [
+    "tests/test_rlsm_aircraft_spatial_truth.py",
+    "tests/test_rlsm_spatial_backend.py",
+    "tests/test_rlsm_spatial_capability.py",
+    "frontend/src/pages/SpatialTruth.test.jsx"
+  ]
+}
