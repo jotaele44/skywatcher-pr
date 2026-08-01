@@ -1,6 +1,10 @@
 name: Open MCT v4.1.0 dependency receipt
 
 on:
+  pull_request:
+    paths:
+      - .github/workflows/openmct-v4-1-0-dependency-receipt.yml
+      - scripts/build_openmct_v4_1_0_receipt.py
   push:
     branches:
       - codex/openmct-bounded-reuse-foundation-v0-3
