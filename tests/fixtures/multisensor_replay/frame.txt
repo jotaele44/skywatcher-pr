@@ -1,1 +1,1 @@
-synthetic provider-rendered frame fixture\n
+synthetic provider-rendered radar frame
