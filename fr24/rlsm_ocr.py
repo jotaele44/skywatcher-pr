@@ -185,10 +185,10 @@ def process_screenshot(
                     INSERT INTO ocr_observations
                         (screenshot_id, run_id, zone, bbox_x, bbox_y, bbox_w, bbox_h,
                          raw_text, raw_lines_json, confidence_mean, confidence_min,
-                         n_words, engine, engine_version, psm, ocr_status,
-                         ocr_error, observed_at)
+                         n_words, engine, engine_version, psm, preprocess,
+                         preprocess_scale, ocr_status, ocr_error, observed_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'tesseract',
-                            ?, ?, ?, ?, ?)
+                            ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         sid,
@@ -205,6 +205,8 @@ def process_screenshot(
                         n_words,
                         engine_version,
                         psm,
+                        mode,
+                        scale,
                         zone_status,
                         None,
                         _iso_now(),
