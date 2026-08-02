@@ -63,20 +63,45 @@ def test_every_image_has_exactly_one_screenshots_row():
         for p in sub.iterdir()
         if p.is_file() and not p.name.endswith(".sidecar.json")
     )
-    n_disk = len(files_on_disk)
+    # A hash-mismatched source may still occupy its pathname while being
+    # correctly classified as unavailable. Exclude every non-eligible database
+    # path from the disk-side count rather than treating pathname existence as
+    # verified source availability.
+    unavailable_paths = {
+        (REPO / rel_path).resolve()
+        for (rel_path,) in c.execute(
+            "SELECT rel_path FROM screenshots "
+            "WHERE source_availability NOT IN ('present','restored')"
+        )
+    }
+    n_eligible_disk = sum(
+        path.resolve() not in unavailable_paths for path in files_on_disk
+    )
 
-    # screenshots rows that are present-on-disk (rel_path not under _missing/)
     n_present_rows = c.execute(
-        "SELECT COUNT(*) FROM screenshots WHERE rel_path NOT LIKE '%/_missing/%'"
+        "SELECT COUNT(*) FROM screenshots "
+        "WHERE source_availability IN ('present','restored')"
     ).fetchone()[0]
-    assert n_present_rows == n_disk, (
-        f"screenshots.present_rows ({n_present_rows}) != on-disk images ({n_disk})"
+    assert n_present_rows == n_eligible_disk, (
+        f"screenshots.available_rows ({n_present_rows}) != "
+        f"eligible on-disk images ({n_eligible_disk})"
     )
     # SHA-256 uniqueness in screenshots table
     n_dups = c.execute(
         "SELECT COUNT(*) FROM (SELECT sha256 FROM screenshots GROUP BY sha256 HAVING COUNT(*) > 1)"
     ).fetchone()[0]
     assert n_dups == 0, f"{n_dups} duplicate sha256 in screenshots"
+
+
+def test_screenshot_rel_path_is_unique_and_indexed():
+    c = _conn()
+    indexes = {row[1] for row in c.execute("PRAGMA index_list(screenshots)")}
+    assert "ux_screenshots_rel_path" in indexes
+    duplicate = c.execute(
+        "SELECT rel_path, COUNT(*) FROM screenshots "
+        "GROUP BY rel_path HAVING COUNT(*) > 1 LIMIT 1"
+    ).fetchone()
+    assert duplicate is None, f"duplicate screenshots.rel_path: {duplicate}"
 
 
 def test_every_processed_screenshot_has_ocr_attempt():
@@ -132,12 +157,10 @@ def test_labeled_vs_unlabeled_separated():
 def test_failed_files_recorded():
     """Invariant 5: anything that failed to ingest is in screenshots with non-ok status."""
     c = _conn()
-    n_failed = c.execute(
-        "SELECT COUNT(*) FROM screenshots WHERE ingest_status IN ('corrupt','unreadable')"
-    ).fetchone()[0]
-    # We expect at least 1 (the known-missing file flagged in manifest)
-    assert n_failed >= 1, "expected at least 1 failed-file row (missing-on-disk)"
-    # All failed rows should have an ingest_error message
+    # Missing-on-disk is a current availability state, not a historical
+    # ingestion failure. A corpus may legitimately have zero corrupt/unreadable
+    # rows, but any such row must retain its diagnostic.
+    # All failed rows should have an ingest_error message.
     rows_missing_err = c.execute("""
         SELECT screenshot_id FROM screenshots
         WHERE ingest_status IN ('corrupt','unreadable')

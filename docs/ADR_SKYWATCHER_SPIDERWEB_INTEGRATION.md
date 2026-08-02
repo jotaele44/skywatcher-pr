@@ -2,7 +2,22 @@
 
 ## Status
 
-Accepted.
+Accepted. Reaffirmed 2026-07-29 after a cross-repo audit.
+
+### 2026-07-29 — the rejected connector existed anyway, and is now removed
+
+A bespoke direct connector — the option this ADR rejects by name — had grown in
+practice: `spiderweb-pr` ingested `outputs/fr24_selected_export.csv`, a
+repo-internal artifact of this repo's `scripts/fr24_vision_ingest.py`, hand-copied
+between sibling checkouts with no contract validation. Meanwhile the sanctioned
+adapter output (`fr24_spiderweb_intake_candidates.jsonl`) had no consumer, so the
+designed path was dead wiring and the undesigned one was load-bearing.
+
+spiderweb-pr has retired that ingestion along with the rest of its airspace
+surface (see `spiderweb-pr/docs/REPO_BOUNDARY.md`). This repo is now the
+unambiguous owner of FR24/ADS-B ingestion, aircraft intelligence and RLSM route
+mining. The "Required Sequence" below is unchanged and still gates any future
+Spiderweb consumer path.
 
 ## Decision
 

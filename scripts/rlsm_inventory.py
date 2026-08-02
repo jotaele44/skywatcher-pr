@@ -87,6 +87,26 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
     """Create tables if they do not exist."""
     if SCHEMA_SQL.exists():
         conn.executescript(SCHEMA_SQL.read_text())
+    required = {
+        "source_availability",
+        "availability_checked_at",
+        "availability_detail",
+        "availability_source",
+    }
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(screenshots)")}
+    missing = sorted(required - columns)
+    indexes = {row[1] for row in conn.execute("PRAGMA index_list(screenshots)")}
+    missing_indexes = sorted({"ux_screenshots_rel_path"} - indexes)
+    if missing or missing_indexes:
+        details = []
+        if missing:
+            details.append("columns=" + ",".join(missing))
+        if missing_indexes:
+            details.append("indexes=" + ",".join(missing_indexes))
+        raise RuntimeError(
+            "RLSM source-availability migration required before inventory; "
+            + "; ".join(details)
+        )
     conn.commit()
 
 
@@ -114,8 +134,8 @@ def _ingest_file(conn: sqlite3.Connection, path: Path, rel_path: str,
         size_bytes = path.stat().st_size
     except OSError as exc:
         conn.execute(
-            "INSERT INTO screenshots (sha256, filename, rel_path, month_bucket, filename_ts, ext, size_bytes, ingest_status, ingest_error, ingested_at) VALUES (?, ?, ?, ?, ?, ?, 0, 'unreadable', ?, ?)",
-            (f"unknown_{name}", name, rel_path, month_bucket, fn_ts, ext, str(exc)[:200], ts),
+            "INSERT INTO screenshots (sha256, filename, rel_path, month_bucket, filename_ts, ext, size_bytes, ingest_status, ingest_error, source_availability, availability_checked_at, availability_detail, availability_source, ingested_at) VALUES (?, ?, ?, ?, ?, ?, 0, 'unreadable', ?, 'present', ?, 'stat_error', 'inventory', ?)",
+            (f"unknown_{name}", name, rel_path, month_bucket, fn_ts, ext, str(exc)[:200], ts, ts),
         )
         conn.commit()
         return {"ok": False, "reason": "stat_error", "path": str(path)}
@@ -125,8 +145,8 @@ def _ingest_file(conn: sqlite3.Connection, path: Path, rel_path: str,
         sha = sha256_of(path)
     except OSError as exc:
         conn.execute(
-            "INSERT INTO screenshots (sha256, filename, rel_path, month_bucket, filename_ts, ext, size_bytes, ingest_status, ingest_error, ingested_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'unreadable', ?, ?)",
-            (f"unknown_{name}", name, rel_path, month_bucket, fn_ts, ext, size_bytes, str(exc)[:200], ts),
+            "INSERT INTO screenshots (sha256, filename, rel_path, month_bucket, filename_ts, ext, size_bytes, ingest_status, ingest_error, source_availability, availability_checked_at, availability_detail, availability_source, ingested_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'unreadable', ?, 'present', ?, 'read_error', 'inventory', ?)",
+            (f"unknown_{name}", name, rel_path, month_bucket, fn_ts, ext, size_bytes, str(exc)[:200], ts, ts),
         )
         conn.commit()
         return {"ok": False, "reason": "read_error", "path": str(path)}
@@ -160,11 +180,14 @@ def _ingest_file(conn: sqlite3.Connection, path: Path, rel_path: str,
             """INSERT INTO screenshots
                (sha256, filename, rel_path, month_bucket, filename_ts, ext,
                 size_bytes, width, height, phash,
-                ingest_status, ingest_error, ocr_status, ingested_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)""",
+                ingest_status, ingest_error, ocr_status,
+                 source_availability, availability_checked_at,
+                 availability_detail, availability_source, ingested_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending',
+                       'present', ?, 'ingested_from_source', 'inventory', ?)""",
             (sha, name, rel_path, month_bucket, fn_ts, ext,
              size_bytes, width, height, phash,
-             ingest_status, ingest_error, ts),
+             ingest_status, ingest_error, ts, ts),
         )
         conn.commit()
     except sqlite3.IntegrityError:
@@ -245,14 +268,18 @@ def _write_outputs(conn: sqlite3.Connection) -> None:
     rows = conn.execute(
         "SELECT screenshot_id, sha256, filename, rel_path, month_bucket, filename_ts, "
         "ext, size_bytes, width, height, phash, dup_group_id, near_dup_group_id, "
-        "ingest_status, ingest_error, ocr_status, ingested_at FROM screenshots ORDER BY screenshot_id"
+        "ingest_status, ingest_error, ocr_status, source_availability, "
+        "availability_checked_at, availability_detail, availability_source, "
+        "ingested_at FROM screenshots ORDER BY screenshot_id"
     ).fetchall()
     with open(OUTPUTS / "rlsm_ingest_manifest.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["screenshot_id", "sha256", "filename", "rel_path", "month_bucket",
                     "filename_ts", "ext", "size_bytes", "width", "height", "phash",
                     "dup_group_id", "near_dup_group_id",
-                    "ingest_status", "ingest_error", "ocr_status", "ingested_at"])
+                    "ingest_status", "ingest_error", "ocr_status",
+                    "source_availability", "availability_checked_at",
+                    "availability_detail", "availability_source", "ingested_at"])
         w.writerows(rows)
 
     # rlsm_duplicate_report.csv — screenshots with dup_group_id

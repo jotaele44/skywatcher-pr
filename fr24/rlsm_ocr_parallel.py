@@ -54,8 +54,18 @@ except ImportError:
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from fr24.rlsm_preprocess import (ensure_observation_columns, preprocess,
-                                  scale_for)  # noqa: E402
+from fr24.rlsm_preprocess import (  # noqa: E402
+    ensure_observation_columns,
+    preprocess,
+    scale_for,
+)
+from fr24.rlsm_source_availability import (  # noqa: E402
+    SourceUnavailableError,
+    availability_predicate,
+    mark_missing_during_ocr,
+    open_stable_source,
+    require_availability_schema,
+)
 from fr24.rlsm_wordboxes import words_from_tesseract_data  # noqa: E402
 
 DB   = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -149,84 +159,201 @@ def _ocr_with_conf(img_crop: Image.Image, config: str,
     return raw_text, boxes, conf_mean, conf_min, len(words)
 
 
+def _build_target_query(
+    *,
+    retry_failed: bool,
+    reocr_boxes: bool,
+    filter_month: str | None,
+    limit: int = 0,
+    reocr_stale_preprocess: bool = False,
+) -> tuple[str, list]:
+    where_parts = [
+        "s.ingest_status='ok'",
+        availability_predicate("s"),
+    ]
+    params: list[str] = []
+    if reocr_stale_preprocess:
+        # Screenshots whose newest label_layer row was OCR'd under a different
+        # preprocess stamp than ZONE_OCR_CONFIG declares now — including rows
+        # written before the stamp columns existed (preprocess IS NULL).
+        from fr24.rlsm_preprocess import config_stamp
+        from fr24.rlsm_zones import ZONE_OCR_CONFIG
+
+        want_mode, want_scale = config_stamp(ZONE_OCR_CONFIG.get("label_layer", {}))
+        where_parts.append("""s.screenshot_id IN (
+            SELECT o.screenshot_id FROM ocr_observations o
+            WHERE o.obs_id IN (
+                SELECT MAX(obs_id) FROM ocr_observations
+                WHERE zone='label_layer' GROUP BY screenshot_id)
+              AND (o.preprocess IS NULL
+                   OR o.preprocess <> ?
+                   OR o.preprocess_scale IS NULL
+                   OR ABS(o.preprocess_scale - ?) > 1e-6)
+        )""")
+        params.extend([want_mode, want_scale])
+    elif reocr_boxes:
+        where_parts.append("""s.screenshot_id IN (
+            SELECT o.screenshot_id FROM ocr_observations o
+            WHERE o.obs_id IN (
+                SELECT MAX(obs_id) FROM ocr_observations
+                WHERE zone='label_layer' GROUP BY screenshot_id)
+              AND COALESCE(o.raw_lines_json, '') IN ('', '[]')
+        )""")
+    elif retry_failed:
+        where_parts.append("s.ocr_status IN ('pending','failed')")
+    else:
+        where_parts.append("s.ocr_status IN ('pending')")
+    if filter_month:
+        where_parts.append("s.month_bucket = ?")
+        params.append(filter_month)
+    sql = (
+        "SELECT screenshot_id, rel_path FROM screenshots s WHERE "
+        + " AND ".join(where_parts)
+        + " ORDER BY screenshot_id"
+    )
+    if limit:
+        sql += f" LIMIT {limit}"
+    return sql, params
+
+
 def _process_one(args: tuple[int, str, int]) -> dict:
-    """Worker function. Returns (sid, status, n_obs, elapsed_sec, err)."""
+    """Worker function with stable-source and missing-race accounting."""
     from fr24.rlsm_zones import ZONE_OCR_CONFIG, zones_for
 
     sid, rel_path, run_id = args
-    t0 = time.time()
+    started = time.time()
     full_path = REPO / rel_path
-
-    if not full_path.exists():
-        return {"screenshot_id": sid, "status": "missing", "n_obs": 0,
-                "elapsed_sec": 0.0, "reason": "missing"}
-
     conn = sqlite3.connect(_worker_db_path, timeout=30.0)
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA synchronous = NORMAL")
     conn.execute("PRAGMA busy_timeout = 30000")
-
     try:
-        # Decode ONCE. This re-opened and re-decoded the 3-5 MB source file for
-        # every zone (four decodes per screenshot); across ~12.3k images that was
-        # a large share of the wall time for no benefit.
-        with Image.open(full_path) as img:
+        with (
+            open_stable_source(full_path) as source_handle,
+            Image.open(source_handle) as img,
+        ):
             img.load()
             img = ImageOps.exif_transpose(img)
-            W, H = img.size
-            zones = zones_for(W, H)
-            crops = {z.name: img.crop(z.crop_box()) for z in zones}
+            width, height = img.size
+            zones = zones_for(width, height)
+            crops = {zone.name: img.crop(zone.crop_box()) for zone in zones}
 
         lang = _tess_lang()
         engine_version = _tess_version()
         n_obs = 0
-        ocr_status = "ok"
         for zone in zones:
-            cfg = ZONE_OCR_CONFIG.get(zone.name, {"psm": 6, "preprocess": "high_contrast"})
+            cfg = ZONE_OCR_CONFIG.get(
+                zone.name,
+                {"psm": 6, "preprocess": "high_contrast"},
+            )
             psm = cfg.get("psm", 6)
             mode = cfg.get("preprocess", "none")
             scale = scale_for(mode, cfg.get("scale"))
             config = f"--oem 1 --psm {psm} -l {lang}"
-
             raw_text, lines_json, conf_mean, conf_min, n_words = _ocr_with_conf(
-                crops[zone.name], config, x_off=zone.x, y_off=zone.y,
-                mode=mode, scale=scale)
-            z_status = "ok" if raw_text.strip() else "empty"
+                crops[zone.name],
+                config,
+                x_off=zone.x,
+                y_off=zone.y,
+                mode=mode,
+                scale=scale,
+            )
+            zone_status = "ok" if raw_text.strip() else "empty"
             bbox = zone.crop_box()
-
             try:
                 conn.execute(
-                    """INSERT INTO ocr_observations
-                       (screenshot_id, run_id, zone, bbox_x, bbox_y, bbox_w, bbox_h,
-                        raw_text, raw_lines_json, confidence_mean, confidence_min, n_words,
-                        engine, engine_version, psm, preprocess, preprocess_scale,
-                        ocr_status, ocr_error, observed_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'tesseract', ?, ?, ?, ?, ?, ?, ?)""",
-                    (sid, run_id, zone.name, bbox[0], bbox[1],
-                     bbox[2] - bbox[0], bbox[3] - bbox[1],
-                     raw_text, json.dumps(lines_json, ensure_ascii=False),
-                     conf_mean, conf_min, n_words,
-                     engine_version, psm, mode, scale,
-                     z_status, None, _iso_now()),
+                    """
+                    INSERT INTO ocr_observations
+                        (screenshot_id, run_id, zone, bbox_x, bbox_y, bbox_w, bbox_h,
+                         raw_text, raw_lines_json, confidence_mean, confidence_min,
+                         n_words, engine, engine_version, psm, preprocess,
+                         preprocess_scale, ocr_status, ocr_error, observed_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'tesseract',
+                            ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        sid,
+                        run_id,
+                        zone.name,
+                        bbox[0],
+                        bbox[1],
+                        bbox[2] - bbox[0],
+                        bbox[3] - bbox[1],
+                        raw_text,
+                        json.dumps(lines_json, ensure_ascii=False),
+                        conf_mean,
+                        conf_min,
+                        n_words,
+                        engine_version,
+                        psm,
+                        mode,
+                        scale,
+                        zone_status,
+                        None,
+                        _iso_now(),
+                    ),
                 )
                 n_obs += 1
             except sqlite3.IntegrityError:
-                pass  # already exists (idempotency)
-
-        conn.execute("UPDATE screenshots SET ocr_status=? WHERE screenshot_id=?",
-                     (ocr_status, sid))
+                pass
+        conn.execute(
+            "UPDATE screenshots SET ocr_status='ok' WHERE screenshot_id=?",
+            (sid,),
+        )
         conn.commit()
-        elapsed = time.time() - t0
-        return {"screenshot_id": sid, "status": "ok", "n_obs": n_obs,
-                "elapsed_sec": round(elapsed, 3)}
-
+        return {
+            "screenshot_id": sid,
+            "status": "ok",
+            "n_obs": n_obs,
+            "elapsed_sec": round(time.time() - started, 3),
+        }
+    except (FileNotFoundError, SourceUnavailableError):
+        mark_missing_during_ocr(conn, sid)
+        return {
+            "screenshot_id": sid,
+            "status": "missing_source",
+            "n_obs": 0,
+            "elapsed_sec": round(time.time() - started, 3),
+            "reason": "missing_source",
+        }
+    except OSError as exc:
+        if exc.errno in {2, 20, 116}:
+            mark_missing_during_ocr(conn, sid)
+            return {
+                "screenshot_id": sid,
+                "status": "missing_source",
+                "n_obs": 0,
+                "elapsed_sec": round(time.time() - started, 3),
+                "reason": "missing_source",
+            }
+        conn.execute(
+            "UPDATE screenshots SET ocr_status='failed' WHERE screenshot_id=?",
+            (sid,),
+        )
+        conn.commit()
+        return {
+            "screenshot_id": sid,
+            "status": "failed",
+            "n_obs": 0,
+            "elapsed_sec": round(time.time() - started, 3),
+            "reason": str(exc)[:120],
+        }
     except Exception as exc:
-        conn.execute("UPDATE screenshots SET ocr_status='failed' WHERE screenshot_id=?", (sid,))
+        conn.execute(
+            "UPDATE screenshots SET ocr_status='failed' WHERE screenshot_id=?",
+            (sid,),
+        )
         conn.commit()
-        return {"screenshot_id": sid, "status": "failed", "n_obs": 0,
-                "elapsed_sec": round(time.time() - t0, 3), "reason": str(exc)[:120]}
+        return {
+            "screenshot_id": sid,
+            "status": "failed",
+            "n_obs": 0,
+            "elapsed_sec": round(time.time() - started, 3),
+            "reason": str(exc)[:120],
+        }
     finally:
         conn.close()
+
 
 
 def _start_run(db_path: str, n_inputs: int) -> int:
@@ -243,8 +370,11 @@ def _start_run(db_path: str, n_inputs: int) -> int:
 
 
 def _finish_run(db_path: str, run_id: int, n_processed: int, n_failed: int,
-                per_image_avg_sec: float) -> None:
-    notes = json.dumps({"per_image_avg_sec": round(per_image_avg_sec, 3)})
+                n_missing: int, per_image_avg_sec: float) -> None:
+    notes = json.dumps({
+        "per_image_avg_sec": round(per_image_avg_sec, 3),
+        "missing_source": n_missing,
+    }, sort_keys=True)
     conn = sqlite3.connect(db_path, timeout=30.0)
     conn.execute(
         "UPDATE processing_runs SET ended_at=?, status='completed', n_processed=?, n_failed=?, notes=? WHERE run_id=?",
@@ -275,55 +405,20 @@ def main() -> None:
 
     JSONL.parent.mkdir(parents=True, exist_ok=True)
 
-    # Build the target list
-    where_parts = ["s.ingest_status='ok'"]
-    params = []
-    if args.reocr_stale_preprocess:
-        from fr24.rlsm_preprocess import config_stamp
-        from fr24.rlsm_zones import ZONE_OCR_CONFIG
-        want_mode, want_scale = config_stamp(ZONE_OCR_CONFIG.get("label_layer", {}))
-        where_parts.append("""s.screenshot_id IN (
-            SELECT o.screenshot_id FROM ocr_observations o
-            WHERE o.obs_id IN (
-                SELECT MAX(obs_id) FROM ocr_observations
-                WHERE zone='label_layer' GROUP BY screenshot_id)
-              AND (o.preprocess IS NULL
-                   OR o.preprocess <> ?
-                   OR o.preprocess_scale IS NULL
-                   OR ABS(o.preprocess_scale - ?) > 1e-6)
-        )""")
-        params.extend([want_mode, want_scale])
-    elif args.reocr_boxes:
-        # Already-OCR'd screenshots that have no word geometry yet. Selecting on
-        # the newest label_layer row per screenshot means a screenshot that has
-        # already been re-OCR'd is not picked up twice.
-        where_parts.append("""s.screenshot_id IN (
-            SELECT o.screenshot_id FROM ocr_observations o
-            WHERE o.obs_id IN (
-                SELECT MAX(obs_id) FROM ocr_observations
-                WHERE zone='label_layer' GROUP BY screenshot_id)
-              AND COALESCE(o.raw_lines_json, '') IN ('', '[]')
-        )""")
-    elif args.retry_failed:
-        where_parts.append("s.ocr_status IN ('pending','failed')")
-    else:
-        where_parts.append("s.ocr_status IN ('pending')")
-    if args.filter_month:
-        where_parts.append("s.month_bucket = ?")
-        params.append(args.filter_month)
-
-    sql = ("SELECT screenshot_id, rel_path FROM screenshots s WHERE "
-           + " AND ".join(where_parts)
-           + " ORDER BY screenshot_id")
-    if args.limit:
-        sql += f" LIMIT {args.limit}"
-
     conn = sqlite3.connect(str(DB), timeout=30.0)
+    require_availability_schema(conn)
     # Older databases predate the preprocess stamp; add the columns before any
     # worker tries to write them.
     added = ensure_observation_columns(conn)
     if added:
         print(f"[parallel-ocr] added ocr_observations columns: {', '.join(added)}")
+    sql, params = _build_target_query(
+        retry_failed=args.retry_failed,
+        reocr_boxes=args.reocr_boxes,
+        filter_month=args.filter_month,
+        limit=args.limit,
+        reocr_stale_preprocess=args.reocr_stale_preprocess,
+    )
     rows = conn.execute(sql, params).fetchall()
     conn.close()
 
@@ -338,7 +433,7 @@ def main() -> None:
 
     work = [(sid, rel, run_id) for sid, rel in rows]
     t0 = time.time()
-    n_ok = n_fail = 0
+    n_ok = n_fail = n_missing = 0
 
     with multiprocessing.Pool(
         processes=args.workers,
@@ -352,6 +447,8 @@ def main() -> None:
                 break
             if result.get("status") == "ok":
                 n_ok += 1
+            elif result.get("status") == "missing_source":
+                n_missing += 1
             else:
                 n_fail += 1
             if (i + 1) % 50 == 0:
@@ -359,15 +456,16 @@ def main() -> None:
                 rate = (i + 1) / elapsed if elapsed else 0
                 remaining = (targets - i - 1) / rate / 60 if rate else 0
                 eta_est = round(remaining, 1)
-                print(f"[parallel-ocr] {i+1}/{targets}  ok={n_ok} fail={n_fail}"
+                print(f"[parallel-ocr] {i+1}/{targets}  ok={n_ok} fail={n_fail} missing={n_missing}"
                       f"  rate={rate:.2f} img/s  remaining={eta_est} min @ 1.0s/img per worker",
                       flush=True)
 
     elapsed = time.time() - t0
-    per_image_avg_sec = elapsed / (n_ok + n_fail) if (n_ok + n_fail) else 0.0
-    _finish_run(str(DB), run_id, n_ok, n_fail, per_image_avg_sec)
+    n_seen = n_ok + n_fail + n_missing
+    per_image_avg_sec = elapsed / n_seen if n_seen else 0.0
+    _finish_run(str(DB), run_id, n_ok, n_fail, n_missing, per_image_avg_sec)
     print(f"[parallel-ocr] done; elapsed={round(elapsed,1)}s"
-          f"  ok={n_ok} fail={n_fail}"
+          f"  ok={n_ok} fail={n_fail} missing={n_missing}"
           f"; per_img_avg={per_image_avg_sec:.3f}s")
 
 
