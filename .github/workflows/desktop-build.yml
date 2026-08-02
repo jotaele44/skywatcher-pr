@@ -108,6 +108,7 @@ jobs:
           test ! -e "$GITHUB_WORKSPACE/../$PRII_FORBIDDEN_SIBLING"
 
       - name: Verify artwork and shared runtime
+        shell: bash
         run: |
           python "$PRII_TOOLING_ROOT/tools/build_program_icons.py" --repo . --check
           python "$PRII_TOOLING_ROOT/tools/validate_desktop_branding.py" --repo .
@@ -115,6 +116,7 @@ jobs:
 
       - name: Visual and accessibility smoke
         if: runner.os == 'Linux'
+        shell: bash
         env:
           PRII_REPO_SLUG: skywatcher-pr
           PRII_SETUP_FIXTURE: ${{ github.workspace }}/desktop-ui-artifacts/setup.html
