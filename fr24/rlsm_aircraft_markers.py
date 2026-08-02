@@ -310,10 +310,15 @@ def detect_image(image) -> tuple[tuple[int, int, int, int], list[MarkerCandidate
     x, y, w, h = viewport
     rgb_crop = image.crop((x, y, x + w, y + h))
     hsv_crop = rgb_crop.convert("HSV")
-    # Pillow 12 renamed this iterator ahead of removing ``getdata`` in 14;
-    # retain Pillow 10/11 compatibility without emitting deprecation noise.
-    rgb_flatten = getattr(rgb_crop, "get_flattened_data", rgb_crop.getdata)
-    hsv_flatten = getattr(hsv_crop, "get_flattened_data", hsv_crop.getdata)
+    # Pillow 12 renamed this iterator ahead of removing ``getdata`` in 14.
+    # Do not pass ``image.getdata`` as getattr's default: Python evaluates that
+    # default eagerly, which would still fail after the old attribute is removed.
+    rgb_flatten = getattr(rgb_crop, "get_flattened_data", None)
+    hsv_flatten = getattr(hsv_crop, "get_flattened_data", None)
+    if rgb_flatten is None:  # Pillow 10/11 compatibility
+        rgb_flatten = rgb_crop.getdata
+    if hsv_flatten is None:  # Pillow 10/11 compatibility
+        hsv_flatten = hsv_crop.getdata
     rgb_values = list(rgb_flatten())
     hsv_values = list(hsv_flatten())
     rgb = [rgb_values[row * w:(row + 1) * w] for row in range(h)]
@@ -469,7 +474,6 @@ def run(
         candidates: list[MarkerCandidate] = []
         selected_rank = None
         reason = ""
-        status = "unreadable"
 
         relative = Path(str(rel_path))
         unsafe_path = relative.is_absolute() or ".." in relative.parts

@@ -487,6 +487,42 @@ def test_zoom_ladder_assigns_only_supported_power_of_two_scales() -> None:
     assert evidence_only[0]["eligible_for_transfer"] == 0
 
 
+def test_zoom_ladder_collapses_near_duplicate_support() -> None:
+    records = [
+        {
+            "screenshot_id": screenshot_id,
+            "scale": 100,
+            "dlon_dx": 0.001,
+            "dlat_dy": -0.001,
+            "evidence_group": group,
+        }
+        for screenshot_id, group in (
+            (1, "near_dup:7"),
+            (2, "near_dup:7"),
+            (3, "near_dup:8"),
+        )
+    ]
+
+    evidence_only, unassigned = derive_zoom_rungs(records)
+
+    assert unassigned == []
+    assert evidence_only[0]["support_count"] == 2
+    assert evidence_only[0]["eligible_for_transfer"] == 0
+
+    records.append(
+        {
+            "screenshot_id": 4,
+            "scale": 100,
+            "dlon_dx": 0.001,
+            "dlat_dy": -0.001,
+            "evidence_group": "screenshot:4",
+        }
+    )
+    transferable, _ = derive_zoom_rungs(records)
+    assert transferable[0]["support_count"] == 3
+    assert transferable[0]["eligible_for_transfer"] == 1
+
+
 def test_bad_affine_geometry_is_rejected() -> None:
     # X and Y scales disagree by 2x even though each axis is internally exact.
     anchors = [

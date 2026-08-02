@@ -43,7 +43,12 @@ from fr24.rlsm_georeference import (  # noqa: E402
     load_persisted_affines,
 )
 from fr24.rlsm_spatial_schema import ensure_spatial_schema  # noqa: E402
-from integration.geo_calibration import apply_affine, fit_affine  # noqa: E402, F401
+from integration import geo_calibration as _geo_calibration  # noqa: E402
+
+# Preserve the historical module-level API used by downstream callers while
+# making the compatibility re-export explicit to static analyzers.
+apply_affine = _geo_calibration.apply_affine
+fit_affine = _geo_calibration.fit_affine
 
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 OUTS = REPO / "outputs"

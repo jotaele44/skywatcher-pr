@@ -36,6 +36,7 @@
     "scope": "relative_per_viewport_profile",
     "power_of_two_log2_tolerance": 0.18,
     "minimum_transfer_support": 3,
+    "support_independence_unit": "near_duplicate_group_or_unique_screenshot",
     "evidence_only_rungs_assigned_to_frames": false,
     "one_anchor_source": "same_near_duplicate_group_independent_multi_anchor_fit"
   },

@@ -53,9 +53,11 @@ Zoom is a relative, self-calibrated ladder local to one viewport profile. Scale
 clusters are matched only to power-of-two rungs within the declared log2
 tolerance. The densest corroborated cluster is relative rung zero; this is not
 an assertion about FR24's private absolute zoom identifier. Unsupported scales
-remain unassigned. Clusters with fewer than three accepted multi-anchor fits
-may remain in the ladder table as evidence-only records, but they are neither
-assigned to frames nor used for transfer.
+remain unassigned. Support is counted by independent evidence unit: screenshots
+in the same near-duplicate group contribute one vote, while ungrouped
+screenshots contribute individually. Clusters with fewer than three independent
+accepted multi-anchor fits may remain in the ladder table as evidence-only
+records, but they are neither assigned to frames nor used for transfer.
 
 One-anchor recovery requires all of the following:
 

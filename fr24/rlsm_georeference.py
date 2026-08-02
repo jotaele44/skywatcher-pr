@@ -135,23 +135,51 @@ def derive_zoom_rungs(records: list[dict]) -> tuple[list[dict], list[int]]:
     """
     if not records:
         return [], []
-    logs = sorted((math.log2(float(row["scale"])), int(row["screenshot_id"]))
-                  for row in records)
-    seed_clusters: list[list[tuple[float, int]]] = []
+    def evidence_key(row: dict) -> str:
+        return str(
+            row.get("evidence_group")
+            or f"screenshot:{int(row['screenshot_id'])}"
+        )
+
+    logs = sorted(
+        (
+            math.log2(float(row["scale"])),
+            int(row["screenshot_id"]),
+            evidence_key(row),
+        )
+        for row in records
+    )
+
+    def independent_log_centers(
+        members: list[tuple[float, int, str]],
+    ) -> list[float]:
+        grouped: dict[str, list[float]] = defaultdict(list)
+        for log_scale, _screenshot_id, group in members:
+            grouped[group].append(log_scale)
+        return [float(median(values)) for values in grouped.values()]
+
+    seed_clusters: list[list[tuple[float, int, str]]] = []
     for item in logs:
         placed = False
         for cluster in seed_clusters:
-            if abs(item[0] - median(v[0] for v in cluster)) <= ZOOM_LOG2_TOLERANCE:
+            if (
+                abs(item[0] - median(independent_log_centers(cluster)))
+                <= ZOOM_LOG2_TOLERANCE
+            ):
                 cluster.append(item)
                 placed = True
                 break
         if not placed:
             seed_clusters.append([item])
+
     seed = sorted(
         seed_clusters,
-        key=lambda cluster: (-len(cluster), median(v[0] for v in cluster)),
+        key=lambda cluster: (
+            -len(independent_log_centers(cluster)),
+            median(independent_log_centers(cluster)),
+        ),
     )[0]
-    reference_log = float(median(v[0] for v in seed))
+    reference_log = float(median(independent_log_centers(seed)))
     by_rung: dict[int, list[dict]] = defaultdict(list)
     unassigned: list[int] = []
     for row in records:
@@ -164,20 +192,35 @@ def derive_zoom_rungs(records: list[dict]) -> tuple[list[dict], list[int]]:
 
     rungs: list[dict] = []
     for rung, members in sorted(by_rung.items()):
-        scales = [float(row["scale"]) for row in members]
-        log_center = float(median(math.log2(value) for value in scales))
-        dispersion = float(median(abs(math.log2(value) - log_center) for value in scales))
-        support = len(members)
+        by_evidence: dict[str, list[dict]] = defaultdict(list)
+        for row in members:
+            by_evidence[evidence_key(row)].append(row)
+        group_logs = [
+            float(median(math.log2(float(row["scale"])) for row in group))
+            for group in by_evidence.values()
+        ]
+        group_dlon = [
+            float(median(float(row["dlon_dx"]) for row in group))
+            for group in by_evidence.values()
+        ]
+        group_dlat = [
+            float(median(float(row["dlat_dy"]) for row in group))
+            for group in by_evidence.values()
+        ]
+        log_center = float(median(group_logs))
+        dispersion = float(median(abs(value - log_center) for value in group_logs))
+        support = len(by_evidence)
         rungs.append(
             {
                 "zoom_rung": rung,
                 "scale_m_per_px": 2 ** log_center,
-                "dlon_dx": float(median(float(row["dlon_dx"]) for row in members)),
-                "dlat_dy": float(median(float(row["dlat_dy"]) for row in members)),
+                "dlon_dx": float(median(group_dlon)),
+                "dlat_dy": float(median(group_dlat)),
                 "support_count": support,
                 "dispersion_log2": dispersion,
                 "eligible_for_transfer": int(support >= MIN_RUNG_SUPPORT),
                 "screenshot_ids": sorted(int(row["screenshot_id"]) for row in members),
+                "evidence_groups": sorted(by_evidence),
             }
         )
     return rungs, sorted(unassigned)
@@ -315,20 +358,27 @@ def _persist_ladders(conn: sqlite3.Connection) -> dict[str, list[dict]]:
         (GEOREF_VERSION,),
     )
     rows = conn.execute(
-        """SELECT screenshot_id, viewport_profile, scale_m_per_px, dlon_dx, dlat_dy
-           FROM screenshot_georeferences
-           WHERE georef_version=? AND status='located'
-             AND method='multi_anchor_affine' AND scale_m_per_px IS NOT NULL""",
+        """SELECT g.screenshot_id, g.viewport_profile, g.scale_m_per_px,
+                  g.dlon_dx, g.dlat_dy, s.near_dup_group_id
+           FROM screenshot_georeferences g
+           JOIN screenshots s USING(screenshot_id)
+           WHERE g.georef_version=? AND g.status='located'
+             AND g.method='multi_anchor_affine' AND g.scale_m_per_px IS NOT NULL""",
         (GEOREF_VERSION,),
     ).fetchall()
     by_profile: dict[str, list[dict]] = defaultdict(list)
-    for screenshot_id, profile, scale, dlon_dx, dlat_dy in rows:
+    for screenshot_id, profile, scale, dlon_dx, dlat_dy, near_dup_group_id in rows:
         by_profile[str(profile)].append(
             {
                 "screenshot_id": int(screenshot_id),
                 "scale": float(scale),
                 "dlon_dx": float(dlon_dx),
                 "dlat_dy": float(dlat_dy),
+                "evidence_group": (
+                    f"near_dup:{near_dup_group_id}"
+                    if near_dup_group_id is not None
+                    else f"screenshot:{int(screenshot_id)}"
+                ),
             }
         )
 
@@ -341,6 +391,7 @@ def _persist_ladders(conn: sqlite3.Connection) -> dict[str, list[dict]]:
             evidence = {
                 "relative_not_absolute": True,
                 "screenshot_ids": rung["screenshot_ids"],
+                "independent_evidence_groups": rung["evidence_groups"],
                 "unassigned_scale_screenshot_ids": unassigned,
                 "log2_tolerance": ZOOM_LOG2_TOLERANCE,
                 "minimum_transfer_support": MIN_RUNG_SUPPORT,
