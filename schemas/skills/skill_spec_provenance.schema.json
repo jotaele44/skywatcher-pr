@@ -1,0 +1,56 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_spec_provenance.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "preservation_state": {
+      "const": "PRESERVED_VERBATIM_AS_SOURCE_EVIDENCE",
+      "type": "string"
+    },
+    "provenance_id": {
+      "type": "string"
+    },
+    "source_archive_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "source_note": {
+      "type": "string"
+    },
+    "source_package_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "source_skill_id": {
+      "type": "string"
+    },
+    "source_skill_md_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "source_version": {
+      "type": "string"
+    },
+    "tier": {
+      "enum": [
+        "VERBATIM",
+        "SPEC_RECOVERED",
+        "SPEC_RECONSTRUCTED"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "provenance_id",
+    "source_skill_id",
+    "source_version",
+    "tier",
+    "source_archive_sha256",
+    "source_package_sha256",
+    "source_skill_md_sha256",
+    "preservation_state"
+  ],
+  "title": "Skill Specification Provenance v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}

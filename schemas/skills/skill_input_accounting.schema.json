@@ -1,0 +1,67 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_input_accounting.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accepted": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "disposition_manifest_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "duplicate": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "input_accounting_id": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "output_records": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "reconciled": {
+      "type": "boolean"
+    },
+    "rejected": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "review": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "total": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "unresolved": {
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "input_accounting_id",
+    "run_id",
+    "total",
+    "accepted",
+    "rejected",
+    "duplicate",
+    "review",
+    "unresolved",
+    "reconciled"
+  ],
+  "title": "Skill Input Accounting v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}

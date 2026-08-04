@@ -1,0 +1,87 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_handoff.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "analytical_object_bindings": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "artifact_refs": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "authority_transferred": {
+      "const": false,
+      "type": "boolean"
+    },
+    "created_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "destination_owner": {
+      "type": "string"
+    },
+    "destination_skill_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "handoff_id": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "required_new_authority": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "source_run_id": {
+      "type": "string"
+    },
+    "source_skill_id": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "accepted",
+        "rejected",
+        "completed",
+        "blocked"
+      ],
+      "type": "string"
+    },
+    "unresolved_assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "handoff_id",
+    "source_run_id",
+    "source_skill_id",
+    "destination_owner",
+    "destination_skill_id",
+    "reason",
+    "created_at",
+    "status",
+    "artifact_refs",
+    "analytical_object_bindings",
+    "unresolved_assumptions",
+    "authority_transferred"
+  ],
+  "title": "Skill Handoff v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}

@@ -1,0 +1,130 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_receipt.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "canonical_skill_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "evidence_refs": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "failure_ids": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "handoff_ids": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "input_accounting_id": {
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "mission_or_intent_inference_performed": {
+      "const": false,
+      "type": "boolean"
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "output_refs": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "receipt_id": {
+      "type": "string"
+    },
+    "receipt_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "skill_version": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "partial",
+        "blocked",
+        "failed"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "validation_results": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gate_id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail",
+              "not_run",
+              "not_applicable"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "gate_id",
+          "status"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "receipt_id",
+    "run_id",
+    "canonical_skill_id",
+    "skill_version",
+    "status",
+    "summary",
+    "input_accounting_id",
+    "output_refs",
+    "evidence_refs",
+    "validation_results",
+    "limitations",
+    "next_action",
+    "created_at",
+    "receipt_sha256",
+    "mission_or_intent_inference_performed"
+  ],
+  "title": "Skill Receipt v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}

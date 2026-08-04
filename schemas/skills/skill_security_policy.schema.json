@@ -1,0 +1,65 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_security_policy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "canonical_skill_id": {
+      "type": "string"
+    },
+    "credential_disclosure_prohibited": {
+      "const": true,
+      "type": "boolean"
+    },
+    "maximum_input_classification": {
+      "enum": [
+        "PUBLIC",
+        "INTERNAL",
+        "PRIVATE",
+        "RESTRICTED",
+        "SECRET_BEARING",
+        "CREDENTIAL_BEARING"
+      ],
+      "type": "string"
+    },
+    "maximum_output_classification": {
+      "enum": [
+        "PUBLIC",
+        "INTERNAL",
+        "PRIVATE",
+        "RESTRICTED",
+        "SECRET_BEARING",
+        "CREDENTIAL_BEARING"
+      ],
+      "type": "string"
+    },
+    "no_downgrade": {
+      "const": true,
+      "type": "boolean"
+    },
+    "redaction_required": {
+      "type": "boolean"
+    },
+    "retention_policy": {
+      "type": "string"
+    },
+    "secret_disclosure_prohibited": {
+      "const": true,
+      "type": "boolean"
+    },
+    "security_policy_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "security_policy_id",
+    "canonical_skill_id",
+    "maximum_input_classification",
+    "maximum_output_classification",
+    "no_downgrade",
+    "secret_disclosure_prohibited",
+    "credential_disclosure_prohibited"
+  ],
+  "title": "Skill Security Policy v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}

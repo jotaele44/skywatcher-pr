@@ -1,0 +1,74 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_activation_policy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "canonical_skill_id": {
+      "type": "string"
+    },
+    "conflict_behavior": {
+      "enum": [
+        "HANDOFF_TO_OWNER",
+        "BLOCK_FOR_ADJUDICATION",
+        "EXPLICIT_LEGACY_ONLY"
+      ],
+      "type": "string"
+    },
+    "explicit_name_activation": {
+      "type": "boolean"
+    },
+    "fail_closed": {
+      "const": true,
+      "type": "boolean"
+    },
+    "non_activation_conditions": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "policy_id": {
+      "type": "string"
+    },
+    "required_authority": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "required_inputs": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "responsibility_match_required": {
+      "const": true,
+      "type": "boolean"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "policy_id",
+    "canonical_skill_id",
+    "version",
+    "explicit_name_activation",
+    "responsibility_match_required",
+    "required_inputs",
+    "required_authority",
+    "non_activation_conditions",
+    "conflict_behavior",
+    "fail_closed"
+  ],
+  "title": "Skill Activation Policy v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}
