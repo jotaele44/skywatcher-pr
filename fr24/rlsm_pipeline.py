@@ -36,6 +36,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from fr24.rlsm_anchors import build_geo_lookup  # noqa: E402
+
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 SCHEMA = REPO / "data" / "rlsm" / "schema.sql"
 BASELINE = REPO / "data" / "FR24_baseline"
@@ -163,14 +165,16 @@ def preflight(ctx: dict) -> dict:
             warnings.append("pillow-heif not installed — .heic screenshots will be "
                             "recorded as unreadable")
 
-    # 3) Gazetteer present.
+    # 3) Gazetteer present and usable by the geocode stage.
     gpkg = REPO / "data" / "reference" / "Gazetteer_PR_GNIS.gpkg"
     if not gpkg.exists():
         problems.append(f"missing gazetteer: {gpkg.relative_to(REPO)}")
     else:
         try:
             from fr24.rlsm_gazetteer import load_gazetteer
-            info["gazetteer_keys"] = load_gazetteer().stats()["keys"]
+            gazetteer_stats = load_gazetteer().stats()
+            info["gazetteer_keys"] = gazetteer_stats["keys"]
+            info["gazetteer_coordinate_keys"] = gazetteer_stats["with_coords"]
         except Exception as exc:
             problems.append(f"gazetteer failed to load: {type(exc).__name__}: {exc}")
 
@@ -197,6 +201,27 @@ def preflight(ctx: dict) -> dict:
             from fr24.rlsm_icons import ensure_schema
             ensure_schema(conn)
             info["icon_observations"] = "created"
+
+    if "geocode" in ctx["stages"]:
+        lookup_conn = conn
+        owns_lookup_conn = False
+        if lookup_conn is None:
+            lookup_conn = sqlite3.connect(":memory:")
+            owns_lookup_conn = True
+        try:
+            geocode_keys = len(build_geo_lookup(lookup_conn))
+            info["geocode_coordinate_keys"] = geocode_keys
+            if geocode_keys == 0:
+                problems.append(
+                    "geocode coordinate lookup is empty: expected tracked "
+                    "data/reference/Gazetteer_PR_GNIS.gpkg coordinates or "
+                    "existing geo_anchors rows"
+                )
+        except Exception as exc:
+            problems.append(f"geocode coordinate lookup failed: {type(exc).__name__}: {exc}")
+        finally:
+            if owns_lookup_conn:
+                lookup_conn.close()
 
     # 5) Preprocess stamp: rows produced under a different mode/scale than the
     #    current ZONE_OCR_CONFIG. Resume keys on screenshots.ocr_status, so a
