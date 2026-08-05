@@ -5,7 +5,8 @@ OCR Pass 2: Geocode unlabeled POI candidates.
 Per-screenshot pixel→lat/lon affine fit:
   - For each screenshot with ≥2 labeled POIs (vocab-matched municipality
     or anchor) whose pixel centroid is known AND whose lat/lon is known
-    from places.geojson, solve a 4-parameter affine transform:
+    from the tracked GNIS gazetteer or RLSM geo anchors, solve a
+    4-parameter affine transform:
        lon = lon0 + dlon_per_px * pixel_x
        lat = lat0 + dlat_per_px * pixel_y   (dlat_per_px is negative; pixel y grows downward)
 
@@ -34,7 +35,6 @@ import csv
 import json
 import sqlite3
 import sys
-import unicodedata
 from collections import Counter, defaultdict
 from pathlib import Path
 from statistics import median
@@ -42,6 +42,7 @@ from statistics import median
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from fr24.rlsm_anchors import Anchor, anchors_for_screenshot, build_geo_lookup  # noqa: E402
 from integration.geo_calibration import apply_affine, fit_affine  # noqa: E402
 
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -62,18 +63,53 @@ GLOBAL_AFFINE_1170_2532 = (
 )
 
 
-def _ascii_up(s: str) -> str:
-    if not s:
-        return ""
-    return "".join(c for c in unicodedata.normalize("NFKD", s)
-                   if not unicodedata.combining(c)).upper().strip()
-
-
 # fit_affine / apply_affine now live in integration/geo_calibration.py (shared
 # with the calibration's per_screenshot_affine mode); imported above.
 
 
-def main():
+def build_affine_inputs(
+    conn: sqlite3.Connection,
+    geo_lookup: dict[str, tuple[float, float]],
+) -> dict[int, list[Anchor]]:
+    """Collect deduped per-screenshot affine anchors through the shared lookup."""
+    screenshot_ids = {
+        row[0] for row in conn.execute(
+            "SELECT DISTINCT screenshot_id FROM geo_anchors"
+            " WHERE screenshot_id IS NOT NULL"
+            " AND pixel_x IS NOT NULL AND pixel_y IS NOT NULL"
+            " AND lat IS NOT NULL AND lon IS NOT NULL"
+        )
+    }
+    screenshot_ids.update(
+        row[0] for row in conn.execute(
+            "SELECT DISTINCT screenshot_id FROM labeled_pins"
+            " WHERE screenshot_id IS NOT NULL"
+            " AND centroid_x IS NOT NULL AND centroid_y IS NOT NULL"
+            " AND pin_type_guess != 'unknown_label_candidate'"
+        )
+    )
+    inputs: dict[int, list[Anchor]] = {}
+    for sid in sorted(screenshot_ids):
+        anchors = anchors_for_screenshot(conn, int(sid), geo_lookup)
+        if anchors:
+            inputs[int(sid)] = anchors
+    return inputs
+
+
+def _percentile(values: list[float], pct: float) -> float:
+    if not values:
+        raise ValueError("percentile requires at least one value")
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return ordered[0]
+    rank = (len(ordered) - 1) * (pct / 100.0)
+    lo = int(rank)
+    hi = min(lo + 1, len(ordered) - 1)
+    frac = rank - lo
+    return ordered[lo] + (ordered[hi] - ordered[lo]) * frac
+
+
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--grid-deg", type=float, default=0.001,
                     help="Cluster geocoded candidates by this lat/lon grid (default 0.001° ≈ 111m)")
@@ -81,69 +117,43 @@ def main():
     ap.add_argument("--min-aircraft", type=int, default=10)
     ap.add_argument("--max-affine-residual-deg", type=float, default=0.05,
                     help="Drop screenshots where affine fit residual > this many degrees")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     conn = sqlite3.connect(DB)
 
-    # Build lat/lon lookup from places.geojson + georef_anchors
-    geo_lookup = {}
-    gj = json.load((REPO / "data" / "places.geojson").open())
-    for f in gj.get("features", []):
-        props = f.get("properties", {})
-        name = (props.get("NAME") or "").upper().strip()
-        try:
-            lat = float(props.get("INTPTLAT") or 0)
-            lon = float(props.get("INTPTLON") or 0)
-        except (TypeError, ValueError):
-            continue
-        if name and lat and lon:
-            geo_lookup[_ascii_up(name)] = (lat, lon)
-    for r in conn.execute("SELECT name, lat, lon FROM geo_anchors WHERE lat IS NOT NULL"):
-        geo_lookup[_ascii_up(r[0])] = (r[1], r[2])
+    # Build lat/lon lookup from the tracked GNIS gazetteer plus RLSM geo anchors.
+    geo_lookup = build_geo_lookup(conn)
+    if not geo_lookup:
+        conn.close()
+        print(
+            "[geocode] FAIL — zero coordinate keys available from "
+            "data/reference/Gazetteer_PR_GNIS.gpkg or geo_anchors",
+            file=sys.stderr,
+        )
+        return 1
 
     # Per-screenshot anchor data
-    anchors_by_sid = defaultdict(list)
-    for sid, label, cx, cy in conn.execute("""
-        SELECT screenshot_id, normalized_label, centroid_x, centroid_y
-        FROM labeled_pins
-        WHERE centroid_x IS NOT NULL AND pin_type_guess != 'unknown_label_candidate'
-    """):
-        latlon = geo_lookup.get(_ascii_up(label))
-        if latlon and cx and cy:
-            anchors_by_sid[sid].append((cx, cy, latlon[0], latlon[1]))
+    anchors_by_sid = build_affine_inputs(conn, geo_lookup)
 
     # Fit affine per screenshot
     affines = {}
     fit_residuals = {}
     fits_attempted = fits_succeeded = fits_dropped_residual = 0
-    import numpy as np
     for sid, anchors in anchors_by_sid.items():
         if len(anchors) < 2:
             continue
         fits_attempted += 1
         pixel_xy = [(a[0], a[1]) for a in anchors]
         geo_latlon = [(a[2], a[3]) for a in anchors]
-        # Drop duplicates (same anchor labeled twice in a screenshot)
-        seen = set()
-        dedup_p = []
-        dedup_g = []
-        for p, g in zip(pixel_xy, geo_latlon, strict=False):
-            key = (round(p[0], 1), round(p[1], 1))
-            if key not in seen:
-                seen.add(key)
-                dedup_p.append(p)
-                dedup_g.append(g)
-        if len(dedup_p) < 2:
-            continue
-        af = fit_affine(dedup_p, dedup_g)
+        af = fit_affine(pixel_xy, geo_latlon)
         if af is None:
             continue
         # Compute residuals
         residuals = []
-        for (px, py), (lat, lon) in zip(dedup_p, dedup_g, strict=False):
+        for (px, py), (lat, lon) in zip(pixel_xy, geo_latlon, strict=False):
             est_lat, est_lon = apply_affine(af, px, py)
             residuals.append(((est_lat - lat) ** 2 + (est_lon - lon) ** 2) ** 0.5)
-        med_res = float(np.median(residuals))
+        med_res = float(median(residuals))
         if med_res > args.max_affine_residual_deg:
             fits_dropped_residual += 1
             continue
@@ -252,8 +262,9 @@ def main():
         json.dumps({"type": "FeatureCollection", "features": features}, indent=2))
 
     # Audit summary
-    median_residual = round(float(np.median(list(fit_residuals.values()))), 5) if fit_residuals else None
-    p90_residual    = round(float(np.percentile(list(fit_residuals.values()), 90)), 5) if fit_residuals else None
+    residual_values = list(fit_residuals.values())
+    median_residual = round(float(median(residual_values)), 5) if residual_values else None
+    p90_residual    = round(float(_percentile(residual_values, 90)), 5) if residual_values else None
     accuracy_note = (
         "\n> **Accuracy note:** Screenshots counted below under the GLOBAL PR-wide affine"
         " fallback have no per-word pin centroids — they were extracted before the label"
@@ -290,6 +301,7 @@ def main():
 
     conn.close()
     print(json.dumps({
+        "coordinate_keys": len(geo_lookup),
         "affine_fits_succeeded": fits_succeeded,
         "median_fit_residual_deg": median_residual,
         "geocoded_candidates": geocoded,
@@ -300,7 +312,8 @@ def main():
             "outputs/intel_geocode_audit.md",
         ],
     }, indent=2))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
