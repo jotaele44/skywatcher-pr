@@ -1,6 +1,12 @@
 name: iOS Native Analyzer
 
 on:
+  push:
+    branches:
+      - "agent/native-ios-screenshot-analyzer"
+    paths:
+      - "ios/SkywatcherMobile/**"
+      - ".github/workflows/ios-native.yml"
   pull_request:
     paths:
       - "ios/SkywatcherMobile/**"
