@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher.local/schemas/skywatcher.fr24.mobile.v1.schema.json",
+  "title": "Skywatcher FR24 Mobile Result v1",
+  "type": "object",
+  "required": ["schema_version", "run_id"],
+  "properties": {
+    "schema_version": {"const": "skywatcher.fr24.mobile.v1"},
+    "run_id": {"type": ["string", "null"]},
+    "status": {"enum": ["error"]},
+    "received_at": {"type": "string"},
+    "processed_at": {"type": "string"},
+    "source": {
+      "type": "object",
+      "required": ["safe_filename", "byte_size", "sha256", "media_type"],
+      "properties": {
+        "safe_filename": {"const": "source_image"},
+        "byte_size": {"type": "integer", "minimum": 1, "maximum": 41943040},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "media_type": {"enum": ["image/png", "image/jpeg"]}
+      },
+      "additionalProperties": false
+    },
+    "image": {
+      "type": "object",
+      "required": ["width", "height", "orientation"],
+      "properties": {
+        "width": {"type": "integer", "minimum": 320, "maximum": 16384},
+        "height": {"type": "integer", "minimum": 320, "maximum": 16384},
+        "orientation": {"enum": ["portrait", "landscape", "square"]}
+      },
+      "additionalProperties": false
+    },
+    "classification": {
+      "type": "object",
+      "required": ["status", "is_fr24", "confidence", "reason"],
+      "properties": {
+        "status": {"const": "provisional"},
+        "is_fr24": {"const": "unresolved"},
+        "confidence": {"const": 0.0},
+        "reason": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "observations": {"type": "array", "maxItems": 0},
+    "unresolved_fields": {"type": "array", "items": {"type": "string"}},
+    "processing": {
+      "type": "object",
+      "required": ["execution_environment", "bounded_mode", "network_used"],
+      "properties": {
+        "execution_environment": {"const": "a-shell-ios"},
+        "bounded_mode": {"const": true},
+        "network_used": {"const": false},
+        "external_processes_used": {"const": false},
+        "analyzer": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "required": ["code", "retryable"],
+      "properties": {
+        "code": {"type": "string"},
+        "retryable": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "oneOf": [
+    {"required": ["status", "error", "observations", "unresolved_fields"]},
+    {"required": ["received_at", "processed_at", "source", "image", "classification", "observations", "unresolved_fields", "processing"]}
+  ]
+}
