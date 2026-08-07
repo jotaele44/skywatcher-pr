@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 import ImageIO
 import UniformTypeIdentifiers
-import Vision
+@preconcurrency import Vision
 #if canImport(UIKit)
 import UIKit
 #endif
