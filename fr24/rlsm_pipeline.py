@@ -390,6 +390,69 @@ STAGE_FUNCS: dict = {
 # status + report
 # --------------------------------------------------------------------------- #
 
+def _orientation_breakdown(conn: sqlite3.Connection) -> dict:
+    """
+    Per-orientation extraction metrics.
+
+    Portrait and landscape run through the same three named zones but different
+    geometry, and a regression in one is invisible in a corpus-wide average that
+    the other dominates. Breaking the numbers out is what makes the landscape
+    path checkable rather than assumed — in particular the icon share, which is
+    the signal for whether the glyph search is finding anything in a layout whose
+    map zone is bounded by width instead of height.
+    """
+    from fr24.rlsm_zones import ORIENTATION_SQL
+
+    orient = ORIENTATION_SQL.format(t="s")
+    out: dict = {}
+    rows = conn.execute(f"""
+        SELECT {orient} AS orientation, COUNT(*)
+        FROM screenshots s WHERE s.width IS NOT NULL AND s.height IS NOT NULL
+        GROUP BY 1""").fetchall()
+    for orientation, n in rows:
+        out[orientation] = {"screenshots": n}
+
+    for orientation, n_pins, n_located in conn.execute(f"""
+        SELECT {orient} AS orientation, COUNT(*),
+               SUM(CASE WHEN p.centroid_x IS NOT NULL THEN 1 ELSE 0 END)
+        FROM labeled_pins p JOIN screenshots s ON s.screenshot_id = p.screenshot_id
+        GROUP BY 1"""):
+        entry = out.setdefault(orientation, {})
+        entry["pins"] = n_pins
+        entry["pins_located"] = n_located or 0
+
+    if _table_exists(conn, "icon_observations"):
+        for orientation, n_icons, n_pins_with in conn.execute(f"""
+            SELECT {orient} AS orientation, COUNT(*), COUNT(DISTINCT i.pin_id)
+            FROM icon_observations i JOIN screenshots s
+              ON s.screenshot_id = i.screenshot_id
+            GROUP BY 1"""):
+            entry = out.setdefault(orientation, {})
+            entry["icons"] = n_icons
+            entry["pins_with_icon"] = n_pins_with
+        # Which side of the label the glyph was found on. A landscape corpus
+        # should show a visibly larger right-side share than portrait; if both
+        # are ~100% left, the fallback never engaged and the numbers below are
+        # measuring the old left-only behaviour.
+        has_side = "anchor_side" in {
+            r[1] for r in conn.execute("PRAGMA table_info(icon_observations)")}
+        if has_side:
+            for orientation, side, n in conn.execute(f"""
+                SELECT {orient} AS orientation, COALESCE(i.anchor_side, 'unknown'), COUNT(*)
+                FROM icon_observations i JOIN screenshots s
+                  ON s.screenshot_id = i.screenshot_id
+                GROUP BY 1, 2"""):
+                entry = out.setdefault(orientation, {})
+                entry.setdefault("anchor_side", {})[side] = n
+
+    for entry in out.values():
+        located = entry.get("pins_located") or 0
+        entry["icon_share_pct"] = (
+            round(100.0 * (entry.get("pins_with_icon") or 0) / located, 1)
+            if located else None)
+    return out
+
+
 def collect_status() -> dict:
     if not DB.exists():
         return {"db": str(DB.relative_to(REPO)), "exists": False}
@@ -430,6 +493,8 @@ def collect_status() -> dict:
         st["pins_with_icon"] = _count(
             conn, "SELECT COUNT(DISTINCT pin_id) FROM icon_observations "
                   "WHERE pin_id IS NOT NULL")
+
+    st["by_orientation"] = _orientation_breakdown(conn)
 
     st["unlabeled_candidates"] = _count(conn, "SELECT COUNT(*) FROM unlabeled_pin_candidates")
     st["review_queue"] = {
@@ -488,6 +553,8 @@ def build_report() -> str:
               f"| icons assigned a named class | {st.get('icon_named', 0):,} |", ""]
         L += _icon_agreement_section()
 
+    L += _orientation_section(st)
+
     L += ["## Review queue", "", "| kind | rows |", "|---|---|"]
     for kind, n in (st.get("review_queue") or {}).items():
         L += [f"| {kind} | {n:,} |"]
@@ -504,6 +571,43 @@ def build_report() -> str:
               f"| {r['ended_at'] or '—'} |"]
     L += [""]
     return "\n".join(L)
+
+
+def _orientation_section(st: dict) -> list[str]:
+    """Portrait vs landscape, side by side."""
+    by = st.get("by_orientation") or {}
+    if not by:
+        return []
+    out = ["## Portrait vs landscape", "",
+           "| orientation | screenshots | pins | located | icons | icon share |",
+           "|---|---|---|---|---|---|"]
+    for orientation in sorted(by):
+        e = by[orientation]
+        share = e.get("icon_share_pct")
+        out.append(
+            f"| {orientation} | {e.get('screenshots', 0):,} | {e.get('pins', 0):,} "
+            f"| {e.get('pins_located', 0):,} | {e.get('icons', 0):,} "
+            f"| {'—' if share is None else f'{share}%'} |")
+    out.append("")
+
+    sides = {o: e["anchor_side"] for o, e in by.items() if e.get("anchor_side")}
+    if sides:
+        out += ["### Glyph anchor side", "",
+                "| orientation | " + " | ".join(
+                    sorted({s for v in sides.values() for s in v})) + " |",
+                "|---" * (1 + len({s for v in sides.values() for s in v})) + "|"]
+        all_sides = sorted({s for v in sides.values() for s in v})
+        for orientation in sorted(sides):
+            counts = sides[orientation]
+            out.append(f"| {orientation} | "
+                       + " | ".join(f"{counts.get(s, 0):,}" for s in all_sides) + " |")
+        out.append("")
+
+    out += ["> Both orientations run the same three named zones, so a difference",
+            "> here is geometry, not vocabulary. Watch the icon share: landscape",
+            "> bounds its map zone by width rather than height, so more labels sit",
+            "> against a frame edge and rely on the right-side glyph fallback.", ""]
+    return out
 
 
 def _icon_agreement_section() -> list[str]:
