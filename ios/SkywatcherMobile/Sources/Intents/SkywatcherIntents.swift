@@ -7,7 +7,7 @@ struct AnalyzeSkywatcherScreenshotIntent: AppIntent {
     static let description = IntentDescription("Analyze a manually captured screenshot entirely on device.")
     static let openAppWhenRun = false
 
-    @Parameter(title: "Screenshot", supportedContentTypes: [.image])
+    @Parameter(title: "Screenshot")
     var screenshot: IntentFile
 
     func perform() async throws -> some IntentResult & ReturnsValue<IntentFile> & ProvidesDialog {
