@@ -350,7 +350,12 @@ def _stage_2(frames: list[dict[str, object]], output: Path, mode: AnalysisMode, 
         groups.append({"repeat_view_cluster_id": "SOURCE_SEQUENCE_001", "frame_id": frame_id, "zoom_relation": "ordered_sequence", "cross_zoom_persistence": "NOT_ADJUDICATED", "screen_alignment_score": "", "ground_alignment_status": "NOT_ADJUDICATED", "ui_overlay_intersection": False, "status": "requires_review"})
     identified = [{"finding_id": f"SATIM-{index:06d}", **finding} for index, finding in enumerate(findings, 1)]
     features = [{"type": "Feature", "geometry": None, "properties": finding} for finding in identified]
-    _write_json(directory / "STAGE_2_SATIM_FINDINGS.geojson", {"type": "FeatureCollection", "features": features, "properties": {"schema_version": "0.4.0", "source_status": "screenshot_only", "facility_purpose_inference": False}})
+    # facility_purpose_inference stays False: unbounded purpose inference remains
+    # prohibited. function_assessment_enabled reports whether the bounded ADR v2.1 A1
+    # channel produced anything on this run — False here because this stage emits
+    # artifact candidates only, and a function assessment needs corroborating
+    # observations it does not have.
+    _write_json(directory / "STAGE_2_SATIM_FINDINGS.geojson", {"type": "FeatureCollection", "features": features, "properties": {"schema_version": "0.5.0", "source_status": "screenshot_only", "facility_purpose_inference": False, "function_assessment_enabled": False}})
     fields = ["finding_id", "frame_id", "class", "pixel_bbox", "confidence", "status", "repeat_view_cluster_id", "screen_alignment_score", "ground_alignment_status", "cross_zoom_persistence", "ui_overlay_intersection", "analyst_note"]
     _write_csv(directory / "STAGE_2_ARTIFACT_LEDGER.csv", fields, identified)
     _write_csv(directory / "STAGE_2_REPEAT_VIEW_MATRIX.csv", ["repeat_view_cluster_id", "frame_id", "zoom_relation", "cross_zoom_persistence", "screen_alignment_score", "ground_alignment_status", "ui_overlay_intersection", "status"], groups)

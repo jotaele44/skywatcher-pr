@@ -120,6 +120,51 @@ def test_no_intent_or_purpose_inference(tmp_path: Path) -> None:
     findings = json.loads((output / "stage_2" / "STAGE_2_SATIM_FINDINGS.geojson").read_text())
     assert observation["intent_assessment"] == "not_assessed"
     assert findings["properties"]["facility_purpose_inference"] is False
+    # ADR v2.1 A1 opened a bounded facility-function channel. It is reported
+    # explicitly so a consumer can tell "no assessment was made" from "the field
+    # predates the channel", and it stays off for artifact-candidate-only output.
+    assert findings["properties"]["function_assessment_enabled"] is False
+
+
+def test_function_assessment_cannot_be_emitted_without_a_confidence_record() -> None:
+    """ADR v2.1 A1: the bounded channel is only bounded if the record is mandatory.
+
+    Checked against the schema document itself rather than through a validator, so
+    the guarantee holds without adding a jsonschema dependency here — the same
+    approach tests/test_schema_satim_fpim_corrim_contracts.py takes.
+    """
+    schema_path = (
+        Path(__file__).resolve().parents[1]
+        / "skills/skywatcher-fr24-image-analysis/schemas/satim_finding.schema.json"
+    )
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+
+    # Unbounded purpose inference is still prohibited outright.
+    assert schema["properties"]["purpose_inference"]["const"] is False
+
+    assessment = schema["properties"]["function_assessment"]
+    assert assessment["additionalProperties"] is False
+
+    # Every ADR section 5.3 confidence field is required, so a bare class label with
+    # no method, scope, version, or supporting observations cannot validate.
+    required = set(assessment["required"])
+    assert {
+        "class",
+        "confidence",
+        "confidence_method",
+        "confidence_scope",
+        "method_version",
+        "supporting_observation_ids",
+        "limitations",
+        "interpretation_restriction",
+    } <= required
+
+    assert assessment["properties"]["supporting_observation_ids"]["minItems"] == 1
+    assert set(assessment["properties"]["class"]["enum"]) == {
+        "DUAL_USE_FUNCTION_CANDIDATE",
+        "SINGLE_USE_CIVILIAN_CANDIDATE",
+        "UNRESOLVED",
+    }
 
 
 def test_ocr_degrades_when_tesseract_binary_is_absent(tmp_path: Path, monkeypatch) -> None:
