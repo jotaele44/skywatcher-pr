@@ -36,6 +36,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from fr24.rlsm_anchors import build_geo_lookup  # noqa: E402
+
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 SCHEMA = REPO / "data" / "rlsm" / "schema.sql"
 BASELINE = REPO / "data" / "FR24_baseline"
@@ -163,14 +165,16 @@ def preflight(ctx: dict) -> dict:
             warnings.append("pillow-heif not installed — .heic screenshots will be "
                             "recorded as unreadable")
 
-    # 3) Gazetteer present.
+    # 3) Gazetteer present and usable by the geocode stage.
     gpkg = REPO / "data" / "reference" / "Gazetteer_PR_GNIS.gpkg"
     if not gpkg.exists():
         problems.append(f"missing gazetteer: {gpkg.relative_to(REPO)}")
     else:
         try:
             from fr24.rlsm_gazetteer import load_gazetteer
-            info["gazetteer_keys"] = load_gazetteer().stats()["keys"]
+            gazetteer_stats = load_gazetteer().stats()
+            info["gazetteer_keys"] = gazetteer_stats["keys"]
+            info["gazetteer_coordinate_keys"] = gazetteer_stats["with_coords"]
         except Exception as exc:
             problems.append(f"gazetteer failed to load: {type(exc).__name__}: {exc}")
 
@@ -198,7 +202,59 @@ def preflight(ctx: dict) -> dict:
             ensure_schema(conn)
             info["icon_observations"] = "created"
 
-    # 5) Word-box migration needed?
+    if "geocode" in ctx["stages"]:
+        lookup_conn = conn
+        owns_lookup_conn = False
+        if lookup_conn is None:
+            lookup_conn = sqlite3.connect(":memory:")
+            owns_lookup_conn = True
+        try:
+            geocode_keys = len(build_geo_lookup(lookup_conn))
+            info["geocode_coordinate_keys"] = geocode_keys
+            if geocode_keys == 0:
+                problems.append(
+                    "geocode coordinate lookup is empty: expected tracked "
+                    "data/reference/Gazetteer_PR_GNIS.gpkg coordinates or "
+                    "existing geo_anchors rows"
+                )
+        except Exception as exc:
+            problems.append(f"geocode coordinate lookup failed: {type(exc).__name__}: {exc}")
+        finally:
+            if owns_lookup_conn:
+                lookup_conn.close()
+
+    # 5) Preprocess stamp: rows produced under a different mode/scale than the
+    #    current ZONE_OCR_CONFIG. Resume keys on screenshots.ocr_status, so a
+    #    stale row is skipped forever unless it is counted and re-read here.
+    if conn is not None and _table_exists(conn, "ocr_observations"):
+        if not ctx["dry_run"]:
+            from fr24.rlsm_preprocess import ensure_observation_columns
+            added = ensure_observation_columns(conn)
+            if added:
+                info["ocr_observations_columns_added"] = added
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(ocr_observations)")}
+        if {"preprocess", "preprocess_scale"} <= cols:
+            from fr24.rlsm_preprocess import config_stamp
+            from fr24.rlsm_zones import ZONE_OCR_CONFIG
+            want_mode, want_scale = config_stamp(ZONE_OCR_CONFIG.get("label_layer", {}))
+            stale_pp = _count(conn, """
+                SELECT COUNT(*) FROM ocr_observations o
+                WHERE o.obs_id IN (SELECT MAX(obs_id) FROM ocr_observations
+                                   WHERE zone='label_layer' GROUP BY screenshot_id)
+                  AND (o.preprocess IS NULL OR o.preprocess <> ?
+                       OR o.preprocess_scale IS NULL
+                       OR ABS(o.preprocess_scale - ?) > 1e-6)""",
+                (want_mode, want_scale))
+            info["observations_needing_preprocess"] = stale_pp
+            if stale_pp:
+                warnings.append(
+                    f"{stale_pp:,} screenshots were OCR'd under different "
+                    f"preprocessing than ZONE_OCR_CONFIG now declares "
+                    f"({want_mode} @ {want_scale}x). The ocr stage will re-read "
+                    f"them (--reocr-stale-preprocess); existing raw OCR is kept "
+                    f"and new rows append under a fresh run_id.")
+
+    # 6) Word-box migration needed?
     if conn is not None and _table_exists(conn, "ocr_observations"):
         stale = _count(conn, """
             SELECT COUNT(*) FROM ocr_observations o
@@ -261,6 +317,10 @@ def stage_ocr(ctx: dict) -> None:
     if ctx["preflight"].get("screenshots_needing_word_boxes"):
         print("    · backfilling word boxes on pre-existing OCR rows", flush=True)
         _run_module("fr24.rlsm_ocr_parallel", common + ["--reocr-boxes"])
+    # Pass 3: rows whose preprocessing no longer matches the zone config.
+    if ctx["preflight"].get("observations_needing_preprocess"):
+        print("    · re-reading rows OCR'd under stale preprocessing", flush=True)
+        _run_module("fr24.rlsm_ocr_parallel", common + ["--reocr-stale-preprocess"])
 
 
 def stage_aircraft(ctx: dict) -> None:

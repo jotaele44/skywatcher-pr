@@ -28,6 +28,11 @@ ln -s ~/Documents/GitHub/spiderweb-pr/data/FR24_baseline data/FR24_baseline
 
 Preflight prints this command for you if the directory is missing.
 
+The geocode stage does not require `data/places.geojson`. Clean clones use the
+tracked GNIS GeoPackage at `data/reference/Gazetteer_PR_GNIS.gpkg` plus any
+existing `geo_anchors` rows, and preflight verifies that coordinate lookup before
+the expensive image-decoding stages run.
+
 ### 2. Install the toolchain
 
 ```bash

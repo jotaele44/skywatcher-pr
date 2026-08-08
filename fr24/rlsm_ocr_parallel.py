@@ -54,7 +54,11 @@ except ImportError:
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from fr24.rlsm_preprocess import preprocess, scale_for  # noqa: E402
+from fr24.rlsm_preprocess import (  # noqa: E402
+    ensure_observation_columns,
+    preprocess,
+    scale_for,
+)
 from fr24.rlsm_source_availability import (  # noqa: E402
     SourceUnavailableError,
     availability_predicate,
@@ -161,13 +165,33 @@ def _build_target_query(
     reocr_boxes: bool,
     filter_month: str | None,
     limit: int = 0,
+    reocr_stale_preprocess: bool = False,
 ) -> tuple[str, list]:
     where_parts = [
         "s.ingest_status='ok'",
         availability_predicate("s"),
     ]
     params: list[str] = []
-    if reocr_boxes:
+    if reocr_stale_preprocess:
+        # Screenshots whose newest label_layer row was OCR'd under a different
+        # preprocess stamp than ZONE_OCR_CONFIG declares now — including rows
+        # written before the stamp columns existed (preprocess IS NULL).
+        from fr24.rlsm_preprocess import config_stamp
+        from fr24.rlsm_zones import ZONE_OCR_CONFIG
+
+        want_mode, want_scale = config_stamp(ZONE_OCR_CONFIG.get("label_layer", {}))
+        where_parts.append("""s.screenshot_id IN (
+            SELECT o.screenshot_id FROM ocr_observations o
+            WHERE o.obs_id IN (
+                SELECT MAX(obs_id) FROM ocr_observations
+                WHERE zone='label_layer' GROUP BY screenshot_id)
+              AND (o.preprocess IS NULL
+                   OR o.preprocess <> ?
+                   OR o.preprocess_scale IS NULL
+                   OR ABS(o.preprocess_scale - ?) > 1e-6)
+        )""")
+        params.extend([want_mode, want_scale])
+    elif reocr_boxes:
         where_parts.append("""s.screenshot_id IN (
             SELECT o.screenshot_id FROM ocr_observations o
             WHERE o.obs_id IN (
@@ -242,10 +266,10 @@ def _process_one(args: tuple[int, str, int]) -> dict:
                     INSERT INTO ocr_observations
                         (screenshot_id, run_id, zone, bbox_x, bbox_y, bbox_w, bbox_h,
                          raw_text, raw_lines_json, confidence_mean, confidence_min,
-                         n_words, engine, engine_version, psm, ocr_status,
-                         ocr_error, observed_at)
+                         n_words, engine, engine_version, psm, preprocess,
+                         preprocess_scale, ocr_status, ocr_error, observed_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'tesseract',
-                            ?, ?, ?, ?, ?)
+                            ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         sid,
@@ -262,6 +286,8 @@ def _process_one(args: tuple[int, str, int]) -> dict:
                         n_words,
                         engine_version,
                         psm,
+                        mode,
+                        scale,
                         zone_status,
                         None,
                         _iso_now(),
@@ -366,6 +392,11 @@ def main() -> None:
     ap.add_argument("--filter-month",  type=str,   default=None)
     ap.add_argument("--retry-failed",  action="store_true",
                     help="Also retry screenshots with ocr_status='failed'.")
+    ap.add_argument("--reocr-stale-preprocess", action="store_true",
+                    help="Re-OCR screenshots whose newest label_layer row was "
+                         "produced under a different preprocess mode or scale "
+                         "than ZONE_OCR_CONFIG declares now (including rows "
+                         "written before the stamp existed).")
     ap.add_argument("--reocr-boxes",   action="store_true",
                     help="Re-OCR screenshots whose stored observations predate "
                          "word-box capture (raw_lines_json empty). Appends rows "
@@ -376,11 +407,17 @@ def main() -> None:
 
     conn = sqlite3.connect(str(DB), timeout=30.0)
     require_availability_schema(conn)
+    # Older databases predate the preprocess stamp; add the columns before any
+    # worker tries to write them.
+    added = ensure_observation_columns(conn)
+    if added:
+        print(f"[parallel-ocr] added ocr_observations columns: {', '.join(added)}")
     sql, params = _build_target_query(
         retry_failed=args.retry_failed,
         reocr_boxes=args.reocr_boxes,
         filter_month=args.filter_month,
         limit=args.limit,
+        reocr_stale_preprocess=args.reocr_stale_preprocess,
     )
     rows = conn.execute(sql, params).fetchall()
     conn.close()
