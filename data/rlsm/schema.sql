@@ -323,6 +323,7 @@ CREATE TABLE IF NOT EXISTS icon_observations (
     saturation     REAL,                                   -- 0-1
     value          REAL,                                   -- 0-1
     ahash          TEXT,                                   -- 64-bit average hash, 16 hex chars
+    anchor_side    TEXT,                                   -- 'left'|'right': which side of the label the glyph was found on
     cluster_id     INTEGER,
     icon_class     TEXT,
     confidence     REAL,

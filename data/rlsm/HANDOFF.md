@@ -129,6 +129,29 @@ The report metric to watch is **screenshots with ≥2 located pins**: that is th
 the per-screenshot affine geocoder can fit, which is what turns approximate frames into
 `located` observations (docs/SCREENSHOT_DATA_STRATEGY.md §1).
 
+## Portrait and landscape
+
+Both orientations are handled, and the run report breaks every extraction metric out by
+orientation so a regression in one cannot hide inside an average the other dominates.
+
+The two layouts share the **same three zone names** — `status_bar`, `label_layer`,
+`aircraft_card` — and only the geometry differs: in landscape the aircraft card is a
+right-hand strip rather than a bottom sheet, so `label_layer` gives up width instead of
+height. Everything downstream keys on the zone name, so the extractor's confidence weights,
+the word-box offsets and the review queue need no orientation branch at all.
+
+One place geometry does matter is the icon glyph search. FR24 draws the glyph to a label's
+left, but a label sitting against the frame edge has no room there — common in landscape,
+whose map zone is bounded by frame width. The detector picks its search side from available
+room and falls back to the opposite side, recording which side won in
+`icon_observations.anchor_side`. The report's **Glyph anchor side** table is the check: if
+landscape shows ~100% `left`, the fallback never engaged and the icon numbers are suspect.
+
+If the report's per-orientation **icon share** diverges sharply between the two, the likely
+cause is the landscape zone fractions in `fr24/rlsm_zones.py`, which are estimated rather
+than measured against a real landscape frame. Re-derive them before trusting a landscape-heavy
+slice of the corpus.
+
 ## Split the work
 
 Only `inventory`, `ocr`, `icons` and `unlabeled` decode images and need the corpus.
