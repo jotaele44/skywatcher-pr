@@ -36,6 +36,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from fr24.rlsm_anchors import build_geo_lookup  # noqa: E402
+
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 SCHEMA = REPO / "data" / "rlsm" / "schema.sql"
 BASELINE = REPO / "data" / "FR24_baseline"
@@ -163,14 +165,16 @@ def preflight(ctx: dict) -> dict:
             warnings.append("pillow-heif not installed — .heic screenshots will be "
                             "recorded as unreadable")
 
-    # 3) Gazetteer present.
+    # 3) Gazetteer present and usable by the geocode stage.
     gpkg = REPO / "data" / "reference" / "Gazetteer_PR_GNIS.gpkg"
     if not gpkg.exists():
         problems.append(f"missing gazetteer: {gpkg.relative_to(REPO)}")
     else:
         try:
             from fr24.rlsm_gazetteer import load_gazetteer
-            info["gazetteer_keys"] = load_gazetteer().stats()["keys"]
+            gazetteer_stats = load_gazetteer().stats()
+            info["gazetteer_keys"] = gazetteer_stats["keys"]
+            info["gazetteer_coordinate_keys"] = gazetteer_stats["with_coords"]
         except Exception as exc:
             problems.append(f"gazetteer failed to load: {type(exc).__name__}: {exc}")
 
@@ -198,7 +202,59 @@ def preflight(ctx: dict) -> dict:
             ensure_schema(conn)
             info["icon_observations"] = "created"
 
-    # 5) Word-box migration needed?
+    if "geocode" in ctx["stages"]:
+        lookup_conn = conn
+        owns_lookup_conn = False
+        if lookup_conn is None:
+            lookup_conn = sqlite3.connect(":memory:")
+            owns_lookup_conn = True
+        try:
+            geocode_keys = len(build_geo_lookup(lookup_conn))
+            info["geocode_coordinate_keys"] = geocode_keys
+            if geocode_keys == 0:
+                problems.append(
+                    "geocode coordinate lookup is empty: expected tracked "
+                    "data/reference/Gazetteer_PR_GNIS.gpkg coordinates or "
+                    "existing geo_anchors rows"
+                )
+        except Exception as exc:
+            problems.append(f"geocode coordinate lookup failed: {type(exc).__name__}: {exc}")
+        finally:
+            if owns_lookup_conn:
+                lookup_conn.close()
+
+    # 5) Preprocess stamp: rows produced under a different mode/scale than the
+    #    current ZONE_OCR_CONFIG. Resume keys on screenshots.ocr_status, so a
+    #    stale row is skipped forever unless it is counted and re-read here.
+    if conn is not None and _table_exists(conn, "ocr_observations"):
+        if not ctx["dry_run"]:
+            from fr24.rlsm_preprocess import ensure_observation_columns
+            added = ensure_observation_columns(conn)
+            if added:
+                info["ocr_observations_columns_added"] = added
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(ocr_observations)")}
+        if {"preprocess", "preprocess_scale"} <= cols:
+            from fr24.rlsm_preprocess import config_stamp
+            from fr24.rlsm_zones import ZONE_OCR_CONFIG
+            want_mode, want_scale = config_stamp(ZONE_OCR_CONFIG.get("label_layer", {}))
+            stale_pp = _count(conn, """
+                SELECT COUNT(*) FROM ocr_observations o
+                WHERE o.obs_id IN (SELECT MAX(obs_id) FROM ocr_observations
+                                   WHERE zone='label_layer' GROUP BY screenshot_id)
+                  AND (o.preprocess IS NULL OR o.preprocess <> ?
+                       OR o.preprocess_scale IS NULL
+                       OR ABS(o.preprocess_scale - ?) > 1e-6)""",
+                (want_mode, want_scale))
+            info["observations_needing_preprocess"] = stale_pp
+            if stale_pp:
+                warnings.append(
+                    f"{stale_pp:,} screenshots were OCR'd under different "
+                    f"preprocessing than ZONE_OCR_CONFIG now declares "
+                    f"({want_mode} @ {want_scale}x). The ocr stage will re-read "
+                    f"them (--reocr-stale-preprocess); existing raw OCR is kept "
+                    f"and new rows append under a fresh run_id.")
+
+    # 6) Word-box migration needed?
     if conn is not None and _table_exists(conn, "ocr_observations"):
         stale = _count(conn, """
             SELECT COUNT(*) FROM ocr_observations o
@@ -261,6 +317,10 @@ def stage_ocr(ctx: dict) -> None:
     if ctx["preflight"].get("screenshots_needing_word_boxes"):
         print("    · backfilling word boxes on pre-existing OCR rows", flush=True)
         _run_module("fr24.rlsm_ocr_parallel", common + ["--reocr-boxes"])
+    # Pass 3: rows whose preprocessing no longer matches the zone config.
+    if ctx["preflight"].get("observations_needing_preprocess"):
+        print("    · re-reading rows OCR'd under stale preprocessing", flush=True)
+        _run_module("fr24.rlsm_ocr_parallel", common + ["--reocr-stale-preprocess"])
 
 
 def stage_aircraft(ctx: dict) -> None:
@@ -330,6 +390,69 @@ STAGE_FUNCS: dict = {
 # status + report
 # --------------------------------------------------------------------------- #
 
+def _orientation_breakdown(conn: sqlite3.Connection) -> dict:
+    """
+    Per-orientation extraction metrics.
+
+    Portrait and landscape run through the same three named zones but different
+    geometry, and a regression in one is invisible in a corpus-wide average that
+    the other dominates. Breaking the numbers out is what makes the landscape
+    path checkable rather than assumed — in particular the icon share, which is
+    the signal for whether the glyph search is finding anything in a layout whose
+    map zone is bounded by width instead of height.
+    """
+    from fr24.rlsm_zones import ORIENTATION_SQL
+
+    orient = ORIENTATION_SQL.format(t="s")
+    out: dict = {}
+    rows = conn.execute(f"""
+        SELECT {orient} AS orientation, COUNT(*)
+        FROM screenshots s WHERE s.width IS NOT NULL AND s.height IS NOT NULL
+        GROUP BY 1""").fetchall()
+    for orientation, n in rows:
+        out[orientation] = {"screenshots": n}
+
+    for orientation, n_pins, n_located in conn.execute(f"""
+        SELECT {orient} AS orientation, COUNT(*),
+               SUM(CASE WHEN p.centroid_x IS NOT NULL THEN 1 ELSE 0 END)
+        FROM labeled_pins p JOIN screenshots s ON s.screenshot_id = p.screenshot_id
+        GROUP BY 1"""):
+        entry = out.setdefault(orientation, {})
+        entry["pins"] = n_pins
+        entry["pins_located"] = n_located or 0
+
+    if _table_exists(conn, "icon_observations"):
+        for orientation, n_icons, n_pins_with in conn.execute(f"""
+            SELECT {orient} AS orientation, COUNT(*), COUNT(DISTINCT i.pin_id)
+            FROM icon_observations i JOIN screenshots s
+              ON s.screenshot_id = i.screenshot_id
+            GROUP BY 1"""):
+            entry = out.setdefault(orientation, {})
+            entry["icons"] = n_icons
+            entry["pins_with_icon"] = n_pins_with
+        # Which side of the label the glyph was found on. A landscape corpus
+        # should show a visibly larger right-side share than portrait; if both
+        # are ~100% left, the fallback never engaged and the numbers below are
+        # measuring the old left-only behaviour.
+        has_side = "anchor_side" in {
+            r[1] for r in conn.execute("PRAGMA table_info(icon_observations)")}
+        if has_side:
+            for orientation, side, n in conn.execute(f"""
+                SELECT {orient} AS orientation, COALESCE(i.anchor_side, 'unknown'), COUNT(*)
+                FROM icon_observations i JOIN screenshots s
+                  ON s.screenshot_id = i.screenshot_id
+                GROUP BY 1, 2"""):
+                entry = out.setdefault(orientation, {})
+                entry.setdefault("anchor_side", {})[side] = n
+
+    for entry in out.values():
+        located = entry.get("pins_located") or 0
+        entry["icon_share_pct"] = (
+            round(100.0 * (entry.get("pins_with_icon") or 0) / located, 1)
+            if located else None)
+    return out
+
+
 def collect_status() -> dict:
     if not DB.exists():
         return {"db": str(DB.relative_to(REPO)), "exists": False}
@@ -370,6 +493,8 @@ def collect_status() -> dict:
         st["pins_with_icon"] = _count(
             conn, "SELECT COUNT(DISTINCT pin_id) FROM icon_observations "
                   "WHERE pin_id IS NOT NULL")
+
+    st["by_orientation"] = _orientation_breakdown(conn)
 
     st["unlabeled_candidates"] = _count(conn, "SELECT COUNT(*) FROM unlabeled_pin_candidates")
     st["review_queue"] = {
@@ -428,6 +553,8 @@ def build_report() -> str:
               f"| icons assigned a named class | {st.get('icon_named', 0):,} |", ""]
         L += _icon_agreement_section()
 
+    L += _orientation_section(st)
+
     L += ["## Review queue", "", "| kind | rows |", "|---|---|"]
     for kind, n in (st.get("review_queue") or {}).items():
         L += [f"| {kind} | {n:,} |"]
@@ -444,6 +571,43 @@ def build_report() -> str:
               f"| {r['ended_at'] or '—'} |"]
     L += [""]
     return "\n".join(L)
+
+
+def _orientation_section(st: dict) -> list[str]:
+    """Portrait vs landscape, side by side."""
+    by = st.get("by_orientation") or {}
+    if not by:
+        return []
+    out = ["## Portrait vs landscape", "",
+           "| orientation | screenshots | pins | located | icons | icon share |",
+           "|---|---|---|---|---|---|"]
+    for orientation in sorted(by):
+        e = by[orientation]
+        share = e.get("icon_share_pct")
+        out.append(
+            f"| {orientation} | {e.get('screenshots', 0):,} | {e.get('pins', 0):,} "
+            f"| {e.get('pins_located', 0):,} | {e.get('icons', 0):,} "
+            f"| {'—' if share is None else f'{share}%'} |")
+    out.append("")
+
+    sides = {o: e["anchor_side"] for o, e in by.items() if e.get("anchor_side")}
+    if sides:
+        out += ["### Glyph anchor side", "",
+                "| orientation | " + " | ".join(
+                    sorted({s for v in sides.values() for s in v})) + " |",
+                "|---" * (1 + len({s for v in sides.values() for s in v})) + "|"]
+        all_sides = sorted({s for v in sides.values() for s in v})
+        for orientation in sorted(sides):
+            counts = sides[orientation]
+            out.append(f"| {orientation} | "
+                       + " | ".join(f"{counts.get(s, 0):,}" for s in all_sides) + " |")
+        out.append("")
+
+    out += ["> Both orientations run the same three named zones, so a difference",
+            "> here is geometry, not vocabulary. Watch the icon share: landscape",
+            "> bounds its map zone by width rather than height, so more labels sit",
+            "> against a frame edge and rely on the right-side glyph fallback.", ""]
+    return out
 
 
 def _icon_agreement_section() -> list[str]:

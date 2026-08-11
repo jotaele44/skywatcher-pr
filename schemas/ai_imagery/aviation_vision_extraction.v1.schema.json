@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/ai_imagery/aviation_vision_extraction.v1.schema.json",
+  "title": "Skywatcher Aviation Vision Extraction v1",
+  "description": "Provider-neutral, schema-constrained provisional extraction from an aviation screenshot or frame. Model execution occurs outside Skywatcher; this record preserves domain fields and provenance references.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "extraction_id", "source_artifact_id", "model_run_receipt_id", "extraction_schema_version", "fields", "review_status", "provisional"],
+  "properties": {
+    "schema_version": {"const": "aviation_vision_extraction.v1"},
+    "extraction_id": {"type": "string", "minLength": 1},
+    "source_artifact_id": {"type": "string", "minLength": 1},
+    "model_run_receipt_id": {"type": "string", "minLength": 1},
+    "extraction_schema_version": {"type": "string", "minLength": 1},
+    "fields": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field_name", "value", "provenance_id", "validation_outcome"],
+        "properties": {
+          "field_name": {"enum": ["registration", "callsign", "aircraft_type", "operator", "origin", "destination", "timestamp", "latitude", "longitude", "altitude", "speed", "heading", "route_text", "other"]},
+          "value": {},
+          "provenance_id": {"type": "string", "minLength": 1},
+          "validation_outcome": {"enum": ["VALID", "INVALID", "UNVERIFIED", "CONFLICTED"]}
+        }
+      }
+    },
+    "review_status": {"enum": ["UNREVIEWED", "NEEDS_REVIEW", "APPROVED", "REJECTED", "SUPERSEDED"]},
+    "reviewer_id": {"type": ["string", "null"]},
+    "provisional": {"const": true},
+    "supersedes_extraction_id": {"type": ["string", "null"]}
+  }
+}
