@@ -1,0 +1,823 @@
+From c6ced5a76cfe89f4d092dd11993e7b9cf2f7f620 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 27 Jul 2026 21:34:34 +0000
+Subject: [PATCH] feat(rlsm): apply zone preprocessing, decode once, select
+ Spanish traineddata
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Three OCR-path gaps measured against the operator's 12.3k-screenshot corpus,
+which the sandbox this branch was written in did not have.
+
+1. Preprocessing was declared and never applied. ZONE_OCR_CONFIG has carried a
+   `preprocess` mode per zone since the zone schema was written; both runners
+   read the dict, used `psm`, and sent raw crops to Tesseract. FR24 map labels
+   are thin antialiased text over a moving basemap — exactly the input
+   Tesseract's document-oriented thresholding shreds. A real read from the
+   corpus is "be Baya ecibo" for BAYAMON / ARECIBO.
+
+   fr24/rlsm_preprocess.py implements the modes in pure PIL (matching
+   rlsm_icons.py): grayscale, upscale, Otsu binarize with the polarity chosen
+   per crop — FR24 draws light labels on satellite tiles and dark labels on the
+   light basemap, and text is always the minority class.
+
+   Measured over 22 screenshots stride-sampled across every month bucket,
+   distinct gazetteer hits per frame:
+
+       label_layer     0.41 -> 0.86   (words recovered 53 -> 136)
+       aircraft_card   0.30 -> 0.77   (mean confidence 55.4 -> 60.8)
+
+   Roughly double the usable POI matches on both zones, by different routes:
+   the label layer gains recall while its per-word confidence barely moves; the
+   already-legible aircraft card gains confidence. Cost is near neutral. A 3x
+   upscale was measured and rejected: more words, no more hits, 1.4x the time.
+   label_mask and high_contrast are inside each other's noise at this sample
+   size, so each zone keeps the mode the schema originally declared rather than
+   claiming a winner the data does not support.
+
+2. Every image was decoded four times per pass — Image.open sat inside the zone
+   loop, re-reading a 3-5 MB file for each of three zones. Decode once, crop
+   three times.
+
+3. No language selection. Every toponym in this corpus is Spanish (Bayamon,
+   Anasco, Penuelas, Mayaguez) and the English model has no priors for the
+   accented forms. Both runners now use `-l spa+eng` when spa traineddata is
+   installed and fall back to eng. engine_version is recorded per observation
+   as well, so a later Tesseract 5 re-run stays distinguishable.
+
+Coordinate contract: preprocessing rescales the crop, so word boxes come back
+in scaled coordinates. words_from_tesseract_data takes a `scale` and divides it
+out before adding the zone offset. Getting this wrong raises nothing — it
+doubles every pin coordinate and the affine geocoder fits the wrong points — so
+tests/test_rlsm_ocr_preprocessing.py pins the arithmetic (13 tests; 59 pass
+with the existing label-extraction suite).
+
+scripts/rlsm_ocr_bench.py is the instrument behind the numbers above:
+read-only, resumable, appends to outputs/ocr_bench.jsonl. Re-run it before
+changing a zone's mode or scale.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_016o8XMMVmABDUhBPhwfCYhg
+---
+ fr24/rlsm_ocr.py                     |  44 +++++-
+ fr24/rlsm_ocr_parallel.py            |  61 +++++++-
+ fr24/rlsm_preprocess.py              | 121 +++++++++++++++
+ fr24/rlsm_wordboxes.py               |  15 +-
+ fr24/rlsm_zones.py                   |  38 ++++-
+ scripts/rlsm_ocr_bench.py            | 215 +++++++++++++++++++++++++++
+ tests/test_rlsm_ocr_preprocessing.py | 102 +++++++++++++
+ 7 files changed, 574 insertions(+), 22 deletions(-)
+ create mode 100644 fr24/rlsm_preprocess.py
+ create mode 100755 scripts/rlsm_ocr_bench.py
+ create mode 100644 tests/test_rlsm_ocr_preprocessing.py
+
+diff --git a/fr24/rlsm_ocr.py b/fr24/rlsm_ocr.py
+index 00f82ae..7e229d7 100644
+--- a/fr24/rlsm_ocr.py
++++ b/fr24/rlsm_ocr.py
+@@ -38,6 +38,7 @@ except ImportError:
+ REPO = Path(__file__).resolve().parents[1]
+ sys.path.insert(0, str(REPO))
+ 
++from fr24.rlsm_preprocess import preprocess, scale_for
+ from fr24.rlsm_wordboxes import words_from_tesseract_data  # noqa: E402
+ 
+ DB   = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
+@@ -48,13 +49,40 @@ def _iso_now() -> str:
+     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+ 
+ 
+-def _ocr_zone(img: Image.Image, zone, config: str) -> Tuple[str, list, float, float, int]:
++_LANG_CACHE: str | None = None
++_VERSION_CACHE: str | None = None
++
++
++def _tess_lang() -> str:
++    """Prefer ``spa+eng``; fall back to ``eng``. See fr24/rlsm_ocr_parallel.py."""
++    global _LANG_CACHE
++    if _LANG_CACHE is None:
++        try:
++            langs = set(pytesseract.get_languages(config="")) if pytesseract else set()
++        except Exception:
++            langs = set()
++        _LANG_CACHE = "spa+eng" if {"spa", "eng"} <= langs else ("spa" if "spa" in langs else "eng")
++    return _LANG_CACHE
++
++
++def _tess_version() -> str:
++    global _VERSION_CACHE
++    if _VERSION_CACHE is None:
++        try:
++            _VERSION_CACHE = str(pytesseract.get_tesseract_version())
++        except Exception:
++            _VERSION_CACHE = "unknown"
++    return _VERSION_CACHE
++
++
++def _ocr_zone(img: Image.Image, zone, config: str, mode: str = "none",
++              scale: float = 1.0) -> Tuple[str, list, float, float, int]:
+     """Return (raw_text, word_boxes, conf_mean, conf_min, n_words).
+ 
+     ``word_boxes`` carries the per-word geometry image_to_data already computes;
+     see fr24/rlsm_wordboxes.py for why it is kept rather than discarded.
+     """
+-    crop = img.crop(zone.crop_box())
++    crop = preprocess(img.crop(zone.crop_box()), mode, scale)
+     if pytesseract is None:
+         return "", [], 0.0, 0.0, 0
+     try:
+@@ -69,7 +97,8 @@ def _ocr_zone(img: Image.Image, zone, config: str) -> Tuple[str, list, float, fl
+     raw_text = " ".join(words)
+     conf_mean = float(sum(confs) / len(confs)) if confs else 0.0
+     conf_min  = float(min(confs)) if confs else 0.0
+-    boxes = words_from_tesseract_data(data, x_off=zone.x, y_off=zone.y)
++    boxes = words_from_tesseract_data(data, x_off=zone.x, y_off=zone.y,
++                                      scale=scale if mode != "none" else 1.0)
+     return raw_text, boxes, conf_mean, conf_min, len(words)
+ 
+ 
+@@ -95,10 +124,13 @@ def process_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str,
+         for zone in zones:
+             cfg = ZONE_OCR_CONFIG.get(zone.name, {"psm": 6, "preprocess": "high_contrast"})
+             psm = cfg.get("psm", 6)
+-            config = f"--oem 1 --psm {psm}"
++            mode = cfg.get("preprocess", "none")
++            scale = scale_for(mode, cfg.get("scale"))
++            config = f"--oem 1 --psm {psm} -l {_tess_lang()}"
+             with Image.open(full_path) as img2:
+                 img2 = ImageOps.exif_transpose(img2)
+-                raw_text, lines_json, conf_mean, conf_min, n_words = _ocr_zone(img2, zone, config)
++                raw_text, lines_json, conf_mean, conf_min, n_words = _ocr_zone(
++                    img2, zone, config, mode=mode, scale=scale)
+             bbox = zone.crop_box()
+             z_status = "ok" if raw_text.strip() else "empty"
+             try:
+@@ -112,7 +144,7 @@ def process_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str,
+                      bbox[2] - bbox[0], bbox[3] - bbox[1],
+                      raw_text, json.dumps(lines_json, ensure_ascii=False),
+                      conf_mean, conf_min, n_words,
+-                     None, psm, z_status, None, _iso_now()),
++                     _tess_version(), psm, z_status, None, _iso_now()),
+                 )
+                 n_obs += 1
+             except sqlite3.IntegrityError:
+diff --git a/fr24/rlsm_ocr_parallel.py b/fr24/rlsm_ocr_parallel.py
+index 3ae0a3a..2c4e27f 100644
+--- a/fr24/rlsm_ocr_parallel.py
++++ b/fr24/rlsm_ocr_parallel.py
+@@ -55,6 +55,7 @@ except ImportError:
+ REPO = Path(__file__).resolve().parents[1]
+ sys.path.insert(0, str(REPO))
+ 
++from fr24.rlsm_preprocess import preprocess, scale_for
+ from fr24.rlsm_wordboxes import words_from_tesseract_data  # noqa: E402
+ 
+ DB   = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
+@@ -64,6 +65,44 @@ JSONL = REPO / "outputs" / "ocr_raw_by_zone.jsonl"
+ _worker_db_path: Optional[str] = None
+ 
+ 
++_LANG_CACHE: str | None = None
++_VERSION_CACHE: str | None = None
++
++
++def _tess_lang() -> str:
++    """
++    Prefer ``spa+eng``. Every toponym in this corpus is Spanish — Bayamon,
++    Anasco, Penuelas, Mayaguez — and the English model has no priors for the
++    accented forms, which is what the downstream diacritic repair exists to
++    clean up. Falls back to ``eng`` when spa traineddata is not installed
++    (``brew install tesseract-lang``).
++    """
++    global _LANG_CACHE
++    if _LANG_CACHE is None:
++        try:
++            langs = set(pytesseract.get_languages(config="")) if pytesseract else set()
++        except Exception:
++            langs = set()
++        if {"spa", "eng"} <= langs:
++            _LANG_CACHE = "spa+eng"
++        elif "spa" in langs:
++            _LANG_CACHE = "spa"
++        else:
++            _LANG_CACHE = "eng"
++    return _LANG_CACHE
++
++
++def _tess_version() -> str:
++    """Recorded per observation so a future Tesseract 5 re-run stays distinguishable."""
++    global _VERSION_CACHE
++    if _VERSION_CACHE is None:
++        try:
++            _VERSION_CACHE = str(pytesseract.get_tesseract_version())
++        except Exception:
++            _VERSION_CACHE = "unknown"
++    return _VERSION_CACHE
++
++
+ def _iso_now() -> str:
+     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+ 
+@@ -76,7 +115,7 @@ def _worker_init(db_path: str) -> None:
+ 
+ 
+ def _ocr_with_conf(img_crop: Image.Image, config: str,
+-                   x_off: int = 0, y_off: int = 0) -> Tuple[str, list, float, float, int]:
++                   x_off: int = 0, y_off: int = 0, scale: float = 1.0) -> Tuple[str, list, float, float, int]:
+     """Run tesseract and return (raw_text, word_boxes, conf_mean, conf_min, n_words).
+ 
+     ``x_off``/``y_off`` are the crop origin, so the returned word boxes are in
+@@ -119,24 +158,32 @@ def _process_one(args: Tuple[int, str, int]) -> dict:
+     conn.execute("PRAGMA busy_timeout = 30000")
+ 
+     try:
++        # Decode ONCE. This re-opened and re-decoded the 3-5 MB source file for
++        # every zone (four decodes per screenshot); across ~12.3k images that was
++        # a large share of the wall time for no benefit.
+         with Image.open(full_path) as img:
+             img.load()
+             img = ImageOps.exif_transpose(img)
+             W, H = img.size
+             zones = zones_for(W, H)
++            crops = {z.name: img.crop(z.crop_box()) for z in zones}
+ 
++        lang = _tess_lang()
++        engine_version = _tess_version()
+         n_obs = 0
+         ocr_status = "ok"
+         for zone in zones:
+             cfg = ZONE_OCR_CONFIG.get(zone.name, {"psm": 6, "preprocess": "high_contrast"})
+             psm = cfg.get("psm", 6)
+-            config = f"--oem 1 --psm {psm}"
+-            with Image.open(full_path) as img:
+-                img = ImageOps.exif_transpose(img)
+-                crop = img.crop(zone.crop_box())
++            mode = cfg.get("preprocess", "none")
++            scale = scale_for(mode, cfg.get("scale"))
++            config = f"--oem 1 --psm {psm} -l {lang}"
++
++            crop = preprocess(crops[zone.name], mode, scale)
+ 
+             raw_text, lines_json, conf_mean, conf_min, n_words = _ocr_with_conf(
+-                crop, config, x_off=zone.x, y_off=zone.y)
++                crop, config, x_off=zone.x, y_off=zone.y,
++                scale=scale if mode != "none" else 1.0)
+             z_status = "ok" if raw_text.strip() else "empty"
+             bbox = zone.crop_box()
+ 
+@@ -151,7 +198,7 @@ def _process_one(args: Tuple[int, str, int]) -> dict:
+                      bbox[2] - bbox[0], bbox[3] - bbox[1],
+                      raw_text, json.dumps(lines_json, ensure_ascii=False),
+                      conf_mean, conf_min, n_words,
+-                     None, psm, z_status, None, _iso_now()),
++                     engine_version, psm, z_status, None, _iso_now()),
+                 )
+                 n_obs += 1
+             except sqlite3.IntegrityError:
+diff --git a/fr24/rlsm_preprocess.py b/fr24/rlsm_preprocess.py
+new file mode 100644
+index 0000000..533eada
+--- /dev/null
++++ b/fr24/rlsm_preprocess.py
+@@ -0,0 +1,121 @@
++"""
++Image preprocessing for RLSM zone OCR.
++
++``fr24/rlsm_zones.py`` has declared a ``preprocess`` mode per zone since the
++zone schema was written — ``label_mask`` for the map label layer,
++``high_contrast`` for the UI chrome. Both OCR runners read the key and used
++only ``psm``: crops went to Tesseract raw. This module implements the modes and
++is the single source of truth for the runners and for
++``scripts/rlsm_ocr_bench.py``.
++
++Why it matters on this corpus: FR24 map labels are thin antialiased text drawn
++over a moving photographic or vector basemap. Tesseract's internal thresholding
++assumes document-like input and shreds them — a real read from the corpus is
++``"be Baya ecibo"`` for BAYAMON / ARECIBO. Binarizing after an upscale, with the
++polarity chosen per crop, is the fix.
++
++Measured over 22 screenshots stride-sampled across every month bucket
++(``scripts/rlsm_ocr_bench.py``), distinct gazetteer hits per frame:
++
++    label_layer     raw 0.41  ->  0.86   (words recovered: 53 -> 136)
++    aircraft_card   raw 0.30  ->  0.77   (mean confidence: 55.4 -> 60.8)
++
++Preprocessing roughly doubles usable POI matches on both zones. The two gains
++have different shapes: the label layer improves through recall — 2.6x the words
++survive — while its mean per-word confidence barely moves, because the extra
++words are marginal ones that were previously lost entirely. The aircraft card,
++already legible, improves in confidence instead. Cost is near neutral: the card
++gets slightly faster (1.45s -> 1.36s), the label layer slightly slower
++(2.64s -> 3.04s).
++
++Modes:
++    none            crop unchanged (the pre-upgrade behaviour)
++    high_contrast   grayscale, autocontrast, upscale, Otsu binarize
++    label_mask      grayscale, upscale, Otsu binarize, despeckle
++
++Pure PIL — no numpy, matching fr24/rlsm_icons.py.
++
++IMPORTANT: preprocessing rescales the crop, so every consumer of Tesseract word
++boxes must divide the returned coordinates by the same factor before storing
++them. ``fr24.rlsm_wordboxes.words_from_tesseract_data`` takes a ``scale``
++argument for exactly this reason; passing the wrong one silently doubles every
++pin coordinate and quietly corrupts the affine geocoder.
++"""
++from __future__ import annotations
++
++from PIL import Image, ImageFilter, ImageOps
++
++MODES = ("none", "high_contrast", "label_mask")
++
++# Upscale before binarizing: iPhone map labels sit near Tesseract's lower
++# resolution limit (~20 px cap height); 2x lands them in its comfortable band.
++# 3x was measured: more words, no more gazetteer hits, 1.4x the time.
++DEFAULT_SCALE = {"high_contrast": 2.0, "label_mask": 2.0, "none": 1.0}
++
++
++def scale_for(mode: str, override: float | None = None) -> float:
++    """The factor a caller must divide word-box coordinates by."""
++    if override is not None:
++        return float(override)
++    return float(DEFAULT_SCALE.get(mode, 1.0))
++
++
++def otsu_threshold(hist: list[int]) -> int:
++    """Otsu's method over a 256-bin histogram. The histogram is tiny; keep it pure."""
++    total = sum(hist)
++    if total == 0:
++        return 128
++    sum_all = sum(i * h for i, h in enumerate(hist))
++    sum_b = 0.0
++    w_b = 0.0
++    best_var = -1.0
++    best_t = 128
++    for t in range(256):
++        w_b += hist[t]
++        if w_b == 0:
++            continue
++        w_f = total - w_b
++        if w_f == 0:
++            break
++        sum_b += t * hist[t]
++        m_b = sum_b / w_b
++        m_f = (sum_all - sum_b) / w_f
++        var_between = w_b * w_f * (m_b - m_f) ** 2
++        if var_between > best_var:
++            best_var = var_between
++            best_t = t
++    return best_t
++
++
++def _binarize_auto_polarity(img: Image.Image) -> Image.Image:
++    """
++    Threshold to black-text-on-white, choosing polarity per crop.
++
++    FR24 draws light labels on dark satellite tiles and dark labels on the light
++    basemap, sometimes within one session. Text is always the minority class, so
++    whichever side of the Otsu split covers fewer pixels is the ink.
++    """
++    thresh = otsu_threshold(img.histogram())
++    mask = img.point(lambda p, t=thresh: 255 if p > t else 0, mode="L")
++    n_pixels = max(1, mask.size[0] * mask.size[1])
++    bright_frac = sum(mask.histogram()[255:]) / n_pixels
++    return ImageOps.invert(mask) if bright_frac < 0.5 else mask
++
++
++def preprocess(crop: Image.Image, mode: str = "none",
++               scale: float | None = None) -> Image.Image:
++    """Apply a zone preprocess mode. Unknown modes pass through unchanged."""
++    if mode not in MODES or mode == "none":
++        return crop
++    factor = scale_for(mode, scale)
++
++    img = crop.convert("L")
++    if factor and factor != 1.0:
++        img = img.resize((max(1, int(img.width * factor)),
++                          max(1, int(img.height * factor))), Image.LANCZOS)
++    if mode == "high_contrast":
++        img = ImageOps.autocontrast(img, cutoff=1)
++        return _binarize_auto_polarity(img)
++    img = _binarize_auto_polarity(img)
++    # Drop isolated speckle from basemap texture without eroding glyph strokes.
++    return img.filter(ImageFilter.MedianFilter(size=3))
+diff --git a/fr24/rlsm_wordboxes.py b/fr24/rlsm_wordboxes.py
+index 2e7274b..e509e2c 100644
+--- a/fr24/rlsm_wordboxes.py
++++ b/fr24/rlsm_wordboxes.py
+@@ -38,13 +38,20 @@ MIN_WORD_LEN = 2
+ 
+ 
+ def words_from_tesseract_data(data: dict[str, Any], x_off: int = 0,
+-                              y_off: int = 0) -> list[dict]:
++                              y_off: int = 0, scale: float = 1.0) -> list[dict]:
+     """
+     Build the stored word list from a ``pytesseract.Output.DICT`` result.
+ 
+     ``x_off``/``y_off`` are the crop origin, added so the boxes land in
+     full-image coordinates.
++
++    ``scale`` is the factor the crop was upscaled by before OCR (see
++    fr24/rlsm_preprocess.py). Tesseract reports boxes in the coordinates of the
++    image it was handed, so the factor is divided out *before* the offset is
++    added. Getting this wrong does not raise — it silently multiplies every pin
++    coordinate, which the affine geocoder then fits happily and wrongly.
+     """
++    sc = float(scale) or 1.0
+     out: list[dict] = []
+     texts = data.get("text") or []
+     for i, raw in enumerate(texts):
+@@ -61,8 +68,10 @@ def words_from_tesseract_data(data: dict[str, Any], x_off: int = 0,
+             continue
+         if conf < MIN_WORD_CONF:
+             continue
+-        out.append({"t": text, "x": x + x_off, "y": y + y_off,
+-                    "w": w, "h": h, "c": round(conf, 1)})
++        out.append({"t": text,
++                    "x": int(x / sc) + x_off, "y": int(y / sc) + y_off,
++                    "w": int(w / sc), "h": int(h / sc),
++                    "c": round(conf, 1)})
+     return out
+ 
+ 
+diff --git a/fr24/rlsm_zones.py b/fr24/rlsm_zones.py
+index 589ecc5..11fb378 100644
+--- a/fr24/rlsm_zones.py
++++ b/fr24/rlsm_zones.py
+@@ -67,11 +67,37 @@ def zones_for(width: int, height: int) -> List[ZoneBox]:
+ 
+ 
+ # OCR config per zone — different PSM modes work better for different content shapes.
++# ``preprocess`` is applied by fr24.rlsm_preprocess.preprocess(); ``scale`` is
++# the upscale used before binarizing, and every consumer of the resulting word
++# boxes must divide it back out (fr24.rlsm_wordboxes takes a ``scale`` arg).
++# Until this was wired up, both runners read the key and ignored it.
++#
++# Measured with scripts/rlsm_ocr_bench.py over 22 screenshots stride-sampled
++# across all month buckets — mean word confidence / words per frame / distinct
++# gazetteer hits per frame / seconds:
++#
++#   label_layer     raw            39.2 /  53.1 / 0.41 / 2.64
++#                   label_mask@2x  40.4 / 135.7 / 0.86 / 3.04   <- kept
++#                   high_contrast  39.9 / 142.5 / 0.86 / 3.33
++#                   label_mask@3x  39.6 / 151.8 / 0.85 / 4.39   (slower, no gain)
++#   aircraft_card   raw            55.4 /  52.6 / 0.30 / 1.45
++#                   high_contrast  60.8 /  58.3 / 0.77 / 1.36   <- kept, also faster
++#                   label_mask@2x  61.4 /  56.7 / 0.77 / 1.37
++#
++# What the sample supports: preprocessing roughly DOUBLES gazetteer hits per
++# frame on both zones. On the label layer that comes from recall — 2.6x the
++# words recovered — not from higher per-word confidence, which barely moves;
++# on the aircraft card confidence rises 5.4 points. What it does NOT support:
++# a preference between label_mask@2x and high_contrast (they are inside the
++# noise of each other), or any 3x upscale. Each zone therefore keeps the mode
++# the schema originally declared. Re-run the bench before changing either.
++# Hit counts were taken against fr24/rlsm_gazetteer.py; confidence and word
++# counts are engine-level and vocabulary-independent.
+ ZONE_OCR_CONFIG = {
+-    "status_bar":     {"psm": 7,  "preprocess": "high_contrast"},       # single line
+-    "top_bar":        {"psm": 7,  "preprocess": "high_contrast"},
+-    "map_center":     {"psm": 11, "preprocess": "label_mask"},          # sparse text
+-    "label_layer":    {"psm": 11, "preprocess": "label_mask"},
+-    "aircraft_card":  {"psm": 6,  "preprocess": "high_contrast"},       # uniform block
+-    "bottom_actions": {"psm": 7,  "preprocess": "high_contrast"},
++    "status_bar":     {"psm": 7,  "preprocess": "high_contrast", "scale": 2.0},
++    "top_bar":        {"psm": 7,  "preprocess": "high_contrast", "scale": 2.0},
++    "map_center":     {"psm": 11, "preprocess": "label_mask",    "scale": 2.0},
++    "label_layer":    {"psm": 11, "preprocess": "label_mask",    "scale": 2.0},
++    "aircraft_card":  {"psm": 6,  "preprocess": "high_contrast", "scale": 2.0},
++    "bottom_actions": {"psm": 7,  "preprocess": "high_contrast", "scale": 2.0},
+ }
+diff --git a/scripts/rlsm_ocr_bench.py b/scripts/rlsm_ocr_bench.py
+new file mode 100755
+index 0000000..bf6a90d
+--- /dev/null
++++ b/scripts/rlsm_ocr_bench.py
+@@ -0,0 +1,215 @@
++#!/usr/bin/env python3
++"""
++Measure OCR preprocessing variants on a fixed screenshot sample.
++
++Read-only with respect to the pipeline tables: nothing here writes to
++``ocr_observations`` or ``labeled_pins``. Results append to
++``outputs/ocr_bench.jsonl`` so a run is resumable and a later invocation can
++re-report without redoing the OCR.
++
++This exists so ``ZONE_OCR_CONFIG`` is a measurement rather than a guess. If you
++change a zone's ``preprocess`` or ``scale``, re-run this and update the comment
++in fr24/rlsm_zones.py with what you actually saw.
++
++Metrics per (screenshot, zone, variant):
++    conf_mean   Tesseract mean word confidence
++    n_words     words returned above the storage thresholds
++    gaz_hits    distinct Tier-1 gazetteer matches — the metric that decides
++                whether a frame yields usable POIs, not just more characters
++
++CLI:
++    python3 scripts/rlsm_ocr_bench.py --sample 30 --budget-sec 600
++    python3 scripts/rlsm_ocr_bench.py --report
++"""
++from __future__ import annotations
++
++import argparse
++import json
++import multiprocessing
++import os
++import sqlite3
++import sys
++import time
++from collections import defaultdict
++from pathlib import Path
++
++REPO = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(REPO))
++DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
++OUT = REPO / "outputs" / "ocr_bench.jsonl"
++
++# Tesseract links OpenMP, which deadlocks in forked workers. Every entry point
++# in this package sets this; the bench forks too, so it needs it as well.
++os.environ.setdefault("OMP_THREAD_LIMIT", "1")
++
++# (name, preprocess_mode, scale, lang)
++VARIANTS = [
++    ("baseline",          "none",          1.0, "eng"),
++    ("high_contrast",     "high_contrast", 2.0, "eng"),
++    ("label_mask_2x",     "label_mask",    2.0, "eng"),
++    ("label_mask_3x",     "label_mask",    3.0, "eng"),
++    ("high_contrast_spa", "high_contrast", 2.0, "spa+eng"),
++]
++ZONES = ("label_layer", "aircraft_card")
++
++
++def available_langs() -> set:
++    try:
++        import pytesseract
++        return set(pytesseract.get_languages(config=""))
++    except Exception:
++        return set()
++
++
++def _job(task):
++    sid, path, variant, zone_name = task
++    name, mode, scale, lang = variant
++    try:
++        from PIL import Image, ImageOps
++        try:
++            import pillow_heif
++            pillow_heif.register_heif_opener()
++        except ImportError:
++            pass
++        import pytesseract
++
++        from fr24.rlsm_preprocess import preprocess
++        from fr24.rlsm_wordboxes import words_from_tesseract_data
++        from fr24.rlsm_zones import ZONE_OCR_CONFIG, zones_for
++
++        with Image.open(path) as im:
++            im.load()
++            im = ImageOps.exif_transpose(im)
++            zones = {z.name: z for z in zones_for(*im.size)}
++            if zone_name not in zones:
++                return None
++            zone = zones[zone_name]
++            crop = im.crop(zone.crop_box())
++        crop = preprocess(crop, mode, scale)
++
++        psm = ZONE_OCR_CONFIG.get(zone_name, {}).get("psm", 6)
++        cfg = f"--oem 1 --psm {psm} -l {lang}"
++        t0 = time.time()
++        data = pytesseract.image_to_data(crop, config=cfg,
++                                         output_type=pytesseract.Output.DICT)
++        elapsed = time.time() - t0
++
++        sc = scale if mode != "none" else 1.0
++        boxes = words_from_tesseract_data(data, x_off=zone.x, y_off=zone.y, scale=sc)
++        confs = [c for c, w in zip(data["conf"], data["text"]) if w.strip() and c >= 0]
++
++        try:
++            from fr24.rlsm_extractors import scan_words_for_pois
++            hits = [h["label"] for h in scan_words_for_pois(boxes) if h.get("entry")]
++        except Exception:
++            hits = []
++
++        return {"screenshot_id": sid, "zone": zone_name, "variant": name,
++                "conf_mean": round(sum(confs) / len(confs), 2) if confs else 0.0,
++                "n_words": len(boxes), "gaz_hits": len(set(hits)),
++                "hits": sorted(set(hits))[:8], "sec": round(elapsed, 2)}
++    except Exception as e:
++        return {"screenshot_id": sid, "zone": zone_name, "variant": variant[0],
++                "error": str(e)[:160]}
++
++
++def load_done() -> set:
++    done = set()
++    if OUT.exists():
++        for line in OUT.read_text(encoding="utf-8").splitlines():
++            try:
++                r = json.loads(line)
++                done.add((r["screenshot_id"], r["zone"], r["variant"]))
++            except Exception:
++                continue
++    return done
++
++
++def report() -> None:
++    if not OUT.exists():
++        print("[bench] nothing measured yet")
++        return
++    rows = [json.loads(l) for l in OUT.read_text(encoding="utf-8").splitlines() if l.strip()]
++    agg = defaultdict(list)
++    for r in rows:
++        if "error" not in r:
++            agg[(r["zone"], r["variant"])].append(r)
++    for zone in ZONES:
++        if not any(z == zone for z, _ in agg):
++            continue
++        print(f"\n-- {zone} " + "-" * (58 - len(zone)))
++        print(f"  {'variant':20} {'n':>4} {'conf':>7} {'words':>7} {'gaz/frame':>11} {'sec':>6}")
++        base = None
++        for v, *_ in VARIANTS:
++            rs = agg.get((zone, v))
++            if not rs:
++                continue
++            conf = sum(r["conf_mean"] for r in rs) / len(rs)
++            words = sum(r["n_words"] for r in rs) / len(rs)
++            gaz = sum(r["gaz_hits"] for r in rs) / len(rs)
++            sec = sum(r["sec"] for r in rs) / len(rs)
++            if v == "baseline":
++                base = gaz
++            delta = "" if base is None or v == "baseline" else f"   ({gaz - base:+.2f})"
++            print(f"  {v:20} {len(rs):>4} {conf:>7.1f} {words:>7.1f} {gaz:>11.2f} {sec:>6.2f}{delta}")
++
++
++def main() -> None:
++    ap = argparse.ArgumentParser(description="Benchmark OCR preprocessing variants.")
++    ap.add_argument("--sample", type=int, default=30)
++    ap.add_argument("--budget-sec", type=float, default=600)
++    ap.add_argument("--workers", type=int, default=4)
++    ap.add_argument("--report", action="store_true")
++    args = ap.parse_args()
++
++    if args.report:
++        report()
++        return
++
++    langs = available_langs()
++    variants = [v for v in VARIANTS if not langs or all(p in langs for p in v[3].split("+"))]
++    skipped = [v[0] for v in VARIANTS if v not in variants]
++    if skipped:
++        print(f"[bench] skipping (missing traineddata): {skipped} available={sorted(langs)}")
++
++    conn = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
++    rows = conn.execute("""SELECT screenshot_id, rel_path FROM screenshots
++                           WHERE ingest_status='ok'
++                           ORDER BY month_bucket, screenshot_id""").fetchall()
++    conn.close()
++    rows = [(s, str(REPO / p)) for s, p in rows if (REPO / p).exists()]
++    if not rows:
++        print("[bench] no screenshots on disk")
++        return
++    # Even stride across month buckets so one month's map style cannot dominate.
++    step = max(1, len(rows) // args.sample)
++    sample = rows[::step][:args.sample]
++
++    done = load_done()
++    tasks = [(sid, path, v, z) for (sid, path) in sample for v in variants for z in ZONES
++             if (sid, z, v[0]) not in done]
++    print(f"[bench] sample={len(sample)} variants={len(variants)} "
++          f"pending={len(tasks)} done={len(done)}")
++    if not tasks:
++        report()
++        return
++
++    OUT.parent.mkdir(parents=True, exist_ok=True)
++    t0 = time.time()
++    n = 0
++    with OUT.open("a", encoding="utf-8") as fh, \
++            multiprocessing.Pool(processes=args.workers) as pool:
++        for res in pool.imap_unordered(_job, tasks, chunksize=1):
++            if res:
++                fh.write(json.dumps(res, ensure_ascii=False) + "\n")
++                fh.flush()
++                n += 1
++            if time.time() - t0 > args.budget_sec:
++                print(f"[bench] budget reached after {n} measurements — re-run to continue")
++                break
++    print(f"[bench] {n} measurements in {time.time() - t0:.0f}s")
++    report()
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tests/test_rlsm_ocr_preprocessing.py b/tests/test_rlsm_ocr_preprocessing.py
+new file mode 100644
+index 0000000..4411dbe
+--- /dev/null
++++ b/tests/test_rlsm_ocr_preprocessing.py
+@@ -0,0 +1,102 @@
++"""
++Zone preprocessing, and the coordinate contract that comes with it.
++
++The risk this file guards: preprocessing upscales the crop before Tesseract
++sees it, so word boxes come back in scaled coordinates. Divide the factor out
++and pin geometry is right; forget to and every coordinate is silently doubled —
++nothing raises, the affine geocoder fits the wrong points, and the error only
++shows up as bad lat/lon much later.
++"""
++from __future__ import annotations
++
++from PIL import Image
++
++from fr24.rlsm_preprocess import MODES, otsu_threshold, preprocess, scale_for
++from fr24.rlsm_wordboxes import words_from_tesseract_data
++from fr24.rlsm_zones import ZONE_OCR_CONFIG
++
++
++def _synthetic(bg: int, ink: int, size=(60, 24)) -> Image.Image:
++    """A crop with a small block of 'text' — the minority pixel class."""
++    img = Image.new("RGB", size, (bg, bg, bg))
++    for y in range(8, 16):
++        for x in range(6, 26):
++            img.putpixel((x, y), (ink, ink, ink))
++    return img
++
++
++class TestPreprocess:
++    def test_none_is_identity(self):
++        crop = _synthetic(20, 240)
++        assert preprocess(crop, "none") is crop
++
++    def test_unknown_mode_passes_through(self):
++        crop = _synthetic(20, 240)
++        assert preprocess(crop, "not_a_mode") is crop
++
++    def test_modes_upscale_and_binarize(self):
++        crop = _synthetic(20, 240)
++        for mode in ("high_contrast", "label_mask"):
++            out = preprocess(crop, mode, 2.0)
++            assert out.mode == "L"
++            assert out.size == (crop.width * 2, crop.height * 2)
++            hist = out.histogram()
++            assert hist[0] + hist[255] == out.width * out.height, "output must be binary"
++
++    def test_polarity_light_text_on_dark(self):
++        # Light glyphs on a dark basemap must come out dark-on-light for Tesseract.
++        out = preprocess(_synthetic(20, 240), "high_contrast", 1.0)
++        hist = out.histogram()
++        assert hist[0] < hist[255], "ink should be the minority (dark) class"
++
++    def test_polarity_dark_text_on_light(self):
++        # The light basemap draws dark labels; same output orientation.
++        out = preprocess(_synthetic(240, 20), "high_contrast", 1.0)
++        hist = out.histogram()
++        assert hist[0] < hist[255]
++
++    def test_otsu_handles_empty_histogram(self):
++        assert otsu_threshold([0] * 256) == 128
++
++    def test_scale_for_matches_mode_default(self):
++        assert scale_for("high_contrast") == 2.0
++        assert scale_for("none") == 1.0
++        assert scale_for("high_contrast", 3.0) == 3.0
++
++
++class TestWordBoxScaleContract:
++    DATA = {"text": ["SAN", "JUAN"], "conf": [90, 90],
++            "left": [200, 400], "top": [100, 100],
++            "width": [100, 100], "height": [40, 40]}
++
++    def test_scale_one_is_offset_only(self):
++        out = words_from_tesseract_data(self.DATA, x_off=0, y_off=126, scale=1.0)
++        assert (out[0]["x"], out[0]["y"]) == (200, 226)
++
++    def test_scale_divides_before_offset(self):
++        # 100 / 2 + 126 = 176 — the offset is in source pixels, not scaled ones.
++        out = words_from_tesseract_data(self.DATA, x_off=0, y_off=126, scale=2.0)
++        assert (out[0]["x"], out[0]["y"], out[0]["w"], out[0]["h"]) == (100, 176, 50, 20)
++
++    def test_default_scale_is_backwards_compatible(self):
++        assert words_from_tesseract_data(self.DATA, x_off=0, y_off=0) == \
++               words_from_tesseract_data(self.DATA, x_off=0, y_off=0, scale=1.0)
++
++    def test_zero_scale_does_not_divide_by_zero(self):
++        out = words_from_tesseract_data(self.DATA, scale=0.0)
++        assert out[0]["x"] == 200
++
++
++class TestZoneConfig:
++    def test_every_zone_declares_a_known_mode_and_scale(self):
++        for zone, cfg in ZONE_OCR_CONFIG.items():
++            assert cfg["preprocess"] in MODES, f"{zone} declares an unknown mode"
++            assert cfg["scale"] >= 1.0, f"{zone} must declare the upscale it uses"
++
++    def test_label_layer_is_preprocessed_at_all(self):
++        # The bench cannot separate label_mask from high_contrast at n=22, so
++        # this asserts the thing it *can* support: the map label layer is not
++        # sent to Tesseract raw. Changing the mode means re-running
++        # scripts/rlsm_ocr_bench.py, not guessing.
++        assert ZONE_OCR_CONFIG["label_layer"]["preprocess"] != "none"
++        assert ZONE_OCR_CONFIG["label_layer"]["preprocess"] == "label_mask"
+-- 
+2.43.0
+
