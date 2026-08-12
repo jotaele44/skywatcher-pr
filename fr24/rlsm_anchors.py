@@ -1,14 +1,14 @@
 """Per-screenshot calibration anchors from the RLSM store.
 
-Collects (pixel_x, pixel_y, lat, lon) anchors for a screenshot from the two
-places the RLSM pipeline records them:
+Collects (pixel_x, pixel_y, lat, lon) anchors for a screenshot from the tracked
+GNIS gazetteer and the places the RLSM pipeline records them:
 
   1. geo_anchors rows that carry both a pixel position and a geo position.
   2. labeled_pins rows carrying a word-level centroid (written at extraction
      time by fr24/rlsm_extractors.extract_labeled_pins; rows produced before
      word-box capture have NULL centroids and are skipped) whose normalized
-     label vocab-matches a known place from data/places.geojson or a named
-     geo_anchors row.
+     label vocab-matches a known place from data/reference/Gazetteer_PR_GNIS.gpkg
+     or a named geo_anchors row.
 
 The result feeds GeoCalibration(mode="per_screenshot_affine", anchors=...)
 (integration/geo_calibration.py) and scripts/sync_rlsm_calibration.py.
@@ -19,6 +19,8 @@ import json
 import sqlite3
 import unicodedata
 from pathlib import Path
+
+from fr24.rlsm_gazetteer import load_gazetteer
 
 REPO = Path(__file__).resolve().parents[1]
 PLACES_GEOJSON = REPO / "data" / "places.geojson"
@@ -36,14 +38,39 @@ def ascii_upper(s: str) -> str:
     ).upper().strip()
 
 
+def _table_exists(conn: sqlite3.Connection, name: str) -> bool:
+    try:
+        return conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (name,)
+        ).fetchone() is not None
+    except sqlite3.Error:
+        return False
+
+
 def build_geo_lookup(conn: sqlite3.Connection,
                      places_geojson: Path | None = None) -> dict[str, tuple[float, float]]:
-    """Name -> (lat, lon) vocabulary from places.geojson + named geo_anchors.
+    """Name -> (lat, lon) vocabulary from tracked GNIS + named geo_anchors.
 
-    places.geojson is operator-local (not tracked); a missing file just means
-    the lookup is built from geo_anchors alone.
+    ``data/places.geojson`` is ignored and no longer a pipeline dependency.
+    Passing ``places_geojson`` is retained only as a legacy compatibility
+    supplement for old one-off tools; a missing file is ignored.
     """
     lookup: dict[str, tuple[float, float]] = {}
+    gazetteer = load_gazetteer()
+    for key, entry in gazetteer.entries.items():
+        lat = entry.get("lat")
+        lon = entry.get("lon")
+        if lat is None or lon is None:
+            continue
+        try:
+            latlon = (float(lat), float(lon))
+        except (TypeError, ValueError):
+            continue
+        lookup[ascii_upper(key)] = latlon
+        canonical = entry.get("canonical")
+        if canonical:
+            lookup.setdefault(ascii_upper(str(canonical)), latlon)
+
     path = places_geojson if places_geojson is not None else PLACES_GEOJSON
     if path and Path(path).exists():
         gj = json.loads(Path(path).read_text())
@@ -57,11 +84,12 @@ def build_geo_lookup(conn: sqlite3.Connection,
                 continue
             if name and lat and lon:
                 lookup[ascii_upper(name)] = (lat, lon)
-    for name, lat, lon in conn.execute(
-        "SELECT name, lat, lon FROM geo_anchors"
-        " WHERE name IS NOT NULL AND lat IS NOT NULL AND lon IS NOT NULL"
-    ):
-        lookup[ascii_upper(name)] = (float(lat), float(lon))
+    if _table_exists(conn, "geo_anchors"):
+        for name, lat, lon in conn.execute(
+            "SELECT name, lat, lon FROM geo_anchors"
+            " WHERE name IS NOT NULL AND lat IS NOT NULL AND lon IS NOT NULL"
+        ):
+            lookup[ascii_upper(name)] = (float(lat), float(lon))
     return lookup
 
 

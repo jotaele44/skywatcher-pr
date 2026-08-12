@@ -42,6 +42,20 @@ def _conn() -> sqlite3.Connection:
     return c
 
 
+def test_preflight_accounts_for_geocode_coordinate_lookup(tmp_path, monkeypatch):
+    from fr24 import rlsm_pipeline
+
+    monkeypatch.setattr(rlsm_pipeline, "DB", tmp_path / "missing-rlsm.sqlite")
+    info = rlsm_pipeline.preflight({
+        "stages": ["preflight", "geocode"],
+        "dry_run": True,
+    })
+
+    assert info["gazetteer_keys"] >= 5000
+    assert info["gazetteer_coordinate_keys"] >= 5000
+    assert info["geocode_coordinate_keys"] >= 5000
+
+
 # ---- structural invariants ---------------------------------------------------
 
 def test_screema_tables_exist():

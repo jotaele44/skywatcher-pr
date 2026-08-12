@@ -70,6 +70,8 @@ CREATE TABLE IF NOT EXISTS ocr_observations (
     engine           TEXT NOT NULL DEFAULT 'tesseract',
     engine_version   TEXT,
     psm              INTEGER,
+    preprocess       TEXT,                                 -- fr24.rlsm_preprocess mode: 'none'|'high_contrast'|'label_mask'
+    preprocess_scale REAL,                                 -- upscale applied before OCR; word boxes already divide it out
     ocr_status       TEXT NOT NULL,                        -- 'ok'|'empty'|'failed'
     ocr_error        TEXT,
     observed_at      TEXT NOT NULL
@@ -578,6 +580,7 @@ CREATE TABLE IF NOT EXISTS icon_observations (
     saturation     REAL,                                   -- 0-1
     value          REAL,                                   -- 0-1
     ahash          TEXT,                                   -- 64-bit average hash, 16 hex chars
+    anchor_side    TEXT,                                   -- 'left'|'right': which side of the label the glyph was found on
     cluster_id     INTEGER,
     icon_class     TEXT,
     confidence     REAL,
