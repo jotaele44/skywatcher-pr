@@ -7,9 +7,10 @@ cd ~/Documents/GitHub/skywatcher-pr
 ./run-rlsm.sh
 ```
 
-That runs the whole chain — inventory → OCR → aircraft → labels → icons → geocode →
-review queue → exports → report — resumably, with a preflight that fails fast and a
-written summary at the end. Ctrl-C and re-run is always safe.
+That runs the whole chain — inventory → OCR → aircraft → labels → icons → aircraft marker
+binding → persisted georeference/zoom → geocode → review queue → exports → report —
+resumably, with a preflight that fails fast and a written summary at the end. Ctrl-C and
+re-run is always safe.
 
 **Why it runs here and not in the cloud:** OCR over ~13.3k images is hours of wall time
 and the corpus is machine-local. Everything downstream of the sqlite (labels, review,
@@ -27,6 +28,11 @@ ln -s ~/Documents/GitHub/spiderweb-pr/data/FR24_baseline data/FR24_baseline
 ```
 
 Preflight prints this command for you if the directory is missing.
+
+The geocode stage does not require `data/places.geojson`. Clean clones use the
+tracked GNIS GeoPackage at `data/reference/Gazetteer_PR_GNIS.gpkg` plus any
+existing `geo_anchors` rows, and preflight verifies that coordinate lookup before
+the expensive image-decoding stages run.
 
 ### 2. Install the toolchain
 
@@ -57,10 +63,13 @@ At `--workers 4` on Apple Silicon, over ~13.3k images:
 | aircraft | seconds | regex over stored text |
 | pins | seconds | gazetteer match over stored word boxes |
 | icons | ~1–1.5 h | one extra RGB decode per screenshot |
+| aircraft markers | ~1 h | one bounded viewport decode for each of ~4k aircraft frames; every target receives a terminal decision |
+| georeference / zoom | seconds–minutes | persists affine scale, learns corroborated relative rungs, then projects selected aircraft markers |
 | geocode / review / export / report | seconds–minutes | |
 
-**~3–3.5 h total.** Drop the icon pass with `--skip-icons` for ~2 h. Intel Macs, multiply
-by roughly 1.5.
+**~4–4.5 h total.** Drop the generic labeled-POI icon pass with `--skip-icons`
+for ~2.5–3 h; aircraft-marker binding still runs. Intel Macs, multiply by
+roughly 1.5.
 
 If your database was OCR'd by an earlier version, preflight will report a
 `screenshots_needing_word_boxes` count and the OCR stage will re-read those images to
@@ -73,8 +82,10 @@ OCR is never overwritten, new rows are appended under a fresh `run_id`.
 ./run-rlsm.sh --status            # what is done, what is pending (JSON)
 ./run-rlsm.sh --workers 2         # be gentler on a busy machine
 ./run-rlsm.sh --from icons        # resume from a stage after a failure
+./run-rlsm.sh --from aircraft_markers  # resume at spatial truth
+./run-rlsm.sh --stage georeference     # refit/persist transforms and positions only
 ./run-rlsm.sh --stage pins        # re-run exactly one stage
-./run-rlsm.sh --skip-icons        # OCR + labels + exports only
+./run-rlsm.sh --skip-icons        # skip generic POI icons; keep aircraft markers
 ./run-rlsm.sh --stage unlabeled   # the ground-feature blob pass (see below)
 ```
 
@@ -114,19 +125,53 @@ Read `outputs/rlsm_run_report.md` first — it carries the numbers that matter.
 - **`screenshots`** — one row per image, with `ocr_status`
 - **`ocr_observations`** — raw text *and* per-word pixel boxes (`raw_lines_json`), immutable
 - **`aircraft_observations`** — registration / type / altitude / speed per frame
+- **`aircraft_observations` spatial fields** — fail-closed source pixel, nullable glyph
+  rotation, bounded coordinate, method, confidence, and error; `heading_deg` is preserved
+- **`aircraft_marker_frames` / `aircraft_marker_detections`** — 100% terminal frame
+  accounting plus every candidate and its selection provenance
+- **`screenshot_georeferences`** — accepted and rejected per-frame transforms with viewport,
+  anchor count, normalized scale, residual, confidence, error, and evidence
+- **`zoom_ladder_rungs`** — relative per-viewport rungs learned only from accepted
+  multi-anchor fits; unsupported scales remain unassigned
 - **`labeled_pins`** — every matched place name **with real pixel geometry**, matched
   against the 5,744-key GNIS gazetteer (`data/reference/Gazetteer_PR_GNIS.gpkg`)
 - **`icon_observations`** — map glyphs keyed to their pin, with colour, shape and hash
 - **`manual_review_queue`** — genuinely uncertain items only
-- 14 CSV/JSONL exports plus the coverage report in `outputs/`
+- 18 generated CSV/JSONL exports, the append-only raw OCR mirror, and the coverage report
+  in `outputs/`
 
-The report metric to watch is **screenshots with ≥2 located pins**: that is the population
-the per-screenshot affine geocoder can fit, which is what turns approximate frames into
-`located` observations (docs/SCREENSHOT_DATA_STRATEGY.md §1).
+Watch **marker frames accounted**, **located screenshot georeferences**, and **aircraft
+observations with ≤500 m position**. The first must equal the targeted aircraft-frame count.
+The affine population still starts at screenshots with ≥2 measured pins; a supported relative
+zoom rung plus one measured anchor can recover additional near-duplicate frames.
+
+## Portrait and landscape
+
+Both orientations are handled, and the run report breaks every extraction metric out by
+orientation so a regression in one cannot hide inside an average the other dominates.
+
+The two layouts share the **same three zone names** — `status_bar`, `label_layer`,
+`aircraft_card` — and only the geometry differs: in landscape the aircraft card is a
+right-hand strip rather than a bottom sheet, so `label_layer` gives up width instead of
+height. Everything downstream keys on the zone name, so the extractor's confidence weights,
+the word-box offsets and the review queue need no orientation branch at all.
+
+One place geometry does matter is the icon glyph search. FR24 draws the glyph to a label's
+left, but a label sitting against the frame edge has no room there — common in landscape,
+whose map zone is bounded by frame width. The detector picks its search side from available
+room and falls back to the opposite side, recording which side won in
+`icon_observations.anchor_side`. The report's **Glyph anchor side** table is the check: if
+landscape shows ~100% `left`, the fallback never engaged and the icon numbers are suspect.
+
+If the report's per-orientation **icon share** diverges sharply between the two, the likely
+cause is the landscape zone fractions in `fr24/rlsm_zones.py`, which are estimated rather
+than measured against a real landscape frame. Re-derive them before trusting a landscape-heavy
+slice of the corpus.
 
 ## Split the work
 
-Only `inventory`, `ocr`, `icons` and `unlabeled` decode images and need the corpus.
+Only `inventory`, `ocr`, `icons`, `aircraft_markers` and `unlabeled` decode images and need
+the corpus.
 Everything else runs off the sqlite alone — preflight knows this and will not demand
 tesseract or the corpus for a DB-only stage. So:
 
@@ -159,9 +204,13 @@ Ship the small sqlite-derived reports, never the corpus.
 ```bash
 python3 -m pytest tests/test_rlsm_label_extraction.py -q   # accuracy: 46 tests, no corpus needed
 python3 -m pytest tests/test_rlsm_pipeline.py -q           # structural invariants
+python3 -m pytest tests/test_rlsm_aircraft_spatial_truth.py -q  # binding/georef/zoom contract
 python3 -m fr24.rlsm_gazetteer --stats                     # gazetteer size and tiering
 python3 -m fr24.rlsm_gazetteer --lookup "MAYAGÜEZ"         # resolve a single label
 ```
+
+The frozen conventions, uncertainty rules, API/GUI path, and explicit deferrals are in
+`docs/RLSM_AIRCRAFT_SPATIAL_TRUTH.md`.
 
 ## Source availability versus ingestion status
 

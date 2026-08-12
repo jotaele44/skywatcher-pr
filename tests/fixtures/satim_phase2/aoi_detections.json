@@ -32,6 +32,12 @@
           "capture_datetime_utc": "2022-01-10T00:00:00Z",
           "geometry_match_score": 0.10,
           "radiometric_match_score": 0.10
+        },
+        {
+          "imagery_epoch": "2021-06",
+          "capture_datetime_utc": "2021-06-10T00:00:00Z",
+          "geometry_match_score": 0.10,
+          "radiometric_match_score": 0.10
         }
       ]
     },
@@ -84,6 +90,12 @@
         {
           "imagery_epoch": "2022-03",
           "capture_datetime_utc": "2022-03-05T00:00:00Z",
+          "geometry_match_score": 0.90,
+          "radiometric_match_score": 0.85
+        },
+        {
+          "imagery_epoch": "2021-09",
+          "capture_datetime_utc": "2021-09-05T00:00:00Z",
           "geometry_match_score": 0.90,
           "radiometric_match_score": 0.85
         }

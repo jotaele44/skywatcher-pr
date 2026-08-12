@@ -66,6 +66,10 @@ single resumable command:
 Point `data/FR24_baseline` at the corpus first (a symlink is fine — preflight prints the
 exact command if it is missing). Full runbook: `data/rlsm/HANDOFF.md`.
 
+Geocoding uses the tracked GNIS GeoPackage at
+`data/reference/Gazetteer_PR_GNIS.gpkg` plus any existing RLSM `geo_anchors`.
+The ignored legacy `data/places.geojson` file is not required.
+
 ## SATIM engine protocol interface
 
 SATIM can run against a new manifest, directory, or zip bundle through the repo-native protocol runner:

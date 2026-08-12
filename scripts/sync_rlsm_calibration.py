@@ -54,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-residual-deg", type=float, default=0.05,
                     help="Skip fits whose median anchor residual exceeds this (default 0.05)")
     ap.add_argument("--places-geojson", default=None,
-                    help="Override data/places.geojson for the label vocabulary")
+                    help="Optional legacy supplement to the tracked GNIS label vocabulary")
     ap.add_argument("--dry-run", action="store_true",
                     help="Report what would change without writing")
     args = ap.parse_args(argv)

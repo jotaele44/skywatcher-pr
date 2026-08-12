@@ -1,9 +1,17 @@
 """
-iPhone FR24 portrait zone definitions for RLSM extraction.
+iPhone FR24 zone definitions for RLSM extraction — portrait and landscape.
 
 Calibrated against 1170x2532 iPhone screenshots of the FR24 app (bottom-sheet
 layout). Returns zone bboxes as fractional coordinates so the same definitions
 work across rotation and image dimension variations.
+
+Both orientations carry the **same three zone names** (``status_bar``,
+``label_layer``, ``aircraft_card``), which is what lets everything downstream
+stay orientation-agnostic: the extractor's per-zone confidence weights, the
+word-box offsets and the review queue all key on the name, not on geometry.
+Only the fractions differ — in landscape the aircraft card is a right-hand strip
+rather than a bottom sheet, so ``label_layer`` gives up width instead of height.
+Use ``orientation_for()`` rather than re-deriving the aspect rule.
 
 Six canonical zones:
 
@@ -50,10 +58,37 @@ class ZoneBox:
         return (self.x, self.y, self.x + self.w, self.y + self.h)
 
 
+PORTRAIT = "portrait"
+LANDSCAPE = "landscape"
+
+
+def orientation_for(width: int, height: int) -> str:
+    """
+    ``"portrait"`` or ``"landscape"`` from frame dimensions.
+
+    The single source of truth for the aspect rule. Every consumer that needs to
+    branch on orientation — zone selection, the icon glyph search, the run
+    report — calls this instead of re-deriving ``height >= width`` locally, so
+    the two layouts can never disagree about which one a frame is.
+
+    Square frames count as portrait, matching the FR24 bottom-sheet layout.
+    """
+    return PORTRAIT if height >= width else LANDSCAPE
+
+
+# The same rule expressed for SQL, so reports can group by orientation without a
+# second definition drifting from the one above. Format with the table alias:
+#     ORIENTATION_SQL.format(t="s")
+# tests/test_rlsm_label_extraction.py asserts the two agree on real dimensions.
+ORIENTATION_SQL = (
+    "CASE WHEN {t}.height >= {t}.width THEN 'portrait' ELSE 'landscape' END"
+)
+
+
 def zones_for(width: int, height: int) -> list[ZoneBox]:
     """Pick portrait vs landscape based on aspect, return absolute pixel boxes."""
-    portrait = height >= width
-    base = PORTRAIT_ZONES if portrait else LANDSCAPE_ZONES
+    base = (PORTRAIT_ZONES if orientation_for(width, height) == PORTRAIT
+            else LANDSCAPE_ZONES)
     out: list[ZoneBox] = []
     for name, x0, y0, x1, y1 in base:
         x = int(width * x0)

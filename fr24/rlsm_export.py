@@ -1,10 +1,10 @@
 """
 RLSM CSV/JSONL export.
 
-Writes the 14 deliverable artefacts under outputs/. Idempotent and reproducible:
-each export pulls from the SQLite DB and overwrites the target file. The JSONL
-mirror of raw OCR (outputs/ocr_raw_by_zone.jsonl) is written append-only by the
-OCR runner; this module does not touch it.
+Writes 18 generated deliverables under outputs/. Idempotent and reproducible:
+each generated export pulls from SQLite and overwrites the target file. The
+additional raw OCR mirror (outputs/ocr_raw_by_zone.jsonl) is written append-only
+by the OCR runner; this module reports its size but does not touch it.
 
 CLI:
     python3 -m fr24.rlsm_export
@@ -15,6 +15,8 @@ import csv
 import json
 import sqlite3
 from pathlib import Path
+
+from fr24.rlsm_spatial_schema import ensure_spatial_schema
 
 REPO = Path(__file__).resolve().parents[1]
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -43,6 +45,7 @@ def _write_jsonl(path: Path, fields: list[str], rows) -> int:
 
 def export_all() -> dict:
     conn = sqlite3.connect(DB)
+    ensure_spatial_schema(conn)
     written = {}
 
     # rlsm_ingest_manifest.csv — handled by rlsm_inventory; re-export here for reproducibility
@@ -142,16 +145,98 @@ def export_all() -> dict:
                ["aircraft_obs_id","screenshot_id","filename","filename_ts",
                 "registration","callsign","aircraft_type",
                 "altitude_ft","speed_kt","heading_deg","operator_text",
-                "identity_status","confidence","source_zone","raw_excerpt","observed_at"],
+                "identity_status","confidence","source_zone","raw_excerpt",
+                "pixel_x","pixel_y","icon_rotation_deg","marker_confidence","marker_method",
+                "position_lat","position_lon","position_method","position_confidence",
+                "position_error_m","position_observed_at","observed_at"],
                conn.execute("""
                    SELECT a.aircraft_obs_id, a.screenshot_id, s.filename, s.filename_ts,
                           a.registration, a.callsign, a.aircraft_type,
                           a.altitude_ft, a.speed_kt, a.heading_deg, a.operator_text,
-                          a.identity_status, a.confidence, a.source_zone, a.raw_excerpt, a.observed_at
+                          a.identity_status, a.confidence, a.source_zone, a.raw_excerpt,
+                          a.pixel_x, a.pixel_y, a.icon_rotation_deg,
+                          a.marker_confidence, a.marker_method,
+                          a.position_lat, a.position_lon, a.position_method,
+                          a.position_confidence, a.position_error_m,
+                          a.position_observed_at, a.observed_at
                    FROM aircraft_observations a JOIN screenshots s USING(screenshot_id)
                    ORDER BY a.screenshot_id, a.aircraft_obs_id
                """))
     written["aircraft_observations.csv"] = "ok"
+
+    _write_csv(
+        OUTS / "aircraft_marker_frames.csv",
+        ["marker_frame_id","screenshot_id","filename","detector_version","status",
+         "candidate_count","selected_candidate_rank","viewport_x","viewport_y",
+         "viewport_w","viewport_h","reason","observed_at"],
+        conn.execute("""
+            SELECT f.marker_frame_id, f.screenshot_id, s.filename, f.detector_version,
+                   f.status, f.candidate_count, f.selected_candidate_rank,
+                   f.viewport_x, f.viewport_y, f.viewport_w, f.viewport_h,
+                   f.reason, f.observed_at
+            FROM aircraft_marker_frames f JOIN screenshots s USING(screenshot_id)
+            ORDER BY f.screenshot_id, f.detector_version
+        """),
+    )
+    written["aircraft_marker_frames.csv"] = "ok"
+
+    _write_csv(
+        OUTS / "aircraft_marker_detections.csv",
+        ["marker_detection_id","marker_frame_id","screenshot_id","aircraft_obs_id",
+         "candidate_rank","selected","bbox_x","bbox_y","bbox_w","bbox_h",
+         "centroid_x","centroid_y","rotation_deg","rotation_status","area_px",
+         "hue_deg","saturation","value","fill_ratio","axis_ratio",
+         "direction_asymmetry","silhouette_hash","confidence","features_json",
+         "observed_at"],
+        conn.execute("""
+            SELECT marker_detection_id, marker_frame_id, screenshot_id, aircraft_obs_id,
+                   candidate_rank, selected, bbox_x, bbox_y, bbox_w, bbox_h,
+                   centroid_x, centroid_y, rotation_deg, rotation_status, area_px,
+                   hue_deg, saturation, value, fill_ratio, axis_ratio,
+                   direction_asymmetry, silhouette_hash, confidence, features_json,
+                   observed_at
+            FROM aircraft_marker_detections
+            ORDER BY screenshot_id, candidate_rank
+        """),
+    )
+    written["aircraft_marker_detections.csv"] = "ok"
+
+    _write_csv(
+        OUTS / "screenshot_georeferences.csv",
+        ["georef_id","screenshot_id","filename","georef_version","status","method",
+         "viewport_profile","viewport_x","viewport_y","viewport_w","viewport_h",
+         "anchor_count","lon0","dlon_dx","lat0","dlat_dy","scale_x_m_per_px",
+         "scale_y_m_per_px","scale_m_per_px","scale_axis_disagreement",
+         "fit_residual_m","zoom_rung","zoom_support","confidence",
+         "estimated_error_m","evidence_json","observed_at"],
+        conn.execute("""
+            SELECT g.georef_id, g.screenshot_id, s.filename, g.georef_version,
+                   g.status, g.method, g.viewport_profile, g.viewport_x, g.viewport_y,
+                   g.viewport_w, g.viewport_h, g.anchor_count, g.lon0, g.dlon_dx,
+                   g.lat0, g.dlat_dy, g.scale_x_m_per_px, g.scale_y_m_per_px,
+                   g.scale_m_per_px, g.scale_axis_disagreement, g.fit_residual_m,
+                   g.zoom_rung, g.zoom_support, g.confidence, g.estimated_error_m,
+                   g.evidence_json, g.observed_at
+            FROM screenshot_georeferences g JOIN screenshots s USING(screenshot_id)
+            ORDER BY g.screenshot_id, g.georef_version
+        """),
+    )
+    written["screenshot_georeferences.csv"] = "ok"
+
+    _write_csv(
+        OUTS / "zoom_ladder_rungs.csv",
+        ["georef_version","viewport_profile","zoom_rung","scale_m_per_px",
+         "dlon_dx","dlat_dy","support_count","dispersion_log2",
+         "eligible_for_transfer","evidence_json","observed_at"],
+        conn.execute("""
+            SELECT georef_version, viewport_profile, zoom_rung, scale_m_per_px,
+                   dlon_dx, dlat_dy, support_count, dispersion_log2,
+                   eligible_for_transfer, evidence_json, observed_at
+            FROM zoom_ladder_rungs
+            ORDER BY viewport_profile, zoom_rung
+        """),
+    )
+    written["zoom_ladder_rungs.csv"] = "ok"
 
     # flight_track_features.csv
     _write_csv(OUTS / "flight_track_features.csv",

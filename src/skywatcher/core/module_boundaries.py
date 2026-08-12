@@ -68,6 +68,15 @@ MODULE_BOUNDARIES: dict[str, list[str]] = {
         "src/skywatcher/corrim/**/*.py",
         "src/skywatcher/fusion/**/*.py",
     ],
+    # FR24 screenshot-ingest ownership package (repository-boundary correction:
+    # FR24 screenshot processing is owned by skywatcher-pr). It consolidates the
+    # OCR/telemetry/reconstruction/database responsibilities and therefore is the
+    # top consumer of SATIM- and FPIM-classified fr24 helpers; it wraps existing
+    # (unclassified) fr24/* implementation modules. See
+    # docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md.
+    "fr24_ingest": [
+        "src/skywatcher/fr24/**/*.py",
+    ],
     "legacy": [
         "src/skywatcher/legacy/**/*.py",
     ],
@@ -84,6 +93,10 @@ ALLOWED_IMPORTS: dict[str, set[str]] = {
     "satim": {"core", "satim"},
     "fpim": {"core", "fpim"},
     "corrim": {"core", "satim", "fpim", "corrim"},
+    # fr24_ingest may consume Core utilities plus the SATIM/FPIM fr24 helpers it
+    # orchestrates (OCR + flight reconstruction). Like CORRIM it is an
+    # integration tier, but for ingestion rather than correlation scoring.
+    "fr24_ingest": {"core", "satim", "fpim", "fr24_ingest"},
     "legacy": {"core", "satim", "fpim", "corrim", "legacy"},
 }
 
