@@ -38,6 +38,7 @@ from statistics import median
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from fr24.rlsm_anchors import Anchor, anchors_for_screenshot, build_geo_lookup  # noqa: E402
 from fr24.rlsm_georeference import (  # noqa: E402
     GEOREF_VERSION,
     load_persisted_affines,
@@ -72,7 +73,35 @@ GLOBAL_AFFINE_1170_2532 = (
 # with the calibration's per_screenshot_affine mode); imported above.
 
 
-def main():
+def build_affine_inputs(
+    conn: sqlite3.Connection,
+    geo_lookup: dict[str, tuple[float, float]],
+) -> dict[int, list[Anchor]]:
+    """Expose shared anchor inputs for diagnostics without fitting transforms here."""
+    screenshot_ids = {
+        row[0]
+        for row in conn.execute(
+            "SELECT DISTINCT screenshot_id FROM geo_anchors "
+            "WHERE screenshot_id IS NOT NULL AND pixel_x IS NOT NULL "
+            "AND pixel_y IS NOT NULL AND lat IS NOT NULL AND lon IS NOT NULL"
+        )
+    }
+    screenshot_ids.update(
+        row[0]
+        for row in conn.execute(
+            "SELECT DISTINCT screenshot_id FROM labeled_pins "
+            "WHERE screenshot_id IS NOT NULL AND centroid_x IS NOT NULL "
+            "AND centroid_y IS NOT NULL AND pin_type_guess != 'unknown_label_candidate'"
+        )
+    )
+    return {
+        int(screenshot_id): anchors
+        for screenshot_id in sorted(screenshot_ids)
+        if (anchors := anchors_for_screenshot(conn, int(screenshot_id), geo_lookup))
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--grid-deg", type=float, default=0.001,
                     help="Cluster geocoded candidates by this lat/lon grid (default 0.001° ≈ 111m)")
@@ -85,9 +114,14 @@ def main():
         action="store_true",
         help="Explicitly permit the legacy approximate PR-wide transform",
     )
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     conn = sqlite3.connect(DB)
+    geo_lookup = build_geo_lookup(conn)
+    if not geo_lookup:
+        conn.close()
+        print("[geocode] FAIL — zero coordinate keys available", file=sys.stderr)
+        return 1
     ensure_spatial_schema(conn)
     affines = load_persisted_affines(conn)
     fit_residuals = {
