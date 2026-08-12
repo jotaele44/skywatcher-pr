@@ -15,13 +15,24 @@ const ENTITIES = {
   exports: "ExportPackages",
   readiness: "ReadinessReports",
   syncs: "FederationSyncEvents",
+  spatialObservations: "RLSMSpatialObservations",
+  spatialFrames: "RLSMSpatialFrames",
+  zoomRungs: "RLSMZoomRungs",
 };
 
+const ENTITY_LIMITS = {
+  spatialObservations: 20000,
+  spatialFrames: 20000,
+};
+
+const emptyData = () => ({
+  observations: [], aircraft: [], captures: [], routes: [], assets: [],
+  links: [], airports: [], reviews: [], exports: [], readiness: [], syncs: [],
+  spatialObservations: [], spatialFrames: [], zoomRungs: [],
+});
+
 export function SkywatcherDataProvider({ children }) {
-  const [data, setData] = useState({
-    observations: [], aircraft: [], captures: [], routes: [], assets: [],
-    links: [], airports: [], reviews: [], exports: [], readiness: [], syncs: [],
-  });
+  const [data, setData] = useState(emptyData);
   const [loading, setLoading] = useState(true);
 
   const loadAll = useCallback(async () => {
@@ -30,9 +41,12 @@ export function SkywatcherDataProvider({ children }) {
       // allSettled + finally: a single failed/missing collection (e.g. no
       // backend yet, or a 401 before login) must not trap the UI on the spinner.
       const results = await Promise.allSettled(
-        keys.map((k) => federation.entities[ENTITIES[k]].list("-created_date", 500))
+        keys.map((k) => federation.entities[ENTITIES[k]].list(
+          "-created_date",
+          ENTITY_LIMITS[k] || 500,
+        ))
       );
-      const next = {};
+      const next = emptyData();
       keys.forEach((k, i) => {
         next[k] = results[i].status === "fulfilled" ? (results[i].value || []) : [];
       });
@@ -55,7 +69,7 @@ export function SkywatcherDataProvider({ children }) {
   }, []);
 
   const createReview = useCallback(async (payload) => {
-    const created = await federation.entities.ManualReviewItems.create(payload);
+    const created = await federation.entities[ENTITIES.reviews].create(payload);
     setData((prev) => ({ ...prev, reviews: [created, ...prev.reviews] }));
     return created;
   }, []);

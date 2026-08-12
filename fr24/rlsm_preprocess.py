@@ -119,3 +119,35 @@ def preprocess(crop: Image.Image, mode: str = "none",
     img = _binarize_auto_polarity(img)
     # Drop isolated speckle from basemap texture without eroding glyph strokes.
     return img.filter(ImageFilter.MedianFilter(size=3))
+
+
+def ensure_observation_columns(conn) -> list[str]:
+    """
+    Add the preprocess stamp columns to an existing ``ocr_observations`` table.
+
+    ``psm`` and ``engine_version`` were already recorded per observation, but
+    not which preprocessing produced the text — so nothing in the database
+    distinguished a row read from a raw crop from one read after binarizing at
+    2x. That matters because resume keys on ``screenshots.ocr_status``: a
+    screenshot marked ``ok`` is never re-read, so rows written under an older
+    preprocessing config survive indefinitely, worse than their neighbours and
+    indistinguishable from them.
+
+    Both columns are nullable, so existing rows stay valid and read as "unknown
+    preprocessing" — which is exactly what they are. Returns the columns added.
+    """
+    have = {r[1] for r in conn.execute("PRAGMA table_info(ocr_observations)")}
+    added = []
+    for col, decl in (("preprocess", "TEXT"), ("preprocess_scale", "REAL")):
+        if col not in have:
+            conn.execute(f"ALTER TABLE ocr_observations ADD COLUMN {col} {decl}")
+            added.append(col)
+    if added:
+        conn.commit()
+    return added
+
+
+def config_stamp(cfg: dict) -> tuple[str, float]:
+    """The (mode, scale) a zone config resolves to — what gets stored per row."""
+    mode = cfg.get("preprocess", "none")
+    return mode, scale_for(mode, cfg.get("scale"))

@@ -1,0 +1,21 @@
+threshold_id,owner,current_value,unit,purpose,status,validation_artifact,failure_behavior
+SATIM-ARTIFACT-CONFIRMED-0.90,SATIM,0.90,score,Artifact confidence level boundary,CANDIDATE,NONE_CONFIRMED,Do not emit CONFIRMED_ARTIFACT automatically.
+SATIM-ARTIFACT-HIGH-0.75,SATIM,0.75,score,Artifact confidence level boundary,CANDIDATE,NONE_CONFIRMED,Use numeric score and rationale; no universal label.
+SATIM-ARTIFACT-MODERATE-0.50,SATIM,0.50,score,Artifact confidence level boundary,CANDIDATE,NONE_CONFIRMED,Use numeric score and rationale.
+SATIM-ARTIFACT-LOW-0.25,SATIM,0.25,score,Artifact confidence level boundary,CANDIDATE,NONE_CONFIRMED,Use numeric score and rationale.
+SATIM-QUEUE-CANDIDATE-0.80,SATIM,0.80,adjusted_score,Review queue band,CANDIDATE,Calibration-set-specific only,Queue state only; no truth promotion.
+SATIM-QUEUE-CROSSSOURCE-0.70,SATIM,0.70,adjusted_score,Cross-source review queue band,CANDIDATE,Calibration-set-specific only,Require human cross-source review.
+SATIM-QUEUE-REVIEW-0.55,SATIM,0.55,adjusted_score,Review queue entry,CANDIDATE,Calibration-set-specific only,No auto-promotion.
+ILAP-INFRA-2NM,CORRIM,2,nautical_mile,Maximum full infrastructure alignment score,CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.
+ILAP-INFRA-5NM,CORRIM,5,nautical_mile,Infrastructure alignment band,CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.
+ILAP-INFRA-10NM,CORRIM,10,nautical_mile,Infrastructure alignment band,CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.
+ILAP-INFRA-20NM,CORRIM,20,nautical_mile,Infrastructure alignment band,CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.
+ILAP-GRID-0.05DEG,CORRIM,0.05,degree,POI candidate clustering cell,CANDIDATE,NONE_CONFIRMED,Store method and latitude-dependent cell dimensions.
+ILAP-OVERALL-HIGH-0.70,CORRIM,0.70,heuristic_score,Review priority band,CANDIDATE,NONE_CONFIRMED,Rename to association_priority_score; review only.
+ILAP-OVERALL-MEDIUM-0.40,CORRIM,0.40,heuristic_score,Review priority band,CANDIDATE,NONE_CONFIRMED,Rename to association_priority_score; review only.
+ILAP-WEIGHT-RECURRENCE,CORRIM,0.30,weight,Composite heuristic,CANDIDATE,NONE_CONFIRMED,No confidence semantics.
+ILAP-WEIGHT-LOITER,CORRIM,0.25,weight,Composite heuristic,CANDIDATE,NONE_CONFIRMED,No intent semantics.
+ILAP-WEIGHT-INFRA,CORRIM,0.20,weight,Composite heuristic,CANDIDATE,NONE_CONFIRMED,No relevance or causation claim.
+ILAP-IDENTITY-PRIORITY,CORRIM,weak identity increases priority,rule,Review priority,PROHIBITED,N/A,Identity quality may be a gap field but must not increase significance priority.
+AASB-FIVE-FLIGHT-SATURATION,CORRIM adapter,5,flights,Edge support saturation,CANDIDATE,NONE_CONFIRMED,Rename confidence_score to edge_support_score or support_ratio.
+RLSM-SCALEBAR-OCR-15PCT,RLSM,15,percent unresolved otherwise recoverable,Decision to implement dedicated scale-bar OCR,CANDIDATE_PROJECT_GATE,PR171 operator-corpus assessment pending,Keep deferred unless condition is demonstrated.
