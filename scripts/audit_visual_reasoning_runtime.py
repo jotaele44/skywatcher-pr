@@ -44,16 +44,19 @@ class RuntimeVisitor(ast.NodeVisitor):
     def visit_Compare(self, node: ast.Compare) -> None:  # noqa: N802
         values = [node.left, *node.comparators]
         for value in values:
-            if isinstance(value, ast.Constant) and isinstance(value.value, float):
-                if value.value not in {0.0, 1.0}:
-                    self.float_compare_literals.append(
-                        {
-                            "path": str(self.path.relative_to(REPO_ROOT)),
-                            "line": value.lineno,
-                            "column": value.col_offset,
-                            "value": value.value,
-                        }
-                    )
+            if (
+                isinstance(value, ast.Constant)
+                and isinstance(value.value, float)
+                and value.value not in {0.0, 1.0}
+            ):
+                self.float_compare_literals.append(
+                    {
+                        "path": str(self.path.relative_to(REPO_ROOT)),
+                        "line": value.lineno,
+                        "column": value.col_offset,
+                        "value": value.value,
+                    }
+                )
         self.generic_visit(node)
 
 
