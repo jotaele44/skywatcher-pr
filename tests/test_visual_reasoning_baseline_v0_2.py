@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -84,3 +87,18 @@ def test_new_visual_reasoning_spec_does_not_activate_legacy_p_route_outputs():
     assert "satim_cut_fill.build_p_route_confidence_patch" in legacy
     assert "satim_road_end.build_p_route_confidence_patch" in legacy
     assert "satim_water_feature.build_p_route_confidence_patch" in legacy
+
+
+def test_static_audit_preserves_numeric_literal_surface_and_closes_root_classification():
+    completed = subprocess.run(
+        [sys.executable, "scripts/audit_visual_reasoning_baseline.py", "--check"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    report = json.loads(completed.stdout)
+    assert report["numeric_literal_count"] > 0
+    assert report["target_file_count"] > 0
+    assert report["root_satim_classification"]["unclassified"] == []
+    assert report["invariants"]["all_numeric_literals_preserved_for_adjudication"] is True
