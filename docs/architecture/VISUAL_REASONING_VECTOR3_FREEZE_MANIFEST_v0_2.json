@@ -1,0 +1,82 @@
+{
+  "spec_version": "0.2.0",
+  "vector": "3/3_CANONICAL_RUNTIME_IMPLEMENTATION",
+  "state": "PASS_BOUNDED_RUNTIME_IMPLEMENTATION",
+  "vector_2_parent": "097cfcb220e16a0f59ed2ff4b34f07a6f419f2c3",
+  "branch": "feat/visual-reasoning-runtime-v0-2",
+  "pre_freeze_validated_head": "a030053104c18ad87fe447204b3fe41f2a9ab549",
+  "validation": {
+    "skywatcher_ci_run": 840,
+    "skywatcher_ci_conclusion": "success",
+    "satim_runtime_smoke_run": 372,
+    "satim_runtime_smoke_conclusion": "success",
+    "federation_template_drift_run": 1036,
+    "federation_template_drift_conclusion": "success"
+  },
+  "binding_registry_inputs": {
+    "configs/visual_reasoning/parameter_registry_v0_2.yaml": "gitblob:9bf423f5ca591ed8412278729fd8d3ca4c7000fc",
+    "configs/visual_reasoning/reason_codes_v0_2.yaml": "gitblob:14c7f66d183ddc763755c936d432bf322f684f46"
+  },
+  "canonical_artifacts": {
+    "src/skywatcher/satim/visual_reasoning_runtime.py": "gitblob:5c7cb01d07059ddc687b858c9869f8fe8c9ed955",
+    "src/skywatcher/satim/infrastructure_reasoning.py": "gitblob:6be4a2467ae1bb842c3305f189bcbe687b650a4a",
+    "src/skywatcher/satim/shadow_photometry.py": "gitblob:708fa6959c1723760ba2fe2a9b3ce3d96840326c",
+    "scripts/audit_visual_reasoning_runtime.py": "gitblob:eac91d45efffbc7b9e706c4b9e1ba933fbb50d52",
+    "scripts/run_visual_reasoning_shadow_mode.py": "gitblob:a13aa2811eb8fd1c8cec19463b62d6b524299a72",
+    "docs/architecture/VISUAL_REASONING_VECTOR3_ACCEPTANCE_v0_2.md": "gitblob:35dcb23e20e4a929a472bd8d985581f97851db14",
+    "tests/test_visual_reasoning_runtime_v0_2.py": "gitblob:f8733f1d35549a51ce58edf884d1549dcd893915",
+    "tests/test_visual_reasoning_runtime_sensitivity_v0_2.py": "gitblob:e09a9060cd1f566af87631a2f7879e5e623e4e73",
+    "tests/test_visual_reasoning_runtime_audit_v0_2.py": "gitblob:0b5456f6a8f1de69fe68b6aa22f6da571ef2298e",
+    "tests/test_visual_reasoning_shadow_mode_v0_2.py": "gitblob:90a27bd1948c9fcf8c502360b960b86b4d552b8d",
+    "tests/test_visual_reasoning_infrastructure_v0_2.py": "gitblob:1eb88986493e937cd36ed84f7cecc86d1b249a5d",
+    "tests/test_shadow_photometry_v0_2.py": "gitblob:2f2d3ebc418517526a161ba079e02eb69014dc63",
+    "tests/test_visual_reasoning_calibration_controls_v0_2.py": "gitblob:052dbf883669d50f294075090cf2d3f6b90b3f68"
+  },
+  "implemented_capabilities": [
+    "explicit parameter-bound fail-closed decision engine",
+    "zoom and overzoom adjudication",
+    "source-pixel local shadow photometry plus geometric shadow adjudication",
+    "tile seam and stitching discrepancy reasoning with cross-seam continuity",
+    "digital artifact versus real-world-object candidate adjudication",
+    "palm morphology with species non-promotion",
+    "water presence and hydrographic-form reasoning",
+    "quarry versus natural or generic ground-disturbance reasoning",
+    "excavation candidate reasoning with depth-geometry gate",
+    "portal-like visible-feature reasoning with subsurface-identity separation",
+    "hierarchical infrastructure class and subtype adjudication",
+    "multiscale and multiframe evidence fusion gates",
+    "scene graph relation support without identity promotion",
+    "multi-channel scene locator with runner-up preservation and exact-registration gates",
+    "non-activating differential shadow-mode harness",
+    "static parameter, reason-code, legacy-reference and threshold audit",
+    "boundary sensitivity and existing calibration-control regressions"
+  ],
+  "certified_invariants": [
+    "discovery is not identity",
+    "missing evidence is not negative evidence",
+    "deterministic ordering is not evidence",
+    "darkness alone is neither shadow nor water identity",
+    "tile seam is neither a real-world boundary nor manipulation proof",
+    "artifact-derived landmarks cannot establish exact location",
+    "bare ground alone is not quarry",
+    "visual quarry is not legal mine identity",
+    "portal-like appearance is not subsurface identity",
+    "palm morphology does not establish species without species evidence",
+    "below-resolution disappearance is not absence",
+    "one text or POI cue cannot certify exact location",
+    "exact location requires validated registration and explicit error radius",
+    "shadow-mode execution cannot activate production outputs"
+  ],
+  "production_state": "NOT_YET_CERTIFIED",
+  "remaining_promotion_gates": [
+    "production parameter calibration against sufficiently broad labeled and ground-truth distributions",
+    "full target-corpus normalized observation sidecars",
+    "corpus-wide old-vs-new differential replay on those sidecars",
+    "measured false-positive false-negative and abstention rates by feature family",
+    "provider date and zoom stratified robustness checks",
+    "held-out exact-location georeference calibration",
+    "explicit production activation decision"
+  ],
+  "blocking_input_gap": "FULL_CORPUS_NORMALIZED_OBSERVATION_SIDECARS",
+  "identity_note": "Git blob identities certify repository object bytes. This manifest is excluded from its own canonical_artifacts multiset to avoid recursive self-identity. Git blob identifiers are not relabeled as SHA-256."
+}
