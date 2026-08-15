@@ -16,12 +16,12 @@ binding evidence.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 
 RC_MISSING = "RC_MISSING_NOT_NEGATIVE"
-RC_TIE = "RC_EVIDENTIARY_TIE"
 RC_DISCOVERY = "RC_DISCOVERY_NOT_IDENTITY"
 
 
@@ -216,9 +216,17 @@ class SceneGraph:
             return _missing("SCENE.RELATION_CONFIDENCE_MIN")
         (minimum,) = required
         if edge.source not in self.nodes or edge.target not in self.nodes:
-            return ReasoningOutcome("UNRESOLVED", reason_codes=(RC_MISSING,), metadata={"missing_node": True})
+            return ReasoningOutcome(
+                "UNRESOLVED",
+                reason_codes=(RC_MISSING,),
+                metadata={"missing_node": True},
+            )
         if edge.confidence < minimum:
-            return ReasoningOutcome("UNRESOLVED", confidence=edge.confidence, reason_codes=(RC_MISSING,))
+            return ReasoningOutcome(
+                "UNRESOLVED",
+                confidence=edge.confidence,
+                reason_codes=(RC_MISSING,),
+            )
         self.edges.append(edge)
         return ReasoningOutcome(
             "RELATION_SUPPORTED_IDENTITY_UNRESOLVED",
@@ -270,6 +278,8 @@ class LocationResult:
 
 
 def _clamp01(value: float) -> float:
+    """Clamp a normalized score to its mathematical [0, 1] domain."""
+
     return max(0.0, min(1.0, float(value)))
 
 
@@ -297,23 +307,44 @@ def _missing_observation(*names: str) -> ReasoningOutcome:
 
 
 def assess_zoom(obs: ZoomObservation, params: ParameterSet) -> ReasoningOutcome:
-    if obs.edge_information_gain is None or obs.texture_gain is None or obs.resampling_damage is None:
-        return _missing_observation("edge_information_gain", "texture_gain", "resampling_damage")
+    if (
+        obs.edge_information_gain is None
+        or obs.texture_gain is None
+        or obs.resampling_damage is None
+    ):
+        return _missing_observation(
+            "edge_information_gain",
+            "texture_gain",
+            "resampling_damage",
+        )
     required = params.require(
         "ZOOM.EDGE_INFORMATION_MIN",
         "ZOOM.TEXTURE_GAIN_MIN",
         "ZOOM.RESAMPLING_DAMAGE_MAX",
     )
     if required is None:
-        return _missing("ZOOM.EDGE_INFORMATION_MIN", "ZOOM.TEXTURE_GAIN_MIN", "ZOOM.RESAMPLING_DAMAGE_MAX")
+        return _missing(
+            "ZOOM.EDGE_INFORMATION_MIN",
+            "ZOOM.TEXTURE_GAIN_MIN",
+            "ZOOM.RESAMPLING_DAMAGE_MAX",
+        )
     edge_min, texture_min, damage_max = required
-    if obs.resampling_damage > damage_max and obs.edge_information_gain < edge_min and obs.texture_gain < texture_min:
+    if (
+        obs.resampling_damage > damage_max
+        and obs.edge_information_gain < edge_min
+        and obs.texture_gain < texture_min
+    ):
         return ReasoningOutcome(
             "OVERZOOMED",
             confidence=_clamp01(obs.resampling_damage),
             reason_codes=("RC_OVERZOOMED", "RC_OVERZOOM_NO_NEW_EVIDENCE"),
         )
-    information = _mean((_clamp01(obs.edge_information_gain), _clamp01(obs.texture_gain)))
+    information = _mean(
+        (
+            _clamp01(obs.edge_information_gain),
+            _clamp01(obs.texture_gain),
+        )
+    )
     return ReasoningOutcome("DETAIL_USABLE", confidence=information)
 
 
@@ -358,15 +389,17 @@ def assess_shadow(obs: ShadowObservation, params: ParameterSet) -> ReasoningOutc
     deviation_ok = obs.local_deviation <= deviation_max
     texture_ok = obs.texture_retention >= texture_min
     direction_ok = abs(obs.direction_delta_deg) <= direction_tol
-    edge_ok = obs.edge_consistency >= 0.5
 
-    if darkness_ok and deviation_ok and texture_ok and direction_ok and edge_ok and obs.geometry_support:
+    if darkness_ok and deviation_ok and texture_ok and direction_ok and obs.geometry_support:
+        direction_support = 1.0
+        if direction_tol > 0.0:
+            direction_support = 1.0 - abs(obs.direction_delta_deg) / direction_tol
         support = _mean(
             (
                 _clamp01(1.0 - obs.local_deviation),
                 _clamp01(obs.texture_retention),
                 _clamp01(obs.edge_consistency),
-                _clamp01(1.0 - abs(obs.direction_delta_deg) / max(direction_tol, 1e-12)),
+                _clamp01(direction_support),
             )
         )
         return ReasoningOutcome(
@@ -388,7 +421,10 @@ def assess_shadow(obs: ShadowObservation, params: ParameterSet) -> ReasoningOutc
             reason_codes=("RC_SHADOW_INCONSISTENT",),
             contradictions=tuple(conflicts),
         )
-    return ReasoningOutcome("UNRESOLVED", reason_codes=("RC_DARKNESS_INSUFFICIENT_FOR_SHADOW",))
+    return ReasoningOutcome(
+        "UNRESOLVED",
+        reason_codes=("RC_DARKNESS_INSUFFICIENT_FOR_SHADOW",),
+    )
 
 
 def assess_seam(obs: SeamObservation, params: ParameterSet) -> ReasoningOutcome:
@@ -450,9 +486,17 @@ def assess_seam(obs: SeamObservation, params: ParameterSet) -> ReasoningOutcome:
         (obs.compression_delta, compression_min),
         (obs.registration_offset_px, offset_min),
     )
-    crossed = [float(value >= threshold) for value, threshold in metrics if value is not None]
+    crossed = [
+        float(value >= threshold)
+        for value, threshold in metrics
+        if value is not None
+    ]
     discrepancy = _mean(crossed)
-    candidate = obs.linearity >= linearity_min and obs.boundary_length_px >= length_min and discrepancy >= score_low
+    candidate = (
+        obs.linearity >= linearity_min
+        and obs.boundary_length_px >= length_min
+        and discrepancy >= score_low
+    )
     if not candidate:
         return ReasoningOutcome("NO_SEAM_SUPPORT", confidence=discrepancy)
 
@@ -472,7 +516,12 @@ def assess_seam(obs: SeamObservation, params: ParameterSet) -> ReasoningOutcome:
     elif obs.feature_continues:
         state = "CONTINUOUS_WITH_IMAGE_DISCREPANCY"
         reasons.append("RC_CROSS_SEAM_CONTINUITY")
-    return ReasoningOutcome(state, confidence=discrepancy, reason_codes=tuple(reasons), metadata=metadata)
+    return ReasoningOutcome(
+        state,
+        confidence=discrepancy,
+        reason_codes=tuple(reasons),
+        metadata=metadata,
+    )
 
 
 def assess_artifact(obs: ArtifactObservation, params: ParameterSet) -> ReasoningOutcome:
@@ -526,9 +575,16 @@ def assess_artifact(obs: ArtifactObservation, params: ParameterSet) -> Reasoning
             1.0 - obs.multiframe_persistence,
         )
     )
-    metadata = {"real_score": real_score, "artifact_score": artifact_score}
+    metadata = {
+        "real_score": real_score,
+        "artifact_score": artifact_score,
+    }
 
-    if real_score >= real_min and artifact_score >= artifact_min and abs(real_score - artifact_score) <= margin:
+    if (
+        real_score >= real_min
+        and artifact_score >= artifact_min
+        and abs(real_score - artifact_score) <= margin
+    ):
         return ReasoningOutcome(
             "MIXED_REAL_OBJECT_PLUS_ARTIFACT",
             confidence=max(real_score, artifact_score),
@@ -539,17 +595,29 @@ def assess_artifact(obs: ArtifactObservation, params: ParameterSet) -> Reasoning
         return ReasoningOutcome(
             "RENDERING_ARTIFACT_CANDIDATE",
             confidence=artifact_score,
-            reason_codes=("RC_RENDER_SCALE_DEPENDENT", "RC_ARTIFACT_EXCLUDED_FROM_LOCATOR"),
+            reason_codes=(
+                "RC_RENDER_SCALE_DEPENDENT",
+                "RC_ARTIFACT_EXCLUDED_FROM_LOCATOR",
+            ),
             metadata=metadata,
         )
-    if real_score >= real_min and obs.multiscale_persistence >= scale_min and obs.multiframe_persistence >= frame_min:
+    if (
+        real_score >= real_min
+        and obs.multiscale_persistence >= scale_min
+        and obs.multiframe_persistence >= frame_min
+    ):
         return ReasoningOutcome(
             "REAL_WORLD_OBJECT_CANDIDATE",
             confidence=real_score,
             reason_codes=("RC_REAL_OBJECT_SUPPORT",),
             metadata=metadata,
         )
-    return ReasoningOutcome("AMBIGUOUS", confidence=max(real_score, artifact_score), reason_codes=(RC_DISCOVERY,), metadata=metadata)
+    return ReasoningOutcome(
+        "AMBIGUOUS",
+        confidence=max(real_score, artifact_score),
+        reason_codes=(RC_DISCOVERY,),
+        metadata=metadata,
+    )
 
 
 def assess_palm(obs: PalmObservation, params: ParameterSet) -> ReasoningOutcome:
@@ -576,7 +644,17 @@ def assess_palm(obs: PalmObservation, params: ParameterSet) -> ReasoningOutcome:
     )
     if required is None:
         return _missing("PALM.*")
-    radial_min, frond_min, circ_min, circ_max, trunk_w, shadow_w, scale_w, candidate_min, supported_min = required
+    (
+        radial_min,
+        frond_min,
+        circ_min,
+        circ_max,
+        trunk_w,
+        shadow_w,
+        scale_w,
+        candidate_min,
+        supported_min,
+    ) = required
     assert obs.radiality is not None
     assert obs.frond_count is not None
     assert obs.crown_circularity is not None
@@ -590,7 +668,9 @@ def assess_palm(obs: PalmObservation, params: ParameterSet) -> ReasoningOutcome:
         and circ_min <= obs.crown_circularity <= circ_max
     )
     negative = _clamp01(obs.negative_control_score or 0.0)
-    denominator = max(1e-12, 1.0 + trunk_w + shadow_w + scale_w)
+    denominator = 1.0 + trunk_w + shadow_w + scale_w
+    if denominator <= 0.0:
+        return _missing("PALM.*_WEIGHT")
     score = (
         _clamp01(obs.radiality)
         + trunk_w * _clamp01(obs.trunk_support)
@@ -600,13 +680,30 @@ def assess_palm(obs: PalmObservation, params: ParameterSet) -> ReasoningOutcome:
     score = _clamp01(score * (1.0 - negative))
     if morphology_ok and score >= supported_min:
         reasons = ["RC_PALM_SUPPORTED"]
-        metadata = {"species_state": "SUPPORTED" if obs.species_evidence_sufficient else "UNRESOLVED"}
+        metadata = {
+            "species_state": (
+                "SUPPORTED" if obs.species_evidence_sufficient else "UNRESOLVED"
+            )
+        }
         if not obs.species_evidence_sufficient:
             reasons.append("RC_PALM_SPECIES_UNRESOLVED")
-        return ReasoningOutcome("PALM_TREE", score, tuple(reasons), metadata)
+        return ReasoningOutcome(
+            "PALM_TREE",
+            score,
+            tuple(reasons),
+            metadata,
+        )
     if morphology_ok and score >= candidate_min:
-        return ReasoningOutcome("PALM_LIKE_CROWN", score, ("RC_PALM_LIKE_CROWN",))
-    return ReasoningOutcome("UNKNOWN_TREE", score, reason_codes=(RC_DISCOVERY,))
+        return ReasoningOutcome(
+            "PALM_LIKE_CROWN",
+            score,
+            ("RC_PALM_LIKE_CROWN",),
+        )
+    return ReasoningOutcome(
+        "UNKNOWN_TREE",
+        score,
+        reason_codes=(RC_DISCOVERY,),
+    )
 
 
 def assess_water(obs: WaterObservation, params: ParameterSet) -> ReasoningOutcome:
@@ -681,7 +778,11 @@ def assess_water(obs: WaterObservation, params: ParameterSet) -> ReasoningOutcom
     if obs.shadow_conflict > shadow_max:
         support *= max(0.0, 1.0 - obs.shadow_conflict)
     if support < candidate_min:
-        return ReasoningOutcome("UNRESOLVED", support, ("RC_DARKNESS_INSUFFICIENT_FOR_WATER",))
+        return ReasoningOutcome(
+            "UNRESOLVED",
+            support,
+            ("RC_DARKNESS_INSUFFICIENT_FOR_WATER",),
+        )
 
     hydro_state = "WATER_CANDIDATE"
     hydro_reason = "RC_WATER_SUPPORTED"
@@ -691,13 +792,25 @@ def assess_water(obs: WaterObservation, params: ParameterSet) -> ReasoningOutcom
     elif obs.canal_linearity >= canal_min and obs.bank_parallelism >= parallel_min:
         hydro_state = "CANAL_CANDIDATE"
         hydro_reason = "RC_HYDRO_CANAL_CANDIDATE"
-    elif obs.elongation >= elongation_min and obs.channel_continuity >= continuity_min and obs.bank_parallelism >= parallel_min:
+    elif (
+        obs.elongation >= elongation_min
+        and obs.channel_continuity >= continuity_min
+        and obs.bank_parallelism >= parallel_min
+    ):
         hydro_state = "RIVER_OR_STREAM"
         hydro_reason = "RC_HYDRO_CHANNEL_FORM"
 
     if support >= supported_min:
-        return ReasoningOutcome(hydro_state, support, ("RC_WATER_SUPPORTED", hydro_reason))
-    return ReasoningOutcome("WATER_CANDIDATE", support, (RC_DISCOVERY,))
+        return ReasoningOutcome(
+            hydro_state,
+            support,
+            ("RC_WATER_SUPPORTED", hydro_reason),
+        )
+    return ReasoningOutcome(
+        "WATER_CANDIDATE",
+        support,
+        (RC_DISCOVERY,),
+    )
 
 
 def assess_quarry(obs: QuarryObservation, params: ParameterSet) -> ReasoningOutcome:
@@ -784,7 +897,11 @@ def assess_quarry(obs: QuarryObservation, params: ParameterSet) -> ReasoningOutc
     score = _clamp01(positive * (1.0 - negative))
 
     if positive < candidate_min:
-        return ReasoningOutcome("GROUND_DISTURBANCE_UNRESOLVED", score, ("RC_BARE_GROUND_NOT_QUARRY",))
+        return ReasoningOutcome(
+            "GROUND_DISTURBANCE_UNRESOLVED",
+            score,
+            ("RC_BARE_GROUND_NOT_QUARRY",),
+        )
     if score >= supported_min:
         state = "QUARRY_SUPPORTED"
         reasons = ["RC_QUARRY_SUPPORTED"]
@@ -793,10 +910,18 @@ def assess_quarry(obs: QuarryObservation, params: ParameterSet) -> ReasoningOutc
         reasons = ["RC_QUARRY_CANDIDATE"]
     if not obs.authoritative_legal_binding:
         reasons.append("RC_VISUAL_QUARRY_NOT_LEGAL_IDENTITY")
-    return ReasoningOutcome(state, score, tuple(reasons), metadata={"legal_identity": obs.authoritative_legal_binding})
+    return ReasoningOutcome(
+        state,
+        score,
+        tuple(reasons),
+        metadata={"legal_identity": obs.authoritative_legal_binding},
+    )
 
 
-def assess_excavation(obs: ExcavationObservation, params: ParameterSet) -> ReasoningOutcome:
+def assess_excavation(
+    obs: ExcavationObservation,
+    params: ParameterSet,
+) -> ReasoningOutcome:
     required_obs = (
         obs.fresh_soil,
         obs.vegetation_removal,
@@ -825,24 +950,45 @@ def assess_excavation(obs: ExcavationObservation, params: ParameterSet) -> Reaso
     assert obs.spoil_adjacency is not None
     assert obs.visible_wall is not None
     assert obs.temporary_access is not None
-    flags = (
-        obs.fresh_soil >= fresh_min,
-        obs.vegetation_removal >= vegetation_min,
-        obs.cut_geometry >= cut_min,
-        obs.spoil_adjacency >= spoil_min,
-        obs.visible_wall >= wall_min,
-        obs.temporary_access >= access_min,
+
+    soil_or_removal = (
+        obs.fresh_soil >= fresh_min
+        or obs.vegetation_removal >= vegetation_min
     )
-    score = _mean(float(flag) for flag in flags)
-    if score < 0.5:
-        return ReasoningOutcome("GROUND_DISTURBANCE_UNRESOLVED", score, (RC_DISCOVERY,))
+    cut_supported = obs.cut_geometry >= cut_min
+    context_supported = (
+        obs.spoil_adjacency >= spoil_min
+        or obs.visible_wall >= wall_min
+        or obs.temporary_access >= access_min
+    )
+    score = _mean(
+        (
+            float(soil_or_removal),
+            float(cut_supported),
+            float(context_supported),
+        )
+    )
+    if not (soil_or_removal and cut_supported and context_supported):
+        return ReasoningOutcome(
+            "GROUND_DISTURBANCE_UNRESOLVED",
+            score,
+            (RC_DISCOVERY,),
+        )
     reasons = ["RC_EXCAVATION_CANDIDATE"]
     metadata: dict[str, Any] = {"depth_state": "UNRESOLVED"}
-    if obs.depth_geometry_support is not None and obs.depth_geometry_support >= depth_min:
+    if (
+        obs.depth_geometry_support is not None
+        and obs.depth_geometry_support >= depth_min
+    ):
         metadata["depth_state"] = "GEOMETRY_SUPPORTED"
     else:
         reasons.append("RC_DEPTH_REQUIRES_GEOMETRY")
-    return ReasoningOutcome("EXCAVATION_CANDIDATE", score, tuple(reasons), metadata)
+    return ReasoningOutcome(
+        "EXCAVATION_CANDIDATE",
+        score,
+        tuple(reasons),
+        metadata,
+    )
 
 
 def assess_portal(obs: PortalObservation, params: ParameterSet) -> ReasoningOutcome:
@@ -886,6 +1032,7 @@ def assess_portal(obs: PortalObservation, params: ParameterSet) -> ReasoningOutc
     assert obs.slope_relation is not None
     assert obs.access_relation is not None
     assert obs.multiscale_persistence is not None
+
     positives = (
         obs.opening_geometry >= opening_min,
         obs.structural_edge >= edge_min,
@@ -902,8 +1049,30 @@ def assess_portal(obs: PortalObservation, params: ParameterSet) -> ReasoningOutc
         + artifact_w * obs.artifact_conflict
     )
     score = _clamp01(positive * (1.0 - conflict))
-    if score < 0.6:
-        return ReasoningOutcome("UNRESOLVED", score, (RC_DISCOVERY,))
+    if not all(positives):
+        return ReasoningOutcome(
+            "UNRESOLVED",
+            score,
+            (RC_DISCOVERY,),
+        )
+    if conflict > 0.0:
+        conflicts = []
+        if obs.culvert_conflict > 0.0:
+            conflicts.append("culvert")
+        if obs.tree_shadow_conflict > 0.0:
+            conflicts.append("tree_shadow")
+        if obs.bridge_shadow_conflict > 0.0:
+            conflicts.append("bridge_shadow")
+        if obs.rock_overhang_conflict > 0.0:
+            conflicts.append("rock_overhang")
+        if obs.artifact_conflict > 0.0:
+            conflicts.append("artifact")
+        return ReasoningOutcome(
+            "UNRESOLVED",
+            score,
+            (RC_DISCOVERY,),
+            contradictions=tuple(conflicts),
+        )
     reasons = ["RC_PORTAL_LIKE"]
     if not obs.independent_subsurface_binding:
         reasons.append("RC_PORTAL_NOT_UNDERGROUND_IDENTITY")
@@ -915,8 +1084,16 @@ def assess_portal(obs: PortalObservation, params: ParameterSet) -> ReasoningOutc
     )
 
 
-def assess_multiscale(obs: RegisteredFeatureObservation, params: ParameterSet) -> ReasoningOutcome:
-    required_obs = (obs.registration_score, obs.geometric_persistence, obs.class_stability, obs.resolution_loss)
+def assess_multiscale(
+    obs: RegisteredFeatureObservation,
+    params: ParameterSet,
+) -> ReasoningOutcome:
+    required_obs = (
+        obs.registration_score,
+        obs.geometric_persistence,
+        obs.class_stability,
+        obs.resolution_loss,
+    )
     if any(value is None for value in required_obs):
         return _missing_observation("multiscale_measurement")
     required = params.require(
@@ -932,7 +1109,10 @@ def assess_multiscale(obs: RegisteredFeatureObservation, params: ParameterSet) -
     assert obs.geometric_persistence is not None
     assert obs.class_stability is not None
     assert obs.resolution_loss is not None
-    if obs.resolution_loss > loss_tol and obs.geometric_persistence < persistence_min:
+    if (
+        obs.resolution_loss > loss_tol
+        and obs.geometric_persistence < persistence_min
+    ):
         return ReasoningOutcome(
             "BELOW_RESOLUTION_NOT_ABSENT",
             reason_codes=("RC_BELOW_RESOLUTION_NOT_ABSENT",),
@@ -944,14 +1124,30 @@ def assess_multiscale(obs: RegisteredFeatureObservation, params: ParameterSet) -
     ):
         return ReasoningOutcome(
             "MULTISCALE_SUPPORTED",
-            confidence=_mean((obs.registration_score, obs.geometric_persistence, obs.class_stability)),
+            confidence=_mean(
+                (
+                    obs.registration_score,
+                    obs.geometric_persistence,
+                    obs.class_stability,
+                )
+            ),
             reason_codes=("RC_MULTISCALE_PERSISTENT",),
         )
-    return ReasoningOutcome("UNRESOLVED", reason_codes=(RC_MISSING,))
+    return ReasoningOutcome(
+        "UNRESOLVED",
+        reason_codes=(RC_MISSING,),
+    )
 
 
-def assess_multiframe(obs: MultiframeObservation, params: ParameterSet) -> ReasoningOutcome:
-    if obs.shared_features is None or obs.registration_error_px is None or obs.feature_consensus is None:
+def assess_multiframe(
+    obs: MultiframeObservation,
+    params: ParameterSet,
+) -> ReasoningOutcome:
+    if (
+        obs.shared_features is None
+        or obs.registration_error_px is None
+        or obs.feature_consensus is None
+    ):
         return _missing_observation("multiframe_measurement")
     required = params.require(
         "MULTIFRAME.MIN_SHARED_FEATURES",
@@ -971,7 +1167,10 @@ def assess_multiframe(obs: MultiframeObservation, params: ParameterSet) -> Reaso
             confidence=_clamp01(obs.feature_consensus),
             reason_codes=("RC_MULTIFRAME_CONSENSUS",),
         )
-    return ReasoningOutcome("UNRESOLVED", reason_codes=(RC_MISSING,))
+    return ReasoningOutcome(
+        "UNRESOLVED",
+        reason_codes=(RC_MISSING,),
+    )
 
 
 def _location_required_parameters() -> tuple[str, ...]:
@@ -1000,7 +1199,11 @@ def _location_required_parameters() -> tuple[str, ...]:
     )
 
 
-def _candidate_score(candidate: LocationCandidate, weights: Sequence[float], penalties: tuple[float, float]) -> float:
+def _candidate_score(
+    candidate: LocationCandidate,
+    weights: Sequence[float],
+    penalties: tuple[float, float],
+) -> float:
     channels = (
         candidate.text_score,
         candidate.road_score,
@@ -1014,12 +1217,12 @@ def _candidate_score(candidate: LocationCandidate, weights: Sequence[float], pen
     )
     numerator = 0.0
     denominator = 0.0
-    for value, weight in zip(channels, weights):
+    for value, weight in zip(channels, weights, strict=True):
         if value is None:
             continue
         numerator += _clamp01(value) * weight
         denominator += weight
-    score = numerator / denominator if denominator > 0 else 0.0
+    score = numerator / denominator if denominator > 0.0 else 0.0
     hard_penalty, soft_penalty = penalties
     if candidate.hard_geometric_contradiction:
         score -= hard_penalty
@@ -1043,7 +1246,16 @@ def locate_scene(
     required_names = _location_required_parameters()
     required = params.require(*required_names)
     if required is None:
-        return LocationResult("UNRESOLVED", None, None, None, None, 0, None, (RC_MISSING,))
+        return LocationResult(
+            "UNRESOLVED",
+            None,
+            None,
+            None,
+            None,
+            0,
+            None,
+            (RC_MISSING,),
+        )
     (
         text_w,
         road_w,
@@ -1062,9 +1274,28 @@ def locate_scene(
         *level_thresholds,
     ) = required
     if not candidates:
-        return LocationResult("UNRESOLVED", None, None, None, None, 0, None, (RC_MISSING,))
+        return LocationResult(
+            "UNRESOLVED",
+            None,
+            None,
+            None,
+            None,
+            0,
+            None,
+            (RC_MISSING,),
+        )
 
-    weights = (text_w, road_w, hydro_w, terrain_w, building_w, landmark_w, vegetation_w, multiframe_w, generic_w)
+    weights = (
+        text_w,
+        road_w,
+        hydro_w,
+        terrain_w,
+        building_w,
+        landmark_w,
+        vegetation_w,
+        multiframe_w,
+        generic_w,
+    )
     rejected: list[str] = []
     scored: list[tuple[float, LocationCandidate]] = []
     for candidate in candidates:
@@ -1074,7 +1305,11 @@ def locate_scene(
         if candidate.selected_by_proximity_only:
             rejected.append(candidate.candidate_id)
             continue
-        score = _candidate_score(candidate, weights, (hard_penalty, soft_penalty))
+        score = _candidate_score(
+            candidate,
+            weights,
+            (hard_penalty, soft_penalty),
+        )
         scored.append((score, candidate))
 
     if not scored:
@@ -1091,7 +1326,12 @@ def locate_scene(
         )
 
     scored.sort(key=lambda row: (-row[0], row[1].candidate_id))
-    preserve_count = int(max(min_preserved, min(max_preserved, len(scored))))
+    preserve_count = int(
+        max(
+            min_preserved,
+            min(max_preserved, len(scored)),
+        )
+    )
     scored = scored[:preserve_count]
     best_score, best = scored[0]
     second_score = scored[1][0] if len(scored) > 1 else None
@@ -1127,7 +1367,10 @@ def locate_scene(
         )
     if best.text_cue_count > 0 and best.independent_topology_support:
         reasons.append("RC_LOCATION_TEXT_TOPOLOGY")
-    if second_score is not None and best_score - second_score < runner_margin:
+    if (
+        second_score is not None
+        and best_score - second_score < runner_margin
+    ):
         reasons.append("RC_LOCATION_TIE")
         return LocationResult(
             "MULTIPLE_CANDIDATES",
@@ -1213,7 +1456,12 @@ def locate_scene(
             and registration.leave_one_out_max_residual <= max_loo
         )
         if exact:
-            reasons.extend(("RC_EXACT_CERTIFIED", "RC_LOCATION_ERROR_RADIUS_REQUIRED"))
+            reasons.extend(
+                (
+                    "RC_EXACT_CERTIFIED",
+                    "RC_LOCATION_ERROR_RADIUS_REQUIRED",
+                )
+            )
             return LocationResult(
                 "EXACT_CERTIFIED",
                 best.candidate_id,
@@ -1292,7 +1540,10 @@ class VisualReasoningEngine:
     def portal(self, obs: PortalObservation) -> ReasoningOutcome:
         return assess_portal(obs, self.params)
 
-    def multiscale(self, obs: RegisteredFeatureObservation) -> ReasoningOutcome:
+    def multiscale(
+        self,
+        obs: RegisteredFeatureObservation,
+    ) -> ReasoningOutcome:
         return assess_multiscale(obs, self.params)
 
     def multiframe(self, obs: MultiframeObservation) -> ReasoningOutcome:
