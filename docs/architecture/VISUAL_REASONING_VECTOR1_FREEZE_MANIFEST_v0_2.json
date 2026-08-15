@@ -1,0 +1,35 @@
+{
+  "spec_version": "0.2.0",
+  "vector": "1/3_CANONICAL_LOGIC_PARSE",
+  "state": "PASS_BOUNDED_EXHAUSTION",
+  "baseline_commit": "c32c68abce2a281fd13d9632687a7cdc10412d0b",
+  "branch": "spec/visual-reasoning-canonical-v0-2",
+  "claim_scope": "Declared visual-reasoning decision surface v0.2.0 only",
+  "artifacts": {
+    "docs/architecture/VISUAL_REASONING_CANONICAL_SPEC_v0_2.md": "gitblob:7b03a8d2486f02f57eeef54f945d6171e73e5f33",
+    "configs/visual_reasoning/calibration_and_coverage_v0_2.yaml": "gitblob:596674ebbe2df845c114ac330271c8d8263eca43",
+    "configs/visual_reasoning/control_plane_v0_2.yaml": "gitblob:5944e00c1922422eb6d028407b7e891401d3f436",
+    "configs/visual_reasoning/ontology_and_adapters_v0_2.yaml": "gitblob:f553538828d3bc99932476c76c463379e80f0415",
+    "configs/visual_reasoning/parameter_registry_v0_2.yaml": "gitblob:9bf423f5ca591ed8412278729fd8d3ca4c7000fc",
+    "configs/visual_reasoning/rule_registry_v0_2.yaml": "gitblob:a5a7436a19f0e954e34a2489d2b352e1bcaa8020",
+    "configs/visual_reasoning/reason_codes_v0_2.yaml": "gitblob:14c7f66d183ddc763755c936d432bf322f684f46",
+    "docs/architecture/VISUAL_REASONING_VECTOR1_ACCEPTANCE_v0_2.md": "gitblob:e8278c7408769c5bf1355dc0ec441c7fe4087c36",
+    "docs/architecture/VISUAL_REASONING_VECTOR2_HANDOFF_v0_2.csv": "gitblob:e54164c491b6cbdf370f6cbab8fc30d71389a008"
+  },
+  "identity_note": "Git blob identities certify repository object bytes. This manifest does not relabel Git SHA-1 object identity as SHA-256.",
+  "acceptance": {
+    "parameter_family_open_count": 0,
+    "rule_family_open_count": 0,
+    "undefined_null_policy_count": 0,
+    "undefined_tie_policy_count": 0,
+    "undefined_precedence_policy_count": 0,
+    "unvalidated_numeric_values_promoted_to_canonical": 0
+  },
+  "remaining_outside_vector_1": [
+    "current-main implementation conformance audit",
+    "magic-number and hidden-default extraction",
+    "numeric calibration and sensitivity validation",
+    "runtime implementation",
+    "corpus-wide differential replay and production promotion"
+  ]
+}
