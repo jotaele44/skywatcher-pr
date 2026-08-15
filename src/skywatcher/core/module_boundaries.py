@@ -15,7 +15,7 @@ tests/test_module_boundaries.py:
     corrim : imports core + satim + fpim + stdlib/third-party. The ONLY bucket
              permitted to import from both satim and fpim.
     legacy : quarantine. Not importable by core/satim/fpim/corrim — only by its
-             own backward-compat shim (aircraft_intelligence.py).
+             own backward-compat shims/orchestrators.
 
 MODULE_IMPORT_EXCEPTIONS records narrow, explicit, intentional exceptions to
 the bucket-level rule above, keyed by file path (relative to repo root). The
@@ -51,7 +51,6 @@ MODULE_BOUNDARIES: dict[str, list[str]] = {
         "satim_road_end.py",
         "satim_temporal_change.py",
         "satim_tile_seam_classifier.py",
-        "satim_visual_route_gap.py",
         "satim_water_feature.py",
         "fr24/calibration/**/*.py",
         "fr24/satim_engine.py",
@@ -86,6 +85,11 @@ MODULE_BOUNDARIES: dict[str, list[str]] = {
     ],
     "legacy": [
         "src/skywatcher/legacy/**/*.py",
+        # Mixed-domain compatibility surfaces. They remain callable by explicit
+        # legacy/orchestrator paths but are prohibited inputs to new canonical
+        # visual-reasoning logic.
+        "fr24/rlsm_unlabeled.py",
+        "satim_visual_route_gap.py",
     ],
 }
 
