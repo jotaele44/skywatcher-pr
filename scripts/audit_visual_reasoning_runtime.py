@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,7 @@ PROHIBITED_LEGACY_REFERENCES = (
     "fr24.rlsm_unlabeled",
     "fr24/rlsm_unlabeled.py",
 )
+PARAMETER_ID_RE = re.compile(r"^[A-Z][A-Z0-9_]*\.[A-Z0-9_.]+$")
 
 
 class RuntimeVisitor(ast.NodeVisitor):
@@ -26,17 +28,12 @@ class RuntimeVisitor(ast.NodeVisitor):
         self.reason_codes: set[str] = set()
         self.float_compare_literals: list[dict[str, Any]] = []
 
-    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
-        if isinstance(node.func, ast.Attribute) and node.func.attr == "require":
-            for arg in node.args:
-                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
-                    if not arg.value.endswith(".*"):
-                        self.parameter_ids.add(arg.value)
-        self.generic_visit(node)
-
     def visit_Constant(self, node: ast.Constant) -> None:  # noqa: N802
-        if isinstance(node.value, str) and node.value.startswith("RC_"):
-            self.reason_codes.add(node.value)
+        if isinstance(node.value, str):
+            if node.value.startswith("RC_"):
+                self.reason_codes.add(node.value)
+            elif PARAMETER_ID_RE.fullmatch(node.value) and not node.value.endswith(".*"):
+                self.parameter_ids.add(node.value)
         self.generic_visit(node)
 
     def visit_Compare(self, node: ast.Compare) -> None:  # noqa: N802
