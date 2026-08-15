@@ -20,7 +20,6 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-
 RC_MISSING = "RC_MISSING_NOT_NEGATIVE"
 RC_DISCOVERY = "RC_DISCOVERY_NOT_IDENTITY"
 
