@@ -5,8 +5,8 @@ from copy import deepcopy
 from skywatcher.satim.visual_reasoning_runtime import (
     ArtifactObservation,
     LocationCandidate,
-    ParameterSet,
     PalmObservation,
+    ParameterSet,
     QuarryObservation,
     RegistrationMetrics,
     SeamObservation,
