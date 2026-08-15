@@ -14,6 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_PATHS = (
     REPO_ROOT / "src/skywatcher/satim/visual_reasoning_runtime.py",
     REPO_ROOT / "src/skywatcher/satim/infrastructure_reasoning.py",
+    REPO_ROOT / "src/skywatcher/satim/shadow_photometry.py",
 )
 PARAMETER_REGISTRY = REPO_ROOT / "configs/visual_reasoning/parameter_registry_v0_2.yaml"
 REASON_REGISTRY = REPO_ROOT / "configs/visual_reasoning/reason_codes_v0_2.yaml"
