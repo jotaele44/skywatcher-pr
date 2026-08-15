@@ -16,15 +16,23 @@ def _load_yaml(name: str):
     return yaml.safe_load((CONFIG / name).read_text())
 
 
-def test_every_root_satim_module_is_classified_by_boundary_manifest():
+def test_every_root_satim_module_is_explicitly_classified():
     root_satim = {path.name for path in ROOT.glob("satim_*.py")}
     classified = {
         pattern
-        for pattern in MODULE_BOUNDARIES["satim"]
+        for bucket in MODULE_BOUNDARIES.values()
+        for pattern in bucket
         if pattern.startswith("satim_") and pattern.endswith(".py")
     }
     missing = sorted(root_satim - classified)
     assert not missing, f"unclassified root SATIM modules: {missing}"
+
+
+def test_mixed_domain_compatibility_surfaces_are_in_legacy_bucket():
+    legacy = set(MODULE_BOUNDARIES["legacy"])
+    assert "satim_visual_route_gap.py" in legacy
+    assert "fr24/rlsm_unlabeled.py" in legacy
+    assert "satim_visual_route_gap.py" not in MODULE_BOUNDARIES["satim"]
 
 
 def test_rlsm_semantic_ground_feature_pass_remains_non_default():
