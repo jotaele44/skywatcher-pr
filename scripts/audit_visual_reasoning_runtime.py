@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit the canonical SATIM visual-reasoning runtime against frozen registries."""
+"""Audit canonical SATIM visual-reasoning runtime modules against frozen registries."""
 
 from __future__ import annotations
 
@@ -11,7 +11,10 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_PATH = REPO_ROOT / "src/skywatcher/satim/visual_reasoning_runtime.py"
+RUNTIME_PATHS = (
+    REPO_ROOT / "src/skywatcher/satim/visual_reasoning_runtime.py",
+    REPO_ROOT / "src/skywatcher/satim/infrastructure_reasoning.py",
+)
 PARAMETER_REGISTRY = REPO_ROOT / "configs/visual_reasoning/parameter_registry_v0_2.yaml"
 REASON_REGISTRY = REPO_ROOT / "configs/visual_reasoning/reason_codes_v0_2.yaml"
 PROHIBITED_LEGACY_REFERENCES = (
@@ -23,7 +26,8 @@ PARAMETER_ID_RE = re.compile(r"^[A-Z][A-Z0-9_]*\.[A-Z0-9_.]+$")
 
 
 class RuntimeVisitor(ast.NodeVisitor):
-    def __init__(self) -> None:
+    def __init__(self, path: Path) -> None:
+        self.path = path
         self.parameter_ids: set[str] = set()
         self.reason_codes: set[str] = set()
         self.float_compare_literals: list[dict[str, Any]] = []
@@ -43,6 +47,7 @@ class RuntimeVisitor(ast.NodeVisitor):
                 if value.value not in {0.0, 1.0}:
                     self.float_compare_literals.append(
                         {
+                            "path": str(self.path.relative_to(REPO_ROOT)),
                             "line": value.lineno,
                             "column": value.col_offset,
                             "value": value.value,
@@ -52,45 +57,50 @@ class RuntimeVisitor(ast.NodeVisitor):
 
 
 def audit() -> dict[str, Any]:
-    source = RUNTIME_PATH.read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=RUNTIME_PATH.as_posix())
-    visitor = RuntimeVisitor()
-    visitor.visit(tree)
+    parameter_ids: set[str] = set()
+    reason_codes: set[str] = set()
+    float_compare_literals: list[dict[str, Any]] = []
+    combined_source: list[str] = []
 
+    for path in RUNTIME_PATHS:
+        source = path.read_text(encoding="utf-8")
+        combined_source.append(source)
+        tree = ast.parse(source, filename=path.as_posix())
+        visitor = RuntimeVisitor(path)
+        visitor.visit(tree)
+        parameter_ids.update(visitor.parameter_ids)
+        reason_codes.update(visitor.reason_codes)
+        float_compare_literals.extend(visitor.float_compare_literals)
+
+    source_text = "\n".join(combined_source)
     parameter_text = PARAMETER_REGISTRY.read_text(encoding="utf-8")
     reason_text = REASON_REGISTRY.read_text(encoding="utf-8")
     missing_parameters = sorted(
-        parameter_id
-        for parameter_id in visitor.parameter_ids
-        if parameter_id not in parameter_text
+        parameter_id for parameter_id in parameter_ids if parameter_id not in parameter_text
     )
     missing_reason_codes = sorted(
-        reason_code
-        for reason_code in visitor.reason_codes
-        if reason_code not in reason_text
+        reason_code for reason_code in reason_codes if reason_code not in reason_text
     )
     prohibited_hits = sorted(
-        reference
-        for reference in PROHIBITED_LEGACY_REFERENCES
-        if reference in source
+        reference for reference in PROHIBITED_LEGACY_REFERENCES if reference in source_text
     )
 
     return {
         "audit_version": "0.2.0",
-        "runtime": str(RUNTIME_PATH.relative_to(REPO_ROOT)),
-        "parameter_ids_referenced": sorted(visitor.parameter_ids),
-        "parameter_count": len(visitor.parameter_ids),
+        "runtime_modules": [str(path.relative_to(REPO_ROOT)) for path in RUNTIME_PATHS],
+        "parameter_ids_referenced": sorted(parameter_ids),
+        "parameter_count": len(parameter_ids),
         "missing_parameter_registry_entries": missing_parameters,
-        "reason_codes_referenced": sorted(visitor.reason_codes),
-        "reason_code_count": len(visitor.reason_codes),
+        "reason_codes_referenced": sorted(reason_codes),
+        "reason_code_count": len(reason_codes),
         "missing_reason_registry_entries": missing_reason_codes,
         "prohibited_legacy_references": prohibited_hits,
-        "unregistered_float_compare_literals": visitor.float_compare_literals,
+        "unregistered_float_compare_literals": float_compare_literals,
         "pass": not (
             missing_parameters
             or missing_reason_codes
             or prohibited_hits
-            or visitor.float_compare_literals
+            or float_compare_literals
         ),
     }
 
