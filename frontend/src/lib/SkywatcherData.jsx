@@ -15,12 +15,16 @@ const ENTITIES = {
   exports: "ExportPackages",
   readiness: "ReadinessReports",
   syncs: "FederationSyncEvents",
+  lenses: "AnalysisLenses",
+  objectives: "AnalysisObjectives",
+  coverage: "LensCoverage",
 };
 
 export function SkywatcherDataProvider({ children }) {
   const [data, setData] = useState({
     observations: [], aircraft: [], captures: [], routes: [], assets: [],
     links: [], airports: [], reviews: [], exports: [], readiness: [], syncs: [],
+    lenses: [], objectives: [], coverage: [],
   });
   const [loading, setLoading] = useState(true);
 
