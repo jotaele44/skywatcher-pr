@@ -8,7 +8,9 @@ import pytest
 from PIL import Image
 
 from fr24_image_skill.orchestrator import (
+    MODE_PARAMETERS,
     AnalysisMode,
+    RunOptions,
     StageState,
     _correlate,
     _digest_tree,
@@ -193,3 +195,125 @@ def test_ocr_degrades_when_tesseract_binary_is_absent(tmp_path: Path, monkeypatc
     assert [r["status"] for r in rows] == ["dependency_unavailable"]
     assert rows[0]["method"] == "unavailable"
     assert rows[0]["value"] == ""
+
+
+# ── run options: the declared contract, now reachable ───────────────────────────
+
+
+def test_mode_actually_changes_the_parameter_set() -> None:
+    """`mode` was threaded through both stages but never branched on.
+
+    All three modes produced identical work, so the enum described an intent the code
+    did not implement.
+    """
+    triage = RunOptions(mode=AnalysisMode.TRIAGE).parameters()
+    standard = RunOptions(mode=AnalysisMode.STANDARD).parameters()
+    forensic = RunOptions(mode=AnalysisMode.FORENSIC).parameters()
+
+    assert triage != standard != forensic
+
+    # Forensic trades recall for precision and renders at higher fidelity.
+    assert forensic["seam_score_threshold"] > standard["seam_score_threshold"]
+    assert standard["seam_score_threshold"] > triage["seam_score_threshold"]
+    assert forensic["pdf_dpi"] > standard["pdf_dpi"]
+    assert forensic["video_fps"] > standard["video_fps"]
+    assert forensic["cross_source_tests"] is True
+    assert triage["cross_source_tests"] is False
+
+
+def test_every_mode_declares_the_same_parameter_keys() -> None:
+    """A mode missing a key would read as an unset parameter downstream."""
+    keys = [set(params) for params in MODE_PARAMETERS.values()]
+    assert all(k == keys[0] for k in keys)
+    assert {mode.value for mode in AnalysisMode} == set(MODE_PARAMETERS)
+
+
+def test_declared_input_contract_is_fully_reachable() -> None:
+    """input.schema.json's six knobs must all exist on RunOptions.
+
+    Four of them were declared in the schema but unreachable from the CLI, so the
+    documented contract and the actual interface disagreed.
+    """
+    schema = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "skills/skywatcher-fr24-image-analysis/schemas/input.schema.json"
+        ).read_text(encoding="utf-8")
+    )
+    declared = set(schema["properties"]) - {"primary_media", "supplemental"}
+    assert declared <= set(RunOptions().parameters())
+
+
+def test_run_options_reject_stage_2_without_stage_1() -> None:
+    """SKILL.md freezes stage 1 before stage 2; stage 2 consumes that frozen output."""
+    with pytest.raises(ValueError, match="requires execute_stage_1"):
+        RunOptions(execute_stage_1=False, execute_stage_2=True)
+
+
+@pytest.mark.parametrize(
+    "kwargs, match",
+    [
+        ({"external_verification": "sometimes"}, "external_verification"),
+        ({"output_geometry": "wkt"}, "output_geometry"),
+        ({"target_registration_rmse_m": 0}, "greater than zero"),
+    ],
+)
+def test_run_options_reject_values_outside_the_schema(kwargs, match) -> None:
+    with pytest.raises(ValueError, match=match):
+        RunOptions(**kwargs)
+
+
+def test_cli_exposes_every_declared_option() -> None:
+    from fr24_image_skill.__main__ import build_parser
+
+    args = build_parser().parse_args(
+        [
+            "run", "x", "--output-dir", "y",
+            "--mode", "forensic",
+            "--skip-stage-2",
+            "--external-verification", "none",
+            "--target-registration-rmse-m", "5",
+            "--output-geometry", "pixel_space",
+        ]
+    )
+    assert args.mode == "forensic"
+    assert args.execute_stage_1 is True
+    assert args.execute_stage_2 is False
+    assert args.external_verification == "none"
+    assert args.target_registration_rmse_m == 5
+    assert args.output_geometry == "pixel_space"
+
+
+def test_run_records_the_parameters_it_used(tmp_path: Path) -> None:
+    image = tmp_path / "frame.png"
+    _tiny_png(image)
+    output = tmp_path / "out"
+    run_analysis(image, output, options=RunOptions(mode=AnalysisMode.FORENSIC))
+
+    manifest = json.loads((output / "RUN_MANIFEST.json").read_text())
+    config = manifest["deterministic_config"]
+    assert config["mode"] == "forensic"
+    assert config["seam_score_threshold"] == MODE_PARAMETERS["forensic"]["seam_score_threshold"]
+    assert config["output_geometry"] == "geojson"
+
+
+def test_run_emits_a_lens_coverage_report(tmp_path: Path) -> None:
+    """Flight-side runs participate in the same coverage contract as the imagery side."""
+    image = tmp_path / "frame.png"
+    _tiny_png(image)
+    output = tmp_path / "out"
+    run_analysis(image, output, AnalysisMode.STANDARD)
+
+    report = json.loads((output / "coverage_report.json").read_text())
+    assert report["run_id"]
+    # Either the registry was available and produced coverage, or the run said in
+    # writing why it could not - never silence.
+    if report.get("available"):
+        assert report["profile_id"]
+        assert report["entries"]
+        for entry in report["entries"]:
+            assert entry["state"] in {"SATISFIED", "DEGRADED", "MISSING", "NOT_APPLICABLE"}
+            if entry["state"] != "SATISFIED":
+                assert entry["reason"], f"{entry['lens_id']} degraded without a reason"
+    else:
+        assert report["reason"]
