@@ -1,0 +1,8 @@
+# ADS-B automated aircraft-state-vector poll (requirements-adsb.txt)
+#
+#   pip install -r requirements-adsb.txt
+#
+# Package: adsb/   Entry point: python scripts/adsb_poll.py
+# Provider: OpenSky Network (free; OAuth2 client-credentials, anonymous fallback).
+opensky-api @ git+https://github.com/openskynetwork/opensky-api.git#subdirectory=python
+python-dotenv>=1.0

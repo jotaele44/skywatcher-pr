@@ -60,10 +60,19 @@ def _migration_0001_base_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(db.read_schema_sql())
 
 
+def _migration_0002_adsb_state_vectors(conn: sqlite3.Connection) -> None:
+    """Apply the adsb_state_vectors table from schemas/adsb_state_vectors.sql."""
+    path = db.REPO_ROOT / "schemas" / "adsb_state_vectors.sql"
+    conn.executescript(path.read_text(encoding="utf-8"))
+
+
 # Ordered migration ledger. Append new migrations with the next integer version;
 # never edit or reorder an already-released migration.
 MIGRATIONS: list[Migration] = [
     Migration(1, "base FR24 canonical schema (10 tables)", _migration_0001_base_schema),
+    Migration(
+        2, "adsb_state_vectors table (automated OpenSky poll)", _migration_0002_adsb_state_vectors
+    ),
 ]
 
 LATEST_VERSION = MIGRATIONS[-1].version if MIGRATIONS else 0
