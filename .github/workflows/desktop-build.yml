@@ -130,7 +130,7 @@ jobs:
 
       - name: Upload native setup visual evidence
         if: runner.os == 'Linux' && always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: skywatcher-pr-native-setup-visuals
           path: desktop-ui-artifacts/*.png
@@ -175,7 +175,7 @@ jobs:
           hdiutil create -volname "PRII-SKYWATCHER" -srcfolder "$staging" -ov -format UDZO "PRII-SKYWATCHER-macOS.dmg"
           rm -rf "$staging"
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: PRII-SKYWATCHER-${{ runner.os }}
           path: |
