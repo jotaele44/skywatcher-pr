@@ -10,7 +10,7 @@ def test_initialization_is_idempotent(tmp_path):
     dbp = tmp_path / "s.db"
     r1 = migrations.initialize_database(dbp)
     r2 = migrations.initialize_database(dbp)
-    assert r1.applied == [1]
+    assert r1.applied == [m.version for m in migrations.MIGRATIONS]
     assert r2.applied == []  # nothing re-applied
     assert r1.schema_version == r2.schema_version == migrations.LATEST_VERSION
 
@@ -48,7 +48,7 @@ def test_schema_version_recorded(tmp_path):
     conn = db.connect(dbp)
     try:
         rows = conn.execute("SELECT version, description FROM schema_version ORDER BY version").fetchall()
-        assert [r["version"] for r in rows] == [1]
+        assert [r["version"] for r in rows] == [m.version for m in migrations.MIGRATIONS]
         assert rows[0]["description"]
     finally:
         conn.close()
