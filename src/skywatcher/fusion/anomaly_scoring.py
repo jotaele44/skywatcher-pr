@@ -86,6 +86,9 @@ def score_against_historical_baselines(
             "operator_action": "review_context_only",
             "live_tracking": False,
             "operational_cueing": False,
-            "thresholds_applied": thresholds_applied,
+            # Fresh list-and-dict copies per row: the stamps are identical across rows
+            # (same governed cutoffs), but sharing the instance would let a downstream
+            # mutation of one row's entries silently corrupt every other row's.
+            "thresholds_applied": [dict(t) for t in thresholds_applied],
         })
     return scored

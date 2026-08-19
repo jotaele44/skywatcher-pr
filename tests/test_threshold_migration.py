@@ -79,3 +79,26 @@ def test_scored_rows_carry_the_thresholds_that_produced_them() -> None:
     assert scored[0]["operator_action"] == "review_context_only"
     assert scored[0]["live_tracking"] is False
     assert scored[0]["operational_cueing"] is False
+
+
+def test_scored_rows_do_not_share_a_mutable_thresholds_applied_instance() -> None:
+    """Mutating one row's threshold stamps must never leak into another row's."""
+    scored = anomaly_scoring.score_against_historical_baselines(
+        [
+            {"corridor_id": "c1", "domain": "air", "event_count": 10, "confidence": 0.9},
+            {"corridor_id": "c2", "domain": "air", "event_count": 10, "confidence": 0.9},
+        ],
+        [
+            {"corridor_id": "c1", "domain": "air", "historical_count": 1},
+            {"corridor_id": "c2", "domain": "air", "historical_count": 1},
+        ],
+    )
+    assert len(scored) == 2
+    first, second = scored[0]["thresholds_applied"], scored[1]["thresholds_applied"]
+    assert first is not second
+    assert first[0] is not second[0]
+
+    first.append({"threshold_id": "INJECTED", "value": 1, "status": "TEST"})
+    first[0]["value"] = "corrupted"
+    assert second[0]["value"] != "corrupted"
+    assert all(t["threshold_id"] != "INJECTED" for t in second)

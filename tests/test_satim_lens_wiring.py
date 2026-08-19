@@ -65,6 +65,24 @@ def test_wired_engine_reports_unmet_requirements(wired_engine) -> None:
     assert any("satim.image_artifacts" in reason for reason in result.unsatisfied_requirements)
 
 
+def test_lenses_applied_means_ran_not_merely_named_by_the_profile(wired_engine) -> None:
+    """satellite_imagery_standard also names three optional lenses. None of them ran here.
+
+    lenses_applied must reflect execution, not membership in the objective profile - a
+    lens that is MISSING or NOT_APPLICABLE in lens_coverage never ran and must not
+    appear here, even though it still has a coverage entry.
+    """
+    result = wired_engine.assess(_payload())
+
+    assert result.lenses_applied == ("satim.image_artifacts",)
+    never_ran = {"satim.hydrogeography", "satim.subsurface_infrastructure", "satim.dual_use_function"}
+    assert not (never_ran & set(result.lenses_applied))
+
+    # They are still accounted for in the coverage report, just not marked as run.
+    covered = {entry["lens_id"] for entry in result.lens_coverage}
+    assert never_ran <= covered
+
+
 def test_wired_engine_is_satisfied_when_parameters_are_supplied(wired_engine) -> None:
     result = wired_engine.assess(
         _payload(

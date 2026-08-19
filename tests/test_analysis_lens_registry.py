@@ -273,6 +273,21 @@ def test_a_default_counts_as_supplied() -> None:
     assert evaluate_lens(lens, supplied_parameters={}).state == SATISFIED
 
 
+def test_present_but_none_stays_missing_even_with_a_default() -> None:
+    """A default fills silence, not an explicit 'I looked and found nothing'.
+
+    supplied.get() alone cannot tell "key absent" from "key present, value None" -
+    both return None - so an upstream stage's explicit null must be checked for key
+    presence, not falsy-ness, or it is indistinguishable from never having asked.
+    """
+    lens = LensSpec.from_mapping(
+        _lens(required_parameters=[{"parameter_id": "cap", "kind": "boolean", "default": False}])
+    )
+    entry = evaluate_lens(lens, supplied_parameters={"cap": None})
+    assert entry.state == MISSING
+    assert entry.unmet_parameters == ("cap",)
+
+
 # ── the fail-closed guarantee ───────────────────────────────────────────────────
 
 

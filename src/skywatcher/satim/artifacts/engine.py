@@ -92,7 +92,13 @@ class ArtifactAssessmentEngine:
             applicable=dict(payload.get("lens_applicable") or {}),
             generated_by=f"ArtifactAssessmentEngine/{ENGINE_VERSION}",
         )
-        applied = tuple(entry.lens_id for entry in report.entries)
+        # "Applied" means ran, not merely named by the objective profile. report.entries
+        # covers every lens the profile lists — including ones that were MISSING or
+        # NOT_APPLICABLE and so never executed — so it is the wrong source for this.
+        # `produced` is exactly the set of lenses this call has positive evidence for
+        # (explicit lens_produced entries plus candidate-derived ones); a lens present
+        # there with produced=False still ran, it just found nothing.
+        applied = tuple(lens_id for lens_id in produced if lens_id in self.lens_registry)
         coverage = tuple(entry.to_dict() for entry in report.entries)
         return applied, coverage, report.blocking_reasons
 

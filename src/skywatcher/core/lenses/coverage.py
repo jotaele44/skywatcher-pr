@@ -45,11 +45,16 @@ def _missing_parameters(
     missing_required: list[str] = []
     missing_optional: list[str] = []
     for spec in lens.all_parameters():
-        value = supplied.get(spec.parameter_id)
-        if value is None and spec.default is not None:
+        if spec.parameter_id not in supplied:
+            # Genuinely absent: the declared default, if any, is the value.
+            if spec.default is not None:
+                continue
+        elif supplied[spec.parameter_id] is not None:
             continue
-        if value is not None:
-            continue
+        # Either genuinely absent with no default, or present-but-None — the latter
+        # is what an upstream stage emits when it looked and found nothing, so it
+        # counts as missing even when a default exists. A default only fills in for
+        # silence, not for an explicit "I don't have one".
         (missing_required if spec.required else missing_optional).append(spec.parameter_id)
     return missing_required, missing_optional
 
