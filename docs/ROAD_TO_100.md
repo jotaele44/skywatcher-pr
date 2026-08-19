@@ -20,6 +20,13 @@ The former ~73% figure combined code present on main with data-blocked and candi
 ## State reconciliation
 
 - SATIM, FR24/RLSM foundations, OCR preprocessing provenance and ontology v2.0 governance are on `main`.
+- The analysis lens registry (`docs/ANALYSIS_LENS_REGISTRY.md`) moves analytical
+  parameters from code into `configs/analysis/`, surfaces them at `/analysis`, and adds
+  the first backend/GUI parity test in the repo. The **GUI completeness** and **CI
+  enforcement** rows above are not re-scored here — that is an audit judgment against the
+  operator corpus, not something this change can assert about itself. What it does change
+  is that a skipped analytical check is now distinguishable from one that ran and found
+  nothing, which is a precondition for scoring operator verification honestly at all.
 - PR #171 is merged current-main aircraft spatial truth; full operator-corpus execution remains pending.
 - PR #170 is merged current-main deterministic multisensor replay.
 - PR #172 is merged current-main isolated-clone runtime.

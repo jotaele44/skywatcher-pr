@@ -424,11 +424,78 @@ def load_readiness() -> list[dict[str, Any]]:
     return with_id(read_jsonl(EVIDENCE_PATH), "path")
 
 
+def _lens_registries():
+    """Load the committed analysis registries, or None when they are unavailable.
+
+    Returns None rather than raising: this backend is a read-only diagnostic surface
+    over committed artifacts, and a malformed lens file should degrade one panel rather
+    than take the whole dashboard down. The ontology gate is what fails closed on a bad
+    registry; this is the viewer.
+    """
+    try:
+        from skywatcher.core.lenses import load_default_registries
+
+        return load_default_registries()
+    except Exception:  # noqa: BLE001 - any load failure degrades to an empty panel
+        log.warning("analysis lens registry unavailable", exc_info=True)
+        return None
+
+
+def load_analysis_lenses() -> list[dict[str, Any]]:
+    registries = _lens_registries()
+    if registries is None:
+        return []
+    lenses, _ = registries
+    rows = []
+    for lens in lenses.all():
+        row = lens.to_dict()
+        # Flattened counts so the table can sort without unpacking nested lists.
+        row["required_parameter_count"] = len(lens.required_parameters)
+        row["optional_parameter_count"] = len(lens.optional_parameters)
+        row["threshold_count"] = len(lens.threshold_ids)
+        rows.append(row)
+    return with_id(rows, "lens_id")
+
+
+def load_analysis_objectives() -> list[dict[str, Any]]:
+    registries = _lens_registries()
+    if registries is None:
+        return []
+    _, objectives = registries
+    rows = []
+    for profile in objectives.all():
+        row = profile.to_dict()
+        row["required_lens_count"] = len(profile.required_lenses)
+        row["optional_lens_count"] = len(profile.optional_lenses)
+        rows.append(row)
+    return with_id(rows, "profile_id")
+
+
+def load_lens_coverage() -> list[dict[str, Any]]:
+    """Committed coverage reports emitted by pipeline runs.
+
+    Empty until a run writes one, matching how the other pipeline-fed entities behave.
+    """
+    rows: list[dict[str, Any]] = []
+    for path in sorted(ROOT.glob("reports/**/coverage_report.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if isinstance(data, dict):
+            data.setdefault("path", str(path.parent.relative_to(ROOT)))
+            rows.append(data)
+    return with_id(rows, "run_id")
+
+
 LOADERS = {
     "PRAirports": load_airports,
     "AirspaceObservations": load_observations,
     "ExportPackages": load_export_packages,
     "ReadinessReports": load_readiness,
+    "AnalysisLenses": load_analysis_lenses,
+    "AnalysisObjectives": load_analysis_objectives,
+    "LensCoverage": load_lens_coverage,
     # Declared by the dashboard but with no committed source yet; empty until
     # the corresponding pipelines emit repo artifacts.
     "AircraftProfiles": load_aircraft_profiles,
@@ -488,6 +555,41 @@ def public_settings() -> dict[str, Any]:
             "write_token_required": bool(_WRITE_TOKEN),
         },
     }
+
+
+@app.get("/api/analysis/registry")
+def analysis_registry() -> dict[str, Any]:
+    """Serve the lens, objective, and threshold registries to the GUI.
+
+    Exists so the dashboard stops hardcoding analytical vocabulary. Every other
+    vocabulary in the frontend is a literal in JSX that has to be updated by hand when
+    the backend changes; this one is fetched, so adding a lens reaches the UI with no
+    frontend edit. tests/test_analysis_registry_gui_parity.py pins that agreement.
+    """
+    registries = _lens_registries()
+    if registries is None:
+        return {"available": False, "lenses": [], "objectives": [], "thresholds": []}
+
+    lenses, objectives = registries
+    payload: dict[str, Any] = {
+        "available": True,
+        "lenses": [lens.to_dict() for lens in lenses.all()],
+        "objectives": [profile.to_dict() for profile in objectives.all()],
+        "stages": sorted({lens.stage for lens in lenses.all()}),
+        "owners": sorted({lens.owner for lens in lenses.all()}),
+    }
+
+    try:
+        from skywatcher.core.lenses import ThresholdRegistry
+
+        thresholds = ThresholdRegistry()
+        thresholds.load()
+        payload["thresholds"] = thresholds.to_dict()["thresholds"]
+    except Exception:  # noqa: BLE001 - thresholds are a panel, not the whole page
+        log.warning("threshold registry unavailable", exc_info=True)
+        payload["thresholds"] = []
+
+    return payload
 
 
 @app.get("/api/auth/me")

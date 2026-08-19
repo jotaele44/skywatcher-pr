@@ -20,6 +20,7 @@ import ManualReview from '@/pages/ManualReview';
 import ExportCenter from '@/pages/ExportCenter';
 import Readiness from '@/pages/Readiness';
 import Calibration from '@/pages/Calibration';
+import AnalysisLenses from '@/pages/AnalysisLenses';
 import SpatialTruth from '@/pages/SpatialTruth';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -61,6 +62,7 @@ const AuthenticatedApp = () => {
             <Route path="/export" element={<ExportCenter />} />
             <Route path="/readiness" element={<Readiness />} />
             <Route path="/calibration" element={<Calibration />} />
+            <Route path="/analysis" element={<AnalysisLenses />} />
             <Route path="/spatial-truth" element={<SpatialTruth />} />
           </Route>
           {/* Auth routes render only when authentication is actually required.

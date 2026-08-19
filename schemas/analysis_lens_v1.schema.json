@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher.local/schemas/analysis_lens_v1.schema.json",
+  "title": "Skywatcher Analysis Lens",
+  "description": "One declarative analytical objective bound to exactly one owning domain. Lenses are data, not code: adding an analytical parameter is an edit to a lens file, not a change across several Python modules.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["lens_id", "name", "owner", "stage", "objective", "status", "version"],
+  "properties": {
+    "lens_id": {"type": "string", "pattern": "^[a-z0-9_]+\\.[a-z0-9_]+$"},
+    "name": {"type": "string", "minLength": 1},
+    "owner": {"enum": ["Core", "RLSM", "SATIM", "FPIM", "CORRIM"]},
+    "stage": {"enum": ["flight_data_collection", "satellite_image_processing", "cross_domain"]},
+    "objective": {"type": "string", "minLength": 1},
+    "status": {"enum": ["experimental", "active", "deprecated"]},
+    "version": {"type": "string", "minLength": 1},
+    "required_parameters": {"type": "array", "items": {"$ref": "#/$defs/parameter"}},
+    "optional_parameters": {"type": "array", "items": {"$ref": "#/$defs/parameter"}},
+    "required_inputs": {"type": "array", "items": {"type": "string"}},
+    "measurements": {"type": "array", "items": {"type": "string"}},
+    "emits": {"type": "array", "items": {"type": "string"}},
+    "interpretation_restriction_minimum": {
+      "enum": ["NONE", "SPECTRAL_ONLY_DEGRADED", "GEOMETRY_DEGRADED", "OBJECT_LEVEL_PROHIBITED", "ALL_INFERENCE_SUSPENDED"]
+    },
+    "prohibited_claims": {
+      "description": "Claims this lens must never make. Carried into output so a downstream consumer can check a finding against its own lens's stated limits.",
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "evidence_axes_required": {
+      "description": "Which of the ten orthogonal evidence axes (ADR v2.0 section 5) this lens must populate.",
+      "type": "array",
+      "items": {
+        "enum": ["evidence_tier", "visibility_class", "provenance_status", "source_availability", "geometry_status", "temporal_status", "review_status", "hypothesis_status", "confidence_score", "review_priority"]
+      }
+    },
+    "threshold_ids": {
+      "description": "Threshold registry ids this lens executes. Each must carry a complete ADR section 12 record and stamps its provenance into output.",
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "contradiction_tests": {"type": "array", "items": {"type": "string"}},
+    "checksum_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "$defs": {
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parameter_id", "kind"],
+      "properties": {
+        "parameter_id": {"type": "string", "minLength": 1},
+        "name": {"type": "string"},
+        "kind": {"enum": ["number", "integer", "string", "boolean", "enum", "array", "path"]},
+        "required": {"type": "boolean"},
+        "unit": {"type": ["string", "null"]},
+        "default": {},
+        "allowed_values": {"type": "array", "items": {"type": "string"}},
+        "threshold_id": {"type": ["string", "null"]},
+        "description": {"type": "string"},
+        "degraded_behavior": {
+          "description": "What is lost when this parameter is absent. Mandatory for optional parameters: an absent optional parameter must produce a recorded degradation, never a silent fallback.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}
