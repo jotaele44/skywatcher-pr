@@ -70,6 +70,8 @@ SUPPORTED_VIDEO_SUFFIXES = {".mp4", ".mov", ".m4v", ".avi"}
 SUPPORTED_PDF_SUFFIXES = {".pdf"}
 SEAM_SCORE_THRESHOLD = 6.0
 UI_MARGIN_FRACTION = 0.04
+DARK_LUMINANCE_THRESHOLD = 48
+DARK_RATIO_THRESHOLD = 0.08
 
 
 def sha256_file(path: Path) -> str:
@@ -158,10 +160,28 @@ def _render_sources(sources: list[SourceRecord], output: Path) -> list[dict[str,
             frames.append(_frame_record(index, source, target, None, "copy"))
         elif source.media_type == "image_pdf":
             prefix = frame_dir / f"pdf-{index + 1:05d}"
-            subprocess.run(["pdftoppm", "-png", "-r", "72", str(source_path), str(prefix)], check=True)
-            for page, rendered in enumerate(sorted(frame_dir.glob(prefix.name + "-*.png")), 1):
+            renderer = shutil.which("pdftoppm")
+            if renderer:
+                subprocess.run([renderer, "-png", "-r", "72", str(source_path), str(prefix)], check=True)
+                rendered_pages = sorted(frame_dir.glob(prefix.name + "-*.png"))
+                method = "pdftoppm-72dpi"
+            else:
+                try:
+                    import fitz
+                except ImportError as exc:
+                    raise RuntimeError(
+                        "PDF rendering degraded: neither pdftoppm nor PyMuPDF is available"
+                    ) from exc
+                rendered_pages = []
+                with fitz.open(source_path) as document:
+                    for page_number, pdf_page in enumerate(document, 1):
+                        rendered = frame_dir / f"{prefix.name}-{page_number}.png"
+                        pdf_page.get_pixmap(matrix=fitz.Matrix(1, 1), alpha=False).save(rendered)
+                        rendered_pages.append(rendered)
+                method = "pymupdf-72dpi-fallback"
+            for page, rendered in enumerate(rendered_pages, 1):
                 index += 1
-                frames.append(_frame_record(index, source, rendered, page, "pdftoppm-72dpi"))
+                frames.append(_frame_record(index, source, rendered, page, method))
         elif source.media_type == "video":
             pattern = frame_dir / f"video-{index + 1:05d}-%06d.png"
             subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(source_path), "-vf", "fps=1", str(pattern)], check=True)
@@ -255,7 +275,7 @@ def _vectorize(path: Path) -> dict[str, object] | None:
         from fr24.track_vectorizer import vectorize_image
         result = vectorize_image(str(path))
         if result:
-            return {**asdict(result), "method": "fr24.track_vectorizer", "sampled_points": []}
+            return {**asdict(result), "method": "fr24.track_vectorizer"}
     except Exception:
         pass
     return _green_route_fallback(path)
@@ -269,14 +289,11 @@ def _stage_1(frames: list[dict[str, object]], output: Path, mode: AnalysisMode) 
     for frame in frames:
         frame_id, path = str(frame["frame_id"]), Path(str(frame["path"]))
         segment_rows.append({"frame_id": frame_id, **_segment_frame(path)})
-        page = int(frame.get("source_page") or 0)
-        if page <= 8 or page in {10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 39}:
-            ocr_rows.extend(_ocr_regions(path, frame_id))
-        if page <= 5:
-            track = _vectorize(path)
-            if track:
-                track_rows.append({"frame_id": frame_id, **track})
-    observation = {"schema_version": "0.4.0", "status": "screen_derived_unverified", "device_capture_time": None, "fr24_replay_time": None, "time_fields_separate": True, "flight_fields": _parse_fields(ocr_rows), "frame_ids": [str(frame["frame_id"]) for frame in frames], "flight_wave": {"status": "candidate", "frame_count": len(frames), "fusion_basis": ["shared source", "ordered replay sequence"]}, "intent_assessment": "not_assessed"}
+        ocr_rows.extend(_ocr_regions(path, frame_id))
+        track = _vectorize(path)
+        if track:
+            track_rows.append({"frame_id": frame_id, **track})
+    observation = {"schema_version": "0.1.0", "status": "screen_derived_unverified", "device_capture_time": None, "fr24_replay_time": None, "time_fields_separate": True, "flight_fields": _parse_fields(ocr_rows), "frame_ids": [str(frame["frame_id"]) for frame in frames], "flight_wave": {"status": "candidate", "frame_count": len(frames), "fusion_basis": ["shared source", "ordered replay sequence"]}, "intent_assessment": "not_assessed"}
     _write_json(directory / "STAGE_1_FLIGHT_OBSERVATION.json", observation)
     _write_csv(directory / "STAGE_1_OCR_LEDGER.csv", ["frame_id", "region", "field", "value", "confidence", "method", "status"], ocr_rows)
     _write_csv(directory / "STAGE_1_SEGMENT_LEDGER.csv", ["frame_id", "map_bbox", "method", "confidence"], segment_rows)
@@ -311,21 +328,42 @@ def _axis_candidate(axis: str, scores: list[float], x: int, y: int, width: int, 
     return {"frame_id": frame_id, "class": "POSSIBLE_TILE_SEAM", "pixel_bbox": json.dumps(bbox), "confidence": round(min(.85, .35 + ratio / 20), 3), "status": "candidate", "repeat_view_cluster_id": "SOURCE_SEQUENCE_001", "screen_alignment_score": screen_alignment_score, "ground_alignment_status": "NOT_ADJUDICATED", "cross_zoom_persistence": "NOT_ADJUDICATED", "ui_overlay_intersection": False, "analyst_note": f"{axis} gradient ratio {ratio:.2f}; non-UI threshold passed; repeat-view corroboration required"}
 
 
-def _artifact_candidates(path: Path, frame_id: str, map_bbox: list[int]) -> list[dict[str, object]]:
-    from PIL import Image, ImageStat
+def _artifact_candidates(
+    path: Path,
+    frame_id: str,
+    map_bbox: list[int],
+    overlay_points: list[list[int]] | list[tuple[int, int]] | None = None,
+) -> list[dict[str, object]]:
+    from PIL import Image, ImageFilter, ImageStat
     with Image.open(path) as source:
-        image = source.convert("L")
+        rgb = source.convert("RGB")
         x, y, width, height = map_bbox
-        crop = image.crop((x, y, x + width, y + height))
+        crop_rgb = rgb.crop((x, y, x + width, y + height))
+        replacement = crop_rgb.filter(ImageFilter.MedianFilter(size=9))
+        clean = crop_rgb.copy()
+        clean_pixels, replacement_pixels = clean.load(), replacement.load()
+        # Mask chromatic route/UI pixels and bright map-label pixels before any
+        # basemap classification. Pixel-space track samples add a second mask
+        # around the vectorizer's detected route.
+        for py in range(clean.height):
+            for px in range(clean.width):
+                red, green, blue = clean_pixels[px, py]
+                if (max(red, green, blue) - min(red, green, blue) >= 70 and max(red, green, blue) >= 120) or min(red, green, blue) >= 225:
+                    clean_pixels[px, py] = replacement_pixels[px, py]
+        for point in overlay_points or []:
+            px, py = int(point[0]) - x, int(point[1]) - y
+            for oy in range(max(0, py - 2), min(clean.height, py + 3)):
+                for ox in range(max(0, px - 2), min(clean.width, px + 3)):
+                    clean_pixels[ox, oy] = replacement_pixels[ox, oy]
+        crop = clean.convert("L")
         if crop.width < 3 or crop.height < 3:
             return []
         vertical = [abs(ImageStat.Stat(crop.crop((column - 1, 0, column, crop.height))).mean[0] - ImageStat.Stat(crop.crop((column, 0, column + 1, crop.height))).mean[0]) for column in range(1, crop.width)]
         horizontal = [abs(ImageStat.Stat(crop.crop((0, row - 1, crop.width, row))).mean[0] - ImageStat.Stat(crop.crop((0, row, crop.width, row + 1))).mean[0]) for row in range(1, crop.height)]
         findings = [candidate for candidate in (_axis_candidate("vertical", vertical, x, y, width, height, frame_id), _axis_candidate("horizontal", horizontal, x, y, width, height, frame_id)) if candidate]
         histogram, total = crop.histogram(), max(1, crop.width * crop.height)
-        cutoff = next((index for index, cumulative in enumerate(_cumulative(histogram)) if cumulative >= total * .08), 0)
-        dark_ratio = sum(histogram[:cutoff]) / total if cutoff else 0.0
-        if dark_ratio > .08:
+        dark_ratio = sum(histogram[: DARK_LUMINANCE_THRESHOLD + 1]) / total
+        if dark_ratio > DARK_RATIO_THRESHOLD:
             findings.append({"frame_id": frame_id, "class": "DARK_SURFACE_POLYGON", "pixel_bbox": json.dumps([x, y, width, height]), "confidence": .35, "status": "unresolved", "repeat_view_cluster_id": "SOURCE_SEQUENCE_001", "screen_alignment_score": 0.0, "ground_alignment_status": "NOT_ADJUDICATED", "cross_zoom_persistence": "NOT_ADJUDICATED", "ui_overlay_intersection": False, "analyst_note": f"dark-pixel fraction {dark_ratio:.3f}; shadow/water/mosaic unresolved"})
         return findings
 
@@ -346,7 +384,17 @@ def _stage_2(frames: list[dict[str, object]], output: Path, mode: AnalysisMode, 
     findings, groups = [], []
     for frame in frames:
         frame_id, path = str(frame["frame_id"]), Path(str(frame["path"]))
-        findings.extend(_artifact_candidates(path, frame_id, list(_segment_frame(path)["map_bbox"])))
+        segment = _segment_frame(path)
+        track = _vectorize(path)
+        overlay_points = list(track.get("sampled_points", [])) if track else []
+        findings.extend(
+            _artifact_candidates(
+                path,
+                frame_id,
+                list(segment["map_bbox"]),
+                overlay_points=overlay_points,
+            )
+        )
         groups.append({"repeat_view_cluster_id": "SOURCE_SEQUENCE_001", "frame_id": frame_id, "zoom_relation": "ordered_sequence", "cross_zoom_persistence": "NOT_ADJUDICATED", "screen_alignment_score": "", "ground_alignment_status": "NOT_ADJUDICATED", "ui_overlay_intersection": False, "status": "requires_review"})
     identified = [{"finding_id": f"SATIM-{index:06d}", **finding} for index, finding in enumerate(findings, 1)]
     features = [{"type": "Feature", "geometry": None, "properties": finding} for finding in identified]
@@ -407,7 +455,7 @@ def run_analysis(input_path: Path | str, output_dir: Path | str, mode: AnalysisM
     correlation = _correlate(output, stage_1, stage_2)
     finding_count = len(_read_csv(output / "stage_2" / "STAGE_2_ARTIFACT_LEDGER.csv"))
     digest = _digest_tree(output)
-    run = SkillRun(run_id, mode.value, str(input_root), str(output), sources, stage_1, stage_2, correlation, {"pdf_dpi": 72, "video_fps": 1, "fixed_bounds_promotion": False, "seam_score_threshold": SEAM_SCORE_THRESHOLD, "ui_margin_fraction": UI_MARGIN_FRACTION}, digest, adapters)
+    run = SkillRun(run_id, mode.value, str(input_root), str(output), sources, stage_1, stage_2, correlation, {"pdf_dpi": 72, "video_fps": 1, "fixed_bounds_promotion": False, "seam_score_threshold": SEAM_SCORE_THRESHOLD, "ui_margin_fraction": UI_MARGIN_FRACTION, "dark_luminance_threshold": DARK_LUMINANCE_THRESHOLD, "dark_ratio_threshold": DARK_RATIO_THRESHOLD}, digest, adapters)
     _write_json(output / "RUN_MANIFEST.json", asdict(run))
     page_count = sum(1 for frame in frames if frame.get("source_page"))
     errors = []
