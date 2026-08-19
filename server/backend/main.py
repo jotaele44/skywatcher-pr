@@ -20,6 +20,7 @@ import json
 import logging
 import os
 import secrets
+import sqlite3
 import uuid
 from pathlib import Path
 from typing import Any
@@ -32,6 +33,10 @@ AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
 EXPORTS_DIR = ROOT / "exports"
 SYNTHETIC_PACKAGE = EXPORTS_DIR / "examples" / "synthetic_airspace_package"
 EVIDENCE_PATH = ROOT / "reports" / "federation" / "evidence_skywatcher-pr.jsonl"
+RLSM_DB = ROOT / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
+RLSM_MARKER_VERSION = "rlsm-aircraft-marker-v1"
+RLSM_GEOREF_VERSION = "rlsm-spatial-georef-v1"
+RLSM_MAX_POSITION_ERROR_M = 500
 
 app = FastAPI(
     title="Skywatcher-PR Dashboard API",
@@ -190,6 +195,108 @@ def load_airports() -> list[dict[str, Any]]:
     return rows
 
 
+def _rlsm_rows(query: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
+    """Query an operator-local RLSM database without creating or mutating it."""
+    if not RLSM_DB.is_file():
+        return []
+    uri = f"{RLSM_DB.resolve().as_uri()}?mode=ro"
+    try:
+        with sqlite3.connect(uri, uri=True, timeout=5.0) as conn:
+            conn.row_factory = sqlite3.Row
+            return [dict(row) for row in conn.execute(query, params).fetchall()]
+    except sqlite3.Error as exc:
+        # A checkout without the spatial migration remains a valid diagnostic
+        # deployment.  It advertises zero spatial rows until the pipeline runs.
+        log.warning("RLSM spatial entity unavailable: %s", exc)
+        return []
+
+
+def load_rlsm_spatial_observations() -> list[dict[str, Any]]:
+    rows = _rlsm_rows(
+        """SELECT a.aircraft_obs_id, a.registration, a.callsign,
+                  a.aircraft_type, a.altitude_ft, a.speed_kt, a.heading_deg,
+                  a.operator_text, a.confidence, a.pixel_x, a.pixel_y,
+                  a.icon_rotation_deg, a.marker_confidence, a.marker_method,
+                  a.position_lat, a.position_lon, a.position_method,
+                  a.position_confidence, a.position_error_m,
+                  a.position_observed_at, a.observed_at,
+                  s.screenshot_id, s.filename, s.filename_ts
+           FROM aircraft_observations a
+           JOIN screenshots s USING(screenshot_id)
+           JOIN aircraft_marker_frames f
+             ON f.screenshot_id = a.screenshot_id
+            AND f.detector_version = a.marker_method
+            AND f.status = 'selected'
+           JOIN aircraft_marker_detections d
+             ON d.marker_frame_id = f.marker_frame_id
+            AND d.aircraft_obs_id = a.aircraft_obs_id
+            AND d.selected = 1
+           JOIN screenshot_georeferences g
+             ON g.screenshot_id = a.screenshot_id
+            AND g.georef_version = ?
+            AND g.status = 'located'
+            AND g.method = a.position_method
+           WHERE a.position_lat IS NOT NULL AND a.position_lon IS NOT NULL
+             AND a.marker_method = ?
+             AND a.position_method IN (
+                 'multi_anchor_affine', 'one_anchor_zoom_rung'
+             )
+             AND a.position_error_m IS NOT NULL AND a.position_error_m <= ?
+             AND g.estimated_error_m IS NOT NULL
+             AND g.estimated_error_m <= ?
+           ORDER BY COALESCE(s.filename_ts, a.observed_at) DESC,
+                    a.aircraft_obs_id DESC""",
+        (
+            RLSM_GEOREF_VERSION,
+            RLSM_MARKER_VERSION,
+            RLSM_MAX_POSITION_ERROR_M,
+            RLSM_MAX_POSITION_ERROR_M,
+        ),
+    )
+    observations: list[dict[str, Any]] = []
+    for row in rows:
+        observed_at = row.get("filename_ts") or row.get("observed_at")
+        observations.append(
+            {
+                "id": f"rlsm-aircraft-{row['aircraft_obs_id']}",
+                "observation_id": f"rlsm-aircraft-{row['aircraft_obs_id']}",
+                "aircraft_obs_id": row["aircraft_obs_id"],
+                "tail_number": row.get("registration"),
+                "registration": row.get("registration"),
+                "callsign": row.get("callsign"),
+                "aircraft_type": row.get("aircraft_type"),
+                "altitude_ft": row.get("altitude_ft"),
+                "speed_kt": row.get("speed_kt"),
+                # OCR/PCA heading is retained as metadata and is never replaced
+                # with the independently measured icon rotation.
+                "heading_deg": row.get("heading_deg"),
+                "icon_rotation_deg": row.get("icon_rotation_deg"),
+                "operator_name": row.get("operator_text"),
+                "latitude": row.get("position_lat"),
+                "longitude": row.get("position_lon"),
+                "pixel_x": row.get("pixel_x"),
+                "pixel_y": row.get("pixel_y"),
+                "marker_method": row.get("marker_method"),
+                "marker_confidence": row.get("marker_confidence"),
+                "position_method": row.get("position_method"),
+                "position_confidence": row.get("position_confidence"),
+                "position_error_m": row.get("position_error_m"),
+                "position_observed_at": row.get("position_observed_at"),
+                "confidence_score": row.get("position_confidence"),
+                "source_type": "fr24_screenshot",
+                "source_screenshot_id": row.get("screenshot_id"),
+                "source_filename": row.get("filename"),
+                "linked_capture_id": f"rlsm-frame-{row['screenshot_id']}",
+                "observed_at": observed_at,
+                "created_date": observed_at,
+                "review_status": "new",
+                "synthetic": False,
+                "synthetic_flag": False,
+            }
+        )
+    return observations
+
+
 def load_observations() -> list[dict[str, Any]]:
     rows = with_id(read_csv(SYNTHETIC_PACKAGE / "observations.csv"), "observation_id")
     # The export package schema names differ from the dashboard's native
@@ -201,6 +308,92 @@ def load_observations() -> list[dict[str, Any]]:
         row.setdefault("observed_at", row.get("event_datetime"))
         row.setdefault("latitude", row.get("lat"))
         row.setdefault("longitude", row.get("lon"))
+    return rows + load_rlsm_spatial_observations()
+
+
+def load_aircraft_profiles() -> list[dict[str, Any]]:
+    """Expose one lightweight profile for each spatially located registration."""
+    profiles: dict[str, dict[str, Any]] = {}
+    for row in load_rlsm_spatial_observations():
+        registration = row.get("registration")
+        if not registration:
+            continue
+        profile = profiles.setdefault(
+            str(registration),
+            {
+                "id": f"rlsm-profile-{registration}",
+                "aircraft_id": f"rlsm-profile-{registration}",
+                "tail_number": registration,
+                "registration": registration,
+                "aircraft_type": row.get("aircraft_type"),
+                "operator_name": row.get("operator_name"),
+                "source_type": "fr24_screenshot",
+                "synthetic_flag": False,
+                "observation_count": 0,
+                "latest_observed_at": row.get("observed_at"),
+            },
+        )
+        profile["observation_count"] += 1
+        if str(row.get("observed_at") or "") > str(
+            profile.get("latest_observed_at") or ""
+        ):
+            profile["latest_observed_at"] = row.get("observed_at")
+    return sorted(profiles.values(), key=lambda row: str(row["tail_number"]))
+
+
+def load_rlsm_spatial_frames() -> list[dict[str, Any]]:
+    rows = _rlsm_rows(
+        """SELECT s.screenshot_id, s.filename, s.filename_ts,
+                  f.detector_version, f.status AS marker_status,
+                  f.candidate_count, f.selected_candidate_rank,
+                  f.reason AS marker_reason, f.observed_at AS marker_observed_at,
+                  g.georef_version, g.status AS georef_status,
+                  g.method AS georef_method, g.anchor_count, g.viewport_profile,
+                  g.scale_m_per_px, g.zoom_rung, g.zoom_support,
+                  g.confidence AS georef_confidence,
+                  g.estimated_error_m
+           FROM screenshots s
+           LEFT JOIN aircraft_marker_frames f
+             ON f.screenshot_id = s.screenshot_id
+            AND f.detector_version = ?
+           LEFT JOIN screenshot_georeferences g
+             ON g.screenshot_id = s.screenshot_id
+            AND g.georef_version = ?
+           WHERE EXISTS (
+               SELECT 1 FROM aircraft_observations a
+               WHERE a.screenshot_id=s.screenshot_id
+           )
+           ORDER BY COALESCE(s.filename_ts, f.observed_at, g.observed_at) DESC,
+                    s.screenshot_id DESC""",
+        (RLSM_MARKER_VERSION, RLSM_GEOREF_VERSION),
+    )
+    for row in rows:
+        row["id"] = f"rlsm-frame-{row['screenshot_id']}"
+        row["capture_id"] = row["id"]
+        row["created_date"] = (
+            row.get("filename_ts")
+            or row.get("marker_observed_at")
+        )
+    return rows
+
+
+def load_rlsm_zoom_rungs() -> list[dict[str, Any]]:
+    rows = _rlsm_rows(
+        """SELECT georef_version, viewport_profile, zoom_rung,
+                  scale_m_per_px, dlon_dx, dlat_dy, support_count,
+                  dispersion_log2, eligible_for_transfer, evidence_json,
+                  observed_at
+           FROM zoom_ladder_rungs
+           WHERE georef_version = ?
+           ORDER BY viewport_profile, zoom_rung""",
+        (RLSM_GEOREF_VERSION,),
+    )
+    for row in rows:
+        row["id"] = (
+            f"{row['georef_version']}:{row['viewport_profile']}:{row['zoom_rung']}"
+        )
+        row["created_date"] = row.get("observed_at")
+        row["eligible_for_transfer"] = bool(row.get("eligible_for_transfer"))
     return rows
 
 
@@ -305,7 +498,10 @@ LOADERS = {
     "LensCoverage": load_lens_coverage,
     # Declared by the dashboard but with no committed source yet; empty until
     # the corresponding pipelines emit repo artifacts.
-    "AircraftProfiles": list,
+    "AircraftProfiles": load_aircraft_profiles,
+    "RLSMSpatialObservations": load_rlsm_spatial_observations,
+    "RLSMSpatialFrames": load_rlsm_spatial_frames,
+    "RLSMZoomRungs": load_rlsm_zoom_rungs,
     "FR24Captures": list,
     "RouteSegments": list,
     "InfrastructureAssets": list,

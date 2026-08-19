@@ -114,6 +114,7 @@ CREATE TABLE IF NOT EXISTS icon_observations (
     saturation     REAL,
     value          REAL,
     ahash          TEXT,
+    anchor_side    TEXT,
     cluster_id     INTEGER,
     icon_class     TEXT,
     confidence     REAL,
@@ -126,14 +127,25 @@ CREATE INDEX IF NOT EXISTS ix_icon_ahash      ON icon_observations(ahash);
 CREATE INDEX IF NOT EXISTS ix_icon_cluster    ON icon_observations(cluster_id);
 """
 
+# Columns added after the table first shipped. CREATE TABLE IF NOT EXISTS is a
+# no-op on an existing table, so a DB built by an earlier run needs each one
+# added explicitly.
+ICON_ADDED_COLUMNS = {
+    "anchor_side": "TEXT",
+}
+
 
 def _iso_now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
-    """Create icon_observations in place on an already-built DB."""
+    """Create icon_observations, and bring an older one up to date in place."""
     conn.executescript(ICON_SCHEMA)
+    existing = {r[1] for r in conn.execute("PRAGMA table_info(icon_observations)")}
+    for column, decl in ICON_ADDED_COLUMNS.items():
+        if column not in existing:
+            conn.execute(f"ALTER TABLE icon_observations ADD COLUMN {column} {decl}")
     conn.commit()
 
 
@@ -324,18 +336,61 @@ def _grid(img, box: tuple[int, int, int, int]) -> list[list[tuple]]:
 
 
 def glyph_window(bx: int, by: int, bw: int, bh: int,
-                 img_w: int, img_h: int) -> tuple[int, int, int, int] | None:
-    """Search window left of and above a label box, clipped to the image."""
+                 img_w: int, img_h: int,
+                 side: str = "left") -> tuple[int, int, int, int] | None:
+    """
+    Search window beside a label box, clipped to the image.
+
+    ``side="left"`` covers left-of and above the label — FR24's usual placement.
+    ``side="right"`` mirrors it, for labels with no room on their left.
+
+    The window is sized in multiples of the label's own text height, so it is
+    independent of both frame resolution and orientation: a 26 px label gets the
+    same neighbourhood whether the frame is 1170x2532 or 2532x1170.
+
+    Returns None when clipping leaves nothing usable to search.
+    """
     unit = max(bh, 10)
-    x0 = int(bx - unit * WIN_LEFT_MULT)
-    x1 = int(bx + unit * WIN_RIGHT_MULT)
+    if side == "right":
+        x0 = int(bx + bw - unit * WIN_RIGHT_MULT)
+        x1 = int(bx + bw + unit * WIN_LEFT_MULT)
+    else:
+        x0 = int(bx - unit * WIN_LEFT_MULT)
+        x1 = int(bx + unit * WIN_RIGHT_MULT)
     y0 = int(by - unit * WIN_UP_MULT)
     y1 = int(by + bh + unit * WIN_DOWN_MULT)
     x0, y0 = max(0, x0), max(0, y0)
     x1, y1 = min(img_w, x1), min(img_h, y1)
-    if x1 - x0 < 6 or y1 - y0 < 6:
+    # The window must stay wide enough to hold a glyph, which is roughly as wide
+    # as the label is tall. A flat few-pixel floor is not enough: a label hard
+    # against the frame edge clips the left window down to the sliver that
+    # overlaps its own text, and the detector then fingerprints the *label* as an
+    # icon — a confident false positive (measured: 12 px wide, saturation 0.01,
+    # meaningless hue) rather than an honest miss, which would then pollute the
+    # hash clusters. Rejecting the window sends the caller to the other side.
+    if x1 - x0 < unit * 0.9 or y1 - y0 < 6:
         return None
     return (x0, y0, x1, y1)
+
+
+def search_sides(bx: int, bw: int, bh: int, img_w: int) -> list[str]:
+    """
+    Which sides to search, best first.
+
+    FR24 draws the glyph to the label's left, so that is the default. But a label
+    hugging the left edge has no room there — and the frame edge is exactly where
+    the window gets clipped to nothing. This is not a portrait-vs-landscape
+    distinction: it depends on where the label sits, which is why the rule is
+    written in terms of available room rather than orientation. Landscape simply
+    surfaces it more often, because its ``label_layer`` is a wide zone whose left
+    boundary is the frame edge.
+    """
+    need = max(bh, 10) * WIN_LEFT_MULT
+    if bx < need:
+        return ["right", "left"]
+    if bx + bw + need > img_w:
+        return ["left"]        # no room on the right; do not bother trying
+    return ["left", "right"]
 
 
 def detect_for_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str,
@@ -367,25 +422,37 @@ def detect_for_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str,
 
             n = 0
             for pin_id, bx, by, bw, bh in pins:
-                box = glyph_window(bx, by, bw, bh, img_w, img_h)
-                if box is None:
-                    continue
-                feat = detect_in_window(_grid(rgb_img, box), _grid(hsv_img, box))
-                if feat is None:
+                # Try the preferred side first, then the mirror. A label pinned
+                # against the frame edge has no neighbourhood on its default
+                # side, and returning nothing there is indistinguishable from
+                # "this label genuinely has no icon" — which is what made the
+                # left-only search look like a portrait-vs-landscape problem.
+                feat = box = None
+                side = ""
+                for candidate in search_sides(bx, bw, bh, img_w):
+                    box = glyph_window(bx, by, bw, bh, img_w, img_h, side=candidate)
+                    if box is None:
+                        continue
+                    feat = detect_in_window(_grid(rgb_img, box), _grid(hsv_img, box))
+                    if feat is not None:
+                        side = candidate
+                        break
+                if feat is None or box is None:
                     continue
                 ax, ay = box[0] + feat["x"], box[1] + feat["y"]
                 conn.execute(
                     """INSERT INTO icon_observations
                        (screenshot_id, pin_id, run_id, bbox_x, bbox_y, bbox_w, bbox_h,
                         centroid_x, centroid_y, area_px, aspect, fill_ratio,
-                        hue_deg, saturation, value, ahash, confidence,
+                        hue_deg, saturation, value, ahash, anchor_side, confidence,
                         review_status, observed_at)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'unreviewed',?)""",
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'unreviewed',?)""",
                     (sid, pin_id, run_id, ax, ay, feat["w"], feat["h"],
                      ax + feat["w"] // 2, ay + feat["h"] // 2,
                      feat["area"], feat["aspect"], feat["fill_ratio"],
                      feat["hue_deg"], feat["saturation"], feat["value"],
-                     feat["ahash"], round(min(0.9, 0.4 + feat["fill_ratio"] / 2), 3),
+                     feat["ahash"], side,
+                     round(min(0.9, 0.4 + feat["fill_ratio"] / 2), 3),
                      _iso_now()),
                 )
                 n += 1
