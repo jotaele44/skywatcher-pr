@@ -1,0 +1,4 @@
+# RLSM run artifacts are corpus-derived: regenerate with scripts/rlsm_run_all.sh,
+# never commit them. Ship the small reports deliberately if you need to.
+*
+!.gitignore
