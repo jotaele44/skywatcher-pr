@@ -1,0 +1,73 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_data_mode_policy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allowed_fallback_modes": {
+      "items": {
+        "enum": [
+          "AUTHORIZED_ARCHIVED",
+          "AUTHORIZED_CACHE",
+          "STALE",
+          "DEMO",
+          "SYNTHETIC",
+          "UNKNOWN"
+        ],
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "canonical_skill_id": {
+      "type": "string"
+    },
+    "data_mode_policy_id": {
+      "type": "string"
+    },
+    "fallback_requires_explicit_authorization": {
+      "const": true,
+      "type": "boolean"
+    },
+    "freshness_requirement": {
+      "type": "string"
+    },
+    "mode_disclosure_required": {
+      "const": true,
+      "type": "boolean"
+    },
+    "required_modes": {
+      "items": {
+        "enum": [
+          "CANONICAL_LIVE",
+          "AUTHORIZED_ARCHIVED",
+          "AUTHORIZED_CACHE",
+          "STALE",
+          "DEMO",
+          "SYNTHETIC",
+          "UNKNOWN"
+        ],
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "silent_fallback_prohibited": {
+      "const": true,
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "data_mode_policy_id",
+    "canonical_skill_id",
+    "required_modes",
+    "allowed_fallback_modes",
+    "silent_fallback_prohibited",
+    "freshness_requirement",
+    "fallback_requires_explicit_authorization",
+    "mode_disclosure_required"
+  ],
+  "title": "Skill Data Mode Policy v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}

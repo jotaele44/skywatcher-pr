@@ -1,0 +1,128 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_execution_authority.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "authority_id": {
+      "type": "string"
+    },
+    "canonical_skill_id": {
+      "type": "string"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "granted_by": {
+      "type": "string"
+    },
+    "non_transitive": {
+      "const": true,
+      "type": "boolean"
+    },
+    "permissions": {
+      "additionalProperties": false,
+      "properties": {
+        "auto_merge": {
+          "type": "boolean"
+        },
+        "commit": {
+          "type": "boolean"
+        },
+        "create_branch": {
+          "type": "boolean"
+        },
+        "destructive_write": {
+          "type": "boolean"
+        },
+        "generate_local_artifacts": {
+          "type": "boolean"
+        },
+        "mark_ready": {
+          "type": "boolean"
+        },
+        "merge": {
+          "type": "boolean"
+        },
+        "open_pull_request": {
+          "type": "boolean"
+        },
+        "patch_local_worktree": {
+          "type": "boolean"
+        },
+        "promote_state": {
+          "type": "boolean"
+        },
+        "push": {
+          "type": "boolean"
+        },
+        "read_connected_sources": {
+          "type": "boolean"
+        },
+        "read_repository": {
+          "type": "boolean"
+        },
+        "read_sources": {
+          "type": "boolean"
+        },
+        "release": {
+          "type": "boolean"
+        },
+        "send_external": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "read_sources",
+        "read_repository",
+        "read_connected_sources",
+        "generate_local_artifacts",
+        "patch_local_worktree",
+        "create_branch",
+        "commit",
+        "push",
+        "open_pull_request",
+        "send_external",
+        "promote_state",
+        "mark_ready",
+        "merge",
+        "auto_merge",
+        "release",
+        "destructive_write"
+      ],
+      "type": "object"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "scope": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "target_constraints": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "authority_id",
+    "run_id",
+    "canonical_skill_id",
+    "granted_by",
+    "scope",
+    "expires_at",
+    "permissions",
+    "non_transitive"
+  ],
+  "title": "Skill Execution Authority v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}

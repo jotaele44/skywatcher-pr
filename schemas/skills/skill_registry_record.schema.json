@@ -1,0 +1,167 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_registry_record.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "activation_summary": {
+      "type": "string"
+    },
+    "analytical_input_objects": {
+      "type": "string"
+    },
+    "analytical_output_objects": {
+      "type": "string"
+    },
+    "canonical_name": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "canonical_owner": {
+      "enum": [
+        "CORE",
+        "CORE_GOVERNANCE",
+        "RLSM",
+        "SATIM",
+        "FPIM",
+        "CORRIM",
+        "CORRIM_ADAPTER",
+        "SKYWATCHER_ORCHESTRATION",
+        "META_GOVERNANCE",
+        "LEGACY"
+      ],
+      "type": "string"
+    },
+    "canonical_purpose": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "canonical_skill_id": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "type": "string"
+    },
+    "canonical_version": {
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$",
+      "type": "string"
+    },
+    "default_authority_ceiling": {
+      "type": "string"
+    },
+    "default_cadence": {
+      "type": "string"
+    },
+    "governance_outputs": {
+      "type": "string"
+    },
+    "implementation_state": {
+      "const": "DESIGN_ONLY_NO_REPOSITORY_ACTIVATION",
+      "type": "string"
+    },
+    "lifecycle_state": {
+      "enum": [
+        "DESIGN_REVISED_PENDING_AUTHORIZATION",
+        "DESIGN_APPROVED_PENDING_IMPLEMENTATION",
+        "QUARANTINED_LEGACY",
+        "TEMPLATE_ONLY",
+        "RETIRED"
+      ],
+      "type": "string"
+    },
+    "mission_or_intent_inference_authorized": {
+      "const": false,
+      "type": "boolean"
+    },
+    "non_activation_summary": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "prohibited_outputs": {
+      "type": "string"
+    },
+    "registry_record_id": {
+      "pattern": "^SKILL-[0-9]{3}$",
+      "type": "string"
+    },
+    "runtime_activation": {
+      "enum": [
+        "DISABLED_DESIGN_ONLY",
+        "EXPLICIT_LEGACY_ONLY",
+        "NON_EXECUTABLE_TEMPLATE",
+        "ENABLED_BOUNDED"
+      ],
+      "type": "string"
+    },
+    "skill_class": {
+      "type": "string"
+    },
+    "source_archive_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "source_package_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "source_provenance_tier": {
+      "enum": [
+        "VERBATIM",
+        "SPEC_RECOVERED",
+        "SPEC_RECONSTRUCTED"
+      ],
+      "type": "string"
+    },
+    "source_relation": {
+      "enum": [
+        "CANONICALIZED_OWNER_PREFIX",
+        "RENAMED_AND_RESCOPED",
+        "RENAMED_AND_QUARANTINED",
+        "SPLIT_SUCCESSOR",
+        "CANONICALIZED_META_NAMESPACE",
+        "RENAMED_TO_REMOVE_ACCESS_CLAIM"
+      ],
+      "type": "string"
+    },
+    "source_skill_id": {
+      "type": "string"
+    },
+    "source_skill_md_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "source_version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "registry_record_id",
+    "canonical_skill_id",
+    "canonical_name",
+    "canonical_version",
+    "source_skill_id",
+    "source_version",
+    "source_relation",
+    "source_provenance_tier",
+    "canonical_owner",
+    "skill_class",
+    "lifecycle_state",
+    "runtime_activation",
+    "default_cadence",
+    "default_authority_ceiling",
+    "canonical_purpose",
+    "analytical_input_objects",
+    "analytical_output_objects",
+    "prohibited_outputs",
+    "mission_or_intent_inference_authorized",
+    "implementation_state",
+    "source_skill_md_sha256",
+    "source_package_sha256",
+    "source_archive_sha256",
+    "activation_summary",
+    "non_activation_summary",
+    "governance_outputs"
+  ],
+  "title": "Skywatcher Skill Registry Record v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}

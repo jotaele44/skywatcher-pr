@@ -1,0 +1,86 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_failure_record.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "affected_record_count": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "canonical_skill_id": {
+      "type": "string"
+    },
+    "corrective_action": {
+      "type": "string"
+    },
+    "failure_class": {
+      "enum": [
+        "INPUT_MISSING",
+        "INPUT_INACCESSIBLE",
+        "SCHEMA_DRIFT",
+        "UNSUPPORTED_FORMAT",
+        "OWNERSHIP_CONFLICT",
+        "ACCOUNTING_MISMATCH",
+        "EXTERNAL_DEPENDENCY_UNAVAILABLE",
+        "AUTHORITY_BOUNDARY",
+        "VALIDATION_FAILURE",
+        "SECURITY_POLICY_VIOLATION",
+        "DATA_MODE_MISMATCH",
+        "INTERNAL_ERROR"
+      ],
+      "type": "string"
+    },
+    "failure_id": {
+      "type": "string"
+    },
+    "last_valid_checkpoint_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "partial_artifact_refs": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "recoverability": {
+      "enum": [
+        "RESUMABLE",
+        "RESTART_REQUIRED",
+        "HUMAN_ADJUDICATION_REQUIRED",
+        "NOT_RECOVERABLE"
+      ],
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "stage_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "failure_id",
+    "run_id",
+    "canonical_skill_id",
+    "stage_id",
+    "failure_class",
+    "occurred_at",
+    "message",
+    "affected_record_count",
+    "recoverability",
+    "corrective_action"
+  ],
+  "title": "Skill Failure Record v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}

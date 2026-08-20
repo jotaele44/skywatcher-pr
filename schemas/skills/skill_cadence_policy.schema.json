@@ -1,0 +1,61 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_cadence_policy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cadence_policy_id": {
+      "type": "string"
+    },
+    "canonical_skill_id": {
+      "type": "string"
+    },
+    "event_condition": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "missed_run_behavior": {
+      "enum": [
+        "NO_ACTION",
+        "RUN_NEXT_WINDOW",
+        "REQUIRE_HUMAN_DECISION"
+      ],
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "ON_DEMAND",
+        "WEEKLY_OR_ON_DEMAND",
+        "ON_DEMAND_OR_RELEASE_GATE",
+        "SCHEDULED",
+        "EVENT_TRIGGERED",
+        "ON_DEMAND_EXPLICIT_LEGACY"
+      ],
+      "type": "string"
+    },
+    "schedule_activated": {
+      "const": false,
+      "type": "boolean"
+    },
+    "schedule_expression": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "timezone": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "cadence_policy_id",
+    "canonical_skill_id",
+    "mode",
+    "schedule_activated",
+    "timezone"
+  ],
+  "title": "Skill Cadence Policy v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}

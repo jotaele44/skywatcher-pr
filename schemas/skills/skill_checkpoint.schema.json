@@ -1,0 +1,61 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_checkpoint.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checkpoint_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "execution_state_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "input_state_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "output_manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "restart_safe": {
+      "type": "boolean"
+    },
+    "resume_requirements": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "stage_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "checkpoint_id",
+    "run_id",
+    "stage_id",
+    "sequence",
+    "created_at",
+    "input_state_sha256",
+    "execution_state_sha256",
+    "restart_safe"
+  ],
+  "title": "Skill Checkpoint v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}

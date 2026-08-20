@@ -1,0 +1,183 @@
+{
+  "authorized_design_package_sha256": "0a8db5ee463178bc9e0667f967597a743a98e625de992081db132a46e54bf068",
+  "authorized_path_count": 22,
+  "auto_merge_authorized": false,
+  "canonical_skill_count": 18,
+  "created_at_utc": "2026-08-04T01:32:00Z",
+  "force_push_authorized": false,
+  "historical_artifact_rewrite_authorized": false,
+  "implementation_base_sha": "7dccd6c9a7e506a33aceae9c3e88466fdff47b35",
+  "linked_ontology_merge_commit_sha": "7dccd6c9a7e506a33aceae9c3e88466fdff47b35",
+  "linked_ontology_pr": 175,
+  "manifest_payload_sha256": "4d4295f35d088e711787c8b351e9aec2f0f87fa437bdce5ac1a76cbbcea29812",
+  "manifest_self_hash_policy": "CANONICAL_PAYLOAD_SHA256_EXCLUDING_manifest_payload_sha256_FIELD",
+  "merge_authorized": false,
+  "mission_or_intent_inference_authorized": false,
+  "negative_schema_fixture_count": 9,
+  "negative_semantic_fixture_count": 14,
+  "object_binding_count": 74,
+  "positive_fixture_count": 13,
+  "repository": "jotaele44/skywatcher-pr",
+  "repository_artifact_count_excluding_manifest": 21,
+  "repository_artifacts": [
+    {
+      "authorized_design_source": "SKYWATCHER_SKILL_OBJECT_IO_MAP_v1_0_1.csv",
+      "authorized_design_source_sha256": "5c64e3a2cef128fc5a0365ed50a1bd99a8b3e606f8057d3197a27f4f7a301e52",
+      "repository_path": "configs/skills/SKYWATCHER_SKILL_OBJECT_IO_MAP_v1_0_1.csv",
+      "sha256": "5c64e3a2cef128fc5a0365ed50a1bd99a8b3e606f8057d3197a27f4f7a301e52",
+      "size_bytes": 27523
+    },
+    {
+      "authorized_design_source": "SKYWATCHER_SKILL_REGISTRY_v1_0_1.csv",
+      "authorized_design_source_sha256": "0c472f506e2ceb9d5e0b351b58e1298536a3b634d15f2301c651dcc4c0eb0496",
+      "repository_path": "configs/skills/SKYWATCHER_SKILL_REGISTRY_v1_0_1.csv",
+      "sha256": "0c472f506e2ceb9d5e0b351b58e1298536a3b634d15f2301c651dcc4c0eb0496",
+      "size_bytes": 24986
+    },
+    {
+      "authorized_design_source": "SKYWATCHER_SKILL_GOVERNANCE_BALLOT_v1_0_1.md",
+      "authorized_design_source_sha256": "11632c5ec8cefe7138597a0eeddb4ed07edd9e29c7b45a3e9423a1ba8a756f81",
+      "repository_path": "docs/architecture/SKYWATCHER_SKILL_GOVERNANCE_BALLOT_v1_0_1.md",
+      "sha256": "11632c5ec8cefe7138597a0eeddb4ed07edd9e29c7b45a3e9423a1ba8a756f81",
+      "size_bytes": 5385
+    },
+    {
+      "authorized_design_source": "SKYWATCHER_SKILL_GOVERNANCE_SPEC_v1_0_1.md",
+      "authorized_design_source_sha256": "6381aeab852fcd65174c19335c92a67e64fb7553a58c41e2d594c2aad323d712",
+      "repository_path": "docs/architecture/SKYWATCHER_SKILL_GOVERNANCE_SPEC_v1_0_1.md",
+      "sha256": "6381aeab852fcd65174c19335c92a67e64fb7553a58c41e2d594c2aad323d712",
+      "size_bytes": 13272
+    },
+    {
+      "authorized_design_source": "SKYWATCHER_SKILL_SUCCESSOR_MAP_v1_0_1.csv",
+      "authorized_design_source_sha256": "388f9473df1ee49de433632effc326452f66dc8218d73694692ffb758418e935",
+      "repository_path": "docs/architecture/SKYWATCHER_SKILL_SUCCESSOR_MAP_v1_0_1.csv",
+      "sha256": "388f9473df1ee49de433632effc326452f66dc8218d73694692ffb758418e935",
+      "size_bytes": 5565
+    },
+    {
+      "authorized_design_source": "SKYWATCHER_SKILL_TERM_MATRIX_v1_0_1.csv",
+      "authorized_design_source_sha256": "e9b0bec7c3928e4923c5d190d8037e84fb40b0759d60fd6b472a47ec89cf6514",
+      "repository_path": "docs/architecture/SKYWATCHER_SKILL_TERM_MATRIX_v1_0_1.csv",
+      "sha256": "e9b0bec7c3928e4923c5d190d8037e84fb40b0759d60fd6b472a47ec89cf6514",
+      "size_bytes": 9084
+    },
+    {
+      "authorized_design_source": "SKYWATCHER_SOURCE_SKILL_INVENTORY_v1_0_1.csv",
+      "authorized_design_source_sha256": "3b70024b9e593035191fe07dd2b33c32af6cf6efd31435729946c690c84af4cb",
+      "repository_path": "docs/architecture/SKYWATCHER_SOURCE_SKILL_INVENTORY_v1_0_1.csv",
+      "sha256": "3b70024b9e593035191fe07dd2b33c32af6cf6efd31435729946c690c84af4cb",
+      "size_bytes": 6673
+    },
+    {
+      "authorized_design_source": "schemas/skill_activation_policy.schema.json",
+      "authorized_design_source_sha256": "beea6b03da79ac26463b91f0b4291ee5def9b47fbe4340642c7fdb51048390d1",
+      "repository_path": "schemas/skills/skill_activation_policy.schema.json",
+      "sha256": "beea6b03da79ac26463b91f0b4291ee5def9b47fbe4340642c7fdb51048390d1",
+      "size_bytes": 1614
+    },
+    {
+      "authorized_design_source": "schemas/skill_cadence_policy.schema.json",
+      "authorized_design_source_sha256": "342bf3688170f5dab877ae3cacffb56f880b910610a45ab3a702eacda0efb47c",
+      "repository_path": "schemas/skills/skill_cadence_policy.schema.json",
+      "sha256": "342bf3688170f5dab877ae3cacffb56f880b910610a45ab3a702eacda0efb47c",
+      "size_bytes": 1287
+    },
+    {
+      "authorized_design_source": "schemas/skill_checkpoint.schema.json",
+      "authorized_design_source_sha256": "5681bf3e4f32ac0789e7b066c8100c69df4849bda439fc030c460f5ec3cae59e",
+      "repository_path": "schemas/skills/skill_checkpoint.schema.json",
+      "sha256": "5681bf3e4f32ac0789e7b066c8100c69df4849bda439fc030c460f5ec3cae59e",
+      "size_bytes": 1280
+    },
+    {
+      "authorized_design_source": "schemas/skill_data_mode_policy.schema.json",
+      "authorized_design_source_sha256": "70e536ae5b1be9eed0271853ff5f7d64f6b913ab3546fcbe87040ad2ff50b069",
+      "repository_path": "schemas/skills/skill_data_mode_policy.schema.json",
+      "sha256": "70e536ae5b1be9eed0271853ff5f7d64f6b913ab3546fcbe87040ad2ff50b069",
+      "size_bytes": 1718
+    },
+    {
+      "authorized_design_source": "schemas/skill_execution_authority.schema.json",
+      "authorized_design_source_sha256": "6b139d15c050659f7e9ead144cd28bf4196855a003ea2f97fe20fbd9bc96115b",
+      "repository_path": "schemas/skills/skill_execution_authority.schema.json",
+      "sha256": "6b139d15c050659f7e9ead144cd28bf4196855a003ea2f97fe20fbd9bc96115b",
+      "size_bytes": 2730
+    },
+    {
+      "authorized_design_source": "schemas/skill_execution_run.schema.json",
+      "authorized_design_source_sha256": "ee08cf28596ff1b075bbe5596f1cc10c098dcda5177459e604defb2a95525dcf",
+      "repository_path": "schemas/skills/skill_execution_run.schema.json",
+      "sha256": "ee08cf28596ff1b075bbe5596f1cc10c098dcda5177459e604defb2a95525dcf",
+      "size_bytes": 2969
+    },
+    {
+      "authorized_design_source": "schemas/skill_failure_record.schema.json",
+      "authorized_design_source_sha256": "13634cdc10a191374375f5942d50eadd07f1625ac60a8c86c0b8a1e103c6f489",
+      "repository_path": "schemas/skills/skill_failure_record.schema.json",
+      "sha256": "13634cdc10a191374375f5942d50eadd07f1625ac60a8c86c0b8a1e103c6f489",
+      "size_bytes": 1867
+    },
+    {
+      "authorized_design_source": "schemas/skill_handoff.schema.json",
+      "authorized_design_source_sha256": "3287dc4fc294236b92f5e1405e52ef2d760846aa7280f39d8f4179c240320471",
+      "repository_path": "schemas/skills/skill_handoff.schema.json",
+      "sha256": "3287dc4fc294236b92f5e1405e52ef2d760846aa7280f39d8f4179c240320471",
+      "size_bytes": 1741
+    },
+    {
+      "authorized_design_source": "schemas/skill_input_accounting.schema.json",
+      "authorized_design_source_sha256": "e65c81871c93f80de779623862ce41b846151e826ea8071ac6daf5687dd89b7c",
+      "repository_path": "schemas/skills/skill_input_accounting.schema.json",
+      "sha256": "e65c81871c93f80de779623862ce41b846151e826ea8071ac6daf5687dd89b7c",
+      "size_bytes": 1292
+    },
+    {
+      "authorized_design_source": "schemas/skill_receipt.schema.json",
+      "authorized_design_source_sha256": "c1a70378eee1bd65a22f27cb2be8d3f9c6d63e0e44f2f532ca6bb134a298b5c4",
+      "repository_path": "schemas/skills/skill_receipt.schema.json",
+      "sha256": "c1a70378eee1bd65a22f27cb2be8d3f9c6d63e0e44f2f532ca6bb134a298b5c4",
+      "size_bytes": 2587
+    },
+    {
+      "authorized_design_source": "schemas/skill_registry_record.schema.json",
+      "authorized_design_source_sha256": "e5e1d4087a6fdf59f65a0d7d3cd233f6a76f893e40a9ed9968abed1e271ff735",
+      "repository_path": "schemas/skills/skill_registry_record.schema.json",
+      "sha256": "e5e1d4087a6fdf59f65a0d7d3cd233f6a76f893e40a9ed9968abed1e271ff735",
+      "size_bytes": 3950
+    },
+    {
+      "authorized_design_source": "schemas/skill_security_policy.schema.json",
+      "authorized_design_source_sha256": "0becd7cd779bcce7cc555832d588476bd09b4529a5b4f9af8c2f7b9590b6f0dc",
+      "repository_path": "schemas/skills/skill_security_policy.schema.json",
+      "sha256": "0becd7cd779bcce7cc555832d588476bd09b4529a5b4f9af8c2f7b9590b6f0dc",
+      "size_bytes": 1516
+    },
+    {
+      "authorized_design_source": "schemas/skill_spec_provenance.schema.json",
+      "authorized_design_source_sha256": "44c5feef1a2c18723fbac57578fef765883cb64c10414f8b1c9bbb82c30bab9f",
+      "repository_path": "schemas/skills/skill_spec_provenance.schema.json",
+      "sha256": "44c5feef1a2c18723fbac57578fef765883cb64c10414f8b1c9bbb82c30bab9f",
+      "size_bytes": 1312
+    },
+    {
+      "authorized_design_source": "DERIVED_FROM:validate_skill_governance_package_v1_0_1.py+embedded_frozen_fixtures",
+      "authorized_design_source_sha256": null,
+      "repository_path": "tests/test_skywatcher_skill_governance_v1_0_1.py",
+      "sha256": "bf3ddb77d4dd6f069d712768884c2ac53dc164e98fc90222ad662e2ab40e82f9",
+      "size_bytes": 19596
+    }
+  ],
+  "runtime_activation_authorized": false,
+  "schema_activation_authorized": false,
+  "schema_count": 13,
+  "schema_version": "skywatcher.skill_governance_freeze_manifest.v1.0.1.repository-sg0",
+  "sg0_authorization": "AUTHORIZED_ADDITIVE_GOVERNANCE_ONLY_DRAFT_PR",
+  "sg1_through_sg4": "BLOCKED_SEPARATE_APPROVAL_REQUIRED",
+  "source_archive": "sw skillpack.zip",
+  "source_archive_sha256": "1d5f906645e3f9a846e5843d331077b8d2b0f5a3c97aa3b6ed940f8377eff2bd",
+  "source_skill_count": 16,
+  "status": "SG0_ADDITIVE_GOVERNANCE_IMPLEMENTED_DRAFT_PR_ONLY",
+  "term_count": 43,
+  "threshold_activation_authorized": false
+}

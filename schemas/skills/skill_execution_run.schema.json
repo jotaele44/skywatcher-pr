@@ -1,0 +1,151 @@
+{
+  "$id": "https://jotaele44.github.io/skywatcher-pr/schemas/skills/skill_execution_run.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "activation_policy_id": {
+      "type": "string"
+    },
+    "authority_id": {
+      "type": "string"
+    },
+    "cadence_policy_id": {
+      "type": "string"
+    },
+    "canonical_skill_id": {
+      "type": "string"
+    },
+    "completed_at": {
+      "format": "date-time",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "configuration_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "data_mode_policy_id": {
+      "type": "string"
+    },
+    "input_accounting_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "objective": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "receipt_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "security_policy_id": {
+      "type": "string"
+    },
+    "skill_version": {
+      "type": "string"
+    },
+    "stages": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "checkpoint_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "failure_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "stage_id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "running",
+              "completed",
+              "skipped",
+              "blocked",
+              "failed"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage_id",
+          "sequence",
+          "name",
+          "status"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "started_at": {
+      "format": "date-time",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "enum": [
+        "created",
+        "validating",
+        "planned",
+        "running",
+        "completed",
+        "partial",
+        "blocked",
+        "failed",
+        "cancelled"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "canonical_skill_id",
+    "skill_version",
+    "created_at",
+    "status",
+    "objective",
+    "authority_id",
+    "activation_policy_id",
+    "data_mode_policy_id",
+    "security_policy_id",
+    "cadence_policy_id",
+    "stages"
+  ],
+  "title": "Skill Execution Run v1.0.1",
+  "type": "object",
+  "x-skywatcher-governance-version": "1.0.1"
+}
