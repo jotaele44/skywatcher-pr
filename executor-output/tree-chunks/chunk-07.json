@@ -1,0 +1,152 @@
+[
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/satim/artifacts/pipeline_chain.py",
+    "sha": "afb00b7b70ed27c1dab81d1033c374aab73a0759",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/satim/artifacts/provider_registry.py",
+    "sha": "76a8b84ef3d59f5a67f4953fa1afb950c645cba1",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/satim/artifacts/restriction_gate.py",
+    "sha": "0dfe03597fd41badb4127e3baa08db563cd338be",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/satim/artifacts/schema_validator.py",
+    "sha": "5b87a160390b09c6123bb3a1076e2a09f11e13c2",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/conftest.py",
+    "sha": "610392e5823439b6ef126125e6e69c5b888fef20",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_core_readiness_engine_equivalence.py",
+    "sha": "04332a3d4cb416d4153fbc511e8217d51bfdc726",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_analysis_vector.py",
+    "sha": "14adb80db3e393bca4d3070637e000c28a16bdd5",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_bridge.py",
+    "sha": "ff497052dd4e970395307e78227debb4dc016dad",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_dashboard_data.py",
+    "sha": "201696070145ca1922b3c245ed397acb76a93cb9",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_export.py",
+    "sha": "c87ea9f089e5db1e0685dbf7129b96ba249bce95",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_image_skill.py",
+    "sha": "91f9986f5c7c7a6f759c1be88c222e6d73521f52",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_inventory.py",
+    "sha": "d6da81cb8384059849313651ae47b57c54b4c6a4",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_log_verify.py",
+    "sha": "7a87316afacbcd9a6e3369b3066d01071d8ccb0a",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_region_fusion.py",
+    "sha": "db3c8ac939913c3739106477d992e00326212bc7",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_review_state.py",
+    "sha": "e5a51ea3366f555ba5c33027f271fcb37403822c",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_spiderweb_adapter.py",
+    "sha": "5da818a563c182c608d304b8b824554350be7b48",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_temporal_wave_pipeline.py",
+    "sha": "9e9de83c439b37fcb8a2f10968aebccf2e70f611",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_todays_batch.py",
+    "sha": "dd6412e3ef82a3e22a881fa41e2605618b074c66",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_fr24_wave_validator.py",
+    "sha": "fc939c7af99bd8ead881d14f57d2fe3751a41251",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_gebco_additions.py",
+    "sha": "974bb913631c276a71e8abd4faf59086d0616eac",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_geo_calibration_affine.py",
+    "sha": "417fb87741e357fa83a7450b59abe99029c1279b",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_ilap_bridge.py",
+    "sha": "427b52d33cc090081d09764070b2367df4df5d8d",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_l5_synthetic_boundary_classifier.py",
+    "sha": "9efb7b9ccba2ea3520658718f4ec2fe12bd434cd",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_maintenance.py",
+    "sha": "d07cf65862da447a60ab693ee5625b01f0ae91a9",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "tests/test_manual_review_queue.py",
+    "sha": "9ee95e8ca43aa707086ce785be471ab74dad0519",
+    "type": "blob"
+  }
+]

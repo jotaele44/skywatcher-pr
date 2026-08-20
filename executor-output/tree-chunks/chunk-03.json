@@ -1,0 +1,152 @@
+[
+  {
+    "mode": "100644",
+    "path": "fr24/spiderweb_adapter.py",
+    "sha": "573a25ca8f0440cac6b5d48b34dcaa9b13c787fc",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/temporal_wave_dashboard_data.py",
+    "sha": "3f1be446d8fdca781c1ab68aaa5543760e8e2f7c",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/temporal_wave_pipeline.py",
+    "sha": "eeb439e17e478e5395ce3b7149ce964349d7d424",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/todays_batch.py",
+    "sha": "e357eae5b74e8ca8371e980c09aa0785efd48cd4",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/track_vectorizer.py",
+    "sha": "9ed313d22798a5abe664bf81f1f500d118270cd5",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/ui_segmenter.py",
+    "sha": "06e342f7ae5f0c24fe67ca4dfd349fe088673841",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/wave_validator.py",
+    "sha": "0de4da7be526abcad3cf341056e32a6e8531c031",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/zone_label_harvest.py",
+    "sha": "b6a2b9e879b45188bd5942bd44630777e0758d67",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24_image_skill/adapters.py",
+    "sha": "4fe52ab756b3c817a53952deb13e317c3c459826",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24_image_skill/orchestrator.py",
+    "sha": "bc32bc3139840aed4bb2276661794cc23ed238a6",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "frontend/index.html",
+    "sha": "48dd5cf0deb3e3054220af6c229035a4600e1408",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "frontend/public/icon-180.png",
+    "sha": "0610db27df888ea2a3342bfcde87efcbb5716140",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "frontend/public/icon-192.png",
+    "sha": "13cf76b9cee4d409332c2a1f105a707a2bf4b791",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "frontend/public/icon-512.png",
+    "sha": "a15056fa92b0156eaaf5a384056a293d4fe10244",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "frontend/public/manifest.json",
+    "sha": "efd916912ab4c3985007d6d92e23d6ebb8c176ab",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "frontend/src/assets/icon-64.png",
+    "sha": "953be2a469a70e00e72f87102f679bb5937ab634",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "frontend/src/components/skywatcher/Sidebar.jsx",
+    "sha": "78cc2aa82194e51e2d2c3b01e1d8c4e66bbd7b68",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "gis_intelligence.py",
+    "sha": "620a4a72f77de491556bab1ed0f3ab2c0de4dea8",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "ilap_airspace_bridge.py",
+    "sha": "c705c997288c17850be2ff7bd72a38f820a3a022",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "imagery/compare.py",
+    "sha": "716be812be8f954e76ba186c470bb467aa95c1c7",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "imagery/geo.py",
+    "sha": "bfac4bc2a660115d31063ac2dd52bdacef77128c",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "imagery/models.py",
+    "sha": "a405656022d273345d35ea69fdee931eb1068146",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "imagery/server.py",
+    "sha": "fcd8dbc2d5dd0c94b8abcf02abae693262d910d4",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "imagery/sink.py",
+    "sha": "d7879bf2d59ea7e6c889e8906c3c9650813eca68",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "integration/federation_consumer.py",
+    "sha": "9fc1cea2d5eaf05481cb1a4b174f860bc10545f0",
+    "type": "blob"
+  }
+]

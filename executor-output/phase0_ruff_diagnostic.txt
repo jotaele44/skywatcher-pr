@@ -1,0 +1,48 @@
+RUFF_CHECK_RETURN_CODE=1
+RUFF_CHECK_STDOUT:
+B008 Do not perform function call `ArchiveLimits` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src/skywatcher/core/safe_archive.py:58:55
+   |
+57 | def validate_zip(
+58 |     archive: zipfile.ZipFile, limits: ArchiveLimits = ArchiveLimits()
+   |                                                       ^^^^^^^^^^^^^^^
+59 | ) -> list[tuple[zipfile.ZipInfo, PurePosixPath]]:
+60 |     infos = archive.infolist()
+   |
+
+B008 Do not perform function call `ArchiveLimits` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   --> src/skywatcher/core/safe_archive.py:102:29
+    |
+100 |     target: str | Path,
+101 |     *,
+102 |     limits: ArchiveLimits = ArchiveLimits(),
+    |                             ^^^^^^^^^^^^^^^
+103 |     replace: bool = False,
+104 | ) -> Path:
+    |
+
+B008 Do not perform function call `ArchiveLimits` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> tools/satim_engine/src/satim_engine/safe_archive.py:58:55
+   |
+57 | def validate_zip(
+58 |     archive: zipfile.ZipFile, limits: ArchiveLimits = ArchiveLimits()
+   |                                                       ^^^^^^^^^^^^^^^
+59 | ) -> list[tuple[zipfile.ZipInfo, PurePosixPath]]:
+60 |     infos = archive.infolist()
+   |
+
+B008 Do not perform function call `ArchiveLimits` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   --> tools/satim_engine/src/satim_engine/safe_archive.py:102:29
+    |
+100 |     target: str | Path,
+101 |     *,
+102 |     limits: ArchiveLimits = ArchiveLimits(),
+    |                             ^^^^^^^^^^^^^^^
+103 |     replace: bool = False,
+104 | ) -> Path:
+    |
+
+Found 4 errors.
+
+RUFF_CHECK_STDERR:
+

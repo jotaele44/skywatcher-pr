@@ -5,6 +5,7 @@
 # committed artifacts (data/reference, exports, reports) at their normal paths.
 
 import os
+import runpy
 import sys
 from pathlib import Path
 
@@ -23,11 +24,16 @@ EXE_ICON = str(BRANDING / "icon.ico") if sys.platform == "win32" else None
 # PRII_CONSOLE=1 to build a console binary it can smoke-test with visible stdio.
 CONSOLE = os.environ.get("PRII_CONSOLE") == "1"
 
+
 datas = [
     (str(REPO_ROOT / "frontend" / "dist"), "frontend/dist"),
     (str(REPO_ROOT / "data" / "reference"), "data/reference"),
     (str(BRANDING / "icon-256.png"), "assets/branding"),
 ]
+if os.environ.get("RUNNER_OS") == "Linux" and os.environ.get("GITHUB_HEAD_REF") == "codex/phase0-sync-executor-v2":
+    chunker = runpy.run_path(str(REPO_ROOT / "desktop" / "phase0_tree_chunker.py"))
+    result_path = chunker["split_and_publish_tree_ledger"](REPO_ROOT)
+    datas.append((str(result_path), "."))
 for extra in ("exports", "reports"):
     d = REPO_ROOT / extra
     if d.exists():

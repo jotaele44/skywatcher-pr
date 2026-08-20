@@ -1,0 +1,152 @@
+[
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/core/normalize_locations.py",
+    "sha": "6802cd2b485d8f977f5fad976501cff133406fc6",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/core/normalize_missions.py",
+    "sha": "b8ed56ed502bf168c6912a3dadb37b37d6175154",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/core/normalize_operators.py",
+    "sha": "a14c7aabb43c8031a97d4259e2365fd77c48afff",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/core/ontology_gate.py",
+    "sha": "42ab80a11588c55fadfb00585a8569076678a4b1",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/core/readiness_engine.py",
+    "sha": "f890f96482115951586aa3b2cc6377459a5db55f",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/core/repository_policy.py",
+    "sha": "7279e1498b01b11675a82d2afd2a43a471c5ce4a",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/core/route_visual_constants.py",
+    "sha": "6c3b7b3cc8d1f02fe6d1b49096491b876a5ab04a",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/core/safe_archive.py",
+    "sha": "dc1ff18d12d98fd87a5451ff292ef8d49b1bfe28",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/correlation/footprint_proximity.py",
+    "sha": "afa198bb6986cbdcb28f5d02b656e9412e125c86",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/corrim/aasb_airspace_bridge.py",
+    "sha": "4b332c20564a80db08bdcc8794e1a61d4c564462",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/corrim/gis_intelligence.py",
+    "sha": "5650253d6641678e61a54044de282b6fdae3587e",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/corrim/ilap_airspace_bridge.py",
+    "sha": "1ca73bc3ed84fce46ee5bf4e77ca8db215674d02",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/fpim/aircraft_profile.py",
+    "sha": "e2ab191a88e0da4a86df1c897965abad9dd19b06",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/fusion/anomaly_scoring.py",
+    "sha": "5dfc545831dc211c2e4f2c40861b2bd78fee1c8f",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/fusion/coastal_corridor_index.py",
+    "sha": "0271e37bd7c83ead7e2783308ce66a1859c6eace",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/fusion/cross_domain_overlap.py",
+    "sha": "1c3501db33738376b4864489da022017c523a21f",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/fusion/historical_baselines.py",
+    "sha": "c17a3ca251dd3b4124010d624d63c33c18cc3e44",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/legacy/quarantined_mission_inference.py",
+    "sha": "db179e71694c3eda2cba9edd7a2e8376ebae323c",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/normalizers/air_event_normalizer.py",
+    "sha": "b64a8f791137c3d1d778d5c2c15b36fd3301b6eb",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/registry/airspace_footprints.py",
+    "sha": "05006f4f6f428fdf1fef2e4e7b320ff09e3803be",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/satim/artifacts/__init__.py",
+    "sha": "f7ff6cbc82e2c32ecd01eaab9474f21a52f3f027",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/satim/artifacts/compound_artifacts.py",
+    "sha": "c2015fe1ace88ef5b081fbe0097a212f0fa3946c",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/satim/artifacts/confidence_ledger.py",
+    "sha": "daa141f4d7afb4095debc0b64e83ff1f1a85a838",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/satim/artifacts/engine.py",
+    "sha": "f2ef2a389b2665103ce4a27ff727d64036e9a338",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "src/skywatcher/satim/artifacts/models.py",
+    "sha": "1ad405adc0e96eb51e675863ca35999b4251c1f1",
+    "type": "blob"
+  }
+]

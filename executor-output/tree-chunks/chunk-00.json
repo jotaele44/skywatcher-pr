@@ -1,0 +1,152 @@
+[
+  {
+    "mode": "100644",
+    "path": ".github/workflows/ci.yml",
+    "sha": "587dbaf6b2cf0b733d4a68181dbf470b10f9d18f",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": ".github/workflows/foia-canary-intake.yml",
+    "sha": "166dac3d63a0345f3a314c1616f76b94d137b3b7",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": ".github/workflows/foia-canary-static.yml",
+    "sha": "a06a6c8586fe735b14d1f7b1dc4be6d0ae8d7675",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": ".github/workflows/phase0-sync-current-main.yml",
+    "sha": null,
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "PRII-SKYWATCHER.app/Contents/Resources/AppIcon.icns",
+    "sha": "a91520da457dae8b19a58b81cb9f26ed7a48aa68",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "aasb_airspace_bridge.py",
+    "sha": "a5f69b6132892b145fc15a2c03b50a19fa308b6a",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "aircraft_intelligence.py",
+    "sha": "3b8e06ba59fe88b7c8b2d52b57edf0e3dab1f2ab",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "assets/branding/AppIcon.icns",
+    "sha": "a91520da457dae8b19a58b81cb9f26ed7a48aa68",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "assets/branding/icon-180.png",
+    "sha": "0610db27df888ea2a3342bfcde87efcbb5716140",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "assets/branding/icon-192.png",
+    "sha": "13cf76b9cee4d409332c2a1f105a707a2bf4b791",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "assets/branding/icon-256.png",
+    "sha": "5f613dbc1df447721df51d5192f613ba5f0aaa59",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "assets/branding/icon-32.png",
+    "sha": "dc7c37c5e5c8041b6f1d191155479daeb83186d6",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "assets/branding/icon-512.png",
+    "sha": "a15056fa92b0156eaaf5a384056a293d4fe10244",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "assets/branding/icon-64.png",
+    "sha": "953be2a469a70e00e72f87102f679bb5937ab634",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "assets/branding/icon.ico",
+    "sha": "4737f13456f1374a9549fe4bf70a491be0b76fb2",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "assets/branding/icon.png",
+    "sha": "4e198ded956b82b734cd709a6c23c21e647ca9e0",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "desktop/pyinstaller.spec",
+    "sha": "c78129e9ca009a3c7450caf9f132938fbb2e7920",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "federation.json",
+    "sha": "4caa5aa2b703ed72a89a9622d42bf6a08d1e9a50",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/batch_plan.py",
+    "sha": "0246d9ecd1b9f1bdc68f7fd8083380626f0084f1",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/batch_run.py",
+    "sha": "f5c1bf2f916ca3023f5d7325c38c27ee3ed2770c",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/batch_status.py",
+    "sha": "095e14251d84fcda29b536f93c711e8af4624153",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/calibration/enrich_satim_airport_alignment.py",
+    "sha": "9e17f6c939dd498b29cb9b456ddf3bde679db2b9",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/calibration/features/airport_alignment.py",
+    "sha": "75eb57d0bced6b2ad7e04b151a98f022d8ac8ffe",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/calibration/features/boundary_geometry.py",
+    "sha": "3deb94914234131d49d423f618b506988bd258bc",
+    "type": "blob"
+  },
+  {
+    "mode": "100644",
+    "path": "fr24/calibration/features/infrastructure_features.py",
+    "sha": "7e25c6d2e6a903c59b92de1509f5c1d671f34249",
+    "type": "blob"
+  }
+]
