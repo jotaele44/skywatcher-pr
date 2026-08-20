@@ -1,0 +1,14 @@
+{
+  "schema": "skywatcher.vendor-admission.v1",
+  "dependency": "nasa/openmct",
+  "version": "v4.1.0",
+  "status": "not_admitted",
+  "license_spdx": "Apache-2.0",
+  "release_archive_sha256": null,
+  "source_commit": null,
+  "node_requirement": null,
+  "browser_matrix": null,
+  "sbom_path": null,
+  "runtime_network_allowed": false,
+  "reason": "Foundation PR records the exact target but fails closed until the upstream archive, digest, release commit, compatibility files, notices, and SBOM are independently certified."
+}

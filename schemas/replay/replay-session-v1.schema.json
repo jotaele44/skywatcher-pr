@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher.local/schemas/replay/replay-session-v1.schema.json",
+  "title": "Skywatcher replay session v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "session_id", "created_at_utc", "skywatcher_git_sha", "openmct_version", "bounds", "selected_streams", "source_offsets", "accounting_complete", "receipt_sha256"],
+  "properties": {
+    "schema": {"const": "skywatcher.replay-session.v1"},
+    "session_id": {"type": "string", "pattern": "^replay:"},
+    "created_at_utc": {"type": "string", "format": "date-time"},
+    "skywatcher_git_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "openmct_version": {"type": "string"},
+    "openmct_artifact_sha256": {"type": ["string", "null"]},
+    "bounds": {"type": "object", "required": ["start_utc", "end_utc"], "properties": {"start_utc": {"type": "string", "format": "date-time"}, "end_utc": {"type": "string", "format": "date-time"}}, "additionalProperties": false},
+    "speed": {"type": "number", "exclusiveMinimum": 0, "maximum": 100},
+    "selected_streams": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "source_offsets": {"type": "array", "items": {"type": "object"}},
+    "accounting_complete": {"type": "boolean"},
+    "receipt_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
