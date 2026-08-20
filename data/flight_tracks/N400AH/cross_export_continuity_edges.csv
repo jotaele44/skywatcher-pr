@@ -1,0 +1,4 @@
+from_track_id,to_track_id,time_gap_seconds,endpoint_distance_km,edge_kind,preserve_original_lineage,interpolation_allowed
+3f294dbe,3f295b53,1,0.031845,candidate_provider_split_continuity,True,False
+3f48c03c,3f48e1f4,2,0.038551,candidate_provider_split_continuity,True,False
+3f4bad76,3f4bc689,5,0.301121,candidate_provider_split_continuity,True,False
