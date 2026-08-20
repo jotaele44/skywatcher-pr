@@ -1,0 +1,61 @@
+name: SkywatcherMobile
+options:
+  bundleIdPrefix: org.prii.skywatcher
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: 5.10
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+packages: {}
+targets:
+  SkywatcherMobile:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/App
+      - path: Sources/Core
+      - path: Sources/Intents
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.prii.skywatcher.mobile
+        INFOPLIST_KEY_CFBundleDisplayName: Skywatcher
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: Import manually captured screenshots for local analysis.
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_ENTITLEMENTS: Config/SkywatcherMobile.entitlements
+    dependencies:
+      - target: SkywatcherShare
+  SkywatcherShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/ShareExtension
+      - path: Sources/Core
+    info:
+      path: Config/ShareExtension-Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.prii.skywatcher.mobile.share
+        CODE_SIGN_ENTITLEMENTS: Config/SkywatcherShare.entitlements
+        SKIP_INSTALL: YES
+  SkywatcherMobileTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: SkywatcherMobile
+schemes:
+  SkywatcherMobile:
+    build:
+      targets:
+        SkywatcherMobile: all
+        SkywatcherShare: all
+    test:
+      targets:
+        - SkywatcherMobileTests
