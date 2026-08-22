@@ -1,14 +1,15 @@
 """Provenance-first RLSM screenshot corpus freeze.
 
 ``screenshots`` remains the stable downstream logical-payload table: one row per
-unique SHA-256.  Every filesystem pathname and every archive member is preserved
-separately as a source manifestation.  This prevents exact duplicates from
-being erased while keeping all existing screenshot foreign keys stable.
+unique SHA-256. Every filesystem pathname and every archive member is preserved
+separately as a source manifestation. This prevents exact duplicates from being
+erased while keeping all existing screenshot foreign keys stable.
 
-The freeze is fail-closed.  A truncated traversal, unreadable bytes,
-pathname/hash contradiction, archive/member read failure, or arithmetic mismatch
-cannot produce ``PASS``.  This stage performs no OCR and cannot promote
-filename, OCR, map-label, proximity, co-occurrence, or route-similarity evidence.
+The freeze is fail-closed. A truncated traversal, directory traversal error,
+unfollowed nested directory symlink, unreadable bytes, pathname/hash
+contradiction, archive/member read failure, or arithmetic mismatch cannot
+produce ``PASS``. This stage performs no OCR and cannot promote filename, OCR,
+map-label, proximity, co-occurrence, or route-similarity evidence.
 """
 from __future__ import annotations
 
@@ -16,6 +17,7 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import re
 import sqlite3
 import tarfile
@@ -23,7 +25,7 @@ import time
 import zipfile
 from collections import Counter
 from pathlib import Path
-from typing import BinaryIO, Iterable
+from typing import BinaryIO, Callable, Iterable
 
 from PIL import Image
 
@@ -128,6 +130,40 @@ def _ahash_8x8(img: Image.Image) -> str:
     average = sum(pixels) / 64
     bits = "".join("1" if pixel >= average else "0" for pixel in pixels)
     return f"{int(bits, 2):016x}"
+
+
+def _discover_files(
+    root: Path, predicate: Callable[[Path], bool]
+) -> tuple[list[Path], list[str], list[str]]:
+    """Deterministically walk ``root`` and expose traversal/symlink omissions."""
+    files: list[Path] = []
+    errors: list[str] = []
+    symlink_dirs: list[str] = []
+    if not root.exists():
+        return files, errors, symlink_dirs
+
+    def onerror(exc: OSError) -> None:
+        errors.append(f"{type(exc).__name__}: {exc}")
+
+    for current, directories, filenames in os.walk(
+        root, topdown=True, onerror=onerror, followlinks=False
+    ):
+        directories.sort()
+        filenames.sort()
+        current_path = Path(current)
+        kept_directories = []
+        for directory in directories:
+            candidate = current_path / directory
+            if candidate.is_symlink():
+                symlink_dirs.append(str(candidate))
+            else:
+                kept_directories.append(directory)
+        directories[:] = kept_directories
+        for filename in filenames:
+            candidate = current_path / filename
+            if predicate(candidate):
+                files.append(candidate)
+    return files, errors, symlink_dirs
 
 
 def ensure_base_schema(conn: sqlite3.Connection, schema_sql: Path = SCHEMA_SQL) -> None:
@@ -269,7 +305,8 @@ def ensure_corpus_schema(conn: sqlite3.Connection) -> None:
             observed_at TEXT NOT NULL
         );
 
-        CREATE TRIGGER IF NOT EXISTS tr_ocr_requires_calibrated_corpus
+        DROP TRIGGER IF EXISTS tr_ocr_requires_calibrated_corpus;
+        CREATE TRIGGER tr_ocr_requires_calibrated_corpus
         BEFORE INSERT ON ocr_observations
         WHEN NOT EXISTS (
             SELECT 1 FROM pipeline_certifications c
@@ -288,7 +325,8 @@ def ensure_corpus_schema(conn: sqlite3.Connection) -> None:
             );
         END;
 
-        CREATE TRIGGER IF NOT EXISTS tr_aircraft_ocr_only_not_confirmed
+        DROP TRIGGER IF EXISTS tr_aircraft_ocr_only_not_confirmed;
+        CREATE TRIGGER tr_aircraft_ocr_only_not_confirmed
         AFTER INSERT ON aircraft_observations
         WHEN NEW.identity_status = 'confirmed'
           AND EXISTS (
@@ -338,6 +376,19 @@ def _upsert_manifestation(
     ).fetchone()
     assert row is not None
     return int(row[0])
+
+
+def _ensure_historical_manifestations(conn: sqlite3.Connection, now: str) -> None:
+    for screenshot_id, rel_path in conn.execute(
+        "SELECT screenshot_id, rel_path FROM screenshots ORDER BY screenshot_id"
+    ):
+        _upsert_manifestation(
+            conn,
+            source_kind="historical_db_path",
+            rel_path=str(rel_path),
+            screenshot_id=int(screenshot_id),
+            now=now,
+        )
 
 
 def _record_manifestation_observation(
@@ -447,9 +498,7 @@ def _scan_baseline(
     ).fetchall()
     by_rel = {str(row[2]): (int(row[0]), str(row[1])) for row in database_rows}
 
-    # Freeze historical locators before scanning current bytes. Missing locators
-    # remain evidence and are never deleted merely because the file is absent.
-    for screenshot_id, expected_sha, rel_path, filename_ts in database_rows:
+    for screenshot_id, _expected_sha, rel_path, filename_ts in database_rows:
         _upsert_manifestation(
             conn,
             source_kind="historical_db_path",
@@ -466,19 +515,11 @@ def _scan_baseline(
                 (screenshot_id, str(filename_ts), str(filename_ts), now),
             )
 
-    all_files = (
-        sorted(
-            path
-            for path in baseline.rglob("*")
-            if path.is_file() and path.suffix.lower() in IMAGE_EXTS
-        )
-        if baseline.exists()
-        else []
+    all_files, traversal_errors, symlink_dirs = _discover_files(
+        baseline, lambda path: path.suffix.lower() in IMAGE_EXTS
     )
     discovered_rel_paths = {_locator(path, repo_root) for path in all_files}
 
-    # Historical database rows not represented by a current baseline pathname
-    # receive an explicit missing observation in this freeze.
     for screenshot_id, expected_sha, rel_path, _filename_ts_value in database_rows:
         if str(rel_path) in discovered_rel_paths:
             continue
@@ -541,6 +582,7 @@ def _scan_baseline(
             screenshot_id = historical[0]
             state = "hash_mismatch"
             detail = "pathname bytes differ from the SHA-256 bound in screenshots"
+            bound_sha = expected_sha
         else:
             screenshot_id, state = _insert_or_bind_logical_screenshot(
                 conn,
@@ -551,6 +593,7 @@ def _scan_baseline(
                 now=now,
             )
             detail = None
+            bound_sha = observed_sha
 
         manifestation_id = _upsert_manifestation(
             conn,
@@ -564,7 +607,7 @@ def _scan_baseline(
             corpus_run_id=corpus_run_id,
             manifestation_id=manifestation_id,
             observed_sha256=observed_sha,
-            expected_sha256=expected_sha,
+            expected_sha256=bound_sha,
             size_bytes=size_bytes,
             state=state,
             detail=detail,
@@ -572,8 +615,11 @@ def _scan_baseline(
         )
         counts[state] += 1
 
+    _ensure_historical_manifestations(conn, now)
     counts["discovered_files"] = len(all_files)
     counts["scanned_files"] = scanned_count
+    counts["traversal_errors"] = len(traversal_errors)
+    counts["unfollowed_symlink_dirs"] = len(symlink_dirs)
     counts["partial"] = int(partial)
     return dict(counts)
 
@@ -624,7 +670,7 @@ def _zip_members(
                 with archive.open(info, "r") as handle:
                     digest = sha256_stream(handle)
                 state, error = "scanned", None
-            except Exception as exc:  # noqa: BLE001 - member failure is classified evidence
+            except Exception as exc:  # noqa: BLE001 - member failure is evidence
                 digest = None
                 state = "unreadable"
                 error = f"{type(exc).__name__}: {exc}"[:400]
@@ -660,7 +706,7 @@ def _tar_members(
                 with handle:
                     digest = sha256_stream(handle)
                 state, error = "scanned", None
-            except Exception as exc:  # noqa: BLE001 - member failure is classified evidence
+            except Exception as exc:  # noqa: BLE001 - member failure is evidence
                 digest = None
                 state = "unreadable"
                 error = f"{type(exc).__name__}: {exc}"[:400]
@@ -688,12 +734,14 @@ def _scan_archives(
     deadline: float | None,
 ) -> dict:
     candidates: dict[str, Path] = {}
+    traversal_errors: list[str] = []
+    symlink_dirs: list[str] = []
     for root in archive_roots:
-        if not root.exists():
-            continue
-        for path in root.rglob("*"):
-            if path.is_file() and _is_archive(path):
-                candidates[_locator(path, repo_root)] = path
+        root_files, root_errors, root_symlink_dirs = _discover_files(root, _is_archive)
+        traversal_errors.extend(root_errors)
+        symlink_dirs.extend(root_symlink_dirs)
+        for path in root_files:
+            candidates[_locator(path, repo_root)] = path
 
     now = utc_now()
     counts: Counter[str] = Counter()
@@ -759,6 +807,8 @@ def _scan_archives(
             if is_screenshot:
                 counts["screenshot_members"] += 1
 
+    counts["traversal_errors"] = len(traversal_errors)
+    counts["unfollowed_symlink_dirs"] = len(symlink_dirs)
     counts["partial"] = int(partial)
     return dict(counts)
 
@@ -856,6 +906,75 @@ def _reconciliation_rows(conn: sqlite3.Connection, corpus_run_id: int) -> list[d
     return output
 
 
+def _normalized_manifestation_state(state: str) -> str:
+    if state in {"present_new", "present_match"}:
+        return "PRESENT"
+    return state.upper()
+
+
+def _corpus_digest(
+    conn: sqlite3.Connection, corpus_run_id: int, reconciliation: list[dict]
+) -> str:
+    """Hash canonical source identity, not processing-history accidents."""
+    bound_sha = {
+        int(screenshot_id): str(sha256)
+        for screenshot_id, sha256 in conn.execute(
+            "SELECT screenshot_id, sha256 FROM screenshots"
+        )
+    }
+    stable_manifestation_identities = [
+        [source_kind, rel_path, bound_sha.get(int(screenshot_id)) if screenshot_id else None]
+        for source_kind, rel_path, screenshot_id in conn.execute(
+            """SELECT source_kind, rel_path, screenshot_id
+               FROM source_manifestations ORDER BY source_kind, rel_path"""
+        )
+    ]
+    current_observations = [
+        [
+            row["source_kind"],
+            row["rel_path"],
+            bound_sha.get(int(row["screenshot_id"])) if row["screenshot_id"] else None,
+            row["observed_sha256"],
+            row["size_bytes"],
+            _normalized_manifestation_state(str(row["state"])),
+        ]
+        for row in reconciliation
+    ]
+    material = {
+        "protocol": CORPUS_PROTOCOL,
+        "logical_payloads": [
+            list(row)
+            for row in conn.execute(
+                "SELECT sha256, size_bytes FROM screenshots ORDER BY sha256, size_bytes"
+            )
+        ],
+        "manifestation_identities": stable_manifestation_identities,
+        "manifestation_observations": current_observations,
+        "archives": [
+            list(row)
+            for row in conn.execute(
+                """SELECT a.locator, o.outer_sha256, o.size_bytes, o.state
+                   FROM archive_observations o JOIN source_archives a USING(archive_id)
+                   WHERE o.corpus_run_id=? ORDER BY a.locator""",
+                (corpus_run_id,),
+            )
+        ],
+        "archive_members": [
+            list(row)
+            for row in conn.execute(
+                """SELECT a.locator, m.member_ordinal, m.member_path,
+                          m.uncompressed_size, m.member_sha256, m.is_screenshot, m.state
+                   FROM archive_members m
+                   JOIN archive_observations o USING(archive_obs_id)
+                   JOIN source_archives a USING(archive_id)
+                   WHERE o.corpus_run_id=? ORDER BY a.locator, m.member_ordinal""",
+                (corpus_run_id,),
+            )
+        ],
+    }
+    return hashlib.sha256(stable_json(material).encode("utf-8")).hexdigest()
+
+
 def _certify(
     conn: sqlite3.Connection,
     *,
@@ -881,6 +1000,8 @@ def _certify(
         not baseline_counts.get("partial")
         and int(baseline_counts.get("scanned_files", 0))
         == int(baseline_counts.get("discovered_files", 0))
+        and int(baseline_counts.get("traversal_errors", 0)) == 0
+        and int(baseline_counts.get("unfollowed_symlink_dirs", 0)) == 0
     )
 
     archive_observations = int(
@@ -906,6 +1027,8 @@ def _certify(
     archive_traversal_complete = (
         not archive_counts.get("partial")
         and archive_observations == int(archive_counts.get("discovered_archives", 0))
+        and int(archive_counts.get("traversal_errors", 0)) == 0
+        and int(archive_counts.get("unfollowed_symlink_dirs", 0)) == 0
     )
 
     archive_only = int(
@@ -965,41 +1088,7 @@ def _certify(
         "archive_traversal_complete": archive_traversal_complete,
         "unexplained_residue": unexplained_residue,
     }
-    digest_material = {
-        "protocol": CORPUS_PROTOCOL,
-        "logical": [
-            list(row)
-            for row in conn.execute(
-                """SELECT screenshot_id, sha256, rel_path, size_bytes
-                   FROM screenshots ORDER BY screenshot_id"""
-            )
-        ],
-        "manifestations": reconciliation,
-        "archives": [
-            list(row)
-            for row in conn.execute(
-                """SELECT a.locator, o.outer_sha256, o.size_bytes, o.state, o.error
-                   FROM archive_observations o JOIN source_archives a USING(archive_id)
-                   WHERE o.corpus_run_id=? ORDER BY a.locator""",
-                (corpus_run_id,),
-            )
-        ],
-        "members": [
-            list(row)
-            for row in conn.execute(
-                """SELECT a.locator, m.member_ordinal, m.member_path,
-                          m.uncompressed_size, m.member_sha256, m.is_screenshot, m.state
-                   FROM archive_members m
-                   JOIN archive_observations o USING(archive_obs_id)
-                   JOIN source_archives a USING(archive_id)
-                   WHERE o.corpus_run_id=? ORDER BY a.locator, m.member_ordinal""",
-                (corpus_run_id,),
-            )
-        ],
-    }
-    corpus_digest = hashlib.sha256(
-        stable_json(digest_material).encode("utf-8")
-    ).hexdigest()
+    corpus_digest = _corpus_digest(conn, corpus_run_id, reconciliation)
 
     calibration = conn.execute(
         """SELECT status, bound_corpus_digest FROM pipeline_certifications
