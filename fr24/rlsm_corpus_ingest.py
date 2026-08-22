@@ -59,6 +59,7 @@ ARCHIVE_SUFFIXES = (
 )
 CORPUS_PROTOCOL = "rlsm-corpus-freeze-v1.0"
 OCR_GATE = "RLSM_OCR_CALIBRATION"
+MASS_OCR_GATE = "RLSM_MASS_OCR_READY"
 _FILENAME_TS_RE = re.compile(
     r"(?P<y>20\d{2})[-_]?(?P<mo>\d{2})[-_]?(?P<d>\d{2})"
     r"[ _T]?(?P<h>\d{2})[-_.:]?(?P<mi>\d{2})(?:[-_.:]?(?P<s>\d{2}))?"
@@ -306,11 +307,12 @@ def ensure_corpus_schema(conn: sqlite3.Connection) -> None:
         );
 
         DROP TRIGGER IF EXISTS tr_ocr_requires_calibrated_corpus;
-        CREATE TRIGGER tr_ocr_requires_calibrated_corpus
+        DROP TRIGGER IF EXISTS tr_ocr_requires_mass_gate;
+        CREATE TRIGGER tr_ocr_requires_mass_gate
         BEFORE INSERT ON ocr_observations
         WHEN NOT EXISTS (
             SELECT 1 FROM pipeline_certifications c
-            WHERE c.gate_name = 'RLSM_OCR_CALIBRATION'
+            WHERE c.gate_name = 'RLSM_MASS_OCR_READY'
               AND c.status = 'PASS'
               AND c.bound_corpus_digest = (
                   SELECT corpus_digest FROM corpus_freeze_runs
@@ -321,7 +323,28 @@ def ensure_corpus_schema(conn: sqlite3.Connection) -> None:
         BEGIN
             SELECT RAISE(
                 ABORT,
-                'RLSM_OCR_CALIBRATION is not PASS for the latest frozen corpus'
+                'RLSM_MASS_OCR_READY is not PASS for the latest frozen corpus'
+            );
+        END;
+
+        DROP TRIGGER IF EXISTS tr_ocr_run_requires_mass_gate;
+        CREATE TRIGGER tr_ocr_run_requires_mass_gate
+        BEFORE INSERT ON processing_runs
+        WHEN instr(lower(NEW.run_kind), 'ocr') > 0
+         AND NOT EXISTS (
+            SELECT 1 FROM pipeline_certifications c
+            WHERE c.gate_name = 'RLSM_MASS_OCR_READY'
+              AND c.status = 'PASS'
+              AND c.bound_corpus_digest = (
+                  SELECT corpus_digest FROM corpus_freeze_runs
+                  WHERE status='PASS' AND corpus_digest IS NOT NULL
+                  ORDER BY corpus_run_id DESC LIMIT 1
+              )
+        )
+        BEGIN
+            SELECT RAISE(
+                ABORT,
+                'RLSM_MASS_OCR_READY is not PASS for the latest frozen corpus'
             );
         END;
 
@@ -1159,6 +1182,99 @@ def _invalidate_stale_calibration(conn: sqlite3.Connection, corpus_digest: str) 
         )
 
 
+def _static_mass_ocr_prerequisites(certification: dict) -> bool:
+    gates = certification.get("gates", {})
+    return bool(
+        certification.get("status") == "PASS"
+        and gates.get("zero_unexplained_ingest_residue")
+        and gates.get("logical_sha_uniqueness")
+        and gates.get("baseline_arithmetic_closed")
+        and gates.get("baseline_traversal_complete")
+        and gates.get("archive_arithmetic_closed")
+        and gates.get("archive_traversal_complete")
+        and gates.get("archive_only_screenshot_payloads_zero")
+        and gates.get("canonical_missing_sources_zero")
+    )
+
+
+def refresh_mass_ocr_gate(
+    conn: sqlite3.Connection,
+    *,
+    corpus_digest: str | None = None,
+    certification: dict | None = None,
+) -> bool:
+    """Recompute the dynamic mass-OCR gate from frozen A + empirical B evidence."""
+    if corpus_digest is None or certification is None:
+        row = conn.execute(
+            """SELECT corpus_digest, certification_json FROM corpus_freeze_runs
+               WHERE status='PASS' AND corpus_digest IS NOT NULL
+               ORDER BY corpus_run_id DESC LIMIT 1"""
+        ).fetchone()
+        if row:
+            corpus_digest = str(row[0])
+            certification = json.loads(str(row[1])) if row[1] else None
+
+    now = utc_now()
+    if not corpus_digest or not certification:
+        conn.execute(
+            """INSERT INTO pipeline_certifications
+               (gate_name, status, bound_corpus_digest, evidence_sha256, decided_at, detail)
+               VALUES (?, 'BLOCKED', ?, NULL, ?, 'no PASS corpus certification is available')
+               ON CONFLICT(gate_name) DO UPDATE SET
+                 status=excluded.status,
+                 bound_corpus_digest=excluded.bound_corpus_digest,
+                 evidence_sha256=excluded.evidence_sha256,
+                 decided_at=excluded.decided_at,
+                 detail=excluded.detail""",
+            (MASS_OCR_GATE, corpus_digest, now),
+        )
+        return False
+
+    calibration = conn.execute(
+        """SELECT status, bound_corpus_digest, evidence_sha256
+           FROM pipeline_certifications WHERE gate_name=?""",
+        (OCR_GATE,),
+    ).fetchone()
+    calibration_status = str(calibration[0]) if calibration else "OPEN"
+    calibration_bound = str(calibration[1]) if calibration and calibration[1] else None
+    calibration_evidence = str(calibration[2]) if calibration and calibration[2] else None
+    calibration_pass = (
+        calibration_status == "PASS" and calibration_bound == corpus_digest
+    )
+    static_ready = _static_mass_ocr_prerequisites(certification)
+    ready = static_ready and calibration_pass
+    if ready:
+        status = "PASS"
+    elif not static_ready:
+        status = "BLOCKED"
+    elif calibration_status == "FAIL":
+        status = "FAIL"
+    elif calibration_status == "BLOCKED":
+        status = "BLOCKED"
+    else:
+        status = "OPEN"
+    detail = stable_json(
+        {
+            "static_corpus_prerequisites": static_ready,
+            "calibration_status": calibration_status,
+            "calibration_bound_to_latest_corpus": calibration_bound == corpus_digest,
+        }
+    )
+    conn.execute(
+        """INSERT INTO pipeline_certifications
+           (gate_name, status, bound_corpus_digest, evidence_sha256, decided_at, detail)
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON CONFLICT(gate_name) DO UPDATE SET
+             status=excluded.status,
+             bound_corpus_digest=excluded.bound_corpus_digest,
+             evidence_sha256=excluded.evidence_sha256,
+             decided_at=excluded.decided_at,
+             detail=excluded.detail""",
+        (MASS_OCR_GATE, status, corpus_digest, calibration_evidence, now, detail),
+    )
+    return ready
+
+
 def _write_csv(path: Path, rows: list[dict], fields: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
@@ -1329,10 +1445,7 @@ def _refresh_readiness_after_calibration_invalidation(
     gates = certification["gates"]
     gates["ocr_calibration_bound_pass"] = calibration_pass
     gates["mass_ocr_ready"] = bool(
-        certification["status"] == "PASS"
-        and certification["counts"]["archive_only_screenshot_payloads"] == 0
-        and certification["counts"]["historical_missing_source_manifestations"] == 0
-        and calibration_pass
+        _static_mass_ocr_prerequisites(certification) and calibration_pass
     )
 
 
@@ -1400,6 +1513,11 @@ def run(
         _invalidate_stale_calibration(conn, corpus_digest)
         _refresh_readiness_after_calibration_invalidation(
             conn, certification, corpus_digest
+        )
+        refresh_mass_ocr_gate(
+            conn,
+            corpus_digest=corpus_digest,
+            certification=certification,
         )
         conn.execute(
             """UPDATE corpus_freeze_runs
