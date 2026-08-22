@@ -15,7 +15,7 @@
     "configs/visual_reasoning/reason_codes_v0_2.yaml": "gitblob:14c7f66d183ddc763755c936d432bf322f684f46",
     "docs/architecture/VISUAL_REASONING_VECTOR1_ACCEPTANCE_v0_2.md": "gitblob:e8278c7408769c5bf1355dc0ec441c7fe4087c36",
     "docs/architecture/VISUAL_REASONING_VECTOR2_HANDOFF_v0_2.csv": "gitblob:e54164c491b6cbdf370f6cbab8fc30d71389a008",
-    "tests/test_visual_reasoning_spec_v0_2.py": "gitblob:bd96ebc1c4bf258862af83da4bfc71e0a74d307d"
+    "tests/test_visual_reasoning_spec_v0_2.py": "gitblob:91f0f2b6fe18c934db1f2d3ec1e398a6a259d34c"
   },
   "identity_note": "Git blob identities certify repository object bytes. This manifest does not relabel Git SHA-1 object identity as SHA-256.",
   "acceptance": {
