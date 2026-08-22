@@ -1,0 +1,107 @@
+spec_version: 0.2.0
+status: VECTOR_2_RULE_CONFLICT_LEDGER
+canonical_authority: docs/architecture/VISUAL_REASONING_CANONICAL_SPEC_v0_2.md
+
+conflicts:
+  - conflict_id: V2C-001
+    path: satim_artifact_filter.py
+    legacy_behavior: low artifact score auto-classified TRUE_SURFACE_FEATURE
+    canonical_rule: ARTIFACT.LOW_EVIDENCE_NOT_REAL_OBJECT
+    severity: P0_SILENT_FALSE_PROMOTION
+    disposition: REPAIRED
+    repair: low artifact score now emits UNRESOLVED unless a class is independently supplied
+
+  - conflict_id: V2C-002
+    path: fr24/rlsm_unlabeled.py
+    legacy_behavior: RLSM emits semantic pad/tank/quarry/antenna/clearing classes
+    canonical_rule: MODULE.RLSM_EXTRACTION_ONLY
+    severity: P0_BOUNDARY_CONFLICT
+    disposition: CONTAINED_LEGACY
+    containment: excluded from default RLSM pipeline; canonical visual-reasoning consumers prohibited
+
+  - conflict_id: V2C-003
+    path: satim_cut_fill.py
+    legacy_behavior: route proximity/ADS-B gap linkage can increase combined SATIM score
+    canonical_rule: MODULE.SATIM_NO_FPIM_FUSION
+    severity: P0_CROSS_DOMAIN_SCORE_CONTAMINATION
+    disposition: LEGACY_COMPATIBILITY_ONLY
+    target: split imagery geometry from cross-domain association in Vector 3
+
+  - conflict_id: V2C-004
+    path: satim_road_end.py
+    legacy_behavior: route proximity/ADS-B gap linkage can increase combined SATIM score
+    canonical_rule: MODULE.SATIM_NO_FPIM_FUSION
+    severity: P0_CROSS_DOMAIN_SCORE_CONTAMINATION
+    disposition: LEGACY_COMPATIBILITY_ONLY
+
+  - conflict_id: V2C-005
+    path: satim_water_feature.py
+    legacy_behavior: emits P_ROUTE_CONFIDENCE_PATCH from imagery-domain water feature scoring
+    canonical_rule: MODULE.SATIM_NO_FPIM_FUSION
+    severity: P1_CROSS_DOMAIN_OUTPUT
+    disposition: LEGACY_COMPATIBILITY_ONLY
+
+  - conflict_id: V2C-006
+    path: satim_visual_route_gap.py
+    legacy_behavior: mixed imagery and route-gap interpretation under SATIM-named module
+    canonical_rule: MODULE.ROUTE_BEHAVIOR_OWNED_BY_FPIM
+    severity: P0_OWNER_AMBIGUITY
+    disposition: LEGACY_COMPATIBILITY_ONLY
+
+  - conflict_id: V2C-007
+    path: satim_cut_fill.py
+    legacy_behavior: caller can supply QUARRY class without canonical quarry-vs-natural-landform negative controls
+    canonical_rule: QUARRY.REQUIRE_CONVERGENT_SYSTEM_EVIDENCE
+    severity: P1_CLASS_PROMOTION_GAP
+    disposition: DISCOVERY_ONLY_UNTIL_VECTOR_3
+
+  - conflict_id: V2C-008
+    path: satim_water_feature.py
+    legacy_behavior: caller-supplied class and weighted score can label water feature without full shadow/dark-surface/hydrographic-form adjudication
+    canonical_rule: WATER.REQUIRE_GEOMETRY_CONTEXT_AND_NEGATIVES
+    severity: P1_CLASS_PROMOTION_GAP
+    disposition: OBSERVATION_REUSE_ONLY_UNTIL_VECTOR_3
+
+  - conflict_id: V2C-009
+    path: docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md
+    legacy_behavior: later revision permits evidence-gated speculative mission classification
+    canonical_rule: FROZEN_ONTOLOGY_NO_VISUAL_MISSION_PURPOSE_INFERENCE
+    severity: P0_AUTHORITY_CONTRADICTION
+    disposition: SUPERSEDED_FOR_VISUAL_REASONING
+    authority: docs/architecture/ADR_SKYWATCHER_ANALYTICAL_ONTOLOGY_v2_0.md
+
+  - conflict_id: V2C-010
+    path: src/skywatcher/core/module_boundaries.py
+    legacy_behavior: several active root-level satim_*.py modules were outside the SATIM classification manifest
+    canonical_rule: MODULE.EVERY_ACTIVE_IMPLEMENTATION_CLASSIFIED
+    severity: P1_COVERAGE_GAP
+    disposition: REPAIRED
+
+non_conflicts_requiring_migration:
+  - id: V2M-001
+    paths:
+      - satim_tile_seam_classifier.py
+      - fr24/calibration/l5_tile_seam_shadow_calibration.py
+      - src/skywatcher/satim/artifacts/pipeline_chain.py
+    state: REUSE
+    note: Existing artifact/tile-seam foundation maps to the canonical imagery-integrity layer; numerical cutoffs remain calibration-required.
+  - id: V2M-002
+    paths:
+      - satim_geometry.py
+      - satim_fit.py
+      - satim_ground_truth.py
+    state: REUSE
+    note: Geometry/reference primitives should be adapted rather than rewritten.
+  - id: V2M-003
+    paths:
+      - fr24/rlsm_pipeline.py
+      - fr24/rlsm_ocr_parallel.py
+      - fr24/rlsm_preprocess.py
+    state: REUSE
+    note: Custody/OCR/localization remains RLSM input infrastructure.
+
+rules:
+  hard_conflict_overrides_legacy_regression_expectation: true
+  existing_test_success_is_not_canonical_authority: true
+  delete_legacy_before_callers_accounted: false
+  canonical_new_engine_may_import_legacy_cross_domain_outputs: false
