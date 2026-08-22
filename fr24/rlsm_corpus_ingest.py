@@ -1,15 +1,16 @@
 """Provenance-first RLSM screenshot corpus freeze.
 
-``screenshots`` remains the stable downstream logical-payload table: one row per
-unique SHA-256. Every filesystem pathname and every archive member is preserved
-separately as a source manifestation. This prevents exact duplicates from being
-erased while keeping all existing screenshot foreign keys stable.
+``screenshots`` is the stable logical-payload table: one row per SHA-256.
+Every filesystem pathname and archive member is preserved separately as a
+source manifestation.  A successful run proves bounded ingest accounting only;
+it does not promote filename, OCR, map-label, proximity, co-occurrence, or
+route-similarity evidence into identity, time, position, visit, or coordination.
 
-The freeze is fail-closed. A truncated traversal, directory traversal error,
-unfollowed nested directory symlink, unreadable bytes, pathname/hash
-contradiction, archive/member read failure, or arithmetic mismatch cannot
-produce ``PASS``. This stage performs no OCR and cannot promote filename, OCR,
-map-label, proximity, co-occurrence, or route-similarity evidence.
+The freeze is fail-closed.  Partial traversal, hidden symlink subtrees,
+unreadable bytes, pathname/hash contradiction, archive/member read failure, or
+arithmetic mismatch cannot produce ``PASS``.  Mass OCR additionally requires a
+corpus-bound empirical calibration PASS and zero known missing/archive-only
+screenshot payloads.
 """
 from __future__ import annotations
 
@@ -24,8 +25,9 @@ import tarfile
 import time
 import zipfile
 from collections import Counter
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import BinaryIO, Callable, Iterable
+from typing import BinaryIO
 
 from PIL import Image
 
@@ -92,7 +94,7 @@ def _is_archive(path: Path) -> bool:
 
 
 def _locator(path: Path, repo_root: Path) -> str:
-    """Return a stable locator without resolving an operational corpus symlink."""
+    """Return a stable locator without dereferencing an operational corpus link."""
     absolute = path.absolute()
     root_absolute = repo_root.absolute()
     try:
@@ -125,8 +127,8 @@ def _month_bucket(path: Path) -> str | None:
     return None
 
 
-def _ahash_8x8(img: Image.Image) -> str:
-    gray = img.convert("L").resize((8, 8), Image.Resampling.LANCZOS)
+def _ahash_8x8(image: Image.Image) -> str:
+    gray = image.convert("L").resize((8, 8), Image.Resampling.LANCZOS)
     pixels = list(gray.getdata())
     average = sum(pixels) / 64
     bits = "".join("1" if pixel >= average else "0" for pixel in pixels)
@@ -136,7 +138,7 @@ def _ahash_8x8(img: Image.Image) -> str:
 def _discover_files(
     root: Path, predicate: Callable[[Path], bool]
 ) -> tuple[list[Path], list[str], list[str]]:
-    """Deterministically walk ``root`` and expose traversal/symlink omissions."""
+    """Walk deterministically and expose traversal and symlink omissions."""
     files: list[Path] = []
     errors: list[str] = []
     symlink_dirs: list[str] = []
@@ -152,14 +154,14 @@ def _discover_files(
         directories.sort()
         filenames.sort()
         current_path = Path(current)
-        kept_directories = []
+        kept = []
         for directory in directories:
             candidate = current_path / directory
             if candidate.is_symlink():
                 symlink_dirs.append(str(candidate))
             else:
-                kept_directories.append(directory)
-        directories[:] = kept_directories
+                kept.append(directory)
+        directories[:] = kept
         for filename in filenames:
             candidate = current_path / filename
             if predicate(candidate):
@@ -312,9 +314,9 @@ def ensure_corpus_schema(conn: sqlite3.Connection) -> None:
         BEFORE INSERT ON ocr_observations
         WHEN NOT EXISTS (
             SELECT 1 FROM pipeline_certifications c
-            WHERE c.gate_name = 'RLSM_MASS_OCR_READY'
-              AND c.status = 'PASS'
-              AND c.bound_corpus_digest = (
+            WHERE c.gate_name='RLSM_MASS_OCR_READY'
+              AND c.status='PASS'
+              AND c.bound_corpus_digest=(
                   SELECT corpus_digest FROM corpus_freeze_runs
                   WHERE status='PASS' AND corpus_digest IS NOT NULL
                   ORDER BY corpus_run_id DESC LIMIT 1
@@ -333,9 +335,9 @@ def ensure_corpus_schema(conn: sqlite3.Connection) -> None:
         WHEN instr(lower(NEW.run_kind), 'ocr') > 0
          AND NOT EXISTS (
             SELECT 1 FROM pipeline_certifications c
-            WHERE c.gate_name = 'RLSM_MASS_OCR_READY'
-              AND c.status = 'PASS'
-              AND c.bound_corpus_digest = (
+            WHERE c.gate_name='RLSM_MASS_OCR_READY'
+              AND c.status='PASS'
+              AND c.bound_corpus_digest=(
                   SELECT corpus_digest FROM corpus_freeze_runs
                   WHERE status='PASS' AND corpus_digest IS NOT NULL
                   ORDER BY corpus_run_id DESC LIMIT 1
@@ -351,17 +353,18 @@ def ensure_corpus_schema(conn: sqlite3.Connection) -> None:
         DROP TRIGGER IF EXISTS tr_aircraft_ocr_only_not_confirmed;
         CREATE TRIGGER tr_aircraft_ocr_only_not_confirmed
         AFTER INSERT ON aircraft_observations
-        WHEN NEW.identity_status = 'confirmed'
+        WHEN NEW.identity_status='confirmed'
           AND EXISTS (
               SELECT 1 FROM processing_runs r
-              WHERE r.run_id = NEW.run_id AND r.run_kind = 'aircraft'
+              WHERE r.run_id=NEW.run_id AND r.run_kind='aircraft'
           )
         BEGIN
             INSERT INTO aircraft_identity_transition_audit
                 (aircraft_obs_id, old_status, new_status, reason_code, observed_at)
-            VALUES
-                (NEW.aircraft_obs_id, 'confirmed', 'partial', 'OCR_ONLY_NOT_IDENTITY',
-                 strftime('%Y-%m-%dT%H:%M:%SZ','now'));
+            VALUES (
+                NEW.aircraft_obs_id, 'confirmed', 'partial',
+                'OCR_ONLY_NOT_IDENTITY', strftime('%Y-%m-%dT%H:%M:%SZ','now')
+            );
             UPDATE aircraft_observations
                SET identity_status='partial',
                    confidence=CASE
@@ -389,7 +392,8 @@ def _upsert_manifestation(
            (source_kind, rel_path, screenshot_id, first_seen_at)
            VALUES (?, ?, ?, ?)
            ON CONFLICT(source_kind, rel_path) DO UPDATE SET
-             screenshot_id=COALESCE(source_manifestations.screenshot_id, excluded.screenshot_id)""",
+             screenshot_id=COALESCE(source_manifestations.screenshot_id,
+                                    excluded.screenshot_id)""",
         (source_kind, rel_path, screenshot_id, now),
     )
     row = conn.execute(
@@ -397,21 +401,9 @@ def _upsert_manifestation(
            WHERE source_kind=? AND rel_path=?""",
         (source_kind, rel_path),
     ).fetchone()
-    assert row is not None
+    if row is None:
+        raise RuntimeError("failed to bind source manifestation")
     return int(row[0])
-
-
-def _ensure_historical_manifestations(conn: sqlite3.Connection, now: str) -> None:
-    for screenshot_id, rel_path in conn.execute(
-        "SELECT screenshot_id, rel_path FROM screenshots ORDER BY screenshot_id"
-    ):
-        _upsert_manifestation(
-            conn,
-            source_kind="historical_db_path",
-            rel_path=str(rel_path),
-            screenshot_id=int(screenshot_id),
-            now=now,
-        )
 
 
 def _record_manifestation_observation(
@@ -444,6 +436,45 @@ def _record_manifestation_observation(
     )
 
 
+def _record_filename_candidate(
+    conn: sqlite3.Connection,
+    *,
+    screenshot_id: int,
+    raw_value: str | None,
+    now: str,
+) -> None:
+    """Persist filename-derived time as candidate evidence, never flight time."""
+    if not raw_value:
+        return
+    conn.execute(
+        """INSERT OR IGNORE INTO screenshot_time_observations
+           (screenshot_id, source_kind, raw_value, normalized_value,
+            authority, first_seen_at)
+           VALUES (?, 'filename', ?, ?, 'CANDIDATE_NOT_IDENTITY', ?)""",
+        (screenshot_id, raw_value, raw_value, now),
+    )
+
+
+def _ensure_historical_manifestations(conn: sqlite3.Connection, now: str) -> None:
+    for screenshot_id, rel_path, filename_ts in conn.execute(
+        """SELECT screenshot_id, rel_path, filename_ts
+           FROM screenshots ORDER BY screenshot_id"""
+    ):
+        _upsert_manifestation(
+            conn,
+            source_kind="historical_db_path",
+            rel_path=str(rel_path),
+            screenshot_id=int(screenshot_id),
+            now=now,
+        )
+        _record_filename_candidate(
+            conn,
+            screenshot_id=int(screenshot_id),
+            raw_value=str(filename_ts) if filename_ts else None,
+            now=now,
+        )
+
+
 def _decode_metadata(
     path: Path,
 ) -> tuple[int | None, int | None, str | None, str, str | None]:
@@ -455,9 +486,8 @@ def _decode_metadata(
             width, height = image.size
             phash = _ahash_8x8(image)
         return width, height, phash, "ok", None
-    except Exception as exc:  # noqa: BLE001 - decoding errors are evidence states
-        detail = f"{type(exc).__name__}: {exc}"[:400]
-        return None, None, None, "corrupt", detail
+    except Exception as exc:  # noqa: BLE001 - decoding failure is evidence
+        return None, None, None, "corrupt", f"{type(exc).__name__}: {exc}"[:400]
 
 
 def _insert_or_bind_logical_screenshot(
@@ -474,9 +504,17 @@ def _insert_or_bind_logical_screenshot(
     ).fetchone()
     if existing:
         state = "present_match" if str(existing[1]) == rel_path else "duplicate_payload"
-        return int(existing[0]), state
+        screenshot_id = int(existing[0])
+        _record_filename_candidate(
+            conn,
+            screenshot_id=screenshot_id,
+            raw_value=_filename_ts(path.name),
+            now=now,
+        )
+        return screenshot_id, state
 
     width, height, phash, ingest_status, ingest_error = _decode_metadata(path)
+    filename_ts = _filename_ts(path.name)
     conn.execute(
         """INSERT INTO screenshots
            (sha256, filename, rel_path, month_bucket, filename_ts, ext, size_bytes,
@@ -490,7 +528,7 @@ def _insert_or_bind_logical_screenshot(
             path.name,
             rel_path,
             _month_bucket(path),
-            _filename_ts(path.name),
+            filename_ts,
             path.suffix.lower().lstrip("."),
             size_bytes,
             width,
@@ -503,6 +541,9 @@ def _insert_or_bind_logical_screenshot(
         ),
     )
     screenshot_id = int(conn.execute("SELECT last_insert_rowid()").fetchone()[0])
+    _record_filename_candidate(
+        conn, screenshot_id=screenshot_id, raw_value=filename_ts, now=now
+    )
     state = "present_new" if ingest_status == "ok" else "corrupt_image"
     return screenshot_id, state
 
@@ -517,27 +558,12 @@ def _scan_baseline(
 ) -> dict:
     now = utc_now()
     database_rows = conn.execute(
-        "SELECT screenshot_id, sha256, rel_path, filename_ts FROM screenshots ORDER BY screenshot_id"
+        """SELECT screenshot_id, sha256, rel_path, filename_ts
+           FROM screenshots ORDER BY screenshot_id"""
     ).fetchall()
     by_rel = {str(row[2]): (int(row[0]), str(row[1])) for row in database_rows}
 
-    for screenshot_id, _expected_sha, rel_path, filename_ts in database_rows:
-        _upsert_manifestation(
-            conn,
-            source_kind="historical_db_path",
-            rel_path=str(rel_path),
-            screenshot_id=int(screenshot_id),
-            now=now,
-        )
-        if filename_ts:
-            conn.execute(
-                """INSERT OR IGNORE INTO screenshot_time_observations
-                   (screenshot_id, source_kind, raw_value, normalized_value,
-                    authority, first_seen_at)
-                   VALUES (?, 'filename', ?, ?, 'CANDIDATE_NOT_IDENTITY', ?)""",
-                (screenshot_id, str(filename_ts), str(filename_ts), now),
-            )
-
+    _ensure_historical_manifestations(conn, now)
     all_files, traversal_errors, symlink_dirs = _discover_files(
         baseline, lambda path: path.suffix.lower() in IMAGE_EXTS
     )
@@ -561,7 +587,10 @@ def _scan_baseline(
             expected_sha256=str(expected_sha),
             size_bytes=None,
             state="missing_on_disk",
-            detail="historical database pathname is absent from the current baseline denominator",
+            detail=(
+                "historical database pathname is absent from the current "
+                "baseline denominator"
+            ),
             now=now,
         )
 
@@ -638,6 +667,8 @@ def _scan_baseline(
         )
         counts[state] += 1
 
+    # New logical rows created during this run become historical manifestations
+    # immediately, so first and second identical runs have the same identities.
     _ensure_historical_manifestations(conn, now)
     counts["discovered_files"] = len(all_files)
     counts["scanned_files"] = scanned_count
@@ -655,7 +686,8 @@ def _archive_id(conn: sqlite3.Connection, locator: str, now: str) -> int:
     row = conn.execute(
         "SELECT archive_id FROM source_archives WHERE locator=?", (locator,)
     ).fetchone()
-    assert row is not None
+    if row is None:
+        raise RuntimeError("failed to bind archive source")
     return int(row[0])
 
 
@@ -670,13 +702,14 @@ def _insert_archive_observation(
     error: str | None,
     now: str,
 ) -> int:
-    conn.execute(
+    cursor = conn.execute(
         """INSERT INTO archive_observations
-           (corpus_run_id, archive_id, outer_sha256, size_bytes, state, error, observed_at)
+           (corpus_run_id, archive_id, outer_sha256, size_bytes, state, error,
+            observed_at)
            VALUES (?, ?, ?, ?, ?, ?, ?)""",
         (corpus_run_id, archive_id, outer_sha256, size_bytes, state, error, now),
     )
-    return int(conn.execute("SELECT last_insert_rowid()").fetchone()[0])
+    return int(cursor.lastrowid)
 
 
 def _zip_members(
@@ -780,9 +813,13 @@ def _scan_archives(
         try:
             size_bytes = path.stat().st_size
             outer_sha = sha256_file(path)
-            members = _zip_members(path) if path.name.lower().endswith(".zip") else _tar_members(path)
+            members = (
+                _zip_members(path)
+                if path.name.lower().endswith(".zip")
+                else _tar_members(path)
+            )
             state, error = "scanned", None
-        except Exception as exc:  # noqa: BLE001 - archive failure is classified evidence
+        except Exception as exc:  # noqa: BLE001 - archive failure is evidence
             members = []
             state = "unreadable"
             error = f"{type(exc).__name__}: {exc}"[:400]
@@ -842,12 +879,11 @@ def _archive_signature(
     path_payloads: Counter[tuple[str, int, str]] = Counter()
     payloads: Counter[tuple[int, str]] = Counter()
     unresolved = False
-    rows = conn.execute(
+    for path, size, digest, state in conn.execute(
         """SELECT member_path, uncompressed_size, member_sha256, state
            FROM archive_members WHERE archive_obs_id=? ORDER BY member_ordinal""",
         (archive_obs_id,),
-    )
-    for path, size, digest, state in rows:
+    ):
         if state != "scanned" or not digest:
             unresolved = True
             continue
@@ -873,46 +909,43 @@ def _classify_archives(conn: sqlite3.Connection, corpus_run_id: int) -> Counter[
             elif left_state != "scanned" or right_state != "scanned":
                 classification = "UNRESOLVED"
             else:
-                left_path_payloads, left_payloads, left_unresolved = _archive_signature(
+                left_paths, left_payloads, left_unresolved = _archive_signature(
                     conn, int(left_obs)
                 )
-                right_path_payloads, right_payloads, right_unresolved = _archive_signature(
+                right_paths, right_payloads, right_unresolved = _archive_signature(
                     conn, int(right_obs)
                 )
                 if left_unresolved or right_unresolved:
                     classification = "UNRESOLVED"
-                elif left_path_payloads == right_path_payloads:
+                elif left_paths == right_paths:
                     classification = "PURE_RECOMPRESSION"
                 elif left_payloads == right_payloads:
                     classification = "SAME_PAYLOADS_DIFFERENT_PATHS"
                 else:
                     classification = "DISTINCT_PAYLOADS"
-            detail = {
-                "left_outer_sha256": left_outer,
-                "right_outer_sha256": right_outer,
-            }
             conn.execute(
                 """INSERT INTO archive_equivalence
                    (corpus_run_id, left_archive_id, right_archive_id,
                     classification, detail_json)
                    VALUES (?, ?, ?, ?, ?)""",
-                (corpus_run_id, left_id, right_id, classification, stable_json(detail)),
+                (
+                    corpus_run_id,
+                    left_id,
+                    right_id,
+                    classification,
+                    stable_json(
+                        {
+                            "left_outer_sha256": left_outer,
+                            "right_outer_sha256": right_outer,
+                        }
+                    ),
+                ),
             )
             counts[classification] += 1
     return counts
 
 
 def _reconciliation_rows(conn: sqlite3.Connection, corpus_run_id: int) -> list[dict]:
-    output = []
-    rows = conn.execute(
-        """SELECT m.manifestation_id, m.source_kind, m.rel_path, m.screenshot_id,
-                  o.observed_sha256, o.expected_sha256, o.size_bytes, o.state, o.detail
-           FROM source_manifestations m
-           JOIN source_manifestation_observations o USING(manifestation_id)
-           WHERE o.corpus_run_id=?
-           ORDER BY m.source_kind, m.rel_path""",
-        (corpus_run_id,),
-    )
     keys = (
         "manifestation_id",
         "source_kind",
@@ -924,9 +957,19 @@ def _reconciliation_rows(conn: sqlite3.Connection, corpus_run_id: int) -> list[d
         "state",
         "detail",
     )
-    for values in rows:
-        output.append(dict(zip(keys, values, strict=True)))
-    return output
+    return [
+        dict(zip(keys, row, strict=True))
+        for row in conn.execute(
+            """SELECT m.manifestation_id, m.source_kind, m.rel_path,
+                      m.screenshot_id, o.observed_sha256, o.expected_sha256,
+                      o.size_bytes, o.state, o.detail
+               FROM source_manifestations m
+               JOIN source_manifestation_observations o USING(manifestation_id)
+               WHERE o.corpus_run_id=?
+               ORDER BY m.source_kind, m.rel_path""",
+            (corpus_run_id,),
+        )
+    ]
 
 
 def _normalized_manifestation_state(state: str) -> str:
@@ -938,21 +981,25 @@ def _normalized_manifestation_state(state: str) -> str:
 def _corpus_digest(
     conn: sqlite3.Connection, corpus_run_id: int, reconciliation: list[dict]
 ) -> str:
-    """Hash canonical source identity, not processing-history accidents."""
+    """Hash canonical source identity, not run-history labels or row IDs."""
     bound_sha = {
         int(screenshot_id): str(sha256)
         for screenshot_id, sha256 in conn.execute(
             "SELECT screenshot_id, sha256 FROM screenshots"
         )
     }
-    stable_manifestation_identities = [
-        [source_kind, rel_path, bound_sha.get(int(screenshot_id)) if screenshot_id else None]
+    manifestations = [
+        [
+            source_kind,
+            rel_path,
+            bound_sha.get(int(screenshot_id)) if screenshot_id else None,
+        ]
         for source_kind, rel_path, screenshot_id in conn.execute(
             """SELECT source_kind, rel_path, screenshot_id
                FROM source_manifestations ORDER BY source_kind, rel_path"""
         )
     ]
-    current_observations = [
+    observations = [
         [
             row["source_kind"],
             row["rel_path"],
@@ -971,13 +1018,14 @@ def _corpus_digest(
                 "SELECT sha256, size_bytes FROM screenshots ORDER BY sha256, size_bytes"
             )
         ],
-        "manifestation_identities": stable_manifestation_identities,
-        "manifestation_observations": current_observations,
+        "manifestation_identities": manifestations,
+        "manifestation_observations": observations,
         "archives": [
             list(row)
             for row in conn.execute(
                 """SELECT a.locator, o.outer_sha256, o.size_bytes, o.state
-                   FROM archive_observations o JOIN source_archives a USING(archive_id)
+                   FROM archive_observations o
+                   JOIN source_archives a USING(archive_id)
                    WHERE o.corpus_run_id=? ORDER BY a.locator""",
                 (corpus_run_id,),
             )
@@ -986,11 +1034,13 @@ def _corpus_digest(
             list(row)
             for row in conn.execute(
                 """SELECT a.locator, m.member_ordinal, m.member_path,
-                          m.uncompressed_size, m.member_sha256, m.is_screenshot, m.state
+                          m.uncompressed_size, m.member_sha256,
+                          m.is_screenshot, m.state
                    FROM archive_members m
                    JOIN archive_observations o USING(archive_obs_id)
                    JOIN source_archives a USING(archive_id)
-                   WHERE o.corpus_run_id=? ORDER BY a.locator, m.member_ordinal""",
+                   WHERE o.corpus_run_id=?
+                   ORDER BY a.locator, m.member_ordinal""",
                 (corpus_run_id,),
             )
         ],
@@ -1057,8 +1107,10 @@ def _certify(
     archive_only = int(
         conn.execute(
             """SELECT COUNT(DISTINCT m.member_sha256)
-               FROM archive_members m JOIN archive_observations o USING(archive_obs_id)
-               WHERE o.corpus_run_id=? AND m.is_screenshot=1 AND m.state='scanned'
+               FROM archive_members m
+               JOIN archive_observations o USING(archive_obs_id)
+               WHERE o.corpus_run_id=?
+                 AND m.is_screenshot=1 AND m.state='scanned'
                  AND m.member_sha256 IS NOT NULL
                  AND NOT EXISTS (
                      SELECT 1 FROM screenshots s WHERE s.sha256=m.member_sha256
@@ -1175,7 +1227,8 @@ def _invalidate_stale_calibration(conn: sqlite3.Connection, corpus_digest: str) 
     elif row is None:
         conn.execute(
             """INSERT INTO pipeline_certifications
-               (gate_name, status, bound_corpus_digest, evidence_sha256, decided_at, detail)
+               (gate_name, status, bound_corpus_digest, evidence_sha256,
+                decided_at, detail)
                VALUES (?, 'OPEN', ?, NULL, ?,
                        'empirical OCR calibration has not yet been executed')""",
             (OCR_GATE, corpus_digest, now),
@@ -1203,7 +1256,7 @@ def refresh_mass_ocr_gate(
     corpus_digest: str | None = None,
     certification: dict | None = None,
 ) -> bool:
-    """Recompute the dynamic mass-OCR gate from frozen A + empirical B evidence."""
+    """Recompute the dynamic mass-OCR gate from frozen A + empirical B."""
     if corpus_digest is None or certification is None:
         row = conn.execute(
             """SELECT corpus_digest, certification_json FROM corpus_freeze_runs
@@ -1218,8 +1271,10 @@ def refresh_mass_ocr_gate(
     if not corpus_digest or not certification:
         conn.execute(
             """INSERT INTO pipeline_certifications
-               (gate_name, status, bound_corpus_digest, evidence_sha256, decided_at, detail)
-               VALUES (?, 'BLOCKED', ?, NULL, ?, 'no PASS corpus certification is available')
+               (gate_name, status, bound_corpus_digest, evidence_sha256,
+                decided_at, detail)
+               VALUES (?, 'BLOCKED', ?, NULL, ?,
+                       'no PASS corpus certification is available')
                ON CONFLICT(gate_name) DO UPDATE SET
                  status=excluded.status,
                  bound_corpus_digest=excluded.bound_corpus_digest,
@@ -1253,6 +1308,7 @@ def refresh_mass_ocr_gate(
         status = "BLOCKED"
     else:
         status = "OPEN"
+
     detail = stable_json(
         {
             "static_corpus_prerequisites": static_ready,
@@ -1262,7 +1318,8 @@ def refresh_mass_ocr_gate(
     )
     conn.execute(
         """INSERT INTO pipeline_certifications
-           (gate_name, status, bound_corpus_digest, evidence_sha256, decided_at, detail)
+           (gate_name, status, bound_corpus_digest, evidence_sha256,
+            decided_at, detail)
            VALUES (?, ?, ?, ?, ?, ?)
            ON CONFLICT(gate_name) DO UPDATE SET
              status=excluded.status,
@@ -1314,7 +1371,8 @@ def write_artifacts(
         for row in conn.execute(
             """SELECT screenshot_id, sha256, filename, rel_path, month_bucket,
                       filename_ts, ext, size_bytes, width, height, phash,
-                      ingest_status, ingest_error, ocr_status, source_availability
+                      ingest_status, ingest_error, ocr_status,
+                      source_availability
                FROM screenshots ORDER BY screenshot_id"""
         )
     ]
@@ -1335,13 +1393,14 @@ def write_artifacts(
     member_rows = [
         dict(zip(member_fields, row, strict=True))
         for row in conn.execute(
-            """SELECT a.locator, o.outer_sha256, m.member_ordinal, m.member_path,
-                      m.uncompressed_size, m.compressed_size, m.member_sha256,
-                      m.is_screenshot, m.state, m.error
+            """SELECT a.locator, o.outer_sha256, m.member_ordinal,
+                      m.member_path, m.uncompressed_size, m.compressed_size,
+                      m.member_sha256, m.is_screenshot, m.state, m.error
                FROM archive_members m
                JOIN archive_observations o USING(archive_obs_id)
                JOIN source_archives a USING(archive_id)
-               WHERE o.corpus_run_id=? ORDER BY a.locator, m.member_ordinal""",
+               WHERE o.corpus_run_id=?
+               ORDER BY a.locator, m.member_ordinal""",
             (corpus_run_id,),
         )
     ]
@@ -1368,7 +1427,7 @@ def write_artifacts(
     )
 
     duplicate_rows = []
-    duplicate_query = conn.execute(
+    for digest, count in conn.execute(
         """SELECT o.observed_sha256, COUNT(*)
            FROM source_manifestation_observations o
            JOIN source_manifestations m USING(manifestation_id)
@@ -1377,8 +1436,7 @@ def write_artifacts(
            GROUP BY o.observed_sha256 HAVING COUNT(*) > 1
            ORDER BY o.observed_sha256""",
         (corpus_run_id,),
-    )
-    for digest, count in duplicate_query:
+    ):
         paths = [
             row[0]
             for row in conn.execute(
