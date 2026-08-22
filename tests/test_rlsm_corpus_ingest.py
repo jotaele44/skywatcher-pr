@@ -96,15 +96,15 @@ def test_same_path_changed_bytes_is_hash_mismatch_not_new_identity(tmp_path: Pat
 
     conn = sqlite3.connect(db)
     try:
-        # The changed pathname must not silently mint a second logical screenshot.
+        # A pathname contradiction must not silently mint a second logical payload.
         assert conn.execute("SELECT COUNT(*) FROM screenshots").fetchone()[0] == 1
     finally:
         conn.close()
 
 
 def _zip(path: Path, member: str, payload: bytes, compression: int) -> None:
-    with zipfile.ZipFile(path, "w", compression=compression) as zf:
-        zf.writestr(member, payload)
+    with zipfile.ZipFile(path, "w", compression=compression) as archive:
+        archive.writestr(member, payload)
 
 
 def test_archive_equivalence_uses_member_payloads_not_outer_hash_only(tmp_path: Path) -> None:
@@ -199,23 +199,27 @@ def test_open_calibration_gate_blocks_production_ocr_insert(tmp_path: Path) -> N
     conn = sqlite3.connect(db)
     conn.execute("PRAGMA foreign_keys=ON")
     try:
-        sid = conn.execute("SELECT screenshot_id FROM screenshots").fetchone()[0]
+        screenshot_id = conn.execute(
+            "SELECT screenshot_id FROM screenshots"
+        ).fetchone()[0]
         run_id = conn.execute(
             """INSERT INTO processing_runs(run_kind, started_at, status)
-               VALUES ('ocr', '2026-08-22T00:00:00Z', 'running')"""
+               VALUES ('ocr', '2026-08-22T00:00:00Z', 'in_progress')"""
         ).lastrowid
         try:
             conn.execute(
                 """INSERT INTO ocr_observations
                    (screenshot_id, run_id, zone, raw_text, ocr_status,
-                    engine, engine_version, config, observed_at)
+                    engine, engine_version, observed_at)
                    VALUES (?, ?, 'aircraft_card', 'N407PR', 'ok',
-                           'test', '1', 'test', '2026-08-22T00:00:00Z')""",
-                (sid, run_id),
+                           'test', '1', '2026-08-22T00:00:00Z')""",
+                (screenshot_id, run_id),
             )
         except sqlite3.IntegrityError as exc:
             assert "RLSM_OCR_CALIBRATION" in str(exc)
         else:
-            raise AssertionError("production OCR insert was not blocked by OPEN calibration gate")
+            raise AssertionError(
+                "production OCR insert was not blocked by OPEN calibration gate"
+            )
     finally:
         conn.close()
