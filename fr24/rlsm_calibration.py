@@ -1,11 +1,13 @@
 """Empirical, corpus-bound calibration gate for RLSM OCR.
 
 Calibration reads a frozen, human-labeled manifest and runs the *current* OCR
-configuration without writing production ``ocr_observations``.  A PASS is bound
+configuration without writing production ``ocr_observations``. A PASS is bound
 to the latest corpus digest; a later corpus freeze invalidates it automatically.
 
 The acceptance thresholds are evidence inputs in the frozen manifest, not
-silent constants in code.
+silent constants in code. A calibration outcome also refreshes the separate
+``RLSM_MASS_OCR_READY`` gate, so production workers cannot start merely because
+one component gate passed.
 """
 from __future__ import annotations
 
@@ -19,9 +21,11 @@ from PIL import Image, ImageOps
 
 from fr24.rlsm_corpus_ingest import (
     DB_PATH,
+    MASS_OCR_GATE,
     OCR_GATE,
     REPO,
     ensure_corpus_schema,
+    refresh_mass_ocr_gate,
     sha256_file,
     stable_json,
     utc_now,
@@ -71,6 +75,16 @@ def _manifest_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _bounded_rate(acceptance: dict, key: str) -> float:
+    try:
+        value = float(acceptance[key])
+    except (TypeError, ValueError) as exc:
+        raise CalibrationBlocked(f"acceptance {key} must be numeric") from exc
+    if not 0.0 <= value <= 1.0:
+        raise CalibrationBlocked(f"acceptance {key} must be within [0, 1]")
+    return value
+
+
 def _validate_manifest(data: dict) -> None:
     required = {"schema_version", "corpus_digest", "acceptance", "cases"}
     missing = sorted(required - set(data))
@@ -81,6 +95,8 @@ def _validate_manifest(data: dict) -> None:
             f"schema_version must be {CALIBRATION_PROTOCOL!r}; got {data['schema_version']!r}"
         )
     acceptance = data["acceptance"]
+    if not isinstance(acceptance, dict):
+        raise CalibrationBlocked("acceptance must be an object")
     for key in (
         "min_cases",
         "min_zone_exact_rate",
@@ -90,21 +106,53 @@ def _validate_manifest(data: dict) -> None:
     ):
         if key not in acceptance:
             raise CalibrationBlocked(f"acceptance missing {key}")
-    if not isinstance(data["cases"], list) or not data["cases"]:
+
+    try:
+        min_cases = int(acceptance["min_cases"])
+    except (TypeError, ValueError) as exc:
+        raise CalibrationBlocked("acceptance min_cases must be an integer") from exc
+    if min_cases < 2:
+        raise CalibrationBlocked("acceptance min_cases must be at least 2")
+    _bounded_rate(acceptance, "min_zone_exact_rate")
+    _bounded_rate(acceptance, "max_mean_char_error_rate")
+    _bounded_rate(acceptance, "max_hard_negative_false_positive_rate")
+    required_strata = acceptance["required_strata"]
+    if not isinstance(required_strata, list) or not required_strata:
+        raise CalibrationBlocked("acceptance required_strata must be a non-empty list")
+
+    cases = data["cases"]
+    if not isinstance(cases, list) or not cases:
         raise CalibrationBlocked("cases must be a non-empty list")
+    if min_cases > len(cases):
+        raise CalibrationBlocked("acceptance min_cases exceeds the frozen case count")
+
     seen: set[tuple[int, str]] = set()
-    for index, case in enumerate(data["cases"]):
-        for key in ("screenshot_id", "sha256", "screenshot_family", "orientation", "case_role", "zones"):
+    roles: set[str] = set()
+    for index, case in enumerate(cases):
+        for key in (
+            "screenshot_id",
+            "sha256",
+            "screenshot_family",
+            "orientation",
+            "case_role",
+            "zones",
+        ):
             if key not in case:
                 raise CalibrationBlocked(f"case[{index}] missing {key}")
-        if case["case_role"] not in {"positive", "hard_negative"}:
+        role = str(case["case_role"])
+        if role not in {"positive", "hard_negative"}:
             raise CalibrationBlocked(f"case[{index}] has invalid case_role")
+        roles.add(role)
         if not isinstance(case["zones"], dict) or not case["zones"]:
             raise CalibrationBlocked(f"case[{index}].zones must be non-empty")
         identity = (int(case["screenshot_id"]), str(case["sha256"]))
         if identity in seen:
             raise CalibrationBlocked(f"duplicate calibration identity: {identity}")
         seen.add(identity)
+    if roles != {"positive", "hard_negative"}:
+        raise CalibrationBlocked(
+            "calibration corpus must contain both positive and hard_negative cases"
+        )
 
 
 def _latest_pass_digest(conn: sqlite3.Connection) -> str:
@@ -119,17 +167,19 @@ def _latest_pass_digest(conn: sqlite3.Connection) -> str:
 
 
 def _ocr_case(path: Path) -> tuple[dict[str, str], dict[str, float]]:
-    with open_stable_source(path) as source_handle, Image.open(source_handle) as img:
-        img.load()
-        img = ImageOps.exif_transpose(img)
-        zones = zones_for(*img.size)
-        crops = {zone.name: img.crop(zone.crop_box()) for zone in zones}
+    with open_stable_source(path) as source_handle, Image.open(source_handle) as image:
+        image.load()
+        image = ImageOps.exif_transpose(image)
+        zones = zones_for(*image.size)
+        crops = {zone.name: image.crop(zone.crop_box()) for zone in zones}
 
     language = _tess_lang()
     texts: dict[str, str] = {}
     confidences: dict[str, float] = {}
     for zone in zones:
-        cfg = ZONE_OCR_CONFIG.get(zone.name, {"psm": 6, "preprocess": "high_contrast"})
+        cfg = ZONE_OCR_CONFIG.get(
+            zone.name, {"psm": 6, "preprocess": "high_contrast"}
+        )
         psm = int(cfg.get("psm", 6))
         mode = str(cfg.get("preprocess", "none"))
         scale = scale_for(mode, cfg.get("scale"))
@@ -173,6 +223,12 @@ def _upsert_gate(
     conn.commit()
 
 
+def _refresh_mass_gate(conn: sqlite3.Connection, corpus_digest: str) -> bool:
+    ready = refresh_mass_ocr_gate(conn, corpus_digest=corpus_digest)
+    conn.commit()
+    return ready
+
+
 def run(
     manifest_path: Path,
     *,
@@ -197,8 +253,11 @@ def run(
             evidence_sha256=manifest_hash,
             detail="calibration manifest is bound to a different corpus digest",
         )
+        _refresh_mass_gate(conn, corpus_digest)
         conn.close()
-        raise CalibrationBlocked("calibration manifest corpus_digest does not match latest PASS freeze")
+        raise CalibrationBlocked(
+            "calibration manifest corpus_digest does not match latest PASS freeze"
+        )
 
     acceptance = data["acceptance"]
     results: list[dict] = []
@@ -211,32 +270,42 @@ def run(
 
     try:
         for case in data["cases"]:
-            sid = int(case["screenshot_id"])
+            screenshot_id = int(case["screenshot_id"])
             expected_sha = str(case["sha256"])
             row = conn.execute(
                 """SELECT sha256, rel_path, source_availability
                    FROM screenshots WHERE screenshot_id=?""",
-                (sid,),
+                (screenshot_id,),
             ).fetchone()
             if not row:
-                raise CalibrationBlocked(f"unknown screenshot_id {sid}")
-            db_sha, rel_path, availability = map(str, row)
-            if db_sha != expected_sha:
-                raise CalibrationBlocked(f"screenshot {sid} SHA differs from calibration manifest")
+                raise CalibrationBlocked(f"unknown screenshot_id {screenshot_id}")
+            database_sha, rel_path, availability = map(str, row)
+            if database_sha != expected_sha:
+                raise CalibrationBlocked(
+                    f"screenshot {screenshot_id} SHA differs from calibration manifest"
+                )
             if availability not in {"present", "restored"}:
-                raise CalibrationBlocked(f"screenshot {sid} source is {availability}")
+                raise CalibrationBlocked(
+                    f"screenshot {screenshot_id} source is {availability}"
+                )
             source = repo_root / rel_path
             if not source.is_file():
-                raise CalibrationBlocked(f"screenshot {sid} source is missing: {rel_path}")
+                raise CalibrationBlocked(
+                    f"screenshot {screenshot_id} source is missing: {rel_path}"
+                )
             if sha256_file(source) != expected_sha:
-                raise CalibrationBlocked(f"screenshot {sid} source bytes no longer match SHA-256")
+                raise CalibrationBlocked(
+                    f"screenshot {screenshot_id} source bytes no longer match SHA-256"
+                )
 
             observed, confidences = _ocr_case(source)
             case_zone_results = []
             for zone, expected_text in sorted(case["zones"].items()):
                 observed_text = observed.get(zone)
                 if observed_text is None:
-                    raise CalibrationBlocked(f"screenshot {sid} expected unknown zone {zone!r}")
+                    raise CalibrationBlocked(
+                        f"screenshot {screenshot_id} expected unknown zone {zone!r}"
+                    )
                 expected_text = str(expected_text)
                 error_rate = _cer(expected_text, observed_text)
                 exact = observed_text == expected_text
@@ -265,7 +334,7 @@ def run(
             strata.add(stratum)
             results.append(
                 {
-                    "screenshot_id": sid,
+                    "screenshot_id": screenshot_id,
                     "sha256": expected_sha,
                     "screenshot_family": case["screenshot_family"],
                     "orientation": case["orientation"],
@@ -279,13 +348,15 @@ def run(
         case_count = len(results)
         zone_exact_rate = zone_exact / max(1, zone_total)
         mean_cer = sum(cer_values) / max(1, len(cer_values))
-        negative_fp_rate = hard_negative_fp / max(1, hard_negative_total)
+        negative_fp_rate = hard_negative_fp / hard_negative_total
         missing_strata = sorted(set(map(str, acceptance["required_strata"])) - strata)
         checks = {
             "min_cases": case_count >= int(acceptance["min_cases"]),
             "required_strata": not missing_strata,
-            "min_zone_exact_rate": zone_exact_rate >= float(acceptance["min_zone_exact_rate"]),
-            "max_mean_char_error_rate": mean_cer <= float(acceptance["max_mean_char_error_rate"]),
+            "min_zone_exact_rate": zone_exact_rate
+            >= float(acceptance["min_zone_exact_rate"]),
+            "max_mean_char_error_rate": mean_cer
+            <= float(acceptance["max_mean_char_error_rate"]),
             "max_hard_negative_false_positive_rate": negative_fp_rate
             <= float(acceptance["max_hard_negative_false_positive_rate"]),
         }
@@ -317,6 +388,7 @@ def run(
             evidence_sha256=evidence_hash,
             detail=stable_json(evidence),
         )
+        mass_ocr_ready = _refresh_mass_gate(conn, corpus_digest)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         (output_dir / "calibration_results.json").write_text(
@@ -325,6 +397,8 @@ def run(
         )
         certification = dict(evidence)
         certification["evidence_sha256"] = evidence_hash
+        certification["mass_ocr_gate"] = MASS_OCR_GATE
+        certification["mass_ocr_ready"] = mass_ocr_ready
         (output_dir / "calibration_certification.json").write_text(
             json.dumps(certification, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
             encoding="utf-8",
@@ -338,13 +412,16 @@ def run(
             evidence_sha256=manifest_hash,
             detail=str(exc),
         )
+        _refresh_mass_gate(conn, corpus_digest)
         raise
     finally:
         conn.close()
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run corpus-bound empirical RLSM OCR calibration.")
+    parser = argparse.ArgumentParser(
+        description="Run corpus-bound empirical RLSM OCR calibration."
+    )
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--db", type=Path, default=DB_PATH)
     parser.add_argument("--repo-root", type=Path, default=REPO)
