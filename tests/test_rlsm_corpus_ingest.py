@@ -185,9 +185,38 @@ def test_filename_timestamp_is_only_candidate_evidence(tmp_path: Path) -> None:
         conn.close()
 
 
-def test_open_calibration_gate_blocks_production_ocr_insert(tmp_path: Path) -> None:
+def test_open_mass_gate_blocks_ocr_run_before_worker_execution(tmp_path: Path) -> None:
     baseline, archives, db, output = _paths(tmp_path)
     _image(baseline / "2026-08" / "a.png", 140)
+    corpus.run(
+        db_path=db,
+        repo_root=tmp_path,
+        baseline=baseline,
+        archive_roots=[archives],
+        output_dir=output,
+    )
+
+    conn = sqlite3.connect(db)
+    try:
+        try:
+            conn.execute(
+                """INSERT INTO processing_runs(run_kind, started_at, status)
+                   VALUES ('ocr_parallel', '2026-08-22T00:00:00Z', 'in_progress')"""
+            )
+        except sqlite3.IntegrityError as exc:
+            assert corpus.MASS_OCR_GATE in str(exc)
+        else:
+            raise AssertionError("OCR processing run was not blocked by OPEN mass gate")
+        assert conn.execute(
+            "SELECT COUNT(*) FROM processing_runs WHERE run_kind='ocr_parallel'"
+        ).fetchone()[0] == 0
+    finally:
+        conn.close()
+
+
+def test_open_mass_gate_also_blocks_direct_ocr_observation_insert(tmp_path: Path) -> None:
+    baseline, archives, db, output = _paths(tmp_path)
+    _image(baseline / "2026-08" / "a.png", 150)
     corpus.run(
         db_path=db,
         repo_root=tmp_path,
@@ -202,24 +231,18 @@ def test_open_calibration_gate_blocks_production_ocr_insert(tmp_path: Path) -> N
         screenshot_id = conn.execute(
             "SELECT screenshot_id FROM screenshots"
         ).fetchone()[0]
-        run_id = conn.execute(
-            """INSERT INTO processing_runs(run_kind, started_at, status)
-               VALUES ('ocr', '2026-08-22T00:00:00Z', 'in_progress')"""
-        ).lastrowid
         try:
             conn.execute(
                 """INSERT INTO ocr_observations
                    (screenshot_id, run_id, zone, raw_text, ocr_status,
                     engine, engine_version, observed_at)
-                   VALUES (?, ?, 'aircraft_card', 'N407PR', 'ok',
+                   VALUES (?, NULL, 'aircraft_card', 'N407PR', 'ok',
                            'test', '1', '2026-08-22T00:00:00Z')""",
-                (screenshot_id, run_id),
+                (screenshot_id,),
             )
         except sqlite3.IntegrityError as exc:
-            assert "RLSM_OCR_CALIBRATION" in str(exc)
+            assert corpus.MASS_OCR_GATE in str(exc)
         else:
-            raise AssertionError(
-                "production OCR insert was not blocked by OPEN calibration gate"
-            )
+            raise AssertionError("direct OCR insert was not blocked by OPEN mass gate")
     finally:
         conn.close()
