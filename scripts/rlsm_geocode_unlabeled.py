@@ -2,16 +2,12 @@
 """
 OCR Pass 2: Geocode unlabeled POI candidates.
 
-Per-screenshot pixel→lat/lon affine fit:
-  - For each screenshot with ≥2 labeled POIs (vocab-matched municipality
-    or anchor) whose pixel centroid is known AND whose lat/lon is known
-    from the tracked GNIS gazetteer or RLSM geo anchors, solve a
-    4-parameter affine transform:
-       lon = lon0 + dlon_per_px * pixel_x
-       lat = lat0 + dlat_per_px * pixel_y   (dlat_per_px is negative; pixel y grows downward)
+Consumes the bounded per-screenshot pixel→lat/lon transforms persisted by
+``fr24.rlsm_georeference``.  This stage does not independently fit or publish a
+second spatial model.  The legacy PR-wide approximation is available only via
+an explicit flag and is never persisted as spatial truth.
 
-  - Apply the per-screenshot transform to each unlabeled candidate's
-    centroid, yielding (lat, lon).
+  - Apply each accepted transform to unlabeled-candidate centroids.
 
   - Filter to candidates that geocode inside the PR bounding box:
        lat ∈ [17.8, 18.6], lon ∈ [-67.5, -65.2]
@@ -43,7 +39,17 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 from fr24.rlsm_anchors import Anchor, anchors_for_screenshot, build_geo_lookup  # noqa: E402
-from integration.geo_calibration import apply_affine, fit_affine  # noqa: E402
+from fr24.rlsm_georeference import (  # noqa: E402
+    GEOREF_VERSION,
+    load_persisted_affines,
+)
+from fr24.rlsm_spatial_schema import ensure_spatial_schema  # noqa: E402
+from integration import geo_calibration as _geo_calibration  # noqa: E402
+
+# Preserve the historical module-level API used by downstream callers while
+# making the compatibility re-export explicit to static analyzers.
+apply_affine = _geo_calibration.apply_affine
+fit_affine = _geo_calibration.fit_affine
 
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 OUTS = REPO / "outputs"
@@ -71,42 +77,28 @@ def build_affine_inputs(
     conn: sqlite3.Connection,
     geo_lookup: dict[str, tuple[float, float]],
 ) -> dict[int, list[Anchor]]:
-    """Collect deduped per-screenshot affine anchors through the shared lookup."""
+    """Expose shared anchor inputs for diagnostics without fitting transforms here."""
     screenshot_ids = {
-        row[0] for row in conn.execute(
-            "SELECT DISTINCT screenshot_id FROM geo_anchors"
-            " WHERE screenshot_id IS NOT NULL"
-            " AND pixel_x IS NOT NULL AND pixel_y IS NOT NULL"
-            " AND lat IS NOT NULL AND lon IS NOT NULL"
+        row[0]
+        for row in conn.execute(
+            "SELECT DISTINCT screenshot_id FROM geo_anchors "
+            "WHERE screenshot_id IS NOT NULL AND pixel_x IS NOT NULL "
+            "AND pixel_y IS NOT NULL AND lat IS NOT NULL AND lon IS NOT NULL"
         )
     }
     screenshot_ids.update(
-        row[0] for row in conn.execute(
-            "SELECT DISTINCT screenshot_id FROM labeled_pins"
-            " WHERE screenshot_id IS NOT NULL"
-            " AND centroid_x IS NOT NULL AND centroid_y IS NOT NULL"
-            " AND pin_type_guess != 'unknown_label_candidate'"
+        row[0]
+        for row in conn.execute(
+            "SELECT DISTINCT screenshot_id FROM labeled_pins "
+            "WHERE screenshot_id IS NOT NULL AND centroid_x IS NOT NULL "
+            "AND centroid_y IS NOT NULL AND pin_type_guess != 'unknown_label_candidate'"
         )
     )
-    inputs: dict[int, list[Anchor]] = {}
-    for sid in sorted(screenshot_ids):
-        anchors = anchors_for_screenshot(conn, int(sid), geo_lookup)
-        if anchors:
-            inputs[int(sid)] = anchors
-    return inputs
-
-
-def _percentile(values: list[float], pct: float) -> float:
-    if not values:
-        raise ValueError("percentile requires at least one value")
-    ordered = sorted(values)
-    if len(ordered) == 1:
-        return ordered[0]
-    rank = (len(ordered) - 1) * (pct / 100.0)
-    lo = int(rank)
-    hi = min(lo + 1, len(ordered) - 1)
-    frac = rank - lo
-    return ordered[lo] + (ordered[hi] - ordered[lo]) * frac
+    return {
+        int(screenshot_id): anchors
+        for screenshot_id in sorted(screenshot_ids)
+        if (anchors := anchors_for_screenshot(conn, int(screenshot_id), geo_lookup))
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -116,65 +108,74 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--min-screenshots", type=int, default=5)
     ap.add_argument("--min-aircraft", type=int, default=10)
     ap.add_argument("--max-affine-residual-deg", type=float, default=0.05,
-                    help="Drop screenshots where affine fit residual > this many degrees")
+                    help="Deprecated; persisted georeferences use a 500 m ceiling")
+    ap.add_argument(
+        "--allow-global-fallback",
+        action="store_true",
+        help="Explicitly permit the legacy approximate PR-wide transform",
+    )
     args = ap.parse_args(argv)
 
     conn = sqlite3.connect(DB)
-
-    # Build lat/lon lookup from the tracked GNIS gazetteer plus RLSM geo anchors.
     geo_lookup = build_geo_lookup(conn)
     if not geo_lookup:
         conn.close()
-        print(
-            "[geocode] FAIL — zero coordinate keys available from "
-            "data/reference/Gazetteer_PR_GNIS.gpkg or geo_anchors",
-            file=sys.stderr,
-        )
+        print("[geocode] FAIL — zero coordinate keys available", file=sys.stderr)
         return 1
+    ensure_spatial_schema(conn)
+    affines = load_persisted_affines(conn)
+    fit_residuals = {
+        int(sid): float(residual)
+        for sid, residual in conn.execute(
+            """SELECT screenshot_id, fit_residual_m
+               FROM screenshot_georeferences
+               WHERE georef_version=? AND status='located'
+                 AND fit_residual_m IS NOT NULL""",
+            (GEOREF_VERSION,),
+        )
+    }
+    fits_attempted = conn.execute(
+        """SELECT COUNT(*) FROM screenshot_georeferences
+           WHERE georef_version=? AND method='multi_anchor_affine'""",
+        (GEOREF_VERSION,),
+    ).fetchone()[0]
+    multi_fits_succeeded = conn.execute(
+        """SELECT COUNT(*) FROM screenshot_georeferences
+           WHERE georef_version=? AND status='located'
+             AND method='multi_anchor_affine'""",
+        (GEOREF_VERSION,),
+    ).fetchone()[0]
+    one_anchor_transforms = conn.execute(
+        """SELECT COUNT(*) FROM screenshot_georeferences
+           WHERE georef_version=? AND status='located'
+             AND method='one_anchor_zoom_rung'""",
+        (GEOREF_VERSION,),
+    ).fetchone()[0]
+    usable_transforms = len(affines)
+    fits_dropped_residual = conn.execute(
+        """SELECT COUNT(*) FROM screenshot_georeferences
+           WHERE georef_version=? AND status IN ('rejected_residual','rejected_geometry')""",
+        (GEOREF_VERSION,),
+    ).fetchone()[0]
+    print(
+        f"[geocode] persisted transforms — attempted {fits_attempted}, "
+        f"accepted multi-anchor {multi_fits_succeeded}, "
+        f"one-anchor {one_anchor_transforms}, usable {usable_transforms}, "
+        f"rejected {fits_dropped_residual}"
+    )
 
-    # Per-screenshot anchor data
-    anchors_by_sid = build_affine_inputs(conn, geo_lookup)
-
-    # Fit affine per screenshot
-    affines = {}
-    fit_residuals = {}
-    fits_attempted = fits_succeeded = fits_dropped_residual = 0
-    for sid, anchors in anchors_by_sid.items():
-        if len(anchors) < 2:
-            continue
-        fits_attempted += 1
-        pixel_xy = [(a[0], a[1]) for a in anchors]
-        geo_latlon = [(a[2], a[3]) for a in anchors]
-        af = fit_affine(pixel_xy, geo_latlon)
-        if af is None:
-            continue
-        # Compute residuals
-        residuals = []
-        for (px, py), (lat, lon) in zip(pixel_xy, geo_latlon, strict=False):
-            est_lat, est_lon = apply_affine(af, px, py)
-            residuals.append(((est_lat - lat) ** 2 + (est_lon - lon) ** 2) ** 0.5)
-        med_res = float(median(residuals))
-        if med_res > args.max_affine_residual_deg:
-            fits_dropped_residual += 1
-            continue
-        affines[sid] = af
-        fit_residuals[sid] = med_res
-        fits_succeeded += 1
-
-    print(f"[geocode] affine fits — attempted {fits_attempted}, succeeded {fits_succeeded}, "
-          f"dropped (residual>{args.max_affine_residual_deg}°) {fits_dropped_residual}")
-
-    # Fallback: load screenshot dimensions and apply GLOBAL affine for default-zoom PR-wide views
+    # Approximate fallback is opt-in.  It is never persisted as spatial truth.
     dims_by_sid = {r[0]: (r[1], r[2]) for r in conn.execute("SELECT screenshot_id, width, height FROM screenshots")}
     global_affine_sids = 0
-    if not affines:
-        print("[geocode] no per-screenshot affines available — falling back to "
-              "global PR-wide approximation for 1170x2532 default-zoom screenshots")
+    if args.allow_global_fallback:
         for sid, (w, h) in dims_by_sid.items():
-            if (w, h) == (1170, 2532):
+            if sid not in affines and (w, h) == (1170, 2532):
                 affines[sid] = GLOBAL_AFFINE_1170_2532
                 global_affine_sids += 1
-        print(f"[geocode] global-affine fallback applied to {global_affine_sids} screenshots")
+        print(
+            f"[geocode] explicit global-affine fallback applied to "
+            f"{global_affine_sids} screenshots"
+        )
 
     # Geocode unlabeled candidates
     cells = defaultdict(lambda: {"hits": [], "sids": set(), "ctypes": Counter(),
@@ -262,26 +263,27 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps({"type": "FeatureCollection", "features": features}, indent=2))
 
     # Audit summary
-    residual_values = list(fit_residuals.values())
-    median_residual = round(float(median(residual_values)), 5) if residual_values else None
-    p90_residual    = round(float(_percentile(residual_values, 90)), 5) if residual_values else None
+    residual_values = sorted(fit_residuals.values())
+    median_residual = round(float(median(residual_values)), 2) if residual_values else None
+    p90_index = min(len(residual_values) - 1, int(0.9 * len(residual_values))) if residual_values else 0
+    p90_residual = round(float(residual_values[p90_index]), 2) if residual_values else None
     accuracy_note = (
-        "\n> **Accuracy note:** Screenshots counted below under the GLOBAL PR-wide affine"
-        " fallback have no per-word pin centroids — they were extracted before the label"
-        " extractor recorded word-level geometry. To upgrade them to per-screenshot fits,"
-        " re-run OCR with word boxes and re-extract pins"
-        " (`./run-rlsm.sh --stage ocr --reocr-boxes` then `./run-rlsm.sh --stage pins`),"
-        " then run this script again.\n"
+        "\n> **Accuracy note:** the default path consumes only persisted transforms"
+        " whose estimated error is at most 500 m. The legacy PR-wide approximation"
+        " is available only through `--allow-global-fallback` and is never persisted"
+        " as aircraft spatial truth.\n"
     )
     md = ["# Geocoded unlabeled POI clusters — audit\n",
           accuracy_note,
           f"\n- Screenshots assigned the global-affine fallback: **{global_affine_sids:,}**",
           "\n## Affine-fit pipeline\n",
           f"- Screenshots with ≥2 anchors: {fits_attempted:,}",
-          f"- Screenshots with successful affine fit: **{fits_succeeded:,}**",
-          f"- Dropped (residual > {args.max_affine_residual_deg}°): {fits_dropped_residual:,}",
-          f"- Median fit residual: **{median_residual}°** (~{(median_residual or 0)*111:.1f} km)",
-          f"- P90 fit residual: {p90_residual}°",
+          f"- Accepted multi-anchor fits: **{multi_fits_succeeded:,}**",
+          f"- One-anchor + zoom-rung recoveries: {one_anchor_transforms:,}",
+          f"- Total usable persisted transforms: {usable_transforms:,}",
+          f"- Rejected by geometry or >500 m error: {fits_dropped_residual:,}",
+          f"- Median fit residual: **{median_residual} m**",
+          f"- P90 fit residual: {p90_residual} m",
           "\n## Geocoding\n",
           f"- Unlabeled candidates with usable affine: {geocoded + dropped_outside_pr:,}",
           f"- Candidates outside PR bbox: {dropped_outside_pr:,}",
@@ -301,9 +303,10 @@ def main(argv: list[str] | None = None) -> int:
 
     conn.close()
     print(json.dumps({
-        "coordinate_keys": len(geo_lookup),
-        "affine_fits_succeeded": fits_succeeded,
-        "median_fit_residual_deg": median_residual,
+        "affine_fits_succeeded": multi_fits_succeeded,
+        "one_anchor_transforms": one_anchor_transforms,
+        "usable_persisted_transforms": usable_transforms,
+        "median_fit_residual_m": median_residual,
         "geocoded_candidates": geocoded,
         "clusters_emitted": len(clusters),
         "outputs": [
@@ -312,8 +315,7 @@ def main(argv: list[str] | None = None) -> int:
             "outputs/intel_geocode_audit.md",
         ],
     }, indent=2))
-    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

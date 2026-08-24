@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher.local/schemas/analysis_objective_profile_v1.schema.json",
+  "title": "Skywatcher Analysis Objective Profile",
+  "description": "The set of lenses a run must satisfy before it may be reported complete. A profile with no required lenses cannot gate anything and is rejected.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profile_id", "name", "version", "status", "required_lenses"],
+  "properties": {
+    "profile_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "name": {"type": "string", "minLength": 1},
+    "version": {"type": "string", "minLength": 1},
+    "status": {"enum": ["experimental", "active", "deprecated"]},
+    "description": {"type": "string"},
+    "stages": {
+      "type": "array",
+      "items": {"enum": ["flight_data_collection", "satellite_image_processing", "cross_domain"]}
+    },
+    "required_lenses": {
+      "description": "An unsatisfied lens here blocks run completion.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string"}
+    },
+    "optional_lenses": {
+      "description": "Recorded in coverage but never blocking.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string"}
+    }
+  }
+}

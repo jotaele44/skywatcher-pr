@@ -96,16 +96,25 @@ def build_geo_lookup(conn: sqlite3.Connection,
 def anchors_for_screenshot(conn: sqlite3.Connection,
                            screenshot_id: int,
                            geo_lookup: dict[str, tuple[float, float]] | None = None,
+                           *,
+                           include_static_projected: bool = True,
                            ) -> list[Anchor]:
-    """All usable calibration anchors for one screenshot, pixel-deduplicated."""
+    """All usable calibration anchors for one screenshot, pixel-deduplicated.
+
+    The legacy default includes static pixel anchors for existing calibration
+    consumers. Spatial-truth callers must explicitly disable them because they
+    were projected from an assumed fixed PR view; treating them as measured
+    per-frame control points would circularly manufacture a zoom scale.
+    """
     if geo_lookup is None:
         geo_lookup = build_geo_lookup(conn)
 
     anchors: list[Anchor] = []
+    static_clause = "" if include_static_projected else " AND anchor_kind != 'static'"
     for px, py, lat, lon in conn.execute(
         "SELECT pixel_x, pixel_y, lat, lon FROM geo_anchors"
         " WHERE screenshot_id = ? AND pixel_x IS NOT NULL AND pixel_y IS NOT NULL"
-        " AND lat IS NOT NULL AND lon IS NOT NULL",
+        " AND lat IS NOT NULL AND lon IS NOT NULL" + static_clause,
         (screenshot_id,),
     ):
         anchors.append((float(px), float(py), float(lat), float(lon)))

@@ -1,0 +1,101 @@
+# Written for core.normalize_locations.load_simple_yaml, which is a deliberate YAML
+# subset - no folded scalars, and no ":" inside a list item (it would parse as a map).
+# Long single-line strings are the price of not adding a PyYAML dependency to core.
+lens_id: satim.image_artifacts
+name: Image artifact and contamination assessment
+owner: SATIM
+stage: satellite_image_processing
+status: active
+version: 1.0.0
+objective: Decide whether an apparent ground feature is instead an imagery artifact - overlaid tiles, mosaic seams, smudges, blur, or unusual pixelation - before any structural interpretation is attempted.
+
+required_inputs:
+  - source_frame
+  - roi_target
+
+required_parameters:
+  - parameter_id: source_type
+    name: Source type
+    kind: enum
+    allowed_values: [screenshot, pdf_frame, raster_tile, orthophoto]
+    description: Drives the screenshot origin-confidence cap.
+  - parameter_id: roi_target
+    name: Target ROI
+    kind: array
+    description: Pixel bbox of the suspected artifact footprint.
+
+optional_parameters:
+  - parameter_id: roi_local_control
+    name: Local control ROI
+    kind: array
+    required: false
+    degraded_behavior: No same-illumination comparison, so radiometric and blur measurements lose their local baseline and the finding stays a candidate.
+  - parameter_id: roi_boundary_control
+    name: Boundary control ROI
+    kind: array
+    required: false
+    degraded_behavior: Cannot distinguish a mosaic seam from a genuine natural edge, so seam findings cannot be separated from land-cover boundaries.
+  - parameter_id: roi_remote_control
+    name: Remote control ROI
+    kind: array
+    required: false
+    degraded_behavior: No same-class comparison elsewhere in the frame, so clone and duplicate-patch tests are unavailable.
+  - parameter_id: raw_source_compared
+    name: Raw source compared
+    kind: boolean
+    required: false
+    default: false
+    degraded_behavior: Origin confidence is capped at the screenshot ceiling because the rendered frame was never checked against the underlying raw imagery.
+  - parameter_id: seam_score_threshold
+    name: Seam candidate floor
+    kind: number
+    required: false
+    threshold_id: SATIM-SEAM-SCORE-6.0
+    degraded_behavior: Falls back to the registry value, and the applied value is stamped either way.
+
+measurements:
+  - gradient_anisotropy
+  - laplacian_variance_ratio
+  - edge_rectilinearity
+  - block_periodicity
+  - radiometric_step
+
+emits:
+  - SATIM-A01
+  - SATIM-A02
+  - SATIM-A03
+  - SATIM-A04
+  - SATIM-A05
+  - SATIM-A06
+  - SATIM-A07
+  - SATIM-A08
+  - SATIM-A09
+  - SATIM-A10
+  - SATIM-A11
+  - SATIM-A12
+
+interpretation_restriction_minimum: NONE
+
+threshold_ids:
+  - SATIM-SEAM-SCORE-6.0
+  - SATIM-UI-MARGIN-0.04
+  - SATIM-ARTIFACT-CONFIRMED-0.90
+  - SATIM-ARTIFACT-HIGH-0.75
+  - SATIM-ARTIFACT-MODERATE-0.50
+  - SATIM-ARTIFACT-LOW-0.25
+
+contradiction_tests:
+  - seam_vs_natural_boundary
+  - blur_vs_genuine_low_texture
+  - clone_vs_repeated_landcover
+
+evidence_axes_required:
+  - evidence_tier
+  - visibility_class
+  - provenance_status
+  - confidence_score
+
+prohibited_claims:
+  - Do not infer facility purpose, function, or ownership from an artifact class.
+  - Do not treat artifact absence as evidence that a feature is real.
+  - Do not promote CONFIRMED_ARTIFACT automatically from a numeric score.
