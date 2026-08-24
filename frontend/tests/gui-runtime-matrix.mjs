@@ -31,6 +31,29 @@ function record(entry) {
   if (entry.status === 'FAIL') failed = true
 }
 
+async function keyboardTraverse(page) {
+  // Public settings load asynchronously and can rerender the shell immediately
+  // after DOMContentLoaded. Wait for the real sidebar links, then observe actual
+  // Tab traversal without forcing focus programmatically.
+  await page.getByRole('link', { name: 'Command Dashboard' }).waitFor({ timeout: 30000 })
+  await page.waitForTimeout(500)
+  const traversed = []
+  for (let i = 0; i < 8; i += 1) {
+    await page.keyboard.press('Tab')
+    const focused = await page.evaluate(() => {
+      const el = document.activeElement
+      if (!el || el === document.body || el === document.documentElement) return null
+      return {
+        tag: el.tagName,
+        text: (el.textContent || '').trim().slice(0, 80),
+        href: el instanceof HTMLAnchorElement ? el.getAttribute('href') : null,
+      }
+    })
+    if (focused) traversed.push(focused)
+  }
+  return traversed
+}
+
 for (const [engineName, engine] of Object.entries(engines)) {
   const browser = await engine.launch({ headless: true })
   try {
@@ -61,12 +84,14 @@ for (const [engineName, engine] of Object.entries(engines)) {
         }
 
         await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 })
-        await page.keyboard.press('Tab')
-        const focused = await page.evaluate(() => {
-          const el = document.activeElement
-          return el && el !== document.body ? { tag: el.tagName, text: (el.textContent || '').trim().slice(0, 80) } : null
+        const traversed = await keyboardTraverse(page)
+        record({
+          engine: engineName,
+          viewport: viewport.width,
+          mode: 'keyboard-only',
+          status: traversed.length > 0 ? 'PASS' : 'FAIL',
+          traversed,
         })
-        record({ engine: engineName, viewport: viewport.width, mode: 'keyboard-only', status: focused ? 'PASS' : 'FAIL', focused })
 
         await page.evaluate(() => { document.documentElement.style.zoom = '2' })
         const zoomLayout = await page.evaluate(() => ({
