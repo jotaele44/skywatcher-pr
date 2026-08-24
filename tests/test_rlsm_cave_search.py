@@ -89,6 +89,16 @@ def test_latest_ocr_observation_wins_and_history_is_not_double_counted(conn):
     assert coverage["matched_screenshots"] == 1
 
 
+def test_latest_failed_reocr_blocks_older_success_and_coverage(conn):
+    _add_screenshot(conn)
+    conn.execute("INSERT INTO ocr_observations VALUES (1,1,'label_layer','Cueva Ventana',90,'ok')")
+    conn.execute("INSERT INTO ocr_observations VALUES (2,1,'label_layer','',0,'failed')")
+    matches, coverage = search_corpus(conn, terms=build_terms(_baseline()), channels=("ocr",))
+    assert not [m for m in matches if m.canonical_name == "Cueva Ventana"]
+    assert coverage["screenshots_with_any_ocr"] == 0
+    assert coverage["screenshots_with_failed_ocr_observation"] == 1
+
+
 def test_raw_ocr_and_extracted_label_are_separate_channels(conn):
     _add_screenshot(conn)
     conn.execute("INSERT INTO ocr_observations VALUES (1,1,'label_layer','Cueva Ventana',90,'ok')")
