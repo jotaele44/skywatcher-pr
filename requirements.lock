@@ -32,7 +32,7 @@ prii-maintenance @ git+https://github.com/jotaele44/thehub-pr.git@f2b81769924689
     # via -r requirements.txt
 pygments==2.20.0
     # via pytest
-pymupdf==1.28.0
+pymupdf==1.28.2
     # via -r requirements.txt
 pytest==9.1.1
     # via -r requirements.txt
