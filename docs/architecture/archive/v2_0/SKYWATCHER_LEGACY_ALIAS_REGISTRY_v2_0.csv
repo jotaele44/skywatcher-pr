@@ -1,0 +1,25 @@
+legacy_term,canonical_replacement,status,confirmed_paths
+route-line-segment mining,RLSM — Restricted/Lossless Screenshot Mining,DEPRECATED_COLLISION,federation.json; frontend/src/pages/Routes.jsx; docs/MATURITY_AUDIT.md
+satellite/screenshot imagery,SATIM — Satellite/Screenshot and Terrain Imagery Module,HISTORICAL_ALIAS,docs/SATIM_CALIBRATION.md
+Infrastructure-Linked Airspace Profile,ILAP — Infrastructure-Linked Airspace Point,HISTORICAL_ALIAS,README.md
+Infrastructure-Linked Access Point,ILAP — Infrastructure-Linked Airspace Point,HISTORICAL_ALIAS,configs/project_language_bridge.yaml
+inferred landing access point,ILAP — Infrastructure-Linked Airspace Point,PROHIBITED_INFERENCE_ALIAS,configs/spiderweb_terms.yaml
+Aerial Anomaly Surveillance Band,AIRSPACE_CORRIDOR_BAND,DEPRECATED_COLLISION,configs/spiderweb_terms.yaml
+Accumulated Route Confidence Index,ROUTE_RECURRENCE_INDEX,DEPRECATED_METRIC_NAME,configs/spiderweb_terms.yaml
+Coordinated Helicopter Behavior Link,CROSS_AIRCRAFT_SPATIOTEMPORAL_ASSOCIATION,DEPRECATED_INTENT_TERM,configs/spiderweb_terms.yaml
+shadow probability map,IMAGE_SHADOW_MASK or TRACK_GAP_LIKELIHOOD_SURFACE,DEPRECATED_AMBIGUOUS,configs/spiderweb_terms.yaml
+boots-on-ground recommendation,Separate human field-review planning,PROHIBITED_ACTIVE_ANALYTICS,configs/spiderweb_terms.yaml
+FLOWER,CLUSTERED_AREA_OF_INTEREST,UI_SEARCH_ALIAS_ONLY,configs/project_language_bridge.yaml
+PETAL,SUBREGION_WITHIN_CLUSTER,UI_SEARCH_ALIAS_ONLY,configs/project_language_bridge.yaml
+THREAD,RELATIONSHIP_EDGE,UI_SEARCH_ALIAS_ONLY,configs/project_language_bridge.yaml
+WEB,RELATIONSHIP_GRAPH,UI_SEARCH_ALIAS_ONLY,configs/project_language_bridge.yaml
+ECHO,PATTERN_RECURRENCE,DEPRECATED_METAPHOR,configs/project_language_bridge.yaml
+SHADOW,Qualified domain term required,PROHIBITED_BARE_TERM,configs/project_language_bridge.yaml; configs/behavior_vocab.yaml; docs/SATIM_CALIBRATION.md
+TRACK_LINE,SOURCE_OVERLAY_TRACK_LINE,DEPRECATED_AMBIGUOUS,docs/SKYWATCHER_SATIM_PIPELINE_SPEC.md
+STRUCTURAL_SIGNAL,STRUCTURAL_FEATURE_CANDIDATE,DEPRECATED_OVERCLAIM,docs/SKYWATCHER_SATIM_PIPELINE_SPEC.md; docs/ARTIFACT_TAXONOMY.md; schemas/tile_artifact.schema.json; scripts/classify_satim_artifacts.py
+CONFIRMED,CONFIRMED_ARTIFACT where artifact identity is scope,DEPRECATED_BARE_STATUS,schemas/satim_artifact_assessment_v1.schema.json
+INSPECTION,CORRIDOR_FOLLOWING,DEPRECATED_PURPOSE_TERM,configs/behavior_vocab.yaml
+COORDINATION,CROSS_AIRCRAFT_SPATIOTEMPORAL_ASSOCIATION,MOVE_TO_CORRIM,configs/behavior_vocab.yaml
+SATIM Engine,Qualified implementation name required,PROHIBITED_UNQUALIFIED,README.md; docs/SATIM_ENGINE_PROTOCOL_INTERFACE.md; .github/workflows/satim-engine-ci.yml
+SATIM_TRACK_LEDGER,Legacy integrated track ledger; future FPIM ledger name,LEGACY_SCHEMA_ALIAS,schemas/satim/satim_track_ledger.schema.json; tools/satim_engine/**; tools/satim_route_findings/**
+PRIIS,PRII,DEPRECATED_VARIANT,historical docs if present
