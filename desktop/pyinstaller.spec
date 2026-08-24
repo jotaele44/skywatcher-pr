@@ -28,6 +28,7 @@ CONSOLE = os.environ.get("PRII_CONSOLE") == "1"
 datas = [
     (str(REPO_ROOT / "frontend" / "dist"), "frontend/dist"),
     (str(REPO_ROOT / "data" / "reference"), "data/reference"),
+    (str(BRANDING / "icon-256.png"), "assets/branding"),
 ]
 if os.environ.get("RUNNER_OS") == "Linux" and os.environ.get("GITHUB_HEAD_REF") == "codex/phase0-evidence-executor":
     namespace = runpy.run_path(str(REPO_ROOT / "desktop" / "phase0_evidence_executor.py"))
@@ -56,6 +57,7 @@ a = Analysis(
         "prii_desktop.launcher",
         "prii_desktop.appserver",
         "prii_desktop.config",
+        "prii_desktop.setup_center",
     ],
     noarchive=False,
 )
@@ -83,4 +85,8 @@ if sys.platform == "darwin":
         name=f"{APP_NAME}.app",
         icon=str(BRANDING / "AppIcon.icns"),
         bundle_identifier="pr.prii.skywatcher",
+        info_plist={
+            "CFBundleDisplayName": "Skywatcher",
+            "CFBundleName": "Skywatcher",
+        },
     )

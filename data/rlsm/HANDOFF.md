@@ -7,9 +7,10 @@ cd ~/Documents/GitHub/skywatcher-pr
 ./run-rlsm.sh
 ```
 
-That runs the whole chain — inventory → OCR → aircraft → labels → icons → geocode →
-review queue → exports → report — resumably, with a preflight that fails fast and a
-written summary at the end. Ctrl-C and re-run is always safe.
+That runs the whole chain — inventory → OCR → aircraft → labels → icons → aircraft marker
+binding → persisted georeference/zoom → geocode → review queue → exports → report —
+resumably, with a preflight that fails fast and a written summary at the end. Ctrl-C and
+re-run is always safe.
 
 **Why it runs here and not in the cloud:** OCR over ~13.3k images is hours of wall time
 and the corpus is machine-local. Everything downstream of the sqlite (labels, review,
@@ -27,6 +28,11 @@ ln -s ~/Documents/GitHub/spiderweb-pr/data/FR24_baseline data/FR24_baseline
 ```
 
 Preflight prints this command for you if the directory is missing.
+
+The geocode stage does not require `data/places.geojson`. Clean clones use the
+tracked GNIS GeoPackage at `data/reference/Gazetteer_PR_GNIS.gpkg` plus any
+existing `geo_anchors` rows, and preflight verifies that coordinate lookup before
+the expensive image-decoding stages run.
 
 ### 2. Install the toolchain
 
@@ -57,10 +63,13 @@ At `--workers 4` on Apple Silicon, over ~13.3k images:
 | aircraft | seconds | regex over stored text |
 | pins | seconds | gazetteer match over stored word boxes |
 | icons | ~1–1.5 h | one extra RGB decode per screenshot |
+| aircraft markers | ~1 h | one bounded viewport decode for each of ~4k aircraft frames; every target receives a terminal decision |
+| georeference / zoom | seconds–minutes | persists affine scale, learns corroborated relative rungs, then projects selected aircraft markers |
 | geocode / review / export / report | seconds–minutes | |
 
-**~3–3.5 h total.** Drop the icon pass with `--skip-icons` for ~2 h. Intel Macs, multiply
-by roughly 1.5.
+**~4–4.5 h total.** Drop the generic labeled-POI icon pass with `--skip-icons`
+for ~2.5–3 h; aircraft-marker binding still runs. Intel Macs, multiply by
+roughly 1.5.
 
 If your database was OCR'd by an earlier version, preflight will report a
 `screenshots_needing_word_boxes` count and the OCR stage will re-read those images to
@@ -73,8 +82,10 @@ OCR is never overwritten, new rows are appended under a fresh `run_id`.
 ./run-rlsm.sh --status            # what is done, what is pending (JSON)
 ./run-rlsm.sh --workers 2         # be gentler on a busy machine
 ./run-rlsm.sh --from icons        # resume from a stage after a failure
+./run-rlsm.sh --from aircraft_markers  # resume at spatial truth
+./run-rlsm.sh --stage georeference     # refit/persist transforms and positions only
 ./run-rlsm.sh --stage pins        # re-run exactly one stage
-./run-rlsm.sh --skip-icons        # OCR + labels + exports only
+./run-rlsm.sh --skip-icons        # skip generic POI icons; keep aircraft markers
 ./run-rlsm.sh --stage unlabeled   # the ground-feature blob pass (see below)
 ```
 
@@ -114,19 +125,53 @@ Read `outputs/rlsm_run_report.md` first — it carries the numbers that matter.
 - **`screenshots`** — one row per image, with `ocr_status`
 - **`ocr_observations`** — raw text *and* per-word pixel boxes (`raw_lines_json`), immutable
 - **`aircraft_observations`** — registration / type / altitude / speed per frame
+- **`aircraft_observations` spatial fields** — fail-closed source pixel, nullable glyph
+  rotation, bounded coordinate, method, confidence, and error; `heading_deg` is preserved
+- **`aircraft_marker_frames` / `aircraft_marker_detections`** — 100% terminal frame
+  accounting plus every candidate and its selection provenance
+- **`screenshot_georeferences`** — accepted and rejected per-frame transforms with viewport,
+  anchor count, normalized scale, residual, confidence, error, and evidence
+- **`zoom_ladder_rungs`** — relative per-viewport rungs learned only from accepted
+  multi-anchor fits; unsupported scales remain unassigned
 - **`labeled_pins`** — every matched place name **with real pixel geometry**, matched
   against the 5,744-key GNIS gazetteer (`data/reference/Gazetteer_PR_GNIS.gpkg`)
 - **`icon_observations`** — map glyphs keyed to their pin, with colour, shape and hash
 - **`manual_review_queue`** — genuinely uncertain items only
-- 14 CSV/JSONL exports plus the coverage report in `outputs/`
+- 18 generated CSV/JSONL exports, the append-only raw OCR mirror, and the coverage report
+  in `outputs/`
 
-The report metric to watch is **screenshots with ≥2 located pins**: that is the population
-the per-screenshot affine geocoder can fit, which is what turns approximate frames into
-`located` observations (docs/SCREENSHOT_DATA_STRATEGY.md §1).
+Watch **marker frames accounted**, **located screenshot georeferences**, and **aircraft
+observations with ≤500 m position**. The first must equal the targeted aircraft-frame count.
+The affine population still starts at screenshots with ≥2 measured pins; a supported relative
+zoom rung plus one measured anchor can recover additional near-duplicate frames.
+
+## Portrait and landscape
+
+Both orientations are handled, and the run report breaks every extraction metric out by
+orientation so a regression in one cannot hide inside an average the other dominates.
+
+The two layouts share the **same three zone names** — `status_bar`, `label_layer`,
+`aircraft_card` — and only the geometry differs: in landscape the aircraft card is a
+right-hand strip rather than a bottom sheet, so `label_layer` gives up width instead of
+height. Everything downstream keys on the zone name, so the extractor's confidence weights,
+the word-box offsets and the review queue need no orientation branch at all.
+
+One place geometry does matter is the icon glyph search. FR24 draws the glyph to a label's
+left, but a label sitting against the frame edge has no room there — common in landscape,
+whose map zone is bounded by frame width. The detector picks its search side from available
+room and falls back to the opposite side, recording which side won in
+`icon_observations.anchor_side`. The report's **Glyph anchor side** table is the check: if
+landscape shows ~100% `left`, the fallback never engaged and the icon numbers are suspect.
+
+If the report's per-orientation **icon share** diverges sharply between the two, the likely
+cause is the landscape zone fractions in `fr24/rlsm_zones.py`, which are estimated rather
+than measured against a real landscape frame. Re-derive them before trusting a landscape-heavy
+slice of the corpus.
 
 ## Split the work
 
-Only `inventory`, `ocr`, `icons` and `unlabeled` decode images and need the corpus.
+Only `inventory`, `ocr`, `icons`, `aircraft_markers` and `unlabeled` decode images and need
+the corpus.
 Everything else runs off the sqlite alone — preflight knows this and will not demand
 tesseract or the corpus for a DB-only stage. So:
 
@@ -159,6 +204,194 @@ Ship the small sqlite-derived reports, never the corpus.
 ```bash
 python3 -m pytest tests/test_rlsm_label_extraction.py -q   # accuracy: 46 tests, no corpus needed
 python3 -m pytest tests/test_rlsm_pipeline.py -q           # structural invariants
+python3 -m pytest tests/test_rlsm_aircraft_spatial_truth.py -q  # binding/georef/zoom contract
 python3 -m fr24.rlsm_gazetteer --stats                     # gazetteer size and tiering
 python3 -m fr24.rlsm_gazetteer --lookup "MAYAGÜEZ"         # resolve a single label
 ```
+
+The frozen conventions, uncertainty rules, API/GUI path, and explicit deferrals are in
+`docs/RLSM_AIRCRAFT_SPATIAL_TRUTH.md`.
+
+## Source availability versus ingestion status
+
+`ingest_status` is historical: it records whether a source was readable when
+it entered RLSM and is never rewritten merely because the file was moved,
+archived, or lost. `source_availability` records the current source state:
+
+- `present` — reachable at `rel_path`;
+- `missing_on_disk` — absent or SHA-invalid;
+- `restored` — recovered and verified against the stored SHA-256;
+- `archived` — intentionally stored elsewhere with a controlled locator.
+
+Dry-run remains read-only and writes only reports. Apply is one fail-closed
+operation: it re-plans under `BEGIN IMMEDIATE`, compares the locked database
+snapshot and plan digest to the preliminary plan, creates a no-overwrite
+verified snapshot backup, and only then performs file and database actions.
+
+```bash
+python3 scripts/rlsm_reconcile_source_availability.py \
+  --db /path/to/rlsm.sqlite \
+  --repo-root /path/to/skywatcher-pr \
+  --verify-sha \
+  --output-dir /path/to/reconciliation-report
+```
+
+Apply requires a backup destination that does not exist:
+
+```bash
+python3 scripts/rlsm_reconcile_source_availability.py \
+  --db /path/to/rlsm.sqlite \
+  --repo-root /path/to/skywatcher-pr \
+  --verify-sha \
+  --apply \
+  --backup /path/to/rlsm.pre-source-availability.sqlite \
+  --output-dir /path/to/reconciliation-report
+```
+
+The backup is created while the write reservation is held and is verified by
+SQLite integrity check, every user-table name and row count, schema hashes,
+foreign-key state, and SHA-256. A failed verification removes only the backup
+inode created by that run.
+
+A restore manifest is CSV or JSON with `rel_path`, `source_path`, and optional
+`sha256`. Every manifest `rel_path` must identify exactly one screenshots row.
+Unknown, duplicate, unsafe, or ambiguous entries fail closed. Candidate and
+existing-path hashes are revalidated immediately before copying.
+
+Exact restorations are prepared beside the destination and installed with an
+atomic no-overwrite hard link. Newly restored files are recorded in a
+compensation ledger. If the SQLite transaction fails before commit, RLSM rolls
+back the database and removes only restored files whose inode and SHA-256 still
+match the receipt. Quarantine copies are non-destructive evidence and remain
+available after a failed apply.
+
+Serial and parallel OCR fail closed on an unmigrated database and select only
+`present` or `restored` sources. A file disappearing after selection becomes
+`missing_on_disk`; its `ocr_status` remains pending and is accounted separately
+from OCR-engine failures.
+
+
+### Atomicity review v0.21
+
+The mutating reconciler preserves caller-owned file-action and compensation
+ledgers so an exception during any later action still removes every earlier
+restored file. All planned filesystem states are revalidated after backup and
+immediately before commit. Restore-manifest entries targeting already-present
+sources are rejected as unused. Verified backups compare deterministic content
+hashes for every user table, not only schemas and row counts.
+
+
+## Control-path namespace isolation
+
+Application control artifacts must never occupy, contain, or sit beneath an
+expected source path, restore candidate, SQLite database/sidecar, or quarantine
+namespace. The reconciler rejects overlapping backup and quarantine paths before
+creating a backup. Report output is also rejected when writing it would turn an
+evidence file into a directory or collide with the database or backup file.
+
+This matters even for a failed apply: a valid backup is intentionally retained
+after later failures, so its destination must be proven disjoint from the corpus
+before any backup byte is installed.
+
+
+## Apply-artifact durability and report namespace safety
+
+The verified backup, every restored source, and every quarantine copy are
+revalidated by inode, SHA-256, and recorded size immediately before the SQLite
+commit. If any artifact disappears or is replaced, the database transaction
+rolls back and newly restored files are compensated.
+
+Fixed report filenames are treated as control paths, not only the report output
+directory. They may not equal, contain, or sit beneath an expected source,
+restore candidate, backup, quarantine directory, database/sidecar, or restore
+manifest. This prevents a successful apply followed by a report-write failure
+and prevents reports from occupying future evidence paths.
+
+The report output root may contain disjoint operational subtrees, including the
+default `quarantine/` directory. Isolation is enforced directionally: the output
+root may be an ancestor, but the concrete `runs/`, `dry-runs/`, generation
+directory, and report files must remain disjoint from every protected artifact.
+
+
+## External corpus links and terminal path checks
+
+The reconciler preserves repository-relative operational source paths so the
+documented `data/FR24_baseline` symlink may target a corpus outside the Git
+worktree. It still rejects lexical `..` traversal and fails closed when multiple
+database rows use the same `rel_path` or resolve to the same source target.
+
+Quarantine evidence must be an independent inode, not a hard link to the
+mismatched source. Report output is probed before apply; non-directory output
+ancestors, directory-valued report destinations, and report symlinks are
+rejected before any database transaction can commit.
+
+If a selected OCR source disappears between the eligibility check and image
+open, both serial and parallel runners record `missing_during_ocr`, preserve
+`ocr_status='pending'`, and account the row separately from OCR-engine failures.
+
+
+## Final candidate v1.0 — authoritative state machine
+
+This section supersedes the incremental repair notes above. The authoritative
+implementation is protocol `rlsm-source-availability-v1.0` and treats database,
+source files, backup, quarantine evidence, and reports as one coordinated
+operation.
+
+The successful path is:
+
+1. acquire `BEGIN IMMEDIATE` and bind the complete logical database snapshot;
+2. rebind the optional restore manifest and produce the final deterministic plan;
+3. validate every control/evidence namespace;
+4. create and content-verify an immutable backup;
+5. copy bound source descriptors, install restorations without overwrite, and
+   create independent quarantine evidence;
+6. revalidate every planned source and created artifact;
+7. prepare schema migration, row updates, and an in-progress processing run;
+8. publish immutable generation-scoped reports and a `commit_prepared` receipt;
+9. store the authoritative `committed` receipt in the processing run;
+10. revalidate backup, sources, quarantine, and reports immediately before commit;
+11. commit, or resolve an exceptional commit return by reading the authoritative
+    completed processing-run receipt.
+
+The file named `terminal_apply_receipt.json` deliberately has state
+`commit_prepared`. It is not allowed to claim that SQLite committed before the
+commit occurs. Commit authority is the matching `processing_runs` row with
+`status='completed'`, the same plan digest, and a valid receipt SHA-256.
+
+All failures before a verified commit roll back SQLite and emit a structured
+failure receipt on the raised `ReconciliationError`. Newly restored files and
+report artifacts are removed only when both inode and SHA-256 still match the
+attempt receipt. Backups and quarantine copies are retained as evidence.
+Non-empty attempt-created directories are retained rather than deleting foreign
+content that appeared concurrently.
+
+The documented external `data/FR24_baseline` directory symlink is supported.
+Repository-relative operational paths remain lexical and safe, while file actions
+use descriptor-bound sources and resolved destinations. A corpus retarget before,
+during, or immediately after restore installation blocks the operation and
+compensates the resolved file and temporary artifacts.
+
+Restore manifests are read through a stable descriptor and bound by path,
+resolved path, inode, size, timestamps, SHA-256, entry count, and canonical entry
+digest. A changed or replaced manifest is rejected before backup creation.
+
+Dry-run reports are immutable and content-addressed under
+`<output>/dry-runs/dry-run-<digest>/`. Repeating an identical dry run returns the
+same verified files; altered existing bytes fail closed. Apply reports are
+immutable under `<output>/runs/<run_id>-<plan_digest>/` and are fully prepared
+before database commit.
+
+OCR opens source files through a stable descriptor. Missing, unlinked, retargeted,
+or replaced sources are recorded as `missing_during_ocr`, and `ocr_status` is
+reset to `pending` even when the row was selected through retry-failed mode.
+No OCR observations are deleted or overwritten.
+
+
+## Terminal candidate v2.0 — deterministic public dry runs
+
+Content-addressed dry-run transition reports deliberately omit the volatile
+`checked_at` invocation timestamp. Plan identity, paths, hashes, bindings,
+actions, and database snapshot evidence remain included. This makes repeated
+public dry runs over unchanged inputs byte-identical and safely idempotent.
+Apply reports retain the operation timestamp because each apply has a unique
+processing run and immutable generation directory.

@@ -2,7 +2,22 @@
 
 ## Status
 
-Accepted.
+Accepted. Reaffirmed 2026-07-29 after a cross-repo audit.
+
+### 2026-07-29 — the rejected connector existed anyway, and is now removed
+
+A bespoke direct connector — the option this ADR rejects by name — had grown in
+practice: `spiderweb-pr` ingested `outputs/fr24_selected_export.csv`, a
+repo-internal artifact of this repo's `scripts/fr24_vision_ingest.py`, hand-copied
+between sibling checkouts with no contract validation. Meanwhile the sanctioned
+adapter output (`fr24_spiderweb_intake_candidates.jsonl`) had no consumer, so the
+designed path was dead wiring and the undesigned one was load-bearing.
+
+spiderweb-pr has retired that ingestion along with the rest of its airspace
+surface (see `spiderweb-pr/docs/REPO_BOUNDARY.md`). This repo is now the
+unambiguous owner of FR24/ADS-B ingestion, aircraft intelligence and RLSM route
+mining. The "Required Sequence" below is unchanged and still gates any future
+Spiderweb consumer path.
 
 ## Decision
 
@@ -52,3 +67,30 @@ A later Spiderweb consumer path is allowed only as:
 ```text
 skywatcher-pr -> same canonical package -> spiderweb-pr spatial query adapter
 ```
+
+---
+
+## Revision 2026-07-20 — hub-canonical Spiderweb consumer implemented
+
+The FR24 screenshot-processing capability now lives entirely in Skywatcher.
+Per the "Required Sequence" above, the Spiderweb consumer is implemented as a
+**thin hub-canonical package adapter**, NOT a bespoke point-to-point connector:
+
+```text
+skywatcher-pr  --export-spiderweb DIR   (canonical hub package: manifest.json +
+                                         bridge_records.jsonl of spiderweb_bridge)
+      │
+      ▼
+spiderweb-pr   run_all.py --ingest-skywatcher DIR
+      │  → integration/skywatcher_bridge.ingest_package()
+      │  → schema-validate each record against schemas/spiderweb_bridge.schema.json
+      │  → route valid records into flights / track_points for downstream correlation
+```
+
+The shared contract (`schemas/spiderweb_bridge.schema.json`) is maintained
+identically in both repositories. Spiderweb imports NO Skywatcher code; it only
+consumes the validated package. This satisfies the ADR's requirement that any
+Spiderweb consumer use the same canonical export contract, and encodes the
+cross-repo semantic reconciliations (confidence object, review-status crosswalk,
+widened coordinate-method enum, gated mission classification, prohibited
+terminal-accept labels). See docs/REPOSITORY_BOUNDARY_AUDIT.md.
