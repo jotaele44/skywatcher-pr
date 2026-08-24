@@ -8,12 +8,10 @@ once on the pinned Phase 0 branch, and pushes normally without force.
 from __future__ import annotations
 
 import json
-from pathlib import Path
-import shutil
 import subprocess
 import tempfile
 import traceback
-
+from pathlib import Path
 
 REPOSITORY = "https://github.com/jotaele44/skywatcher-pr.git"
 TARGET_BRANCH = "agent/repository-hardening-phase-0"
