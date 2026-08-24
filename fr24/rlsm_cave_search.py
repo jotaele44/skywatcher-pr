@@ -1,20 +1,7 @@
-"""Provenance-aware FR24 OCR corpus search for cave/location appearances.
+"""Read-only, provenance-aware search over the RLSM OCR corpus.
 
-The search layer is deliberately downstream of OCR. It never re-runs OCR and
-never promotes a keyword/fuzzy hit into canonical identity.
-
-Default cave semantics:
-* search the latest OCR observation per screenshot+zone (MAX(obs_id));
-* search structured labeled_pins separately;
-* preserve RAW / NORMALIZED / CANONICAL strings;
-* generic cave terms are lexical evidence, not identity;
-* baseline names/aliases carry the baseline's identity_status;
-* fuzzy matching is discovery-only and disabled unless requested.
-
-CLI:
-    python -m fr24.rlsm_cave_search --query cueva
-    python -m fr24.rlsm_cave_search --theme caves --output json
-    python -m fr24.rlsm_cave_search --theme caves --output csv --out matches.csv
+Searches the effective (newest) OCR row per screenshot+zone and labeled_pins as
+separate evidence channels. Keyword/fuzzy matches never establish identity.
 """
 from __future__ import annotations
 
@@ -33,17 +20,13 @@ from typing import Iterable, Sequence
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 DEFAULT_BASELINE = REPO / "data" / "reference" / "caves" / "pr_cave_ocr_baseline_v2.json"
-
 DEFAULT_ZONES = ("label_layer", "map_center", "aircraft_card")
 
 
 def normalize_text(value: str) -> str:
-    """ASCII-fold, casefold and collapse punctuation/whitespace for retrieval."""
-    folded = unicodedata.normalize("NFKD", value or "")
-    folded = "".join(ch for ch in folded if not unicodedata.combining(ch))
-    folded = folded.casefold()
-    folded = re.sub(r"[^a-z0-9]+", " ", folded)
-    return " ".join(folded.split())
+    value = unicodedata.normalize("NFKD", value or "")
+    value = "".join(c for c in value if not unicodedata.combining(c)).casefold()
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", value).split())
 
 
 @dataclass(frozen=True)
@@ -91,204 +74,135 @@ def load_baseline(path: Path = DEFAULT_BASELINE) -> dict:
 
 
 def build_terms(
-    baseline: dict,
-    *,
-    include_generic: bool = True,
-    include_candidate_terms: bool = False,
+    baseline: dict, *, include_generic: bool = True, include_candidate_terms: bool = False
 ) -> list[SearchTerm]:
-    """Build deterministic retrieval terms without collapsing aliases to identity."""
     terms: list[SearchTerm] = []
     seen: set[tuple[str, str, str | None]] = set()
 
-    def add(term: str, match_class: str, rec: dict | None = None) -> None:
-        n = normalize_text(term)
-        if not n:
-            return
+    def add(value: str, match_class: str, rec: dict | None = None) -> None:
+        n = normalize_text(value)
         cave_id = rec.get("cave_id") if rec else None
         key = (n, match_class, cave_id)
-        if key in seen:
+        if not n or key in seen:
             return
         seen.add(key)
         terms.append(
             SearchTerm(
-                term=term,
-                normalized=n,
-                match_class=match_class,
-                cave_id=cave_id,
-                canonical_name=rec.get("canonical_name") if rec else None,
-                identity_status=rec.get("identity_status") if rec else None,
+                value,
+                n,
+                match_class,
+                cave_id,
+                rec.get("canonical_name") if rec else None,
+                rec.get("identity_status") if rec else None,
             )
         )
 
     if include_generic:
-        for term in baseline.get("generic_direct_terms", []):
-            add(term, "DIRECT_GENERIC_TERM")
+        for value in baseline.get("generic_direct_terms", []):
+            add(value, "DIRECT_GENERIC_TERM")
     if include_candidate_terms:
-        for term in baseline.get("generic_candidate_terms", []):
-            add(term, "KARST_CANDIDATE_TERM")
-
+        for value in baseline.get("generic_candidate_terms", []):
+            add(value, "KARST_CANDIDATE_TERM")
     for rec in baseline["records"]:
         if not rec.get("search_eligible", True):
             continue
         add(rec["canonical_name"], "KNOWN_CAVE_NAME", rec)
+        canonical = normalize_text(rec["canonical_name"])
         for alias in rec.get("aliases", []):
-            if normalize_text(alias) != normalize_text(rec["canonical_name"]):
+            if normalize_text(alias) != canonical:
                 add(alias, "KNOWN_CAVE_ALIAS", rec)
-
     return sorted(terms, key=lambda t: (-len(t.normalized.split()), -len(t.normalized), t.normalized))
 
 
-def _contains_phrase(haystack_normalized: str, needle_normalized: str) -> bool:
-    return bool(
-        re.search(
-            rf"(?<![a-z0-9]){re.escape(needle_normalized)}(?![a-z0-9])",
-            haystack_normalized,
-        )
-    )
+def _contains(haystack: str, needle: str) -> bool:
+    return bool(re.search(rf"(?<![a-z0-9]){re.escape(needle)}(?![a-z0-9])", haystack))
 
 
-def _exact_matches(text: str, terms: Sequence[SearchTerm]) -> list[SearchTerm]:
-    ntext = normalize_text(text)
-    return [term for term in terms if _contains_phrase(ntext, term.normalized)]
-
-
-def _fuzzy_terms(
-    text: str, terms: Sequence[SearchTerm], threshold: float
-) -> list[tuple[SearchTerm, float]]:
-    """Discovery-only token-window fuzzy candidates."""
+def _fuzzy(text: str, term: SearchTerm, threshold: float) -> float | None:
     tokens = normalize_text(text).split()
-    out: list[tuple[SearchTerm, float]] = []
-    for term in terms:
-        n = len(term.normalized.split())
-        if n == 0 or not tokens:
-            continue
-        best = 0.0
-        lo = max(1, n - 1)
-        hi = min(len(tokens), n + 1)
-        for width in range(lo, hi + 1):
-            for i in range(0, len(tokens) - width + 1):
-                window = " ".join(tokens[i : i + width])
-                best = max(
-                    best,
-                    difflib.SequenceMatcher(None, window, term.normalized).ratio(),
-                )
-        if best >= threshold:
-            out.append((term, round(best, 4)))
-    out.sort(key=lambda item: (-item[1], -len(item[0].normalized), item[0].normalized))
-    return out
+    n = len(term.normalized.split())
+    if not tokens or not n:
+        return None
+    best = 0.0
+    for width in range(max(1, n - 1), min(len(tokens), n + 1) + 1):
+        for i in range(len(tokens) - width + 1):
+            window = " ".join(tokens[i : i + width])
+            best = max(best, difflib.SequenceMatcher(None, window, term.normalized).ratio())
+    return round(best, 4) if best >= threshold else None
 
 
-def latest_ocr_rows(conn: sqlite3.Connection, zones: Sequence[str]) -> list[tuple]:
-    placeholders = ",".join("?" for _ in zones)
+def _latest_ocr(conn: sqlite3.Connection, zones: Sequence[str]) -> list[tuple]:
+    marks = ",".join("?" for _ in zones)
     return conn.execute(
-        f"""SELECT o.obs_id, o.screenshot_id, o.zone, o.raw_text, o.confidence_mean,
-                    s.filename, s.rel_path, s.filename_ts, s.source_availability
-             FROM ocr_observations o
-             JOIN screenshots s ON s.screenshot_id = o.screenshot_id
-            WHERE o.obs_id IN (
-                SELECT MAX(obs_id)
-                  FROM ocr_observations
-                 WHERE zone IN ({placeholders})
-                 GROUP BY screenshot_id, zone
-            )
-            ORDER BY o.screenshot_id, o.zone, o.obs_id""",
+        f"""SELECT o.obs_id,o.screenshot_id,o.zone,o.raw_text,o.confidence_mean,
+                   s.filename,s.rel_path,s.filename_ts,s.source_availability,o.ocr_status
+              FROM ocr_observations o JOIN screenshots s USING(screenshot_id)
+             WHERE o.obs_id IN (
+                 SELECT MAX(obs_id) FROM ocr_observations
+                  WHERE zone IN ({marks}) GROUP BY screenshot_id,zone
+             )
+             ORDER BY o.screenshot_id,o.zone,o.obs_id""",
         tuple(zones),
     ).fetchall()
 
 
-def labeled_pin_rows(conn: sqlite3.Connection) -> list[tuple]:
+def _labeled_pins(conn: sqlite3.Connection) -> list[tuple]:
     return conn.execute(
-        """SELECT p.pin_id, p.screenshot_id, p.raw_label, p.normalized_label,
-                  p.confidence, p.bbox_x, p.bbox_y, p.bbox_w, p.bbox_h,
-                  p.centroid_x, p.centroid_y,
-                  s.filename, s.rel_path, s.filename_ts, s.source_availability
-             FROM labeled_pins p
-             JOIN screenshots s ON s.screenshot_id = p.screenshot_id
-            ORDER BY p.screenshot_id, p.pin_id"""
+        """SELECT p.pin_id,p.screenshot_id,p.raw_label,p.normalized_label,p.confidence,
+                  p.bbox_x,p.bbox_y,p.bbox_w,p.bbox_h,p.centroid_x,p.centroid_y,
+                  s.filename,s.rel_path,s.filename_ts,s.source_availability
+             FROM labeled_pins p JOIN screenshots s USING(screenshot_id)
+            ORDER BY p.screenshot_id,p.pin_id"""
     ).fetchall()
 
 
-def _append_matches(
-    output: list[Match],
+def _emit(
+    out: list[Match],
     *,
     channel: str,
-    screenshot_id: int,
+    sid: int,
     filename: str,
     rel_path: str,
-    filename_ts: str | None,
-    source_availability: str | None,
-    source_record_id: int,
-    source_zone: str | None,
-    raw_text: str,
+    ts: str | None,
+    availability: str | None,
+    source_id: int,
+    zone: str | None,
+    raw: str,
     confidence: float | None,
     terms: Sequence[SearchTerm],
     fuzzy: bool,
     fuzzy_threshold: float,
     bbox: tuple[int | None, ...] = (None, None, None, None, None, None),
 ) -> None:
-    ntext = normalize_text(raw_text)
-    exact = _exact_matches(raw_text, terms)
-    exact_keys = {(t.normalized, t.cave_id, t.match_class) for t in exact}
+    ntext = normalize_text(raw)
+    exact: set[tuple[str, str | None, str]] = set()
     bx, by, bw, bh, cx, cy = bbox
-
-    for term in exact:
-        output.append(
+    for term in terms:
+        if not _contains(ntext, term.normalized):
+            continue
+        exact.add((term.normalized, term.cave_id, term.match_class))
+        out.append(
             Match(
-                channel=channel,
-                screenshot_id=screenshot_id,
-                filename=filename,
-                rel_path=rel_path,
-                filename_ts=filename_ts,
-                source_availability=source_availability,
-                source_record_id=source_record_id,
-                source_zone=source_zone,
-                raw_text=raw_text,
-                normalized_text=ntext,
-                matched_term=term.term,
-                match_class=term.match_class,
-                cave_id=term.cave_id,
-                canonical_name=term.canonical_name,
-                identity_status=term.identity_status,
-                confidence=confidence,
-                bbox_x=bx,
-                bbox_y=by,
-                bbox_w=bw,
-                bbox_h=bh,
-                centroid_x=cx,
-                centroid_y=cy,
+                channel, sid, filename, rel_path, ts, availability, source_id, zone,
+                raw, ntext, term.term, term.match_class, term.cave_id,
+                term.canonical_name, term.identity_status, confidence,
+                bx, by, bw, bh, cx, cy,
             )
         )
-
     if not fuzzy:
         return
-    for term, score in _fuzzy_terms(raw_text, terms, fuzzy_threshold):
-        if (term.normalized, term.cave_id, term.match_class) in exact_keys:
+    for term in terms:
+        if (term.normalized, term.cave_id, term.match_class) in exact:
             continue
-        output.append(
+        score = _fuzzy(raw, term, fuzzy_threshold)
+        if score is None:
+            continue
+        out.append(
             Match(
-                channel=channel,
-                screenshot_id=screenshot_id,
-                filename=filename,
-                rel_path=rel_path,
-                filename_ts=filename_ts,
-                source_availability=source_availability,
-                source_record_id=source_record_id,
-                source_zone=source_zone,
-                raw_text=raw_text,
-                normalized_text=ntext,
-                matched_term=term.term,
-                match_class="FUZZY_CANDIDATE",
-                cave_id=term.cave_id,
-                canonical_name=term.canonical_name,
-                identity_status="CANDIDATE_NOT_IDENTITY",
-                confidence=confidence,
-                bbox_x=bx,
-                bbox_y=by,
-                bbox_w=bw,
-                bbox_h=bh,
-                centroid_x=cx,
-                centroid_y=cy,
-                fuzzy_score=score,
+                channel, sid, filename, rel_path, ts, availability, source_id, zone,
+                raw, ntext, term.term, "FUZZY_CANDIDATE", term.cave_id,
+                term.canonical_name, "CANDIDATE_NOT_IDENTITY", confidence,
+                bx, by, bw, bh, cx, cy, score,
             )
         )
 
@@ -303,87 +217,42 @@ def search_corpus(
     fuzzy_threshold: float = 0.86,
 ) -> tuple[list[Match], dict]:
     matches: list[Match] = []
+    effective = _latest_ocr(conn, zones)
+
     if "ocr" in channels:
-        for row in latest_ocr_rows(conn, zones):
-            obs_id, sid, zone, raw, conf, filename, rel_path, ts, availability = row
-            _append_matches(
-                matches,
-                channel="RAW_OCR",
-                screenshot_id=sid,
-                filename=filename,
-                rel_path=rel_path,
-                filename_ts=ts,
-                source_availability=availability,
-                source_record_id=obs_id,
-                source_zone=zone,
-                raw_text=raw or "",
-                confidence=conf,
-                terms=terms,
-                fuzzy=fuzzy,
+        for obs_id, sid, zone, raw, conf, filename, rel_path, ts, availability, status in effective:
+            if status not in ("ok", "empty"):
+                continue
+            _emit(
+                matches, channel="RAW_OCR", sid=sid, filename=filename, rel_path=rel_path,
+                ts=ts, availability=availability, source_id=obs_id, zone=zone,
+                raw=raw or "", confidence=conf, terms=terms, fuzzy=fuzzy,
                 fuzzy_threshold=fuzzy_threshold,
             )
     if "labels" in channels:
-        for row in labeled_pin_rows(conn):
-            (
-                pin_id,
-                sid,
-                raw,
-                normalized,
-                conf,
-                bx,
-                by,
-                bw,
-                bh,
-                cx,
-                cy,
-                filename,
-                rel_path,
-                ts,
-                availability,
-            ) = row
-            _append_matches(
-                matches,
-                channel="EXTRACTED_LABEL",
-                screenshot_id=sid,
-                filename=filename,
-                rel_path=rel_path,
-                filename_ts=ts,
-                source_availability=availability,
-                source_record_id=pin_id,
-                source_zone=None,
-                raw_text=raw or normalized or "",
-                confidence=conf,
-                terms=terms,
-                fuzzy=fuzzy,
-                fuzzy_threshold=fuzzy_threshold,
+        for row in _labeled_pins(conn):
+            pin_id, sid, raw, normalized, conf, bx, by, bw, bh, cx, cy, filename, rel_path, ts, availability = row
+            _emit(
+                matches, channel="EXTRACTED_LABEL", sid=sid, filename=filename,
+                rel_path=rel_path, ts=ts, availability=availability, source_id=pin_id,
+                zone=None, raw=raw or normalized or "", confidence=conf, terms=terms,
+                fuzzy=fuzzy, fuzzy_threshold=fuzzy_threshold,
                 bbox=(bx, by, bw, bh, cx, cy),
             )
 
     matches.sort(
         key=lambda m: (
-            m.filename_ts is None,
-            m.filename_ts or "",
-            m.screenshot_id,
-            m.channel,
-            m.source_record_id,
-            m.match_class,
-            m.matched_term.casefold(),
+            m.filename_ts is None, m.filename_ts or "", m.screenshot_id,
+            m.channel, m.source_record_id, m.match_class, m.matched_term.casefold(),
         )
     )
-
-    total = conn.execute("SELECT COUNT(*) FROM screenshots").fetchone()[0]
-    ocr_any = conn.execute(
-        """SELECT COUNT(DISTINCT screenshot_id) FROM ocr_observations
-           WHERE ocr_status IN ('ok','empty')"""
-    ).fetchone()[0]
-    ocr_failed = conn.execute(
-        """SELECT COUNT(DISTINCT screenshot_id) FROM ocr_observations
-           WHERE ocr_status='failed'"""
-    ).fetchone()[0]
+    total = int(conn.execute("SELECT COUNT(*) FROM screenshots").fetchone()[0])
+    ok_sids = {sid for _, sid, *_rest, status in effective if status in ("ok", "empty")}
+    failed_sids = {sid for _, sid, *_rest, status in effective if status == "failed"}
     coverage = {
-        "screenshots_total": int(total),
-        "screenshots_with_any_ocr": int(ocr_any),
-        "screenshots_with_failed_ocr_observation": int(ocr_failed),
+        "screenshots_total": total,
+        "screenshots_with_any_ocr": len(ok_sids),
+        "screenshots_with_failed_ocr_observation": len(failed_sids),
         "matched_screenshots": len({m.screenshot_id for m in matches}),
         "match_rows": len(matches),
         "certification": (
@@ -399,24 +268,22 @@ def query_terms(query: str) -> list[SearchTerm]:
 
 
 def _write_csv(matches: Iterable[Match], stream) -> None:
-    rows = [asdict(m) for m in matches]
-    fields = list(Match.__dataclass_fields__)
-    writer = csv.DictWriter(stream, fieldnames=fields)
+    writer = csv.DictWriter(stream, fieldnames=list(Match.__dataclass_fields__))
     writer.writeheader()
-    writer.writerows(rows)
+    writer.writerows(asdict(m) for m in matches)
 
 
-def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+def _args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Search effective FR24 OCR/labeled-pin corpus.")
-    g = p.add_mutually_exclusive_group(required=True)
-    g.add_argument("--query", help="literal phrase to search")
-    g.add_argument("--theme", choices=["caves"], help="use the versioned cave baseline")
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--query")
+    group.add_argument("--theme", choices=["caves"])
     p.add_argument("--db", type=Path, default=DEFAULT_DB)
     p.add_argument("--baseline", type=Path, default=DEFAULT_BASELINE)
-    p.add_argument("--channels", default="ocr,labels", help="ocr,labels")
+    p.add_argument("--channels", default="ocr,labels")
     p.add_argument("--zones", default=",".join(DEFAULT_ZONES))
     p.add_argument("--include-karst-candidates", action="store_true")
-    p.add_argument("--fuzzy", action="store_true", help="emit discovery-only fuzzy candidates")
+    p.add_argument("--fuzzy", action="store_true")
     p.add_argument("--fuzzy-threshold", type=float, default=0.86)
     p.add_argument("--output", choices=["table", "json", "csv"], default="table")
     p.add_argument("--out", type=Path)
@@ -424,43 +291,36 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = _parse_args(argv)
-    channels = tuple(v.strip() for v in args.channels.split(",") if v.strip())
-    zones = tuple(v.strip() for v in args.zones.split(",") if v.strip())
-    if not set(channels) <= {"ocr", "labels"} or not channels:
+    args = _args(argv)
+    channels = tuple(x.strip() for x in args.channels.split(",") if x.strip())
+    zones = tuple(x.strip() for x in args.zones.split(",") if x.strip())
+    if not channels or not set(channels) <= {"ocr", "labels"}:
         raise SystemExit("--channels must contain only ocr and/or labels")
     if not zones:
         raise SystemExit("--zones cannot be empty")
-    if not 0.0 < args.fuzzy_threshold <= 1.0:
+    if not 0 < args.fuzzy_threshold <= 1:
         raise SystemExit("--fuzzy-threshold must be in (0,1]")
 
     if args.query:
         terms = query_terms(args.query)
     else:
-        baseline = load_baseline(args.baseline)
         terms = build_terms(
-            baseline,
-            include_generic=True,
+            load_baseline(args.baseline),
             include_candidate_terms=args.include_karst_candidates,
         )
 
-    with sqlite3.connect(str(args.db)) as conn:
+    with sqlite3.connect(args.db) as conn:
         matches, coverage = search_corpus(
-            conn,
-            terms=terms,
-            zones=zones,
-            channels=channels,
-            fuzzy=args.fuzzy,
-            fuzzy_threshold=args.fuzzy_threshold,
+            conn, terms=terms, zones=zones, channels=channels,
+            fuzzy=args.fuzzy, fuzzy_threshold=args.fuzzy_threshold,
         )
 
-    payload = {"coverage": coverage, "matches": [asdict(m) for m in matches]}
     if args.output == "json":
-        text = json.dumps(payload, ensure_ascii=False, indent=2)
-        if args.out:
-            args.out.write_text(text, encoding="utf-8")
-        else:
-            print(text)
+        text = json.dumps(
+            {"coverage": coverage, "matches": [asdict(m) for m in matches]},
+            ensure_ascii=False, indent=2,
+        )
+        args.out.write_text(text, encoding="utf-8") if args.out else print(text)
     elif args.output == "csv":
         stream = args.out.open("w", encoding="utf-8", newline="") if args.out else sys.stdout
         try:
@@ -470,10 +330,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 stream.close()
     else:
         print(json.dumps(coverage, ensure_ascii=False, sort_keys=True))
-        for match in matches:
+        for m in matches:
             print(
-                f"{match.filename_ts or '-'}\t{match.screenshot_id}\t{match.channel}\t"
-                f"{match.match_class}\t{match.matched_term}\t{match.raw_text[:100]}"
+                f"{m.filename_ts or '-'}\t{m.screenshot_id}\t{m.channel}\t"
+                f"{m.match_class}\t{m.matched_term}\t{m.raw_text[:100]}"
             )
     return 0
 
