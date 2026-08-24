@@ -15,7 +15,7 @@ tests/test_module_boundaries.py:
     corrim : imports core + satim + fpim + stdlib/third-party. The ONLY bucket
              permitted to import from both satim and fpim.
     legacy : quarantine. Not importable by core/satim/fpim/corrim — only by its
-             own backward-compat shim (aircraft_intelligence.py).
+             own backward-compat shims/orchestrators.
 
 MODULE_IMPORT_EXCEPTIONS records narrow, explicit, intentional exceptions to
 the bucket-level rule above, keyed by file path (relative to repo root). The
@@ -37,15 +37,21 @@ MODULE_BOUNDARIES: dict[str, list[str]] = {
     ],
     "satim": [
         "src/skywatcher/satim/**/*.py",
+        "satim_artifact_filter.py",
         "satim_calibration.py",
+        "satim_contradiction_resolver.py",
         "satim_cut_fill.py",
+        "satim_ensemble_calibrator.py",
         "satim_fit.py",
         "satim_geometry.py",
         "satim_ground_truth.py",
+        "satim_linear_corridor.py",
         "satim_patchwork.py",
         "satim_render_diff.py",
         "satim_road_end.py",
+        "satim_temporal_change.py",
         "satim_tile_seam_classifier.py",
+        "satim_water_feature.py",
         "fr24/calibration/**/*.py",
         "fr24/satim_engine.py",
         "fr24/satim_engine_core.py",
@@ -68,8 +74,22 @@ MODULE_BOUNDARIES: dict[str, list[str]] = {
         "src/skywatcher/corrim/**/*.py",
         "src/skywatcher/fusion/**/*.py",
     ],
+    # FR24 screenshot-ingest ownership package (repository-boundary correction:
+    # FR24 screenshot processing is owned by skywatcher-pr). It consolidates the
+    # OCR/telemetry/reconstruction/database responsibilities and therefore is the
+    # top consumer of SATIM- and FPIM-classified fr24 helpers; it wraps existing
+    # (unclassified) fr24/* implementation modules. See
+    # docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md.
+    "fr24_ingest": [
+        "src/skywatcher/fr24/**/*.py",
+    ],
     "legacy": [
         "src/skywatcher/legacy/**/*.py",
+        # Mixed-domain compatibility surfaces. They remain callable by explicit
+        # legacy/orchestrator paths but are prohibited inputs to new canonical
+        # visual-reasoning logic.
+        "fr24/rlsm_unlabeled.py",
+        "satim_visual_route_gap.py",
     ],
 }
 
@@ -84,6 +104,10 @@ ALLOWED_IMPORTS: dict[str, set[str]] = {
     "satim": {"core", "satim"},
     "fpim": {"core", "fpim"},
     "corrim": {"core", "satim", "fpim", "corrim"},
+    # fr24_ingest may consume Core utilities plus the SATIM/FPIM fr24 helpers it
+    # orchestrates (OCR + flight reconstruction). Like CORRIM it is an
+    # integration tier, but for ingestion rather than correlation scoring.
+    "fr24_ingest": {"core", "satim", "fpim", "fr24_ingest"},
     "legacy": {"core", "satim", "fpim", "corrim", "legacy"},
 }
 
