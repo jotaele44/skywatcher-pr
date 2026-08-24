@@ -93,3 +93,21 @@ data/places.geojson
 # SQLite leaves these behind when a file is deleted while a handle is still open
 # (the rlsm.sqlite migration produced a pile of them).
 .fuse_hidden*
+
+# --- FR24 boundary correction: runtime artifact exclusions ---
+*.db-wal
+*.db-shm
+skywatcher.db
+data/skywatcher.db
+screenshots/
+!inputs/screenshots/
+inputs/screenshots/*
+!inputs/screenshots/.gitkeep
+# OCR caches / generated geospatial + columnar artifacts / operational exports
+ocr_cache/
+*.geojson
+*.parquet
+exports/spiderweb/
+# runtime logs, tokens, secrets
+*.log
+*.token
