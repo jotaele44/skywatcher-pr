@@ -1,5 +1,4 @@
-"""Typed records for SATIM landscape morphology and land-use candidate assessment."""
-
+"""Typed records for SATIM landscape morphology, calibration and candidate assessment."""
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -8,12 +7,6 @@ from typing import Any
 
 @dataclass(frozen=True)
 class LandscapeMetrics:
-    """Continuous, scene-level measurements extracted from one image.
-
-    These are observations/derived features, not land-use identities. All fractions
-    and scores are bounded to [0, 1].
-    """
-
     width_px: int
     height_px: int
     analysis_width_px: int
@@ -30,6 +23,70 @@ class LandscapeMetrics:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> "LandscapeMetrics":
+        return cls(**{k: data[k] for k in cls.__dataclass_fields__})
+
+
+@dataclass(frozen=True)
+class CalibrationProfile:
+    profile_id: str
+    status: str
+    method_version: str
+    thresholds: dict[str, float]
+    min_evidence_families: int | None
+    calibration_fixture_ids: tuple[str, ...] = ()
+    calibration_sha256s: tuple[str, ...] = ()
+    holdout_fixture_ids: tuple[str, ...] = ()
+    holdout_sha256s: tuple[str, ...] = ()
+    objective: tuple[float, ...] = ()
+    candidate_count: int = 0
+    tied_best_count: int = 0
+    blockers: tuple[str, ...] = ()
+
+    @property
+    def usable(self) -> bool:
+        return self.status in {"PROVISIONAL_POSITIVE_ONLY", "CALIBRATED", "VALIDATED"} and bool(self.thresholds) and self.min_evidence_families is not None
+
+    @property
+    def production_validated(self) -> bool:
+        return self.status == "VALIDATED" and not self.blockers
+
+    def stamps(self) -> tuple[dict[str, Any], ...]:
+        out = [
+            {
+                "threshold_id": f"CALIBRATION:{self.profile_id}:{name}",
+                "value": value,
+                "status": self.status,
+            }
+            for name, value in sorted(self.thresholds.items())
+        ]
+        if self.min_evidence_families is not None:
+            out.append({
+                "threshold_id": f"CALIBRATION:{self.profile_id}:min_evidence_families",
+                "value": self.min_evidence_families,
+                "status": self.status,
+            })
+        return tuple(out)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": "satim.landscape.calibration_profile.v0.1",
+            "profile_id": self.profile_id,
+            "status": self.status,
+            "method_version": self.method_version,
+            "thresholds": dict(self.thresholds),
+            "min_evidence_families": self.min_evidence_families,
+            "calibration_fixture_ids": list(self.calibration_fixture_ids),
+            "calibration_sha256s": list(self.calibration_sha256s),
+            "holdout_fixture_ids": list(self.holdout_fixture_ids),
+            "holdout_sha256s": list(self.holdout_sha256s),
+            "objective": list(self.objective),
+            "candidate_count": self.candidate_count,
+            "tied_best_count": self.tied_best_count,
+            "blockers": list(self.blockers),
+        }
 
 
 @dataclass(frozen=True)
@@ -59,13 +116,16 @@ class LandscapeAssessment:
     source_sha256: str
     source_path: str
     metrics: LandscapeMetrics
-    evidence_states: dict[str, bool]
+    evidence_states: dict[str, bool | None]
+    independent_positive_evidence_count: int
     competing_classes: tuple[CompetingClassScore, ...]
     top_class: str | None
     terminal_state: str
     review_required: bool
     production_promotion_authorized: bool
     thresholds_applied: tuple[dict[str, Any], ...]
+    calibration_profile_id: str | None
+    calibration_status: str
     benchmark_state: str
     benchmark_blockers: tuple[str, ...]
     limitations: tuple[str, ...]
@@ -78,12 +138,15 @@ class LandscapeAssessment:
             "source": {"sha256": self.source_sha256, "path": self.source_path},
             "metrics": self.metrics.to_dict(),
             "evidence_states": dict(self.evidence_states),
+            "independent_positive_evidence_count": self.independent_positive_evidence_count,
             "competing_classes": [item.to_dict() for item in self.competing_classes],
             "top_class": self.top_class,
             "terminal_state": self.terminal_state,
             "review_required": self.review_required,
             "production_promotion_authorized": self.production_promotion_authorized,
             "thresholds_applied": [dict(item) for item in self.thresholds_applied],
+            "calibration_profile_id": self.calibration_profile_id,
+            "calibration_status": self.calibration_status,
             "benchmark_state": self.benchmark_state,
             "benchmark_blockers": list(self.benchmark_blockers),
             "limitations": list(self.limitations),

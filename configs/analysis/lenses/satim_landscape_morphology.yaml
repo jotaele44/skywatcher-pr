@@ -3,18 +3,15 @@ name: Landscape morphology and surface-context extraction
 owner: SATIM
 stage: satellite_image_processing
 status: experimental
-version: 0.1.0
-objective: Extract scene-level surface and morphology measurements while keeping surface appearance separate from land-use interpretation.
-
+version: 0.2.0
+objective: Extract scene-level or ROI surface and morphology measurements while keeping observable appearance separate from land-use interpretation.
 required_inputs:
   - source_frame
-
 required_parameters:
   - parameter_id: artifact_exclusion_complete
     name: Artifact exclusion complete
     kind: boolean
     description: Artifact assessment must precede physical-scene interpretation so tile seams, overlays, and rendering artifacts are not treated as terrain.
-
 optional_parameters:
   - parameter_id: roi_target
     name: Target ROI
@@ -25,8 +22,7 @@ optional_parameters:
     name: Second epoch frame
     kind: path
     required: false
-    degraded_behavior: No temporal recurrence or cultivation-cycle context can be measured; the result remains single-epoch.
-
+    degraded_behavior: No temporal recurrence context can be measured; the result remains single epoch.
 measurements:
   - vegetation_fraction
   - forest_matrix_fraction
@@ -35,28 +31,23 @@ measurements:
   - bright_cover_fraction
   - directional_texture_score
   - patch_mosaic_score
-
 emits:
   - LANDSCAPE_MORPHOLOGY_OBSERVATION
   - FOREST_MATRIX_CANDIDATE
   - MANAGED_OPEN_SURFACE_CANDIDATE
   - BRIGHT_COVER_CANDIDATE
   - UNRESOLVED
-
 interpretation_restriction_minimum: NONE
-
 contradiction_tests:
   - physical_surface_vs_digital_artifact
   - managed_open_surface_vs_natural_sparse_vegetation
   - bright_cover_vs_solar_or_roof_material
-
 evidence_axes_required:
   - evidence_tier
   - visibility_class
   - provenance_status
   - temporal_status
   - confidence_score
-
 prohibited_claims:
   - Surface class is not land-use identity; do not infer agriculture, construction, ownership, purpose, or crop identity from color alone.
   - Missing class-specific evidence is UNKNOWN and must not be coerced to zero or negative evidence.

@@ -1,32 +1,5 @@
 {
-  "schema_version": "satim.landscape.fixture_annotation.v0.1",
-  "fixture_id": "SATIM-LANDSCAPE-C654-001",
-  "raw_source": {
-    "original_filename": "Flight # C654.jpeg",
-    "stored_path": "data/satim_landscape/fixtures/C654/raw/Flight_C654.jpeg",
-    "byte_size": 633626,
-    "sha256": "a8b08e249f6ede4048563c892aba9b1ae6edb5e6d1c2f849421a3d8c285a9030",
-    "width_px": 1001,
-    "height_px": 1536,
-    "format": "JPEG",
-    "mode": "RGB",
-    "session_time_utc": "2026-08-24T13:30:00Z",
-    "time_precision": "minute",
-    "repository_target_path": "data/satim_landscape/fixtures/C654/raw/Flight_C654.jpeg",
-    "repository_materialization_status": "PENDING_BINARY_MATERIALIZATION"
-  },
   "annotation": {
-    "scope": "SCENE_LEVEL_ONLY",
-    "label": "AGRICULTURAL_MOSAIC",
-    "label_status": "PROVISIONAL_HUMAN_ANNOTATION",
-    "positive_observations": [
-      "FOREST_MATRIX_PRESENT",
-      "MULTIPLE_MANAGED_CLEARINGS_PRESENT",
-      "PARALLEL_ROW_TEXTURE_PRESENT",
-      "EXPOSED_OR_WORKED_SOIL_PRESENT",
-      "FIELD_LIKE_PATCH_GEOMETRY_PRESENT",
-      "BRIGHT_LINEAR_COVER_CANDIDATE_PRESENT"
-    ],
     "explicit_unknowns": [
       "CROP_IDENTITY",
       "PARCEL_IDENTITY",
@@ -36,15 +9,59 @@
       "EXACT_FIELD_BOUNDARIES",
       "ACTIVE_VS_FALLOW_STATE_FOR_EACH_PATCH"
     ],
+    "label": "AGRICULTURAL_MOSAIC",
+    "label_status": "PROVISIONAL_HUMAN_ANNOTATION",
     "negative_assertions_not_made": [
       "NOT_LANDSLIDE",
       "NOT_CONSTRUCTION",
       "NOT_SOLAR_ARRAY",
       "NOT_QUARRY",
       "NOT_UTILITY_CORRIDOR"
-    ]
+    ],
+    "positive_observations": [
+      "FOREST_MATRIX_PRESENT",
+      "MULTIPLE_MANAGED_CLEARINGS_PRESENT",
+      "PARALLEL_ROW_TEXTURE_PRESENT",
+      "EXPOSED_OR_WORKED_SOIL_PRESENT",
+      "FIELD_LIKE_PATCH_GEOMETRY_PRESENT",
+      "BRIGHT_LINEAR_COVER_CANDIDATE_PRESENT"
+    ],
+    "scope": "SCENE_PLUS_PROVISIONAL_FIELD_SEGMENTATION"
   },
-  "segmentation_ground_truth": null,
-  "segmentation_status": "OPEN_NOT_ANNOTATED",
-  "certification_state": "PROVISIONAL"
+  "certification_state": "PROVISIONAL",
+  "fixture_id": "SATIM-LANDSCAPE-C654-001",
+  "raw_source": {
+    "byte_size": 633626,
+    "format": "JPEG",
+    "height_px": 1536,
+    "mode": "RGB",
+    "original_filename": "Flight # C654.jpeg",
+    "repository_materialization_status": "MATERIALIZED_EXACT_BYTES_PENDING_GITHUB_HASH_VERIFY",
+    "repository_target_path": "data/satim_landscape/fixtures/C654/raw/Flight_C654.jpeg",
+    "session_time_utc": "2026-08-24T13:30:00Z",
+    "sha256": "a8b08e249f6ede4048563c892aba9b1ae6edb5e6d1c2f849421a3d8c285a9030",
+    "stored_path": "data/satim_landscape/fixtures/C654/raw/Flight_C654.jpeg",
+    "time_precision": "minute",
+    "width_px": 1001
+  },
+  "schema_version": "satim.landscape.fixture_annotation.v0.1",
+  "segmentation_ground_truth": {
+    "classes": {
+      "BARE_WORKED_SOIL": 3,
+      "BRIGHT_COVER_CANDIDATE": 1,
+      "CULTIVATED_FIELD": 7,
+      "ROW_TEXTURE": 7
+    },
+    "coordinate_system": "IMAGE_PIXEL_XY_ORIGIN_TOP_LEFT",
+    "field_instance_count": 7,
+    "known_omissions": [
+      "FOREST_MATRIX_FULL_PIXEL_MASK",
+      "LOW_VEGETATION_COMPLETE_MASK",
+      "ACCESS_PATH_GEOMETRY"
+    ],
+    "label_status": "PROVISIONAL_HUMAN_ANNOTATION",
+    "overlay_qa_path": "data/satim_landscape/fixtures/C654/segmentation_overlay.v0.1.png",
+    "path": "data/satim_landscape/fixtures/C654/segmentation.v0.1.geojson"
+  },
+  "segmentation_status": "PROVISIONAL_FIELD_INSTANCES_BOUNDED_SUPPORTING_POLYGONS_PARTIAL"
 }

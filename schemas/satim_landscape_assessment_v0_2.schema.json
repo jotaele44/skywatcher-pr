@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/satim_landscape_assessment_v0_2.schema.json",
+  "title": "SATIM landscape assessment v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version","method_version","source","metrics","evidence_states","independent_positive_evidence_count","competing_classes","top_class","terminal_state","review_required","production_promotion_authorized","thresholds_applied","calibration_profile_id","calibration_status","benchmark_state","benchmark_blockers","limitations","temporal_recurrence_support"],
+  "properties": {
+    "schema_version": {"const": "satim.landscape.assessment.v0.2"},
+    "method_version": {"type": "string", "minLength": 1},
+    "source": {"type":"object","additionalProperties":false,"required":["sha256","path"],"properties":{"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"path":{"type":"string"}}},
+    "metrics": {"type":"object","required":["width_px","height_px","analysis_width_px","analysis_height_px","vegetation_fraction","forest_matrix_fraction","open_surface_fraction","exposed_soil_fraction","bright_cover_fraction","directional_texture_score","patch_mosaic_score","extraction_method","extraction_constants"]},
+    "evidence_states": {"type":"object","additionalProperties":{"type":["boolean","null"]}},
+    "independent_positive_evidence_count": {"type":"integer","minimum":0,"maximum":5},
+    "competing_classes": {"type":"array","minItems":13,"items":{"type":"object","additionalProperties":false,"required":["class_name","score","evaluated","supporting_evidence","contradicting_evidence","unevaluated_requirements"],"properties":{"class_name":{"type":"string"},"score":{"type":["number","null"],"minimum":0,"maximum":1},"evaluated":{"type":"boolean"},"supporting_evidence":{"type":"array","items":{"type":"string"}},"contradicting_evidence":{"type":"array","items":{"type":"string"}},"unevaluated_requirements":{"type":"array","items":{"type":"string"}}}}},
+    "top_class": {"type":["string","null"]},
+    "terminal_state": {"enum":["CANDIDATE_NOT_IDENTITY","REVIEW_UNRESOLVED","UNRESOLVED"]},
+    "review_required": {"type":"boolean"},
+    "production_promotion_authorized": {"type":"boolean"},
+    "thresholds_applied": {"type":"array","items":{"type":"object","required":["threshold_id","value","status"]}},
+    "calibration_profile_id": {"type":["string","null"]},
+    "calibration_status": {"enum":["CALIBRATION_REQUIRED","PROVISIONAL_POSITIVE_ONLY","CALIBRATED","VALIDATED"]},
+    "benchmark_state": {"type":"string"},
+    "benchmark_blockers": {"type":"array","items":{"type":"string"}},
+    "limitations": {"type":"array","minItems":1,"items":{"type":"string"}},
+    "temporal_recurrence_support": {"type":"boolean"}
+  }
+}
