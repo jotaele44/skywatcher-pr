@@ -1,0 +1,50 @@
+{
+  "schema_version": "satim.landscape.fixture_annotation.v0.1",
+  "fixture_id": "SATIM-LANDSCAPE-C654-001",
+  "raw_source": {
+    "original_filename": "Flight # C654.jpeg",
+    "stored_path": "data/satim_landscape/fixtures/C654/raw/Flight_C654.jpeg",
+    "byte_size": 633626,
+    "sha256": "a8b08e249f6ede4048563c892aba9b1ae6edb5e6d1c2f849421a3d8c285a9030",
+    "width_px": 1001,
+    "height_px": 1536,
+    "format": "JPEG",
+    "mode": "RGB",
+    "session_time_utc": "2026-08-24T13:30:00Z",
+    "time_precision": "minute",
+    "repository_target_path": "data/satim_landscape/fixtures/C654/raw/Flight_C654.jpeg",
+    "repository_materialization_status": "PENDING_BINARY_MATERIALIZATION"
+  },
+  "annotation": {
+    "scope": "SCENE_LEVEL_ONLY",
+    "label": "AGRICULTURAL_MOSAIC",
+    "label_status": "PROVISIONAL_HUMAN_ANNOTATION",
+    "positive_observations": [
+      "FOREST_MATRIX_PRESENT",
+      "MULTIPLE_MANAGED_CLEARINGS_PRESENT",
+      "PARALLEL_ROW_TEXTURE_PRESENT",
+      "EXPOSED_OR_WORKED_SOIL_PRESENT",
+      "FIELD_LIKE_PATCH_GEOMETRY_PRESENT",
+      "BRIGHT_LINEAR_COVER_CANDIDATE_PRESENT"
+    ],
+    "explicit_unknowns": [
+      "CROP_IDENTITY",
+      "PARCEL_IDENTITY",
+      "OWNERSHIP",
+      "OPERATOR",
+      "COMMERCIAL_VS_SUBSISTENCE_USE",
+      "EXACT_FIELD_BOUNDARIES",
+      "ACTIVE_VS_FALLOW_STATE_FOR_EACH_PATCH"
+    ],
+    "negative_assertions_not_made": [
+      "NOT_LANDSLIDE",
+      "NOT_CONSTRUCTION",
+      "NOT_SOLAR_ARRAY",
+      "NOT_QUARRY",
+      "NOT_UTILITY_CORRIDOR"
+    ]
+  },
+  "segmentation_ground_truth": null,
+  "segmentation_status": "OPEN_NOT_ANNOTATED",
+  "certification_state": "PROVISIONAL"
+}
