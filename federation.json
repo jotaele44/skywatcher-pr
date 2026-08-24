@@ -33,7 +33,7 @@
     "ai_imagery_boundary": "TheHub ADR 0006 is authoritative. Skywatcher owns aviation-domain schemas, normalization, matching, SATIM analysis, review rules and producer-package construction. TheHub owns external imagery acquisition, model execution, credentials, policy, audit, certified evidence and assistant workflows. Skywatcher does not host semantic RAG or an independent production model service."
   },
   "hub_callable_commands": {
-    "setup": "[ -d ../thehub-pr ] || git clone --depth 1 https://github.com/jotaele44/thehub-pr.git ../thehub-pr; python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt",
+    "setup": "python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt",
     "validate_export": "python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test",
     "test_suite": "python -m pytest -q",
     "export_canonical": "python3 scripts/federation_export.py --mode test",

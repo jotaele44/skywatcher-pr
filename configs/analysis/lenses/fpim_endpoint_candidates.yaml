@@ -1,0 +1,76 @@
+lens_id: fpim.endpoint_candidates
+name: Track endpoint candidates
+owner: FPIM
+stage: flight_data_collection
+status: active
+version: 1.0.0
+objective: Characterize the geometry at each end of a reconstructed track and whether it is compatible with a takeoff or landing, without asserting that either occurred.
+
+required_inputs:
+  - reconstructed_track
+
+required_parameters:
+  - parameter_id: track_points
+    name: Track points
+    kind: array
+    description: Ordered positions forming the track.
+  - parameter_id: near_threshold_m
+    name: Near band
+    kind: number
+    unit: metre
+    threshold_id: FPIM-ENDPOINT-NEAR-3000M
+    description: Distance band for a near endpoint match.
+  - parameter_id: far_threshold_m
+    name: Far band
+    kind: number
+    unit: metre
+    threshold_id: FPIM-ENDPOINT-FAR-10000M
+    description: Distance band for an outer endpoint match.
+
+optional_parameters:
+  - parameter_id: airfield_registry
+    name: Airfield registry
+    kind: path
+    required: false
+    degraded_behavior: Endpoints cannot be matched against known airfields, so geometry is reported with no named candidate site.
+  - parameter_id: altitude_series
+    name: Altitude series
+    kind: array
+    required: false
+    degraded_behavior: Climb and descent geometry is unavailable, so takeoff and landing compatibility rests on planform alone and confidence stays at the lower band.
+
+measurements:
+  - endpoint_distance_m
+  - terminal_heading_deg
+  - terminal_speed
+  - track_truncation_flag
+
+emits:
+  - TAKEOFF_CANDIDATE
+  - LANDING_CANDIDATE
+  - TRACK_GAP
+  - DATA_BLACKOUT
+  - UNRESOLVED
+
+interpretation_restriction_minimum: NONE
+
+threshold_ids:
+  - FPIM-ENDPOINT-NEAR-3000M
+  - FPIM-ENDPOINT-FAR-10000M
+
+contradiction_tests:
+  - endpoint_vs_coverage_edge
+  - endpoint_vs_data_blackout
+  - truncation_vs_genuine_terminus
+
+evidence_axes_required:
+  - evidence_tier
+  - geometry_status
+  - temporal_status
+  - confidence_score
+
+prohibited_claims:
+  - Candidate, not event. TAKEOFF_CANDIDATE and LANDING_CANDIDATE must not be shortened to TAKEOFF or LANDING unless independently verified.
+  - Do not infer mission or purpose from endpoint geometry or from the site matched.
+  - Proximity is a measurement, not a relationship. Do not imply access, permission, or facility association.
+  - Do not treat a track gap as evidence of concealment.

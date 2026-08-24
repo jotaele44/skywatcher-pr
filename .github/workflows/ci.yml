@@ -89,6 +89,27 @@ jobs:
       - name: Imagery tests
         run: pytest tests/test_imagery_*.py -q
 
+  test-adsb:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Assert isolated checkout
+        run: test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
+      - name: Install adsb deps
+        run: |
+          python -m pip install -r requirements-adsb.txt pytest
+          test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
+      - name: ADS-B tests
+        run: pytest tests/test_adsb_*.py -q
+
   frontend:
     runs-on: ubuntu-latest
     defaults:

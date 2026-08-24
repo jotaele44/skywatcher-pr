@@ -12,6 +12,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from skywatcher.core.lenses import default_registry as _default_threshold_registry
+
+_thresholds = _default_threshold_registry()
+
 try:
     from skywatcher.corrim.gis_intelligence import PuertoRicoInfrastructure
     _INFRA = PuertoRicoInfrastructure()
@@ -52,15 +56,28 @@ IDENTITY_NOTE = (
     "but is not standalone evidence"
 )
 
-CONFIDENCE_WEIGHTS = {
-    "recurrence": 0.30,
-    "loiter": 0.25,
-    "infra_align": 0.20,
-    "hydro_utility": 0.15,
-    "mbil_proximity": 0.10,
+# Bound to the governed threshold registry per ADR v2.1 A3, which authorizes threshold
+# binding on this file and nothing else - the same migration row's field renames,
+# identity-priority removal and mission-label scoping remain blocked. Values are
+# unchanged; what changes is that each now carries an owner, status and failure behavior,
+# and is recorded as CANDIDATE rather than reading as a settled weight.
+_WEIGHT_THRESHOLD_IDS = {
+    "recurrence": "ILAP-WEIGHT-RECURRENCE",
+    "loiter": "ILAP-WEIGHT-LOITER",
+    "infra_align": "ILAP-WEIGHT-INFRA",
+    "hydro_utility": "ILAP-WEIGHT-HYDRO-UTILITY",
+    "mbil_proximity": "ILAP-WEIGHT-MBIL-PROXIMITY",
 }
 
-GRID_DEG = 0.05  # ~5 km grid cell size
+CONFIDENCE_WEIGHTS = {
+    name: _thresholds.value_of(threshold_id)
+    for name, threshold_id in _WEIGHT_THRESHOLD_IDS.items()
+}
+
+# ILAP-IDENTITY-PRIORITY is PROHIBITED in the registry and is deliberately absent here:
+# weak aircraft identity may be recorded as a gap but must never raise review priority.
+
+GRID_DEG = _thresholds.value_of("ILAP-GRID-0.05DEG")  # ~5 km grid cell size
 
 
 def _hydro_utility_score(center_lat: float, center_lon: float) -> float:

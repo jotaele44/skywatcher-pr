@@ -5,7 +5,7 @@
 # Package: imagery/   Entry point: python -m imagery.server
 # Providers: NASA GIBS (no auth), Sentinel Hub, Copernicus/CDSE (OAuth2).
 fastmcp>=2.9,<3
-requests>=2.31
+requests>=2.34.2
 python-dotenv>=1.0
 Pillow>=10.0
 numpy
