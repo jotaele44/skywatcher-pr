@@ -14,7 +14,7 @@
 pytesseract>=0.3.13,<0.4     # Tesseract OCR bindings (fr24 OCR modules)
 opencv-python>=4.8,<5        # UI segmentation / route + track vectorization
 Pillow>=10.0                 # image open / dimensions / EXIF (screenshot inventory + metadata)
-pillow-heif>=0.16            # HEIC/HEIF screenshot support
+pillow-heif>=1.5.0            # HEIC/HEIF screenshot support
 numpy>=1.24                  # affine coordinate fitting / vectorization
 jsonschema>=4.20             # schema validation (bridge + record contracts)
 pyarrow>=14.0                # columnar export (Parquet)
