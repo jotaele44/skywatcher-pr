@@ -157,3 +157,41 @@ legacy (quarantine) <──  aircraft_intelligence.py shim only
 Everything else — CI, `federation.json.hub_callable_commands`, existing
 import paths, existing tests — continues to work unchanged; the boundary is
 additive scaffolding around already-working code, not a rewrite of it.
+
+---
+
+## Revision 2026-07-20 — FR24 ingest ownership + gated mission classification
+
+The FR24 screenshot-processing capability was consolidated into Skywatcher (the
+repository-boundary correction that moved it out of `spiderweb-pr`). Two
+boundary decisions follow.
+
+### 1. New `fr24_ingest` bucket
+
+`src/skywatcher/fr24/**` is a new module bucket (`fr24_ingest`) that owns the
+consolidated FR24 screenshot pipeline (source, identity, OCR, telemetry parsing,
+reconstruction, dedup, validation, review, database, export). It is an
+integration tier — like CORRIM but for ingestion — and is permitted to import
+`core`, `satim`, and `fpim` (the OCR / flight-reconstruction helpers it
+orchestrates). It wraps the pre-existing top-level `fr24/*` implementation
+modules, which remain the tested implementation.
+
+`ALLOWED_IMPORTS["fr24_ingest"] = {"core", "satim", "fpim", "fr24_ingest"}`.
+No `core`/`satim`/`fpim`/`corrim` module may import `fr24_ingest`.
+
+### 2. Mission/intent inference: forbidden → "speculative-until-gated"
+
+The previous posture forbade all mission/intent inference (quarantining
+`FlightMissionAnalyzer` under `do_not_assume_intentional`). This is **revised**:
+mission classification is now *permitted* but is treated as **highly
+speculative** until its supporting evidence score surpasses a high threshold
+gate. The gate lives in `src/skywatcher/fr24/mission_classification.py`
+(`HIGH_THRESHOLD`, default 0.85). A classification's `status` is
+`highly_speculative` unless the evidence strictly exceeds the threshold, in which
+case it is `evidence_gated`. The gate **never** emits a "confirmed" verdict.
+
+The legacy heuristic (`skywatcher.legacy.quarantined_mission_inference`) remains
+quarantined as-is (it is DB-coupled and pre-dates the gate); any mission label it
+produces MUST be passed through the gate before it is exported. Exported bridge
+records carry the gated object, never a Skywatcher-confirmed mission fact — so the
+no-unfounded-intent principle is preserved by construction.

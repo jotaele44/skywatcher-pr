@@ -1,21 +1,35 @@
-threshold_id,owner,current_value,unit,purpose,status,validation_artifact,failure_behavior
-SATIM-ARTIFACT-CONFIRMED-0.90,SATIM,0.90,score,Artifact confidence level boundary,CANDIDATE,NONE_CONFIRMED,Do not emit CONFIRMED_ARTIFACT automatically.
-SATIM-ARTIFACT-HIGH-0.75,SATIM,0.75,score,Artifact confidence level boundary,CANDIDATE,NONE_CONFIRMED,Use numeric score and rationale; no universal label.
-SATIM-ARTIFACT-MODERATE-0.50,SATIM,0.50,score,Artifact confidence level boundary,CANDIDATE,NONE_CONFIRMED,Use numeric score and rationale.
-SATIM-ARTIFACT-LOW-0.25,SATIM,0.25,score,Artifact confidence level boundary,CANDIDATE,NONE_CONFIRMED,Use numeric score and rationale.
-SATIM-QUEUE-CANDIDATE-0.80,SATIM,0.80,adjusted_score,Review queue band,CANDIDATE,Calibration-set-specific only,Queue state only; no truth promotion.
-SATIM-QUEUE-CROSSSOURCE-0.70,SATIM,0.70,adjusted_score,Cross-source review queue band,CANDIDATE,Calibration-set-specific only,Require human cross-source review.
-SATIM-QUEUE-REVIEW-0.55,SATIM,0.55,adjusted_score,Review queue entry,CANDIDATE,Calibration-set-specific only,No auto-promotion.
-ILAP-INFRA-2NM,CORRIM,2,nautical_mile,Maximum full infrastructure alignment score,CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.
-ILAP-INFRA-5NM,CORRIM,5,nautical_mile,Infrastructure alignment band,CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.
-ILAP-INFRA-10NM,CORRIM,10,nautical_mile,Infrastructure alignment band,CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.
-ILAP-INFRA-20NM,CORRIM,20,nautical_mile,Infrastructure alignment band,CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.
-ILAP-GRID-0.05DEG,CORRIM,0.05,degree,POI candidate clustering cell,CANDIDATE,NONE_CONFIRMED,Store method and latitude-dependent cell dimensions.
-ILAP-OVERALL-HIGH-0.70,CORRIM,0.70,heuristic_score,Review priority band,CANDIDATE,NONE_CONFIRMED,Rename to association_priority_score; review only.
-ILAP-OVERALL-MEDIUM-0.40,CORRIM,0.40,heuristic_score,Review priority band,CANDIDATE,NONE_CONFIRMED,Rename to association_priority_score; review only.
-ILAP-WEIGHT-RECURRENCE,CORRIM,0.30,weight,Composite heuristic,CANDIDATE,NONE_CONFIRMED,No confidence semantics.
-ILAP-WEIGHT-LOITER,CORRIM,0.25,weight,Composite heuristic,CANDIDATE,NONE_CONFIRMED,No intent semantics.
-ILAP-WEIGHT-INFRA,CORRIM,0.20,weight,Composite heuristic,CANDIDATE,NONE_CONFIRMED,No relevance or causation claim.
-ILAP-IDENTITY-PRIORITY,CORRIM,weak identity increases priority,rule,Review priority,PROHIBITED,N/A,Identity quality may be a gap field but must not increase significance priority.
-AASB-FIVE-FLIGHT-SATURATION,CORRIM adapter,5,flights,Edge support saturation,CANDIDATE,NONE_CONFIRMED,Rename confidence_score to edge_support_score or support_ratio.
-RLSM-SCALEBAR-OCR-15PCT,RLSM,15,percent unresolved otherwise recoverable,Decision to implement dedicated scale-bar OCR,CANDIDATE_PROJECT_GATE,PR171 operator-corpus assessment pending,Keep deferred unless condition is demonstrated.
+threshold_id,owner,current_value,unit,purpose,status,validation_artifact,failure_behavior,effective_version,supersedes
+SATIM-ARTIFACT-CONFIRMED-0.90,SATIM,0.90,score,Artifact confidence level boundary,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Do not emit CONFIRMED_ARTIFACT automatically.,v2.1,
+SATIM-ARTIFACT-HIGH-0.75,SATIM,0.75,score,Artifact confidence level boundary,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Use numeric score and rationale; no universal label.,v2.1,
+SATIM-ARTIFACT-MODERATE-0.50,SATIM,0.50,score,Artifact confidence level boundary,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Use numeric score and rationale.,v2.1,
+SATIM-ARTIFACT-LOW-0.25,SATIM,0.25,score,Artifact confidence level boundary,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Use numeric score and rationale.,v2.1,
+SATIM-QUEUE-CANDIDATE-0.80,SATIM,0.80,adjusted_score,Review queue band,EXECUTABLE_CANDIDATE,Calibration-set-specific only,Queue state only; no truth promotion.,v2.1,
+SATIM-QUEUE-CROSSSOURCE-0.70,SATIM,0.70,adjusted_score,Cross-source review queue band,EXECUTABLE_CANDIDATE,Calibration-set-specific only,Require human cross-source review.,v2.1,
+SATIM-QUEUE-REVIEW-0.55,SATIM,0.55,adjusted_score,Review queue entry,EXECUTABLE_CANDIDATE,Calibration-set-specific only,No auto-promotion.,v2.1,
+ILAP-INFRA-2NM,CORRIM,2,nautical_mile,Maximum full infrastructure alignment score,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.,v2.1,
+ILAP-INFRA-5NM,CORRIM,5,nautical_mile,Infrastructure alignment band,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.,v2.1,
+ILAP-INFRA-10NM,CORRIM,10,nautical_mile,Infrastructure alignment band,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.,v2.1,
+ILAP-INFRA-20NM,CORRIM,20,nautical_mile,Infrastructure alignment band,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Expose distance directly and label heuristic.,v2.1,
+ILAP-GRID-0.05DEG,CORRIM,0.05,degree,POI candidate clustering cell,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Store method and latitude-dependent cell dimensions.,v2.1,
+ILAP-OVERALL-HIGH-0.70,CORRIM,0.70,heuristic_score,Review priority band,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Rename to association_priority_score; review only.,v2.1,
+ILAP-OVERALL-MEDIUM-0.40,CORRIM,0.40,heuristic_score,Review priority band,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Rename to association_priority_score; review only.,v2.1,
+ILAP-WEIGHT-RECURRENCE,CORRIM,0.30,weight,Composite heuristic,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,No confidence semantics.,v2.1,
+ILAP-WEIGHT-LOITER,CORRIM,0.25,weight,Composite heuristic,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,No intent semantics.,v2.1,
+ILAP-WEIGHT-INFRA,CORRIM,0.20,weight,Composite heuristic,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,No relevance or causation claim.,v2.1,
+ILAP-IDENTITY-PRIORITY,CORRIM,weak identity increases priority,rule,Review priority,PROHIBITED,N/A,Identity quality may be a gap field but must not increase significance priority.,v2.1,
+AASB-FIVE-FLIGHT-SATURATION,CORRIM adapter,5,flights,Edge support saturation,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Rename confidence_score to edge_support_score or support_ratio.,v2.1,
+RLSM-SCALEBAR-OCR-15PCT,RLSM,15,percent unresolved otherwise recoverable,Decision to implement dedicated scale-bar OCR,CANDIDATE_PROJECT_GATE,PR171 operator-corpus assessment pending,Keep deferred unless condition is demonstrated.,v2.1,
+ILAP-WEIGHT-HYDRO-UTILITY,CORRIM,0.15,weight,Composite heuristic,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,No relevance or causation claim.,v2.1,
+ILAP-WEIGHT-MBIL-PROXIMITY,CORRIM,0.10,weight,Composite heuristic,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,No relevance or causation claim.,v2.1,
+FUSION-ANOMALY-WEIGHT-RATIO,CORRIM,0.65,weight,Historical-baseline anomaly score term,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Review prioritization only; no operational cueing.,v2.1,
+FUSION-ANOMALY-WEIGHT-CONFIDENCE,CORRIM,0.35,weight,Historical-baseline anomaly score term,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Review prioritization only; no operational cueing.,v2.1,
+FUSION-ANOMALY-BAND-HIGH-0.80,CORRIM,0.80,anomaly_score,Review band boundary,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Queue ordering only; not evidence strength.,v2.1,
+FUSION-ANOMALY-BAND-MODERATE-0.60,CORRIM,0.60,anomaly_score,Review band boundary,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Queue ordering only; not evidence strength.,v2.1,
+FUSION-ANOMALY-BAND-LOW-0.40,CORRIM,0.40,anomaly_score,Review band boundary and suppression floor,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Suppressed rows are dropped from review output; not a truth claim.,v2.1,
+SATIM-SEAM-SCORE-6.0,SATIM,6.0,score,Skill-stage tile seam candidate floor,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Emit candidate only; no confirmation.,v2.1,
+SATIM-UI-MARGIN-0.04,SATIM,0.04,frame_fraction,Screenshot UI margin exclusion band,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Mask only; never reclassify masked pixels.,v2.1,
+FPIM-ENDPOINT-NEAR-3000M,FPIM,3000,metre,Endpoint proximity match band,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Expose distance directly; candidate label only.,v2.1,
+FPIM-ENDPOINT-FAR-10000M,FPIM,10000,metre,Endpoint proximity outer band,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Expose distance directly; candidate label only.,v2.1,
+FPIM-WAVE-MAX-SPEED-180MPH,FPIM,180.0,mile_per_hour,Track plausibility ceiling,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Flag implausible segment; do not silently drop.,v2.1,
+FPIM-WAVE-MAX-CLIMB-1500FPM,FPIM,1500.0,foot_per_minute,Track plausibility ceiling,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Flag implausible segment; do not silently drop.,v2.1,
+SATIM-DUALUSE-REVIEW-0.60,SATIM,0.60,score,Dual-use function candidate review floor,EXECUTABLE_CANDIDATE,NONE_CONFIRMED,Emit DUAL_USE_FUNCTION_CANDIDATE for human review only; never a purpose assertion.,v2.1,
