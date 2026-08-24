@@ -1,12 +1,14 @@
 """Benchmark denominator, confusion metrics and production gate for landscape classification."""
+
 from __future__ import annotations
 
 import hashlib
 import json
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 NEGATIVE_CONTROL_CLASSES = (
     "LANDSLIDE_OR_SCARP",
@@ -99,8 +101,12 @@ def evaluate_benchmark_manifest(path: str | Path) -> BenchmarkState:
     fixtures = list(data.get("fixtures") or ())
     repo_root = _repo_root(manifest_path)
 
-    required_positive, duplicate_positive = _requirements(data.get("required_positive_classes"))
-    required_negative, duplicate_negative = _requirements(data.get("required_negative_classes"))
+    required_positive, duplicate_positive = _requirements(
+        data.get("required_positive_classes")
+    )
+    required_negative, duplicate_negative = _requirements(
+        data.get("required_negative_classes")
+    )
     required = {**required_positive, **required_negative}
     blockers: list[str] = []
 
@@ -125,7 +131,9 @@ def evaluate_benchmark_manifest(path: str | Path) -> BenchmarkState:
         blockers.append("one or more fixtures lack frozen raw-byte SHA256")
     nonempty_hashes = [value for value in hashes if value]
     if len(nonempty_hashes) != len(set(nonempty_hashes)):
-        blockers.append("duplicate raw-byte SHA256 cannot count as independent fixtures")
+        blockers.append(
+            "duplicate raw-byte SHA256 cannot count as independent fixtures"
+        )
 
     calibration_ids = {
         str(item.get("fixture_id"))
@@ -184,7 +192,10 @@ def evaluate_benchmark_manifest(path: str | Path) -> BenchmarkState:
                 blockers.append(f"fixture {fixture_id} annotation invalid JSON")
 
         label_status = str(item.get("label_status") or "")
-        if label_status not in {"PROVISIONAL_HUMAN_ANNOTATION", "VERIFIED_GROUND_TRUTH"}:
+        if label_status not in {
+            "PROVISIONAL_HUMAN_ANNOTATION",
+            "VERIFIED_GROUND_TRUTH",
+        }:
             blockers.append(f"fixture {fixture_id} invalid label_status")
 
         if annotation is not None:
@@ -211,7 +222,9 @@ def evaluate_benchmark_manifest(path: str | Path) -> BenchmarkState:
     unresolved_required: list[str] = []
     for class_name, minimum in sorted(required.items()):
         if verified[class_name] < minimum:
-            unresolved_required.append(f"{class_name}:{verified[class_name]}/{minimum}")
+            unresolved_required.append(
+                f"{class_name}:{verified[class_name]}/{minimum}"
+            )
     if unresolved_required:
         blockers.append("required verified fixture coverage is incomplete")
 
@@ -264,8 +277,13 @@ def evaluate_predictions(
             blockers.append("duplicate competing class in prediction vector")
         missing = set(EXPECTED_COMPETING_CLASSES) - set(names)
         if missing:
-            blockers.append("prediction missing competing classes: " + ", ".join(sorted(missing)))
-        null_competitor_count += sum(item.get("score") is None for item in competitors)
+            blockers.append(
+                "prediction missing competing classes: "
+                + ", ".join(sorted(missing))
+            )
+        null_competitor_count += sum(
+            item.get("score") is None for item in competitors
+        )
 
         terminal = str(assessment.get("terminal_state") or "")
         if terminal == "REVIEW_UNRESOLVED":

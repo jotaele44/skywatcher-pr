@@ -1,4 +1,5 @@
 """Typed records for SATIM landscape morphology, calibration and candidate assessment."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -25,8 +26,8 @@ class LandscapeMetrics:
         return asdict(self)
 
     @classmethod
-    def from_mapping(cls, data: dict[str, Any]) -> "LandscapeMetrics":
-        return cls(**{k: data[k] for k in cls.__dataclass_fields__})
+    def from_mapping(cls, data: dict[str, Any]) -> LandscapeMetrics:
+        return cls(**{key: data[key] for key in cls.__dataclass_fields__})
 
 
 @dataclass(frozen=True)
@@ -47,14 +48,19 @@ class CalibrationProfile:
 
     @property
     def usable(self) -> bool:
-        return self.status in {"PROVISIONAL_POSITIVE_ONLY", "CALIBRATED", "VALIDATED"} and bool(self.thresholds) and self.min_evidence_families is not None
+        return (
+            self.status
+            in {"PROVISIONAL_POSITIVE_ONLY", "CALIBRATED", "VALIDATED"}
+            and bool(self.thresholds)
+            and self.min_evidence_families is not None
+        )
 
     @property
     def production_validated(self) -> bool:
         return self.status == "VALIDATED" and not self.blockers
 
     def stamps(self) -> tuple[dict[str, Any], ...]:
-        out = [
+        stamps = [
             {
                 "threshold_id": f"CALIBRATION:{self.profile_id}:{name}",
                 "value": value,
@@ -63,12 +69,16 @@ class CalibrationProfile:
             for name, value in sorted(self.thresholds.items())
         ]
         if self.min_evidence_families is not None:
-            out.append({
-                "threshold_id": f"CALIBRATION:{self.profile_id}:min_evidence_families",
-                "value": self.min_evidence_families,
-                "status": self.status,
-            })
-        return tuple(out)
+            stamps.append(
+                {
+                    "threshold_id": (
+                        f"CALIBRATION:{self.profile_id}:min_evidence_families"
+                    ),
+                    "value": self.min_evidence_families,
+                    "status": self.status,
+                }
+            )
+        return tuple(stamps)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -135,16 +145,27 @@ class LandscapeAssessment:
         return {
             "schema_version": self.schema_version,
             "method_version": self.method_version,
-            "source": {"sha256": self.source_sha256, "path": self.source_path},
+            "source": {
+                "sha256": self.source_sha256,
+                "path": self.source_path,
+            },
             "metrics": self.metrics.to_dict(),
             "evidence_states": dict(self.evidence_states),
-            "independent_positive_evidence_count": self.independent_positive_evidence_count,
-            "competing_classes": [item.to_dict() for item in self.competing_classes],
+            "independent_positive_evidence_count": (
+                self.independent_positive_evidence_count
+            ),
+            "competing_classes": [
+                item.to_dict() for item in self.competing_classes
+            ],
             "top_class": self.top_class,
             "terminal_state": self.terminal_state,
             "review_required": self.review_required,
-            "production_promotion_authorized": self.production_promotion_authorized,
-            "thresholds_applied": [dict(item) for item in self.thresholds_applied],
+            "production_promotion_authorized": (
+                self.production_promotion_authorized
+            ),
+            "thresholds_applied": [
+                dict(item) for item in self.thresholds_applied
+            ],
             "calibration_profile_id": self.calibration_profile_id,
             "calibration_status": self.calibration_status,
             "benchmark_state": self.benchmark_state,
