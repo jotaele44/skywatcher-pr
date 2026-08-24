@@ -13,9 +13,9 @@ import re
 import sqlite3
 import sys
 import unicodedata
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
 
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
