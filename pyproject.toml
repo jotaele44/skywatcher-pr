@@ -26,7 +26,11 @@ markers = [
 line-length = 100
 target-version = "py310"
 src = [".", "src", "tests"]
-extend-exclude = ["Archive.zip", "gebco", "exports", "data"]
+# docs/architecture/archive holds the byte-frozen pre-unfreeze ontology baseline
+# (ADR v2.1 A0), including a copy of the OLD governance test. Those bytes must not
+# change — their SHA-256 values are asserted — so no linter or formatter may touch
+# them. pytest already skips it via testpaths = ["tests"].
+extend-exclude = ["Archive.zip", "gebco", "exports", "data", "docs/architecture/archive"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "W"]

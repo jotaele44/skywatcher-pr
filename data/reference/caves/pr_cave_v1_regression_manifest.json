@@ -1,0 +1,15 @@
+{
+  "baseline_version": "v1",
+  "artifact": "PR_CAVE_OCR_BASELINE_conservative_v1.json",
+  "sha256": "8cb0ef11b8648651de32b8bf7e506c83e777bede765a4506d4159b0d4294f608",
+  "source_manifest": [
+    {"source_file":"Cuevas & Cavernas.csv","sha256":"69cfd5e65aebf600c9f1344f4fe9ccde6303c4c787c934e45babaeb7326cd883","data_rows":29},
+    {"source_file":"PEA_IDO_Dataset_v0_5__assets.csv","sha256":"fdaf5587d97703303a35f9d34830feb8c5c9a62ad5e4e33e4d6a6325cb25be7c","data_rows":57},
+    {"source_file":"pemas_-_permisos_de_uso_01.abr.2015.csv","sha256":"7a3a29593756bb113ec9848d83f60e10fda653e5cedab3e30a7efc902ed874af","data_rows":37374},
+    {"source_file":"PR_Otras_Areas_Protegidas_POINTS_WGS84.csv","sha256":"2a90675c9c90829c7a65558c0840a763a214d940ba8e2db1ec27325b7b029661","data_rows":118},
+    {"source_file":"PR_Reservas_Naturales_POINTS_WGS84.csv","sha256":"ad928965f97a8b5784735283d3fdf198a6e1d52e9148d826bca287c271def9bd","data_rows":51}
+  ],
+  "source_data_rows": 37629,
+  "record_count": 2,
+  "immutability_rule": "Never rewrite this snapshot in place; future baseline versions must reference this SHA256."
+}
