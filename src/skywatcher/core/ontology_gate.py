@@ -35,6 +35,51 @@ REQUIRED_CONFIGS = [
     "endpoint_recall_audit.yaml",
 ]
 
+# The analysis lens registry lives in subdirectories rather than flat files, so it is
+# checked separately. Both must exist and be non-empty: an absent lens directory would
+# otherwise let a run report "no lenses required" and pass, which is precisely the
+# silent-skip the registry exists to prevent.
+REQUIRED_ANALYSIS_DIRS = [
+    "analysis/lenses",
+    "analysis/objectives",
+]
+
+
+def _check_analysis_registry(config_dir: Path, failures: list[str]) -> None:
+    """Fail closed when the lens registry is missing, malformed, or self-inconsistent."""
+    for relative in REQUIRED_ANALYSIS_DIRS:
+        directory = config_dir / relative
+        if not directory.is_dir():
+            failures.append(f"missing required config directory: {relative}")
+            continue
+        if not any(p.suffix in (".yaml", ".yml", ".json") for p in directory.glob("*")):
+            failures.append(f"no definitions in required config directory: {relative}")
+
+    if failures:
+        return
+
+    # Imported here rather than at module scope so the gate's other checks still run
+    # when the lens package is unavailable for an unrelated reason.
+    from skywatcher.core.lenses.registry import (
+        LensRegistry,
+        ObjectiveProfileRegistry,
+        unknown_lens_references,
+    )
+
+    lenses = LensRegistry()
+    objectives = ObjectiveProfileRegistry()
+    try:
+        lenses.load_dir(config_dir / "analysis" / "lenses")
+        objectives.load_dir(config_dir / "analysis" / "objectives")
+    except (ValueError, FileNotFoundError) as exc:
+        failures.append(f"analysis lens registry failed to load: {exc}")
+        return
+
+    for profile_id, dangling in unknown_lens_references(objectives.all(), lenses).items():
+        failures.append(
+            f"objective {profile_id} references unregistered lens(es): {', '.join(dangling)}"
+        )
+
 
 def run_gate(config_dir: Path = Path("configs")) -> dict[str, object]:
     failures: list[str] = []
@@ -43,6 +88,8 @@ def run_gate(config_dir: Path = Path("configs")) -> dict[str, object]:
     for filename in REQUIRED_CONFIGS:
         if not (config_dir / filename).exists():
             failures.append(f"missing required config: {filename}")
+
+    _check_analysis_registry(config_dir, failures)
 
     guardrail_path = config_dir / "location_naming_guardrails.yaml"
     if guardrail_path.exists():
