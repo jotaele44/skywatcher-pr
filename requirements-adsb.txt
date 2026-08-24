@@ -4,5 +4,5 @@
 #
 # Package: adsb/   Entry point: python scripts/adsb_poll.py
 # Provider: OpenSky Network (free; OAuth2 client-credentials, anonymous fallback).
-opensky-api @ git+https://github.com/openskynetwork/opensky-api.git#subdirectory=python
+opensky-api @ git+https://github.com/openskynetwork/opensky-api.git@16e3803d2495d0029bebc3c85b2a235eeb122742#subdirectory=python
 python-dotenv>=1.0

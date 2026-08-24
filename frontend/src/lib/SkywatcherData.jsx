@@ -15,6 +15,9 @@ const ENTITIES = {
   exports: "ExportPackages",
   readiness: "ReadinessReports",
   syncs: "FederationSyncEvents",
+  lenses: "AnalysisLenses",
+  objectives: "AnalysisObjectives",
+  coverage: "LensCoverage",
   spatialObservations: "RLSMSpatialObservations",
   spatialFrames: "RLSMSpatialFrames",
   zoomRungs: "RLSMZoomRungs",
@@ -28,6 +31,7 @@ const ENTITY_LIMITS = {
 const emptyData = () => ({
   observations: [], aircraft: [], captures: [], routes: [], assets: [],
   links: [], airports: [], reviews: [], exports: [], readiness: [], syncs: [],
+  lenses: [], objectives: [], coverage: [],
   spatialObservations: [], spatialFrames: [], zoomRungs: [],
 });
 

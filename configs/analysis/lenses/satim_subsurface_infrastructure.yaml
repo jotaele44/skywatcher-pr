@@ -1,0 +1,86 @@
+lens_id: satim.subsurface_infrastructure
+name: Subsurface infrastructure surface proxies
+owner: SATIM
+stage: satellite_image_processing
+status: experimental
+version: 1.0.0
+objective: Detect the surface signatures that buried infrastructure leaves behind - linear vegetation breaks, maintained easements, spoil and cut/fill earthwork, access patterns, and surface scarring - without claiming to see below ground.
+
+required_inputs:
+  - source_frame
+  - roi_target
+
+required_parameters:
+  - parameter_id: roi_target
+    name: Target ROI
+    kind: array
+    description: Pixel bbox of the suspected corridor or earthwork.
+  - parameter_id: artifact_exclusion_complete
+    name: Artifact exclusion complete
+    kind: boolean
+    description: The image artifacts lens must have run first, because tile seams and compression ringing are linear and are the dominant false positive for corridor detection.
+  - parameter_id: corridor_axis_deg
+    name: Corridor axis
+    kind: number
+    unit: degree
+    description: Dominant axis of the linear feature, required because axis agreement with the tile grid is what separates an easement from a mosaic seam.
+
+optional_parameters:
+  - parameter_id: second_epoch_frame
+    name: Second epoch frame
+    kind: path
+    required: false
+    degraded_behavior: Cannot distinguish fresh earthwork from a long-established corridor, so construction recency is unavailable and the finding carries no temporal claim.
+  - parameter_id: terrain_model
+    name: Terrain model
+    kind: path
+    required: false
+    degraded_behavior: Cut and fill volumes cannot be estimated, so earthwork is reported as present or absent with no magnitude.
+  - parameter_id: known_utility_reference
+    name: Known utility reference
+    kind: path
+    required: false
+    degraded_behavior: No exclusion of already-mapped utility corridors, so findings will include known infrastructure and the review queue carries avoidable volume.
+  - parameter_id: vegetation_baseline
+    name: Vegetation baseline
+    kind: path
+    required: false
+    degraded_behavior: A vegetation break cannot be separated from ordinary land-cover variation, so confidence stays at the lower band.
+
+measurements:
+  - linearity_ratio
+  - corridor_width_px
+  - vegetation_contrast_delta
+  - surface_tone_anomaly
+  - spoil_pile_area_px
+  - grade_discontinuity
+
+emits:
+  - LINEAR_CORRIDOR_CANDIDATE
+  - UTILITY_EASEMENT_CANDIDATE
+  - VEGETATION_BREAK_CANDIDATE
+  - EARTHWORK_CANDIDATE
+  - SURFACE_SCAR_CANDIDATE
+  - UNRESOLVED
+
+interpretation_restriction_minimum: NONE
+
+contradiction_tests:
+  - corridor_vs_tile_seam
+  - corridor_vs_natural_drainage
+  - corridor_vs_field_boundary
+  - earthwork_vs_terrain_shadow
+  - vegetation_break_vs_seasonal_senescence
+
+evidence_axes_required:
+  - evidence_tier
+  - visibility_class
+  - geometry_status
+  - confidence_score
+  - review_priority
+
+prohibited_claims:
+  - Surface proxies only. This lens never claims to observe a buried asset - it observes the surface, and a surface signature is compatible with many causes.
+  - Do not infer what a buried asset carries, who owns it, or what it connects.
+  - Do not infer depth, capacity, or condition.
+  - Do not treat an easement signature as evidence of current use.

@@ -1,0 +1,107 @@
+lens_id: satim.dual_use_function
+name: Dual-use function candidate
+owner: SATIM
+stage: satellite_image_processing
+status: experimental
+version: 1.0.0
+objective: Assess whether a structure's observable form is compatible with more than one plausible function - the civilian-looking site whose morphology also supports another use. Authorized by ADR v2.1 A1 as a bounded facility-function claim, and by nothing wider than that.
+
+required_inputs:
+  - source_frame
+  - roi_target
+  - structural_feature_finding
+
+required_parameters:
+  - parameter_id: roi_target
+    name: Target ROI
+    kind: array
+    description: Pixel bbox of the structure under assessment.
+  - parameter_id: artifact_exclusion_complete
+    name: Artifact exclusion complete
+    kind: boolean
+    description: The image artifacts lens must have run first.
+  - parameter_id: structural_feature_ids
+    name: Supporting structural findings
+    kind: array
+    description: Structural feature findings this assessment rests on. A function claim with no underlying observed structure is exactly what ADR v2.1 A1 forbids.
+  - parameter_id: registry_corroboration
+    name: Registry corroboration
+    kind: boolean
+    description: Whether an external infrastructure registry record was consulted. Required to be answered, not required to be true, but a bare false caps the assessment because imagery alone cannot carry a function claim.
+  - parameter_id: confidence_method
+    name: Confidence method
+    kind: string
+    description: Named method backing the score, per ADR v2.0 section 5.3.
+  - parameter_id: confidence_scope
+    name: Confidence scope
+    kind: string
+    description: What the confidence number is about.
+  - parameter_id: method_version
+    name: Method version
+    kind: string
+    description: Version of the confidence method.
+
+optional_parameters:
+  - parameter_id: second_epoch_frame
+    name: Second epoch frame
+    kind: path
+    required: false
+    degraded_behavior: No activity-change context, so the assessment rests on a single epoch and cannot distinguish a persistent configuration from a transient one.
+  - parameter_id: infrastructure_registry
+    name: Infrastructure registry
+    kind: path
+    required: false
+    degraded_behavior: Registry corroboration is unavailable, so the assessment cannot exceed the review floor and is emitted as UNRESOLVED rather than a function candidate.
+  - parameter_id: review_floor
+    name: Review floor
+    kind: number
+    required: false
+    threshold_id: SATIM-DUALUSE-REVIEW-0.60
+    degraded_behavior: Falls back to the registry value, and the applied value is stamped either way.
+
+measurements:
+  - footprint_area_m2
+  - access_road_count
+  - hardstanding_ratio
+  - perimeter_regularity
+  - outbuilding_count
+  - screening_vegetation_ratio
+
+emits:
+  - DUAL_USE_FUNCTION_CANDIDATE
+  - SINGLE_USE_CIVILIAN_CANDIDATE
+  - UNRESOLVED
+
+# A function claim is never allowed to stand alone on degraded imagery.
+interpretation_restriction_minimum: OBJECT_LEVEL_PROHIBITED
+
+threshold_ids:
+  - SATIM-DUALUSE-REVIEW-0.60
+
+contradiction_tests:
+  - morphology_vs_registered_function
+  - screening_vs_natural_vegetation
+  - hardstanding_vs_seasonal_bare_ground
+  - single_epoch_vs_transient_activity
+
+# All ten axes. A function claim is the highest-consequence output in the domain, so
+# none of them may be collapsed or omitted.
+evidence_axes_required:
+  - evidence_tier
+  - visibility_class
+  - provenance_status
+  - source_availability
+  - geometry_status
+  - temporal_status
+  - review_status
+  - hypothesis_status
+  - confidence_score
+  - review_priority
+
+prohibited_claims:
+  - Compatibility of form, not determination of function. "Could support" is the claim, "is used for" is not.
+  - Do not assert ownership, operator, or tenancy.
+  - Do not assert intent, mission, coordination, or wrongdoing.
+  - Do not assert access rights or that any activity occurred.
+  - Do not derive function from flight behavior, operator identity, callsign, or POI proximity - that is FPIM and CORRIM territory and remains prohibited to SATIM.
+  - Do not promote a candidate to confirmed without a named human review gate.
