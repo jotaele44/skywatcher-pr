@@ -46,7 +46,7 @@ class OpenSkyProvider(AdsbProvider):
             from opensky_api import OpenSkyApi
         except ImportError as exc:  # pragma: no cover - optional dep
             raise ProviderError(
-                "opensky-api is not installed; pip install -r requirements-adsb.txt"
+                "opensky-api is not installed; run: uv sync --extra adsb"
             ) from exc
         if self.client_id and self.client_secret:
             self._api = OpenSkyApi(client_id=self.client_id, client_secret=self.client_secret)

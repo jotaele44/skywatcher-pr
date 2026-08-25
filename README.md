@@ -119,7 +119,7 @@ Production-mode validation rejects synthetic rows. Current live-execution blocke
 ## Optional GEBCO terrain layer
 
 ```bash
-pip install -r requirements-geo.txt
+uv sync --extra geo
 ```
 
 `gebco/` is optional and tests should self-skip when geospatial dependencies are absent.
@@ -128,17 +128,21 @@ pip install -r requirements-geo.txt
 
 Requires **Python 3.10+** (CI tests 3.10–3.12). This is a flat-layout
 application — modules run in place, nothing is pip-installed as a package.
+Dependencies live in `pyproject.toml` as extras (`adsb`, `dev`, `fr24`, `geo`,
+`imagery`), resolved and locked with `uv` (`uv.lock`). The double-click
+desktop wrapper's deps are the federation-templated `requirements-desktop.txt`
+instead (see `desktop/README.md`).
 
 Install the same dependency set CI uses (`.github/workflows/ci.yml`) — the dev
-requirements plus `httpx` and the backend requirements the tests import:
+extra plus `httpx` and the backend requirements the tests import. The shared
+prii-* libraries resolve via a pinned git+https reference in
+`[tool.uv.sources]` — no thehub-pr sibling checkout needed:
 
 ```bash
-# thehub-pr must be a sibling checkout — requirements install the shared prii-*
-# libraries as editable local paths (../thehub-pr/packages/*):
-[ -d ../thehub-pr ] || git clone https://github.com/jotaele44/thehub-pr.git ../thehub-pr
-python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt
-pytest -q
-python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
+uv sync --extra dev
+uv pip install httpx -r server/backend/requirements.txt
+uv run pytest -q
+uv run python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
 ```
 
 ## Provenance
