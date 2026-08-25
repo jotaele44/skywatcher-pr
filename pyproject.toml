@@ -41,11 +41,6 @@ adsb = [
     "opensky-api",
     "python-dotenv>=1.0",
 ]
-# Double-click desktop wrapper (see desktop/).
-desktop = [
-    "pywebview>=6.2.1",
-    "prii-desktop",
-]
 dev = [
     "pytest-cov>=5",
 ]
@@ -88,7 +83,6 @@ package = false
 [tool.uv.sources]
 prii-maintenance = { git = "https://github.com/jotaele44/thehub-pr.git", rev = "f2b81769924689b4d959554928810b1d7b7ef3d6", subdirectory = "packages/prii_maintenance" }
 prii-export-utils = { git = "https://github.com/jotaele44/thehub-pr.git", rev = "f2b81769924689b4d959554928810b1d7b7ef3d6", subdirectory = "packages/prii_export_utils" }
-prii-desktop = { git = "https://github.com/jotaele44/thehub-pr.git", rev = "f2b81769924689b4d959554928810b1d7b7ef3d6", subdirectory = "packages/prii_desktop" }
 opensky-api = { git = "https://github.com/openskynetwork/opensky-api.git", rev = "16e3803d2495d0029bebc3c85b2a235eeb122742", subdirectory = "python" }
 
 [tool.pytest.ini_options]

@@ -128,8 +128,10 @@ uv sync --extra geo
 
 Requires **Python 3.10+** (CI tests 3.10–3.12). This is a flat-layout
 application — modules run in place, nothing is pip-installed as a package.
-Dependencies live in `pyproject.toml` as extras (`adsb`, `desktop`, `dev`,
-`fr24`, `geo`, `imagery`), resolved and locked with `uv` (`uv.lock`).
+Dependencies live in `pyproject.toml` as extras (`adsb`, `dev`, `fr24`, `geo`,
+`imagery`), resolved and locked with `uv` (`uv.lock`). The double-click
+desktop wrapper's deps are the federation-templated `requirements-desktop.txt`
+instead (see `desktop/README.md`).
 
 Install the same dependency set CI uses (`.github/workflows/ci.yml`) — the dev
 extra plus `httpx` and the backend requirements the tests import. The shared

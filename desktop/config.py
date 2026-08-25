@@ -31,16 +31,7 @@ DIST_DIR = FRONTEND_DIR / "dist"
 # Requirement files installed into the private .venv by desktop/setup.py.
 REQUIREMENT_FILES = [
     REPO_ROOT / "server" / "backend" / "requirements.txt",
-]
-
-# Desktop-only deps, installed by desktop/setup.py alongside REQUIREMENT_FILES.
-# pyproject.toml's [project.optional-dependencies].desktop extra is this
-# repo's source of truth for these; inlined here (rather than a separate
-# requirements-desktop.txt) since desktop/setup.py installs plain pip specs,
-# not project extras.
-EXTRA_PIP_SPECS = [
-    "pywebview>=6.2.1",
-    "prii-desktop @ git+https://github.com/jotaele44/thehub-pr.git@f2b81769924689b4d959554928810b1d7b7ef3d6#subdirectory=packages/prii_desktop",
+    REPO_ROOT / "requirements-desktop.txt",
 ]
 
 # Health endpoint used to detect that the backend is up.
