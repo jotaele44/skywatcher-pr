@@ -8,12 +8,27 @@ source_context:
   evidence_tier: T2_operational_screenshot
 marker_classes:
   dotted_line:
-    meaning: suspected seam
-    satim_role: tile_or_lod_boundary_detection
+    meaning: imagery_seam_observation
+    satim_role: imagery_seam_observation_detection
+    origin_identity: unresolved_until_origin_specific_gates_pass
+    allowed_origin_candidates:
+      - SOURCE_MOSAIC_CUTLINE
+      - DISPLAY_TILE_EDGE
+      - VIEWPORT_COMPOSITING_ARTIFACT
+      - NATURAL_SHADOW_BOUNDARY
+      - PHYSICAL_GROUND_FEATURE
+      - COMPRESSION_OR_RESAMPLING_ARTIFACT
+      - UNRESOLVED
+    forbidden_promotions:
+      - visual_seam_to_display_tile_edge_without_provider_tile_grid_binding
+      - visual_seam_to_physical_ground_feature_without_independent_ground_binding
+      - screen_lock_to_display_tile_edge
     expected_false_positives:
       - app_tile_loading
       - 3d_lod_transition
       - canopy_shadow_edge
+      - source_mosaic_cutline
+      - viewport_compositing_artifact
   squiggle:
     meaning: smudge_or_texture_loss
     satim_role: texture_frequency_anomaly_scoring
@@ -52,3 +67,8 @@ promotion_checks:
   - cross_source_persistence
   - geometry_coherence
   - false_positive_screening
+  - pan_coordinate_behavior
+  - adjacent_zoom_ground_persistence
+  - provider_tile_grid_binding_for_display_tile_edge
+  - independent_ground_binding_for_physical_feature
+  - source_mosaic_metadata_for_source_mosaic_pass
