@@ -33,9 +33,11 @@ function record(entry) {
 
 async function keyboardTraverse(page) {
   // Public settings load asynchronously and can rerender the shell immediately
-  // after DOMContentLoaded. Wait for the real sidebar links, then observe actual
-  // Tab traversal without forcing focus programmatically.
-  await page.getByRole('link', { name: 'Command Dashboard' }).waitFor({ timeout: 30000 })
+  // after DOMContentLoaded. Wait for the rendered dashboard itself, not a
+  // desktop-only sidebar target: compact layouts intentionally hide that link
+  // behind the mobile navigation control. Then observe genuine Tab traversal
+  // without forcing focus programmatically.
+  await page.getByRole('heading', { name: 'Command Dashboard' }).waitFor({ timeout: 30000 })
   await page.waitForTimeout(500)
   const traversed = []
   for (let i = 0; i < 8; i += 1) {
@@ -47,6 +49,7 @@ async function keyboardTraverse(page) {
         tag: el.tagName,
         text: (el.textContent || '').trim().slice(0, 80),
         href: el instanceof HTMLAnchorElement ? el.getAttribute('href') : null,
+        ariaLabel: el.getAttribute?.('aria-label') || null,
       }
     })
     if (focused) traversed.push(focused)
