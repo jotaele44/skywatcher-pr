@@ -294,8 +294,9 @@ Four launcher entry points, all converging on the same two-step flow:
 
 1. **`desktop/setup.py --ensure`** (idempotent, skipped after first successful run via a
    `.setup-complete` marker): creates a private `.venv` under the repo root, installs
-   `server/backend/requirements.txt` + `requirements-desktop.txt` into it (needs internet
-   the first time only), then runs `npm ci && npm run build` in `frontend/` to produce
+   `server/backend/requirements.txt` plus `desktop/config.py`'s `EXTRA_PIP_SPECS`
+   (pywebview, prii-desktop) into it (needs internet the first time only), then runs
+   `npm ci && npm run build` in `frontend/` to produce
    `frontend/dist/` — with `VITE_SKYWATCHER_API_BASE_URL`/`VITE_FEDERATION_API_BASE_URL`
    forced blank at build time so the desktop build can't be pointed at an external backend.
 2. **`desktop/launch.py`** (via `.venv/bin/python`): thin shim that calls
