@@ -20,6 +20,7 @@ const routes = [
   ['calibration', '/calibration'],
   ['analysis', '/analysis'],
   ['spatial-truth', '/spatial-truth'],
+  ['not-found', '/__gui_not_found__'],
 ]
 const viewports = [320, 375, 768, 1280, 1440, 1920].map((width) => ({ width, height: width < 768 ? 844 : 900 }))
 const engines = { chromium, firefox, webkit }
@@ -32,11 +33,6 @@ function record(entry) {
 }
 
 async function keyboardTraverse(page) {
-  // Public settings load asynchronously and can rerender the shell immediately
-  // after DOMContentLoaded. Wait for the rendered dashboard itself, not a
-  // desktop-only sidebar target: compact layouts intentionally hide that link
-  // behind the mobile navigation control. Then observe genuine Tab traversal
-  // without forcing focus programmatically.
   await page.getByRole('heading', { name: 'Command Dashboard' }).waitFor({ timeout: 30000 })
   await page.waitForTimeout(500)
   const traversed = []
@@ -88,13 +84,7 @@ for (const [engineName, engine] of Object.entries(engines)) {
 
         await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 })
         const traversed = await keyboardTraverse(page)
-        record({
-          engine: engineName,
-          viewport: viewport.width,
-          mode: 'keyboard-only',
-          status: traversed.length > 0 ? 'PASS' : 'FAIL',
-          traversed,
-        })
+        record({ engine: engineName, viewport: viewport.width, mode: 'keyboard-only', status: traversed.length > 0 ? 'PASS' : 'FAIL', traversed })
 
         await page.evaluate(() => { document.documentElement.style.zoom = '2' })
         const zoomLayout = await page.evaluate(() => ({
@@ -102,14 +92,7 @@ for (const [engineName, engine] of Object.entries(engines)) {
           clientWidth: document.documentElement.clientWidth,
           bodyWidth: document.body.getBoundingClientRect().width,
         }))
-        record({
-          engine: engineName,
-          viewport: viewport.width,
-          mode: 'css-200%-zoom-surrogate',
-          status: Number.isFinite(zoomLayout.scrollWidth) && zoomLayout.scrollWidth > 0 ? 'PASS' : 'FAIL',
-          note: 'CSS zoom stress only; not credited as native browser 200% zoom certification.',
-          layout: zoomLayout,
-        })
+        record({ engine: engineName, viewport: viewport.width, mode: 'css-200%-zoom-surrogate', status: Number.isFinite(zoomLayout.scrollWidth) && zoomLayout.scrollWidth > 0 ? 'PASS' : 'FAIL', note: 'CSS zoom stress only; not credited as native browser 200% zoom certification.', layout: zoomLayout })
       } catch (error) {
         record({ engine: engineName, viewport: viewport.width, status: 'FAIL', error: String(error), page_errors: pageErrors })
       } finally {
