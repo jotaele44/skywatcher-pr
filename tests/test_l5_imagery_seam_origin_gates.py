@@ -1,4 +1,6 @@
-from fr24.calibration.l5_tile_seam_shadow_calibration import classify_candidate_strict
+from fr24.calibration.l5_tile_seam_shadow_calibration import (
+    classify_candidate_strict,
+)
 
 
 BASE = {
