@@ -1,19 +1,82 @@
-import React, { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import * as maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { Radar, MapPin } from "lucide-react";
-import { projectToShell } from "@/lib/skywatcher";
+import { appParams } from "@/lib/app-params";
 
-// Simplified Puerto Rico mainland + outer islands silhouette (projected within PR_BOUNDS)
-// Path is a stylized diagnostic outline — not a survey-grade boundary.
-const PR_MAINLAND =
-  "M 60 150 L 90 138 L 130 132 L 180 130 L 240 128 L 300 130 L 360 134 L 410 140 L 450 150 " +
-  "L 470 168 L 460 188 L 430 200 L 380 206 L 320 208 L 260 208 L 200 206 L 150 200 L 100 190 " +
-  "L 70 175 Z";
+// Real MapLibre GL map of Puerto Rico airspace context, replacing the earlier
+// hand-rolled SVG/projectToShell shell. Point props (observations/airports/
+// assets) and the routes line prop are rendered as native GL layers; the
+// infrastructure-zone and flight-corridor polygons and the observation
+// heatmap are fetched directly from the backend's /api/geo/* endpoints,
+// since those need real buffered geometry the flat prop shape doesn't carry.
+const PR_CENTER = [-66.35, 18.2];
 
 const MARKER_STYLES = {
-  observation: { color: "hsl(190 100% 55%)", r: 4 },
-  airport: { color: "hsl(38 100% 56%)", r: 5 },
-  asset: { color: "hsl(262 52% 66%)", r: 4 },
+  observation: "hsl(190 100% 55%)",
+  airport: "hsl(38 100% 56%)",
+  asset: "hsl(262 52% 66%)",
 };
+
+const OSM_STYLE = {
+  version: 8,
+  sources: {
+    osm: {
+      type: "raster",
+      tiles: ["https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: "© OpenStreetMap contributors",
+    },
+  },
+  layers: [
+    { id: "bg", type: "background", paint: { "background-color": "hsl(220 34% 4%)" } },
+    { id: "osm", type: "raster", source: "osm", paint: { "raster-opacity": 0.55, "raster-saturation": -0.4 } },
+  ],
+};
+
+const EMPTY = { type: "FeatureCollection", features: [] };
+
+function toPointCollection(rows, latKey = "latitude", lonKey = "longitude") {
+  return {
+    type: "FeatureCollection",
+    features: rows
+      .filter((r) => r[latKey] != null && r[lonKey] != null)
+      .map((r) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [Number(r[lonKey]), Number(r[latKey])] },
+        properties: r,
+      })),
+  };
+}
+
+function toLineCollection(rows) {
+  return {
+    type: "FeatureCollection",
+    features: rows
+      .filter((r) => r.start_lat != null && r.start_lon != null && r.end_lat != null && r.end_lon != null)
+      .map((r) => ({
+        type: "Feature",
+        geometry: {
+          type: "LineString",
+          coordinates: [
+            [Number(r.start_lon), Number(r.start_lat)],
+            [Number(r.end_lon), Number(r.end_lat)],
+          ],
+        },
+        properties: r,
+      })),
+  };
+}
+
+async function fetchGeojson(path) {
+  try {
+    const res = await fetch(`${appParams.apiBaseUrl}${path}`);
+    if (!res.ok) return EMPTY;
+    return await res.json();
+  } catch {
+    return EMPTY;
+  }
+}
 
 export default function PuertoRicoMapShell({
   observations = [],
@@ -24,26 +87,142 @@ export default function PuertoRicoMapShell({
   title = "Puerto Rico Airspace Context",
   diagnostic = true,
 }) {
-  const W = 520;
-  const H = height;
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const readyRef = useRef(false);
+  const propsRef = useRef({ observations, airports, assets, routes });
+  propsRef.current = { observations, airports, assets, routes };
   const [hover, setHover] = useState(null);
+  const [showZones, setShowZones] = useState(true);
+  const [showCorridors, setShowCorridors] = useState(true);
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
-  const obsPts = observations
-    .filter((o) => o.latitude != null && o.longitude != null)
-    .map((o) => ({ ...projectToShell(o.latitude, o.longitude, W, H), data: o, kind: "observation" }));
-  const aptPts = airports
-    .filter((a) => a.latitude != null && a.longitude != null)
-    .map((a) => ({ ...projectToShell(a.latitude, a.longitude, W, H), data: a, kind: "airport" }));
-  const assetPts = assets
-    .filter((a) => a.latitude != null && a.longitude != null)
-    .map((a) => ({ ...projectToShell(a.latitude, a.longitude, W, H), data: a, kind: "asset" }));
-  const routeLines = routes
-    .filter((r) => r.start_lat != null && r.end_lat != null)
-    .map((r) => ({
-      a: projectToShell(r.start_lat, r.start_lon, W, H),
-      b: projectToShell(r.end_lat, r.end_lon, W, H),
-      data: r,
-    }));
+  useEffect(() => {
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: OSM_STYLE,
+      center: PR_CENTER,
+      zoom: 8.2,
+    });
+    mapRef.current = map;
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+
+    map.on("style.load", async () => {
+      const { observations: obs, airports: apt, assets: ast, routes: rte } = propsRef.current;
+
+      map.addSource("routes", { type: "geojson", data: toLineCollection(rte) });
+      map.addLayer({
+        id: "routes-line", type: "line", source: "routes",
+        paint: { "line-color": "hsl(190 100% 60%)", "line-width": 1.6, "line-dasharray": [3, 2], "line-opacity": 0.7 },
+      });
+
+      const [zones, corridors, heatmap] = await Promise.all([
+        fetchGeojson("/geo/infrastructure.geojson"),
+        fetchGeojson("/geo/corridors.geojson"),
+        fetchGeojson("/geo/observations/heatmap.geojson"),
+      ]);
+
+      map.addSource("zones", { type: "geojson", data: zones });
+      map.addLayer({
+        id: "zones-fill", type: "fill", source: "zones",
+        paint: { "fill-color": "hsl(0 84% 60%)", "fill-opacity": 0.08 },
+        layout: { visibility: showZones ? "visible" : "none" },
+      });
+      map.addLayer({
+        id: "zones-line", type: "line", source: "zones",
+        paint: { "line-color": "hsl(0 84% 60% / 0.6)", "line-width": 1 },
+        layout: { visibility: showZones ? "visible" : "none" },
+      });
+
+      map.addSource("corridors", { type: "geojson", data: corridors });
+      map.addLayer({
+        id: "corridors-fill", type: "fill", source: "corridors",
+        paint: { "fill-color": "hsl(38 100% 56%)", "fill-opacity": 0.1 },
+        layout: { visibility: showCorridors ? "visible" : "none" },
+      });
+      map.addLayer({
+        id: "corridors-line", type: "line", source: "corridors",
+        paint: { "line-color": "hsl(38 100% 56% / 0.6)", "line-width": 1, "line-dasharray": [2, 2] },
+        layout: { visibility: showCorridors ? "visible" : "none" },
+      });
+
+      map.addSource("obs-heatmap", { type: "geojson", data: heatmap });
+      map.addLayer({
+        id: "obs-heatmap-layer", type: "heatmap", source: "obs-heatmap",
+        paint: {
+          "heatmap-weight": ["get", "intensity"],
+          "heatmap-intensity": 1.1,
+          "heatmap-radius": 22,
+          "heatmap-opacity": 0.75,
+        },
+        layout: { visibility: showHeatmap ? "visible" : "none" },
+      });
+
+      map.addSource("assets", { type: "geojson", data: toPointCollection(ast) });
+      map.addLayer({
+        id: "assets-dot", type: "circle", source: "assets",
+        paint: { "circle-radius": 4.5, "circle-color": MARKER_STYLES.asset, "circle-opacity": 0.85, "circle-stroke-color": "#0b1220", "circle-stroke-width": 1 },
+      });
+
+      map.addSource("airports", { type: "geojson", data: toPointCollection(apt) });
+      map.addLayer({
+        id: "airports-dot", type: "circle", source: "airports",
+        paint: { "circle-radius": 5, "circle-color": MARKER_STYLES.airport, "circle-opacity": 0.9, "circle-stroke-color": "#0b1220", "circle-stroke-width": 1 },
+      });
+
+      map.addSource("observations", { type: "geojson", data: toPointCollection(obs) });
+      map.addLayer({
+        id: "observations-dot", type: "circle", source: "observations",
+        paint: { "circle-radius": 3.5, "circle-color": MARKER_STYLES.observation, "circle-opacity": 0.9, "circle-stroke-color": "#0b1220", "circle-stroke-width": 0.5 },
+      });
+
+      readyRef.current = true;
+
+      for (const layer of ["observations-dot", "airports-dot", "assets-dot", "zones-fill", "corridors-fill"]) {
+        map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
+        map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
+        map.on("click", layer, (e) => {
+          const f = e.features[0];
+          setHover({ point: e.point, props: f.properties });
+        });
+      }
+    });
+
+    return () => { readyRef.current = false; map.remove(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!readyRef.current) return;
+    mapRef.current.getSource("observations")?.setData(toPointCollection(observations));
+  }, [observations]);
+  useEffect(() => {
+    if (!readyRef.current) return;
+    mapRef.current.getSource("airports")?.setData(toPointCollection(airports));
+  }, [airports]);
+  useEffect(() => {
+    if (!readyRef.current) return;
+    mapRef.current.getSource("assets")?.setData(toPointCollection(assets));
+  }, [assets]);
+  useEffect(() => {
+    if (!readyRef.current) return;
+    mapRef.current.getSource("routes")?.setData(toLineCollection(routes));
+  }, [routes]);
+
+  useEffect(() => {
+    if (!readyRef.current) return;
+    mapRef.current.setLayoutProperty("zones-fill", "visibility", showZones ? "visible" : "none");
+    mapRef.current.setLayoutProperty("zones-line", "visibility", showZones ? "visible" : "none");
+  }, [showZones]);
+  useEffect(() => {
+    if (!readyRef.current) return;
+    mapRef.current.setLayoutProperty("corridors-fill", "visibility", showCorridors ? "visible" : "none");
+    mapRef.current.setLayoutProperty("corridors-line", "visibility", showCorridors ? "visible" : "none");
+  }, [showCorridors]);
+  useEffect(() => {
+    if (!readyRef.current) return;
+    mapRef.current.setLayoutProperty("obs-heatmap-layer", "visibility", showHeatmap ? "visible" : "none");
+  }, [showHeatmap]);
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-border bg-[hsl(220_34%_4%)]">
@@ -52,90 +231,64 @@ export default function PuertoRicoMapShell({
           <Radar className="h-4 w-4 text-primary" />
           <span className="text-xs font-bold uppercase tracking-wider text-foreground/90">{title}</span>
         </div>
-        {diagnostic && (
-          <span className="rounded-full border border-[hsl(262_52%_60%/0.35)] bg-[hsl(262_52%_60%/0.14)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[hsl(262_60%_76%)]">
-            Diagnostic / Sample
-          </span>
-        )}
+        <div className="flex items-center gap-1.5">
+          <ToggleChip label="Zones" active={showZones} onClick={() => setShowZones((v) => !v)} />
+          <ToggleChip label="Corridors" active={showCorridors} onClick={() => setShowCorridors((v) => !v)} />
+          <ToggleChip label="Heatmap" active={showHeatmap} onClick={() => setShowHeatmap((v) => !v)} />
+          {diagnostic && (
+            <span className="ml-1 rounded-full border border-[hsl(262_52%_60%/0.35)] bg-[hsl(262_52%_60%/0.14)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[hsl(262_60%_76%)]">
+              Diagnostic / Sample
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="relative bg-grid-radar">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: H }}>
-          {/* radar sweep rings */}
-          <g opacity="0.25">
-            <circle cx={W / 2} cy={H / 2} r="60" fill="none" stroke="hsl(190 100% 50% / 0.3)" strokeWidth="0.5" />
-            <circle cx={W / 2} cy={H / 2} r="120" fill="none" stroke="hsl(190 100% 50% / 0.2)" strokeWidth="0.5" />
-            <circle cx={W / 2} cy={H / 2} r="190" fill="none" stroke="hsl(190 100% 50% / 0.12)" strokeWidth="0.5" />
-          </g>
-
-          {/* PR silhouette */}
-          <path d={PR_MAINLAND} fill="hsl(217 32% 12% / 0.8)" stroke="hsl(190 100% 50% / 0.4)" strokeWidth="1" />
-          {/* Vieques + Culebra dots */}
-          <ellipse cx="470" cy="230" rx="14" ry="5" fill="hsl(217 32% 12% / 0.8)" stroke="hsl(190 100% 50% / 0.4)" strokeWidth="1" />
-          <circle cx="492" cy="210" r="5" fill="hsl(217 32% 12% / 0.8)" stroke="hsl(190 100% 50% / 0.4)" strokeWidth="1" />
-
-          {/* route lines */}
-          {routeLines.map((r, i) => (
-            <line
-              key={`rt-${i}`}
-              x1={r.a.x} y1={r.a.y} x2={r.b.x} y2={r.b.y}
-              stroke="hsl(190 100% 60% / 0.55)" strokeWidth="1.4" strokeDasharray="4 3"
-            />
-          ))}
-
-          {/* asset markers (diamonds) */}
-          {assetPts.map((p, i) => (
-            <rect
-              key={`as-${i}`} x={p.x - 3.5} y={p.y - 3.5} width="7" height="7"
-              transform={`rotate(45 ${p.x} ${p.y})`}
-              fill={MARKER_STYLES.asset.color} opacity="0.85"
-              onMouseEnter={() => setHover({ ...p })} onMouseLeave={() => setHover(null)}
-              style={{ cursor: "pointer" }}
-            />
-          ))}
-
-          {/* airport markers (squares) */}
-          {aptPts.map((p, i) => (
-            <rect
-              key={`ap-${i}`} x={p.x - 4} y={p.y - 4} width="8" height="8" rx="1"
-              fill={MARKER_STYLES.airport.color}
-              onMouseEnter={() => setHover({ ...p })} onMouseLeave={() => setHover(null)}
-              style={{ cursor: "pointer" }}
-            />
-          ))}
-
-          {/* observation markers (pulse dots) */}
-          {obsPts.map((p, i) => (
-            <g key={`ob-${i}`} onMouseEnter={() => setHover({ ...p })} onMouseLeave={() => setHover(null)} style={{ cursor: "pointer" }}>
-              <circle cx={p.x} cy={p.y} r="7" fill="hsl(190 100% 55% / 0.15)" />
-              <circle cx={p.x} cy={p.y} r="3.5" fill={MARKER_STYLES.observation.color} />
-            </g>
-          ))}
-        </svg>
+      <div className="relative">
+        <div ref={containerRef} style={{ height }} className="w-full" />
 
         {hover && (
           <div
-            className="pointer-events-none absolute z-10 max-w-[200px] rounded-md border border-border bg-popover px-2.5 py-1.5 text-[10px] shadow-lg"
-            style={{ left: `${(hover.x / W) * 100}%`, top: `${(hover.y / H) * 100}%`, transform: "translate(-50%, -120%)" }}
+            className="pointer-events-none absolute z-10 max-w-[220px] rounded-md border border-border bg-popover px-2.5 py-1.5 text-[10px] shadow-lg"
+            style={{ left: hover.point.x, top: hover.point.y, transform: "translate(-50%, -120%)" }}
           >
             <p className="font-semibold text-foreground">
-              {hover.data.callsign || hover.data.airport_name || hover.data.asset_name || "Record"}
+              {hover.props.callsign || hover.props.airport_name || hover.props.asset_name || hover.props.name || "Record"}
             </p>
-            <p className="font-mono text-muted-foreground">
-              {(hover.data.latitude ?? 0).toFixed(3)}, {(hover.data.longitude ?? 0).toFixed(3)}
-            </p>
+            {hover.props.latitude != null && (
+              <p className="font-mono text-muted-foreground">
+                {Number(hover.props.latitude).toFixed(3)}, {Number(hover.props.longitude).toFixed(3)}
+              </p>
+            )}
+            {hover.props.type && <p className="text-muted-foreground">{hover.props.type}</p>}
           </div>
         )}
       </div>
 
-      {/* legend */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-[10px] text-muted-foreground">
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: MARKER_STYLES.observation.color }} /> Observation</span>
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: MARKER_STYLES.airport.color }} /> Airport</span>
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5" style={{ background: MARKER_STYLES.asset.color, transform: "rotate(45deg)" }} /> Infrastructure</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: MARKER_STYLES.observation }} /> Observation</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: MARKER_STYLES.airport }} /> Airport</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: MARKER_STYLES.asset }} /> Infrastructure</span>
         <span className="flex items-center gap-1.5"><span className="inline-block h-0 w-3 border-t-2 border-dashed" style={{ borderColor: "hsl(190 100% 60%)" }} /> Route segment</span>
-        <span className="ml-auto flex items-center gap-1 font-mono"><MapPin className="h-3 w-3" /> PR_BOUNDS projection</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm border" style={{ borderColor: "hsl(0 84% 60% / 0.6)", background: "hsl(0 84% 60% / 0.15)" }} /> Restricted zone</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm border" style={{ borderColor: "hsl(38 100% 56% / 0.6)", background: "hsl(38 100% 56% / 0.15)" }} /> Flight corridor</span>
+        <span className="ml-auto flex items-center gap-1 font-mono"><MapPin className="h-3 w-3" /> MapLibre / OSM</span>
       </div>
     </div>
+  );
+}
+
+function ToggleChip({ label, active, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors ${
+        active
+          ? "border-primary/50 bg-primary/15 text-primary"
+          : "border-border text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {label}
+    </button>
   );
 }

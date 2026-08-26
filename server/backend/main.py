@@ -21,6 +21,7 @@ import logging
 import os
 import secrets
 import sqlite3
+import sys
 import uuid
 from pathlib import Path
 from typing import Any
@@ -37,6 +38,19 @@ RLSM_DB = ROOT / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 RLSM_MARKER_VERSION = "rlsm-aircraft-marker-v1"
 RLSM_GEOREF_VERSION = "rlsm-spatial-georef-v1"
 RLSM_MAX_POSITION_ERROR_M = 500
+ADSB_DB = Path(os.environ["SKYWATCHER_DB"]) if os.environ.get("SKYWATCHER_DB") else ROOT / "data" / "skywatcher.db"
+
+# The root-level gis_intelligence.py shim bootstraps src/ onto sys.path itself
+# (see docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md); importing it here rather than
+# reaching into skywatcher.corrim.gis_intelligence directly keeps this file on
+# the one supported cross-boundary entry point.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from gis_intelligence import (  # noqa: E402
+    CorridorAnalyzer,
+    HeatmapGenerator,
+    PuertoRicoInfrastructure,
+)
 
 app = FastAPI(
     title="Skywatcher-PR Dashboard API",
@@ -193,6 +207,32 @@ def load_airports() -> list[dict[str, Any]]:
         row.setdefault("longitude", row.get("lon"))
         row.setdefault("synthetic_flag", False)
     return rows
+
+
+def load_infrastructure_assets() -> list[dict[str, Any]]:
+    """Serialize the Puerto Rico infrastructure model (airports, power/port/
+    radar/USCG sites, restricted zones) into the flat asset shape the
+    dashboard's Infrastructure page and PuertoRicoMapShell already expect.
+    This was previously declared with no committed source (`InfrastructureAssets:
+    list`), so the Infrastructure page rendered empty regardless of data.
+    """
+    infra = PuertoRicoInfrastructure()
+    rows = [
+        {
+            "asset_id": f.feature_id,
+            "asset_name": f.name,
+            "asset_type": f.type.value,
+            "latitude": f.latitude,
+            "longitude": f.longitude,
+            "radius_nm": f.radius_nm,
+            "operator": f.operator,
+            "sector": f.sector,
+            "operational_notes": f.operational_notes,
+            "synthetic_flag": False,
+        }
+        for f in infra.features.values()
+    ]
+    return with_id(rows, "asset_id")
 
 
 def _rlsm_rows(query: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
@@ -503,8 +543,13 @@ LOADERS = {
     "RLSMSpatialFrames": load_rlsm_spatial_frames,
     "RLSMZoomRungs": load_rlsm_zoom_rungs,
     "FR24Captures": list,
+    # RouteSegments is FR24 screenshot track-mining output (route_cluster_id,
+    # extraction_method, segment_length_nm) — a different pipeline than the
+    # gis_intelligence.py corridor model, so it stays empty until that mining
+    # pipeline emits committed artifacts; wiring it to CorridorAnalyzer would
+    # mislabel hardcoded patrol corridors as mined route segments.
     "RouteSegments": list,
-    "InfrastructureAssets": list,
+    "InfrastructureAssets": load_infrastructure_assets,
     "AirspaceAssetLinks": list,
     "ManualReviewItems": list,
     "FederationSyncEvents": list,
@@ -647,3 +692,198 @@ def update_entity(
             )
             return {**row, **payload}
     raise HTTPException(status_code=404, detail=f"{entity_name} not found: {entity_id}")
+
+
+# ============================================================================
+# GIS / geo endpoints
+#
+# These serve real GeoJSON geometry to the MapLibre-based frontend, replacing
+# the earlier hand-rolled SVG projection. Infrastructure zones and flight
+# corridors are buffered into real Polygon geometry server-side (haversine
+# destination-point sampling) rather than shipping lat/lon+radius for the
+# client to approximate. All pure GET, computed in-memory — no repo files
+# are written, matching this module's read-only diagnostic contract.
+# ============================================================================
+
+_EARTH_RADIUS_NM = 3440.065
+
+
+def _destination_point(lat: float, lon: float, bearing_deg: float, distance_nm: float) -> tuple[float, float]:
+    """Great-circle destination point given a start point, bearing, and distance."""
+    from math import asin, atan2, cos, degrees, radians, sin
+
+    d_r = distance_nm / _EARTH_RADIUS_NM
+    br = radians(bearing_deg)
+    lat1 = radians(lat)
+    lon1 = radians(lon)
+    lat2 = asin(sin(lat1) * cos(d_r) + cos(lat1) * sin(d_r) * cos(br))
+    lon2 = lon1 + atan2(sin(br) * sin(d_r) * cos(lat1), cos(d_r) - sin(lat1) * sin(lat2))
+    return degrees(lat2), degrees(lon2)
+
+
+def _initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    from math import atan2, cos, degrees, radians, sin
+
+    lat1r, lat2r = radians(lat1), radians(lat2)
+    dlon = radians(lon2 - lon1)
+    x = sin(dlon) * cos(lat2r)
+    y = cos(lat1r) * sin(lat2r) - sin(lat1r) * cos(lat2r) * cos(dlon)
+    return (degrees(atan2(x, y)) + 360) % 360
+
+
+def _circle_polygon(lat: float, lon: float, radius_nm: float, n: int = 32) -> dict[str, Any]:
+    """Approximate a circular buffer (e.g. a restricted-airspace radius) as an
+    n-gon GeoJSON Polygon, rather than shipping the raw radius to the client.
+    """
+    ring = []
+    for i in range(n):
+        bearing = (360.0 / n) * i
+        plat, plon = _destination_point(lat, lon, bearing, radius_nm)
+        ring.append([plon, plat])
+    ring.append(ring[0])
+    return {"type": "Polygon", "coordinates": [ring]}
+
+
+def _corridor_polygon(
+    start: tuple[float, float], end: tuple[float, float], width_nm: float
+) -> dict[str, Any]:
+    """Buffer a start->end corridor centerline into a rectangular GeoJSON
+    Polygon of the given width, via perpendicular offsets at each endpoint.
+    """
+    lat1, lon1 = start
+    lat2, lon2 = end
+    bearing = _initial_bearing(lat1, lon1, lat2, lon2)
+    half_w = width_nm / 2
+    p1 = _destination_point(lat1, lon1, bearing - 90, half_w)
+    p2 = _destination_point(lat2, lon2, bearing - 90, half_w)
+    p3 = _destination_point(lat2, lon2, bearing + 90, half_w)
+    p4 = _destination_point(lat1, lon1, bearing + 90, half_w)
+    ring = [[p[1], p[0]] for p in (p1, p2, p3, p4, p1)]
+    return {"type": "Polygon", "coordinates": [ring]}
+
+
+def _points_to_geojson(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    features = []
+    for row in rows:
+        lat, lon = row.get("latitude"), row.get("longitude")
+        if lat is None or lon is None:
+            continue
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [float(lon), float(lat)]},
+            "properties": row,
+        })
+    return {"type": "FeatureCollection", "features": features}
+
+
+def _adsb_rows(query: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
+    """Query the ADS-B live-feed sink read-only. A checkout without an active
+    poller (the normal diagnostic state) simply advertises zero tracks.
+    """
+    if not ADSB_DB.is_file():
+        return []
+    uri = f"{ADSB_DB.resolve().as_uri()}?mode=ro"
+    try:
+        with sqlite3.connect(uri, uri=True, timeout=5.0) as conn:
+            conn.row_factory = sqlite3.Row
+            return [dict(row) for row in conn.execute(query, params).fetchall()]
+    except sqlite3.Error as exc:
+        log.warning("ADS-B track entity unavailable: %s", exc)
+        return []
+
+
+@app.get("/api/geo/observations.geojson")
+def geo_observations() -> dict[str, Any]:
+    return _points_to_geojson(load_observations())
+
+
+@app.get("/api/geo/airports.geojson")
+def geo_airports() -> dict[str, Any]:
+    return _points_to_geojson(load_airports())
+
+
+@app.get("/api/geo/infrastructure.geojson")
+def geo_infrastructure() -> dict[str, Any]:
+    infra = PuertoRicoInfrastructure()
+    features = [
+        {
+            "type": "Feature",
+            "geometry": _circle_polygon(f.latitude, f.longitude, f.radius_nm),
+            "properties": {
+                "feature_id": f.feature_id,
+                "name": f.name,
+                "type": f.type.value,
+                "operator": f.operator,
+                "sector": f.sector,
+                "radius_nm": f.radius_nm,
+                "operational_notes": f.operational_notes,
+            },
+        }
+        for f in infra.features.values()
+    ]
+    return {"type": "FeatureCollection", "features": features}
+
+
+@app.get("/api/geo/corridors.geojson")
+def geo_corridors() -> dict[str, Any]:
+    analyzer = CorridorAnalyzer(PuertoRicoInfrastructure())
+    features = [
+        {
+            "type": "Feature",
+            "geometry": _corridor_polygon(c.start_point, c.end_point, c.width_nm),
+            "properties": {
+                "corridor_id": c.corridor_id,
+                "name": c.name,
+                "purpose": c.purpose,
+                "typical_operator": c.typical_operator,
+                "activity_level": c.activity_level,
+                "width_nm": c.width_nm,
+            },
+        }
+        for c in analyzer.corridors
+    ]
+    return {"type": "FeatureCollection", "features": features}
+
+
+@app.get("/api/geo/observations/heatmap.geojson")
+def geo_observations_heatmap() -> dict[str, Any]:
+    generator = HeatmapGenerator()
+    for row in load_observations():
+        lat, lon = row.get("latitude"), row.get("longitude")
+        if lat is not None and lon is not None:
+            generator.add_point(float(lat), float(lon))
+    return generator.get_geojson()
+
+
+@app.get("/api/geo/tracks/{icao24}.geojson")
+def geo_track(icao24: str) -> dict[str, Any]:
+    """A single aircraft's ADS-B track as a GeoJSON LineString. Reuses the same
+    track-building logic as the Spiderweb bridge export (spiderweb_export.py),
+    rather than reimplementing point-list-to-LineString conversion here.
+    """
+    from skywatcher.fr24.spiderweb_export import _line_string as _track_line_string
+
+    rows = _adsb_rows(
+        """SELECT icao24, callsign, latitude, longitude, time_position
+           FROM adsb_state_vectors
+           WHERE icao24 = ? AND latitude IS NOT NULL AND longitude IS NOT NULL
+           ORDER BY time_position ASC""",
+        (icao24,),
+    )
+    geometry = _track_line_string(rows)
+    if geometry is None:
+        return {"type": "FeatureCollection", "features": []}
+    return {
+        "type": "FeatureCollection",
+        "features": [{
+            "type": "Feature",
+            "geometry": geometry,
+            "properties": {
+                "icao24": icao24,
+                "callsign": rows[0].get("callsign"),
+                "point_count": len(rows),
+                "first_time_position": rows[0].get("time_position"),
+                "last_time_position": rows[-1].get("time_position"),
+            },
+        }],
+    }
