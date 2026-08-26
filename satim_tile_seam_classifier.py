@@ -366,11 +366,8 @@ def classify_seam_origin(evidence: TileSeamEvidence) -> dict[str, object]:
         name for name, record in candidates.items() if record["state"] == STATE_PROVISIONAL
     ]
 
-    if len(pass_origins) == 1:
-        resolved_origin = pass_origins[0]
-    else:
-        # Zero PASS = not certified. Multiple PASS = contradiction, fail closed.
-        resolved_origin = ORIGIN_UNRESOLVED
+    # Zero PASS = not certified. Multiple PASS = contradiction, fail closed.
+    resolved_origin = pass_origins[0] if len(pass_origins) == 1 else ORIGIN_UNRESOLVED
 
     leading_origin_candidate = (
         pass_origins[0]
