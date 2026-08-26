@@ -2,7 +2,9 @@
 """Canonical SATIM artifact classifier CLI.
 
 Conservative rule: unknowns are held for review. The classifier must never
-promote a weak or unknown row directly to STRUCTURAL_SIGNAL.
+promote a weak or unknown row directly to STRUCTURAL_SIGNAL. Legacy
+``TILE_SEAM`` is an observation-level compatibility label only; it does not
+identify a provider tile edge, source mosaic cutline, shadow, or ground feature.
 """
 
 from __future__ import annotations
@@ -13,7 +15,7 @@ from pathlib import Path
 
 ARTIFACT_CLASSES = {
     "TRACK_LINE",
-    "TILE_SEAM",
+    "TILE_SEAM",  # legacy observation label; causal origin is separate
     "UI_OVERLAY",
     "ZOOM_BLUR",
     "COMPRESSION",
@@ -22,6 +24,15 @@ ARTIFACT_CLASSES = {
     "LABEL_COLLISION",
     "HOLD_REVIEW",
 }
+
+SEAM_ORIGIN_CANDIDATES = (
+    "SOURCE_MOSAIC_CUTLINE",
+    "DISPLAY_TILE_EDGE",
+    "VIEWPORT_COMPOSITING_ARTIFACT",
+    "NATURAL_SHADOW_BOUNDARY",
+    "PHYSICAL_GROUND_FEATURE",
+    "COMPRESSION_OR_RESAMPLING_ARTIFACT",
+)
 
 
 def classify_text(text: str) -> tuple[str, str]:
@@ -52,6 +63,17 @@ def classify_row(row: dict[str, str]) -> dict[str, str]:
     row.setdefault("impact_on_analysis", "Requires analyst review before promotion.")
     row.setdefault("promotion_status", "hold_artifact_control")
     row.setdefault("promotion_rule", "No STRUCTURAL_SIGNAL promotion without georeference and independent corroboration.")
+
+    # A text hit on tile/mosaic/seam vocabulary is discovery only. Preserve the
+    # full causal candidate set and fail closed until an origin-specific gate is
+    # supplied by the imagery-seam firewall.
+    if row.get("artifact_class") == "TILE_SEAM":
+        row.setdefault("observation_class", "IMAGERY_SEAM")
+        row["resolved_origin"] = "UNRESOLVED"
+        row["origin_status"] = "UNRESOLVED"
+        row["origin_candidates"] = "|".join(SEAM_ORIGIN_CANDIDATES)
+        row["origin_rule"] = "Legacy TILE_SEAM is observational only; causal identity requires origin-specific binding."
+
     return row
 
 
