@@ -132,8 +132,17 @@ class ArtifactAssessmentEngine:
         contradictions = tuple(str(x) for x in payload.get("contradictions", []))
         classification = max(0.0, min(1.0, raw_score - min(0.35, 0.08 * len(contradictions))))
         origin = float(payload.get("origin_confidence", classification))
+        origin_layer = str(payload.get("origin_layer") or "unresolved")
         rules = []
-        if source.get("source_type") in SCREENSHOT_TYPES and not payload.get(
+
+        # A confidence score cannot silently manufacture causal identity. When the
+        # origin layer itself is unresolved, causal confidence is exactly zero until an
+        # origin-specific binding supplies a non-unresolved layer.
+        if origin_layer == "unresolved":
+            if origin > 0.0:
+                rules.append("UNRESOLVED_ORIGIN_ZERO_CONFIDENCE")
+            origin = 0.0
+        elif source.get("source_type") in SCREENSHOT_TYPES and not payload.get(
             "raw_source_compared", False
         ):
             if origin > 0.74:
@@ -151,7 +160,6 @@ class ArtifactAssessmentEngine:
         applied, coverage, unmet = self._coverage(payload, candidates)
         thresholds = self._thresholds((primary, *contributing))
 
-        origin_layer = str(payload.get("origin_layer") or "unresolved")
         return AssessmentResult(
             primary,
             contributing,
