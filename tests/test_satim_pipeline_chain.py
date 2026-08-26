@@ -29,7 +29,7 @@ def _assessment_validator() -> ArtifactSchemaValidator:
     return ArtifactSchemaValidator(SCHEMAS / "satim_artifact_assessment_v1.schema.json")
 
 
-def test_build_assessment_maps_tile_seam_to_a01():
+def test_build_assessment_maps_tile_seam_to_a01_without_causal_origin():
     scored = [
         {"decision": "probable_ground_feature", "persistent_ground_feature_likelihood": 0.8},
         {"decision": "probable_tile_seam", "tile_seam_likelihood": 0.82},
@@ -38,9 +38,9 @@ def test_build_assessment_maps_tile_seam_to_a01():
     assert payload is not None
     assert payload["candidate_artifacts"] == ["SATIM-A01"]
     assert payload["confidence"]["score"] == 0.82
-    assert payload["origin_layer"] == "mosaic"
-    # Taxonomy: object interpretation across a seam requires verified
-    # geometric continuity, which auto-derivation cannot provide.
+    assert payload["origin_layer"] == "unresolved"
+    # Legacy seam classification is observation-level only. Geometry remains
+    # degraded, but neither mosaic nor renderer identity is manufactured.
     assert payload["interpretation_restriction"] == "GEOMETRY_DEGRADED"
     _assessment_validator().require_valid(payload)
 
@@ -92,7 +92,7 @@ def _run(tmp_path: Path, l5_csv_text: str):
     return satim_engine.run_satim_engine(manifest, tmp_path / "out")
 
 
-def test_engine_auto_derives_assessment_and_ledger(tmp_path):
+def test_engine_auto_derives_assessment_and_ledger_without_origin_promotion(tmp_path):
     summary = _run(tmp_path, STRONG_TILE_SEAM_ROW)
     outputs = summary["outputs"]
 
@@ -102,9 +102,10 @@ def test_engine_auto_derives_assessment_and_ledger(tmp_path):
     result = json.loads(Path(outputs["artifact_assessment"]).read_text(encoding="utf-8"))
     assert result["auto_derived"] is True
     assert result["primary_class"] == "SATIM-A01"
-    # screenshot source -> origin confidence capped at 0.74
-    assert result["origin_confidence"] == 0.74
-    assert "SCREENSHOT_ORIGIN_CAP_0_74" in result["rules_triggered"]
+    assert result["origin_layer"] == "unresolved"
+    assert result["origin_confidence"] == 0.0
+    assert "UNRESOLVED_ORIGIN_ZERO_CONFIDENCE" in result["rules_triggered"]
+    assert "SCREENSHOT_ORIGIN_CAP_0_74" not in result["rules_triggered"]
     # Class-derived restriction survives the gate into the persisted result.
     assert result["interpretation_restriction"] == "GEOMETRY_DEGRADED"
 
