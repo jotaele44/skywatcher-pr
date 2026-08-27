@@ -1,0 +1,13 @@
+{
+  "aircraft_observation_rows": 9963,
+  "batch_id": 1,
+  "blocker_classification": "BLOCKED",
+  "blocker_reason": "FR24 rows lack real latitude/longitude; non-synthetic export must not fabricate coordinates.",
+  "db_path": "/Users/jotaele/fed-repos/skywatcher-pr/data/operational/fr24_source_drop.sqlite",
+  "exportable_rows": 0,
+  "manual_review_rows": 3685,
+  "media_rows": 2856,
+  "missing_geometry_rows": 9963,
+  "missing_media_sha_rows": 9963,
+  "screenshots_inserted_or_seen": 9963
+}
