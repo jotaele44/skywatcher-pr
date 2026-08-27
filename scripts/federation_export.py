@@ -473,6 +473,9 @@ def write_package(streams: dict[str, list[dict[str, Any]]], out_dir: Path, mode:
     for stream in STREAM_ORDER:
         rows = streams.get(stream) or []
         if not rows:
+            stale = out_dir / f"{stream}.jsonl"
+            if stale.exists():
+                stale.unlink()
             continue
         fpath = out_dir / f"{stream}.jsonl"
         fpath.write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in rows))
