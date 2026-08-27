@@ -57,8 +57,8 @@
     "ready_for_hub_discovery": true,
     "ready_for_hub_live_execution": false,
     "blocking_conditions": [
-      "no live observation export yet — only the synthetic_airspace_package example is present",
-      "canonical export adapter (scripts/federation_export.py) projects observations->entities/sources/relationships; production blocked until non-synthetic observations load",
+      "bounded non-synthetic bbox/icon proof package exists, but full live observation export remains blocked pending media identity reconciliation and completed capture-geometry review",
+      "canonical export adapter (scripts/federation_export.py) projects observations->entities/sources/relationships; production live readiness remains blocked until the reviewed non-synthetic corpus is materially complete",
       "external imagery acquisition and production model execution are pending migration to TheHub under ADR 0006; the existing local imagery MCP and direct-provider vision path are deprecated but retained until parity, dual-run, rollback, GUI and retirement gates pass",
       "FR24 ingest pipeline is now in-tree (fr24/); ILAP intake still requires FlightRadar24 screenshot/track inputs supplied locally (external data gap)"
     ]

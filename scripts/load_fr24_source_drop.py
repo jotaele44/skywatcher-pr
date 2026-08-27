@@ -126,17 +126,18 @@ def _bbox_geojson(min_lon: float, min_lat: float, max_lon: float, max_lat: float
     )
 
 
-def load_capture_review(path: Path | None) -> dict[str, dict[str, str]]:
+def load_capture_review(path: Path | None) -> tuple[dict[str, dict[str, str]], int]:
     """Load reviewer-supplied capture geometry rows keyed by filename or sha256."""
     if path is None or not path.exists():
-        return {}
+        return {}, 0
     out: dict[str, dict[str, str]] = {}
-    for row in read_csv(path):
+    rows = read_csv(path)
+    for row in rows:
         for key in (row.get("filename"), row.get("sha256")):
             normalized = _norm_key(key)
             if normalized:
                 out[normalized] = row
-    return out
+    return out, len(rows)
 
 
 def derive_icon_point(row: dict[str, str]) -> dict[str, Any]:
@@ -246,7 +247,7 @@ def load_source_drop(
     obs_rows = read_csv(observations)
     review_rows = read_csv(review) if review.exists() else []
     media_by_name = best_media_by_filename(media_rows)
-    capture_rows = load_capture_review(capture_review)
+    capture_rows, capture_review_row_count = load_capture_review(capture_review)
 
     conn = sqlite3.connect(str(db_path))
     try:
@@ -412,7 +413,8 @@ def load_source_drop(
             "missing_media_sha_rows": missing_media_sha,
             "missing_geometry_rows": missing_geometry,
             "source_coordinate_rows": source_coordinate_rows,
-            "capture_review_rows": len(capture_rows),
+            "capture_review_rows": capture_review_row_count,
+            "capture_review_lookup_keys": len(capture_rows),
             "icon_derived_approx_rows": icon_derived_rows,
             "unresolved_capture_review_rows": unresolved_capture_review_rows,
             "exportable_rows": len(obs_rows) - missing_geometry,

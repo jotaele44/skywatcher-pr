@@ -9,6 +9,7 @@ from pathlib import Path
 
 from scripts.load_fr24_source_drop import load_source_drop
 from scripts.build_fr24_capture_review_worklist import build_worklist
+from scripts.reconcile_fr24_media_identity import reconcile
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BUILDER = REPO_ROOT / "scripts" / "build_producer_package.py"
@@ -235,3 +236,58 @@ def test_capture_review_worklist_preserves_media_identity(tmp_path: Path):
     assert rows[0]["sha256"] == "e" * 64
     assert rows[0]["aircraft_icon_visibility"] == "unreviewed"
     assert rows[0]["aircraft_point_method"] == "screenshot_icon_georeference"
+
+
+def test_media_identity_reconciler_separates_exact_from_candidate(tmp_path: Path):
+    media = tmp_path / "media.csv"
+    observations = tmp_path / "observations.csv"
+    _write_csv(
+        media,
+        [
+            {
+                "path": "active/screenshots/20260101/exact.png",
+                "kind": "screenshots",
+                "date_bucket": "20260101",
+                "sha256": "f" * 64,
+                "aircraft_or_callsign": "N123AB",
+            },
+            {
+                "path": "active/screenshots/20260102/candidate.png",
+                "kind": "screenshots",
+                "date_bucket": "20260102",
+                "sha256": "a" * 64,
+                "aircraft_or_callsign": "N456CD",
+            },
+        ],
+        ["path", "kind", "date_bucket", "sha256", "aircraft_or_callsign"],
+    )
+    _write_csv(
+        observations,
+        [
+            {
+                "aircraft_obs_id": "1",
+                "filename": "exact.png",
+                "filename_ts": "2026-01-01T00:00:00Z",
+                "registration": "N123AB",
+            },
+            {
+                "aircraft_obs_id": "2",
+                "filename": "renamed.png",
+                "filename_ts": "2026-01-02T00:00:00Z",
+                "registration": "N456CD",
+            },
+        ],
+        ["aircraft_obs_id", "filename", "filename_ts", "registration"],
+    )
+
+    summary = reconcile(
+        media_index=media,
+        observations=observations,
+        csv_out=tmp_path / "reconcile.csv",
+        json_out=tmp_path / "reconcile.json",
+    )
+    rows = list(csv.DictReader((tmp_path / "reconcile.csv").open("r", encoding="utf-8", newline="")))
+    assert summary["intersection_exact_filename"] == 1
+    assert summary["candidate_not_identity_rows"] == 2
+    assert rows[0]["match_status"] == "FOUND"
+    assert any(row["match_status"] == "CANDIDATE_NOT_IDENTITY" for row in rows)
