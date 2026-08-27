@@ -98,12 +98,22 @@ def _obs_attributes(obs: dict[str, Any]) -> dict[str, Any]:
     populated keys are emitted so the payload stays compact and deterministic.
     """
     attrs: dict[str, Any] = {}
-    for key in ("signal_type", "evidence_tier", "geometry_status", "temporal_status",
-                "location_name", "description_summary", "callsign", "operator"):
+    for key in (
+        "signal_type", "evidence_tier", "geometry_status", "temporal_status",
+        "location_name", "description_summary", "callsign", "operator",
+        "position_precision", "aircraft_point_status", "aircraft_point_method",
+        "aircraft_icon_visibility", "capture_bbox_geojson",
+        "capture_geometry_method",
+    ):
         val = obs.get(key)
         if val not in (None, ""):
             attrs[key] = val
-    for key in ("altitude_ft", "bearing", "duration_seconds"):
+    for key in (
+        "altitude_ft", "bearing", "duration_seconds",
+        "aircraft_point_uncertainty_m", "capture_geometry_confidence",
+        "capture_geometry_uncertainty_m", "control_point_count",
+        "control_point_residual_px",
+    ):
         num = _num(obs.get(key))
         if num is not None:
             attrs[key] = num
