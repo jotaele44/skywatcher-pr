@@ -63,6 +63,7 @@ def test_screema_tables_exist():
     expected = {"screenshots", "processing_runs", "ocr_observations",
                 "aircraft_observations", "flight_track_features", "labeled_pins",
                 "unlabeled_pin_candidates", "geo_anchors", "manual_review_queue",
+                "source_manifestations",
                 "aircraft_marker_frames", "aircraft_marker_detections",
                 "screenshot_georeferences", "zoom_ladder_rungs"}
     existing = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
@@ -70,43 +71,77 @@ def test_screema_tables_exist():
     assert not missing, f"missing tables: {missing}"
 
 
-def test_every_image_has_exactly_one_screenshots_row():
-    """Invariant 1: bijection between baseline image files and screenshots rows."""
+def test_every_supported_source_manifestation_is_accounted():
+    """Every physical supported image path is preserved exactly once."""
     c = _conn()
-    # Count baseline images on disk (excluding sidecars + missing-on-disk synth row)
-    files_on_disk = sorted(
-        p for sub in BASELINE.iterdir() if sub.is_dir()
-        for p in sub.iterdir()
-        if p.is_file() and not p.name.endswith(".sidecar.json")
-    )
-    # A hash-mismatched source may still occupy its pathname while being
-    # correctly classified as unavailable. Exclude every non-eligible database
-    # path from the disk-side count rather than treating pathname existence as
-    # verified source availability.
-    unavailable_paths = {
-        (REPO / rel_path).resolve()
-        for (rel_path,) in c.execute(
-            "SELECT rel_path FROM screenshots "
-            "WHERE source_availability NOT IN ('present','restored')"
+
+    supported = {".png", ".jpg", ".jpeg", ".heic", ".webp"}
+
+    physical = {
+        str(p.relative_to(REPO))
+        for p in BASELINE.rglob("*")
+        if p.is_file()
+        and not p.name.startswith(".")
+        and p.suffix.lower() in supported
+    }
+
+    manifestations = {
+        row[0]
+        for row in c.execute(
+            "SELECT rel_path FROM source_manifestations"
         )
     }
-    n_eligible_disk = sum(
-        path.resolve() not in unavailable_paths for path in files_on_disk
+
+    assert manifestations == physical, (
+        f"source manifestation mismatch: "
+        f"missing={len(physical - manifestations)} "
+        f"extra={len(manifestations - physical)}"
     )
 
-    n_present_rows = c.execute(
-        "SELECT COUNT(*) FROM screenshots "
-        "WHERE source_availability IN ('present','restored')"
+
+def test_logical_screenshots_are_one_row_per_payload_sha():
+    """N physical paths may map to one logical screenshot, never vice versa."""
+    c = _conn()
+
+    n_screenshots = c.execute(
+        "SELECT COUNT(*) FROM screenshots"
     ).fetchone()[0]
-    assert n_present_rows == n_eligible_disk, (
-        f"screenshots.available_rows ({n_present_rows}) != "
-        f"eligible on-disk images ({n_eligible_disk})"
+
+    n_manifest_sha = c.execute(
+        "SELECT COUNT(DISTINCT sha256) FROM source_manifestations"
+    ).fetchone()[0]
+
+    assert n_screenshots == n_manifest_sha
+
+    broken = c.execute("""
+        SELECT m.manifestation_id
+        FROM source_manifestations m
+        LEFT JOIN screenshots s
+          ON s.screenshot_id=m.screenshot_id
+         AND s.sha256=m.sha256
+        WHERE s.screenshot_id IS NULL
+        LIMIT 1
+    """).fetchone()
+
+    assert broken is None, (
+        f"source manifestation lacks exact logical SHA binding: {broken}"
     )
-    # SHA-256 uniqueness in screenshots table
-    n_dups = c.execute(
-        "SELECT COUNT(*) FROM (SELECT sha256 FROM screenshots GROUP BY sha256 HAVING COUNT(*) > 1)"
-    ).fetchone()[0]
-    assert n_dups == 0, f"{n_dups} duplicate sha256 in screenshots"
+
+
+def test_screenshots_contains_only_supported_image_media():
+    c = _conn()
+
+    supported = {"png", "jpg", "jpeg", "heic", "webp"}
+
+    bad = c.execute(
+        "SELECT screenshot_id, rel_path, ext "
+        "FROM screenshots "
+        "WHERE LOWER(ext) NOT IN ('png','jpg','jpeg','heic','webp') "
+        "LIMIT 10"
+    ).fetchall()
+
+    assert not bad, f"non-image rows in screenshots: {bad}"
+
 
 
 def test_screenshot_rel_path_is_unique_and_indexed():
@@ -303,3 +338,83 @@ def test_aircraft_observations_dedup_rejects_duplicates():
     finally:
         c.execute("ROLLBACK TO SAVEPOINT dedup_test")
         c.execute("RELEASE SAVEPOINT dedup_test")
+
+
+def test_empty_label_ocr_is_not_wordbox_migration_residue(tmp_path):
+    """A modern OCR row with zero words legitimately has raw_lines_json='[]'."""
+    import sqlite3
+
+    db = sqlite3.connect(":memory:")
+    db.executescript("""
+        CREATE TABLE ocr_observations (
+            obs_id INTEGER PRIMARY KEY,
+            screenshot_id INTEGER NOT NULL,
+            zone TEXT NOT NULL,
+            raw_text TEXT NOT NULL,
+            raw_lines_json TEXT,
+            n_words INTEGER
+        );
+
+        INSERT INTO ocr_observations
+            (obs_id, screenshot_id, zone, raw_text, raw_lines_json, n_words)
+        VALUES
+            (1, 100, 'label_layer', '', '[]', 0);
+    """)
+
+    n = db.execute("""
+        SELECT COUNT(*)
+        FROM ocr_observations o
+        WHERE o.obs_id IN (
+            SELECT MAX(obs_id)
+            FROM ocr_observations
+            WHERE zone='label_layer'
+            GROUP BY screenshot_id
+        )
+          AND (
+                COALESCE(TRIM(o.raw_text), '') != ''
+                OR COALESCE(o.n_words, 0) > 0
+              )
+          AND COALESCE(o.raw_lines_json, '') IN ('', '[]')
+    """).fetchone()[0]
+
+    assert n == 0
+
+
+def test_text_without_wordboxes_is_migration_residue():
+    """OCR text with no recorded boxes still requires repair."""
+    import sqlite3
+
+    db = sqlite3.connect(":memory:")
+    db.executescript("""
+        CREATE TABLE ocr_observations (
+            obs_id INTEGER PRIMARY KEY,
+            screenshot_id INTEGER NOT NULL,
+            zone TEXT NOT NULL,
+            raw_text TEXT NOT NULL,
+            raw_lines_json TEXT,
+            n_words INTEGER
+        );
+
+        INSERT INTO ocr_observations
+            (obs_id, screenshot_id, zone, raw_text, raw_lines_json, n_words)
+        VALUES
+            (1, 100, 'label_layer', 'San Juan', '[]', 2);
+    """)
+
+    n = db.execute("""
+        SELECT COUNT(*)
+        FROM ocr_observations o
+        WHERE o.obs_id IN (
+            SELECT MAX(obs_id)
+            FROM ocr_observations
+            WHERE zone='label_layer'
+            GROUP BY screenshot_id
+        )
+          AND (
+                COALESCE(TRIM(o.raw_text), '') != ''
+                OR COALESCE(o.n_words, 0) > 0
+              )
+          AND COALESCE(o.raw_lines_json, '') IN ('', '[]')
+    """).fetchone()[0]
+
+    assert n == 1

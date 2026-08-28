@@ -652,3 +652,67 @@ def test_multi_anchor_and_one_anchor_projection_with_bounded_error(
     assert evidence["independent_zoom_evidence"] == "near_dup_group"
     assert evidence["source_screenshot_id"] in {1, 2, 3}
     conn.close()
+
+
+def test_fit_screenshot_rejects_nonpositive_or_nonfinite_scale(monkeypatch):
+    import fr24.rlsm_georeference as g
+
+    anchors = [
+        (0.0, 0.0, 18.0, -66.0),
+        (100.0, 100.0, 17.9, -65.9),
+    ]
+
+    monkeypatch.setattr(
+        g,
+        "affine_scale_metrics",
+        lambda affine, center_lat: (0.0, 10.0, 5.0, 2.0),
+    )
+
+    result = g.fit_screenshot(
+        anchors,
+        (0, 0, 100, 100),
+    )
+
+    assert result["status"] == "rejected_geometry"
+    assert "non-positive" in result["reason"]
+
+
+
+def test_fit_screenshot_rejects_impossible_viewport_center_latitude(monkeypatch):
+    import fr24.rlsm_georeference as g
+
+    # Fit with valid axis signs but an absurd latitude slope. The viewport
+    # center extrapolates outside [-90,+90] and must be rejected before metric
+    # scale calculation.
+    monkeypatch.setattr(
+        g,
+        "fit_affine",
+        lambda pixel_xy, geo_latlon: (
+            -66.0,
+            0.001,
+            200.0,
+            -0.1,
+        ),
+    )
+
+    def must_not_be_called(*args, **kwargs):
+        raise AssertionError(
+            "scale metrics must not run for impossible latitude geometry"
+        )
+
+    monkeypatch.setattr(
+        g,
+        "affine_scale_metrics",
+        must_not_be_called,
+    )
+
+    result = g.fit_screenshot(
+        [
+            (0.0, 0.0, 18.0, -66.0),
+            (100.0, 100.0, 17.9, -65.9),
+        ],
+        (0, 0, 100, 100),
+    )
+
+    assert result["status"] == "rejected_geometry"
+    assert "latitude outside physical range" in result["reason"]
