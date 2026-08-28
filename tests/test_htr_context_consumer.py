@@ -25,12 +25,14 @@ def test_context_never_promotes_mission_or_identity():
 
 
 def test_discovery_only_row_is_rejected():
-    r = row(); r["state"] = "CANDIDATE_NOT_IDENTITY"
+    r = row()
+    r["state"] = "CANDIDATE_NOT_IDENTITY"
     with pytest.raises(HTRContextError):
         consume_htr_context([r])
 
 
 def test_identity_relation_is_rejected():
-    r = row(); r["relation_type"] = "SAME_AS"
+    r = row()
+    r["relation_type"] = "SAME_AS"
     with pytest.raises(HTRContextError):
         consume_htr_context([r])
