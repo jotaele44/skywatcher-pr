@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import sqlite3
 import subprocess
@@ -9,6 +10,7 @@ from pathlib import Path
 
 from scripts.load_fr24_source_drop import load_source_drop
 from scripts.build_fr24_capture_review_worklist import build_worklist
+from scripts.build_fr24_bbox_icon_review_batch import build_batch
 from scripts.reconcile_fr24_media_identity import reconcile
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -218,6 +220,102 @@ def test_source_drop_loader_keeps_non_visible_icon_review_bound(tmp_path: Path):
     assert summary["blocker_classification"] == "BLOCKED"
     assert summary["icon_derived_approx_rows"] == 0
     assert summary["unresolved_capture_review_rows"] == 1
+
+
+def test_bbox_icon_batch_builder_accepts_visible_icon_sha_bound_rows(tmp_path: Path):
+    source = tmp_path / "shot.png"
+    source.write_bytes(b"reviewed-fr24-screenshot")
+
+    sha = hashlib.sha256(source.read_bytes()).hexdigest()
+    media = tmp_path / "media.csv"
+    review = tmp_path / "review.csv"
+    observations = tmp_path / "observations.csv"
+    summary_out = tmp_path / "summary.json"
+    _write_csv(
+        media,
+        [{
+            "path": "FR24_DataBank/Media_Canonical/active/screenshots/20260101/shot.png",
+            "kind": "screenshots",
+            "date_bucket": "20260101",
+            "size": str(source.stat().st_size),
+            "sha256": sha,
+        }],
+        ["path", "kind", "date_bucket", "size", "sha256"],
+    )
+    _write_csv(
+        review,
+        [{
+            "review_status": "COMPLETED",
+            "filename": "shot.png",
+            "absolute_source_path": str(source),
+            "sha256": sha,
+            "aircraft_icon_visibility": "visible",
+            "observed_at": "2026-01-01T00:00:00Z",
+            "callsign": "C6062",
+            "confidence": "0.55",
+        }],
+        [
+            "review_status", "filename", "absolute_source_path", "sha256",
+            "aircraft_icon_visibility", "observed_at", "callsign", "confidence",
+        ],
+    )
+
+    summary = build_batch(
+        review_in=review,
+        media_index=media,
+        observations_out=observations,
+        summary_out=summary_out,
+        source_ref="test_batch",
+    )
+
+    assert summary["arithmetic"] == "1=1+0+0"
+    assert summary["accepted_rows"] == 1
+    rows = list(csv.DictReader(observations.open(encoding="utf-8", newline="")))
+    assert rows[0]["filename"] == "shot.png"
+    assert rows[0]["callsign"] == "C6062"
+
+
+def test_bbox_icon_batch_builder_rejects_sha_mismatch(tmp_path: Path):
+    source = tmp_path / "shot.png"
+    source.write_bytes(b"reviewed-fr24-screenshot")
+    media = tmp_path / "media.csv"
+    review = tmp_path / "review.csv"
+    observations = tmp_path / "observations.csv"
+    summary_out = tmp_path / "summary.json"
+    _write_csv(
+        media,
+        [{
+            "path": "FR24_DataBank/Media_Canonical/active/screenshots/20260101/shot.png",
+            "kind": "screenshots",
+            "date_bucket": "20260101",
+            "size": str(source.stat().st_size),
+            "sha256": "e" * 64,
+        }],
+        ["path", "kind", "date_bucket", "size", "sha256"],
+    )
+    _write_csv(
+        review,
+        [{
+            "review_status": "COMPLETED",
+            "filename": "shot.png",
+            "absolute_source_path": str(source),
+            "sha256": "e" * 64,
+            "aircraft_icon_visibility": "visible",
+        }],
+        ["review_status", "filename", "absolute_source_path", "sha256", "aircraft_icon_visibility"],
+    )
+
+    summary = build_batch(
+        review_in=review,
+        media_index=media,
+        observations_out=observations,
+        summary_out=summary_out,
+        source_ref="test_batch",
+    )
+
+    assert summary["arithmetic"] == "1=0+1+0"
+    assert summary["unresolved_rows"] == 1
+    assert "source file SHA does not match review SHA" in summary["validation_rows"][0]["problems"]
 
 
 def test_capture_review_worklist_preserves_media_identity(tmp_path: Path):

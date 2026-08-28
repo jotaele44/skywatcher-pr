@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-08-27T22:58:38Z",
+  "created_at": "2026-08-28T00:11:41Z",
   "export_contract_version": "1.0.0",
-  "extracted_at": "2026-08-27T22:58:38Z",
+  "extracted_at": "2026-08-28T00:11:41Z",
   "federation": {
     "hub_parent": "thehub-pr",
     "producer_repo": "skywatcher-pr"
@@ -9,34 +9,34 @@
   "files": [
     {
       "filename": "sources.jsonl",
-      "record_count": 1,
+      "record_count": 3,
       "schema_id": "federation_source.schema.json",
-      "sha256": "ef41764b767a93d0c0762b45fec4b32932744bf4c2d4b25adc35e54ff5e945b7",
+      "sha256": "df90929a36d2cc236f5a973f1c407170dff65727660f63dba6181d33f6012525",
       "stream": "sources"
     },
     {
       "filename": "entities.jsonl",
-      "record_count": 2,
+      "record_count": 6,
       "schema_id": "federation_entity.schema.json",
-      "sha256": "7a655ce9dfdfef70354e44a235f0254f20ffebb8a92c743d26de06e6c759984a",
+      "sha256": "daab62c2580671321a77f3f9089f31a50d5cb26f241cb4a519d166632304e8f2",
       "stream": "entities"
     },
     {
       "filename": "relationships.jsonl",
-      "record_count": 1,
+      "record_count": 3,
       "schema_id": "federation_relationship.schema.json",
-      "sha256": "0ccf31d49eb1696cb69a6a26d415c7f1a87f069de5e5c580dbb6992c1ec7a8d8",
+      "sha256": "82f264dd92ad93fc1ee0950d17ed1ffe52dbdfba16a3dffb71492598f309a954",
       "stream": "relationships"
     },
     {
       "filename": "observations.jsonl",
-      "record_count": 1,
+      "record_count": 3,
       "schema_id": "federation_observation.schema.json",
-      "sha256": "3e56ae8947df14034106d123d37c07a95d41189854ba970058cefc2d412c0efb",
+      "sha256": "f2f92bf9cdc6394f30adcc712b2d999fee2d2611c2031f2e9c6c0ed3a96140c4",
       "stream": "observations"
     }
   ],
   "mode": "production",
-  "package_id": "pkg_d8e61bdebac6a0d0fc0d415050433b3e",
+  "package_id": "pkg_355d276915a11fcc0087b898321acfa5",
   "producer": "skywatcher-pr"
 }
