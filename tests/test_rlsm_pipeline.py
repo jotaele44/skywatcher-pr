@@ -131,8 +131,6 @@ def test_logical_screenshots_are_one_row_per_payload_sha():
 def test_screenshots_contains_only_supported_image_media():
     c = _conn()
 
-    supported = {"png", "jpg", "jpeg", "heic", "webp"}
-
     bad = c.execute(
         "SELECT screenshot_id, rel_path, ext "
         "FROM screenshots "
