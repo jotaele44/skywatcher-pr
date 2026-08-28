@@ -6,7 +6,8 @@ hydraulic/electrical connection.
 """
 from __future__ import annotations
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 ALLOWED_STATES = {"CONTEXT_SUPPORTED", "ADJUDICATED"}
 FORBIDDEN_RELATIONS = {"SAME_AS", "IDENTICAL_TO", "CANONICAL_IDENTITY"}
