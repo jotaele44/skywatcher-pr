@@ -4,8 +4,12 @@ import json
 import zipfile
 from pathlib import Path
 
-from skywatcher.evidence_router import build_route_plan, inspect_path, merge_manifests, route_paths
-
+from skywatcher.evidence_router import (
+    build_route_plan,
+    inspect_path,
+    merge_manifests,
+    route_paths,
+)
 
 MINIMAL_JPEG = b"\xff\xd8\xff\xdbskywatcher-fixture\xff\xd9"
 MINIMAL_PDF = b"%PDF-1.4\n1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>endobj\n%%EOF\n"
