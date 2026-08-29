@@ -1,0 +1,104 @@
+{
+  "fixture_id": "N5854Z_TRES_MONJITAS_UTILITY_CORRIDOR_v0_1",
+  "status": "PROVISIONAL",
+  "scope": "Nine user-supplied Flightradar24 screenshots showing N5854Z near the Tres Monjitas/Hato Rey Norte utility corridor on 2026-08-29 around 13:07-13:09 AST.",
+  "source_manifestations": [
+    {
+      "filename": "IMG_4657.jpeg",
+      "conversation_file_id": "file_00000000529881f583d9b9a1c42c5756",
+      "sha256": null,
+      "hash_status": "BLOCKED_RUNTIME_ACCESS"
+    },
+    {
+      "filename": "IMG_4658.jpeg",
+      "conversation_file_id": "file_0000000068d081f58dff3e379b639e33",
+      "sha256": null,
+      "hash_status": "BLOCKED_RUNTIME_ACCESS"
+    },
+    {
+      "filename": "IMG_4659.jpeg",
+      "conversation_file_id": "file_0000000011e881f598ebca4ecfc78c92",
+      "sha256": null,
+      "hash_status": "BLOCKED_RUNTIME_ACCESS"
+    },
+    {
+      "filename": "IMG_4660.jpeg",
+      "conversation_file_id": "file_00000000063481f5959ff0f83fff7351",
+      "sha256": null,
+      "hash_status": "BLOCKED_RUNTIME_ACCESS"
+    },
+    {
+      "filename": "IMG_4661.jpeg",
+      "conversation_file_id": "file_000000002b4081f59088e67fd36c5412",
+      "sha256": null,
+      "hash_status": "BLOCKED_RUNTIME_ACCESS"
+    },
+    {
+      "filename": "IMG_4662.jpeg",
+      "conversation_file_id": "file_00000000d90081f5882585206ce3845b",
+      "sha256": null,
+      "hash_status": "BLOCKED_RUNTIME_ACCESS"
+    },
+    {
+      "filename": "IMG_4663.jpeg",
+      "conversation_file_id": "file_00000000214881f599dbd8fdb2afd36b",
+      "sha256": null,
+      "hash_status": "BLOCKED_RUNTIME_ACCESS"
+    },
+    {
+      "filename": "IMG_4664.jpeg",
+      "conversation_file_id": "file_000000006cfc81f5b2e76e08ff38315f",
+      "sha256": null,
+      "hash_status": "BLOCKED_RUNTIME_ACCESS"
+    },
+    {
+      "filename": "IMG_4665.jpeg",
+      "conversation_file_id": "file_00000000f0bc81f5a5af251ca9b22e2d",
+      "sha256": null,
+      "hash_status": "BLOCKED_RUNTIME_ACCESS"
+    }
+  ],
+  "observed_facts": {
+    "registration": "N5854Z",
+    "tracker_owner_label": "Puerto Rico Electric Power Authority",
+    "tracker_aircraft_label": "Airbus Helicopters H125",
+    "displayed_ground_speeds_mph": [18, 29, 30, 0],
+    "displayed_barometric_altitude_ft": 0,
+    "visible_local_times": ["13:07", "13:08", "13:09"],
+    "visible_linear_infrastructure": "electrical transmission corridor/right-of-way",
+    "final_stationary_position_observed": true
+  },
+  "prohibited_promotions": [
+    "barometric_0ft_to_on_ground",
+    "stationary_position_to_landing_certified",
+    "nearest_poi_or_map_label_to_target_identity",
+    "utility_owner_context_to_exact_mission",
+    "rendered_fr24_trail_to_raw_trajectory"
+  ],
+  "expected_states": {
+    "barometric_altitude": "CONTRADICTED_OR_NONINFORMATIVE",
+    "movement": "LOW_SPEED_LOCALIZED_MANEUVERING_OBSERVED",
+    "linear_infrastructure_association": "LINEAR_INFRASTRUCTURE_ALIGNED_PROVISIONAL",
+    "cee_site_association": "CANDIDATE_NOT_IDENTITY",
+    "final_stop": "OBSERVED",
+    "landing": "LANDING_CANDIDATE",
+    "mission": "UTILITY_INSPECTION_OR_MAINTENANCE_FAMILY_PROVISIONAL",
+    "anomalous_behavior": "NOT_ESTABLISHED"
+  },
+  "identity_separation": {
+    "owner": "must remain source-specific",
+    "operator_context": "must remain source-specific",
+    "tracker_airline_label": "must remain source-specific",
+    "maintenance_responsibility": "must remain source-specific",
+    "source_taxonomy": "must not be collapsed into canonical identity without binding"
+  },
+  "unresolved": [
+    "exact raw ADS-B/Mode-S trajectory",
+    "true AGL/GPS altitude",
+    "ground contact",
+    "exact mission/work order",
+    "crew/payload",
+    "uploaded skywatcher.zip byte identity versus GitHub commit 609cec586bcb178b819ddfe4f4dc64b2765cacc9"
+  ],
+  "certification_note": "This manifest freezes the logical evidence set but cannot be BYTE_CERTIFIED until screenshot hashes and uploaded ZIP hash are available from a working runtime. GitHub implementation is therefore a candidate continuation, not proof of equivalence to the uploaded archive."
+}
