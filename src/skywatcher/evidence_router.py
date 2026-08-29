@@ -1,12 +1,12 @@
 """Container-aware evidence ingestion and deterministic Skywatcher skill routing.
 
 This module deliberately separates source/container manifestation identity from
-analytical capability routing.  A JPEG, a PDF page containing a screenshot,
+analytical capability routing. A JPEG, a PDF page containing a screenshot,
 and a ZIP member containing a screenshot may route to the same visual analysis
 skills without becoming byte/logical-identical evidence.
 
-The router is stdlib-first.  It inventories/fingerprints what it can prove and
-fails closed for unsupported or unreadable material.  It does not perform OCR,
+The router is stdlib-first. It inventories/fingerprints what it can prove and
+fails closed for unsupported or unreadable material. It does not perform OCR,
 mission inference, georeferencing, or landing adjudication itself; those remain
 owned by downstream Skywatcher skills.
 """
@@ -18,9 +18,9 @@ import json
 import mimetypes
 import re
 import zipfile
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Iterable, Sequence
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".bmp", ".tif", ".tiff"}
 STRUCTURED_EXTENSIONS = {".csv", ".json", ".geojson", ".kml", ".kmz", ".gpx", ".txt", ".log"}
@@ -144,7 +144,7 @@ def _item_id(*parts: object) -> str:
 def _pdf_page_count(data: bytes) -> int:
     """Return a conservative page count without pretending to parse PDF semantics.
 
-    The regex excludes /Pages tree objects.  Zero means the page denominator is
+    The regex excludes /Pages tree objects. Zero means the page denominator is
     unavailable and the caller must fail closed rather than inventing pages.
     """
     return len(re.findall(rb"/Type\s*/Page(?!s)\b", data))
