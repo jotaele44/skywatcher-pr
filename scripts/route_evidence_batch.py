@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E402, I001
 """Inventory a screenshot/PDF/ZIP/mixed batch and emit a deterministic skill plan."""
 from __future__ import annotations
 
