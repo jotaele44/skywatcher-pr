@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.0",
+  "dataset_id": "SIG_TJIG_SCREENSHOT_OBSERVATIONS_V1",
+  "parent_airfield_id": "SIG_TJIG",
+  "scope": "Five user-supplied Google Maps screenshots observed 2026-08-29; physical-feature classification only. Exact geometry and tenant/operator identity are not certified from screenshot pin proximity.",
+  "source_manifestations": [
+    {"observation_id": "SIG_IMG_4685", "raw_filename": "IMG_4685.jpeg"},
+    {"observation_id": "SIG_IMG_4686", "raw_filename": "IMG_4686.jpeg"},
+    {"observation_id": "SIG_IMG_4687", "raw_filename": "IMG_4687.jpeg"},
+    {"observation_id": "SIG_IMG_4688", "raw_filename": "IMG_4688.jpeg"},
+    {"observation_id": "SIG_IMG_4689", "raw_filename": "IMG_4689.jpeg"}
+  ],
+  "invariants": [
+    "aircraft_present_does_not_imply_lz",
+    "helicopter_present_does_not_imply_helipad",
+    "business_poi_proximity_does_not_bind_tenant_identity",
+    "marked_h_supports_physical_helipad_existence",
+    "hangar_is_not_apron",
+    "apron_is_not_landing_surface",
+    "airport_adjacent_industrial_site_is_not_aviation_facility"
+  ],
+  "facilities": [
+    {
+      "facility_id": "SIG_WATERFRONT_HELIPAD_01",
+      "sector": "WATERFRONT_SECTOR",
+      "physical_class": "HELIPAD",
+      "facility_name_raw": "visible circular H marking",
+      "operator_raw": "AIR AMBULANCE LIFE FLIGHT...",
+      "operator_binding_state": "UNRESOLVED",
+      "landing_surface_type": "HELIPAD",
+      "helipad_evidence": "MARKED_H",
+      "landing_surface_geometry_state": "OBSERVED_UNGEOREFERENCED",
+      "source_observation_id": "SIG_IMG_4685",
+      "certification": "PASS_PHYSICAL_FEATURE_ONLY"
+    },
+    {
+      "facility_id": "SIG_WATERFRONT_HANGAR_CLUSTER_01",
+      "sector": "WATERFRONT_SECTOR",
+      "physical_class": "HANGAR",
+      "facility_name_raw": "waterfront hangar cluster near Planet Air Aviation / SkyTaxi POIs",
+      "operator_binding_state": "UNRESOLVED",
+      "footprint_geometry_state": "OBSERVED_UNGEOREFERENCED",
+      "apron_geometry_state": "OBSERVED_UNGEOREFERENCED",
+      "landing_surface_type": "NONE",
+      "source_observation_id": "SIG_IMG_4685",
+      "certification": "PASS_PHYSICAL_FEATURE_ONLY"
+    },
+    {
+      "facility_id": "SIG_BENITEZ_HANGAR_01",
+      "sector": "BENITEZ_SECTOR",
+      "physical_class": "HANGAR",
+      "facility_name_raw": "Benitez Aviation / Benitez Aviation, Inc POI area",
+      "operator_raw": "Benitez Aviation; Benitez Aviation, Inc",
+      "operator_binding_state": "CANDIDATE",
+      "footprint_geometry_state": "OBSERVED_UNGEOREFERENCED",
+      "apron_geometry_state": "OBSERVED_UNGEOREFERENCED",
+      "fixed_wing_activity_observed": true,
+      "landing_surface_type": "NONE",
+      "source_observation_id": "SIG_IMG_4686",
+      "certification": "PASS_PHYSICAL_FEATURE_OPERATOR_UNRESOLVED"
+    },
+    {
+      "facility_id": "SIG_ARGOS_MARITIME_ADJACENCY_01",
+      "sector": "ADJACENT_CONTEXT",
+      "physical_class": "NON_AVIATION_ADJACENCY",
+      "facility_name_raw": "Argos Puerto Rico Maritime Terminal / Cementos Argos Puerto Rico POI area",
+      "operator_binding_state": "CANDIDATE",
+      "footprint_geometry_state": "OBSERVED_UNGEOREFERENCED",
+      "landing_surface_type": "NONE",
+      "source_observation_id": "SIG_IMG_4687",
+      "certification": "PASS_HARD_NEGATIVE_FOR_LZ"
+    },
+    {
+      "facility_id": "SIG_MODERN_WEST_HANGAR_01",
+      "sector": "WEST_FBO_SECTOR",
+      "physical_class": "HANGAR",
+      "facility_name_raw": "Modern Aviation West Hangar POI area",
+      "operator_raw": "Modern Aviation West Hangar",
+      "operator_binding_state": "CANDIDATE",
+      "footprint_geometry_state": "OBSERVED_UNGEOREFERENCED",
+      "apron_geometry_state": "OBSERVED_UNGEOREFERENCED",
+      "rotor_activity_observed": true,
+      "landing_surface_type": "NONE",
+      "helipad_evidence": "NONE",
+      "source_observation_id": "SIG_IMG_4688",
+      "certification": "PASS_PHYSICAL_FEATURE_NO_DEDICATED_LZ_EVIDENCE"
+    },
+    {
+      "facility_id": "SIG_MODERN_CENTRAL_HANGAR_01",
+      "sector": "CENTRAL_FBO_ATC_SECTOR",
+      "physical_class": "HANGAR",
+      "facility_name_raw": "Modern Aviation POI area",
+      "operator_raw": "Modern Aviation",
+      "operator_binding_state": "CANDIDATE",
+      "footprint_geometry_state": "OBSERVED_UNGEOREFERENCED",
+      "apron_geometry_state": "OBSERVED_UNGEOREFERENCED",
+      "fixed_wing_activity_observed": true,
+      "landing_surface_type": "NONE",
+      "source_observation_id": "SIG_IMG_4689",
+      "certification": "PASS_PHYSICAL_FEATURE_NO_DEDICATED_LZ_EVIDENCE"
+    },
+    {
+      "facility_id": "SIG_ATC_TOWER_01",
+      "sector": "CENTRAL_FBO_ATC_SECTOR",
+      "physical_class": "ATC",
+      "facility_name_raw": "Isla Grande Tower ATC (TJIG-SIG) POI area",
+      "operator_binding_state": "UNRESOLVED",
+      "footprint_geometry_state": "OBSERVED_UNGEOREFERENCED",
+      "landing_surface_type": "NONE",
+      "source_observation_id": "SIG_IMG_4689",
+      "certification": "PASS_PHYSICAL_FEATURE_ONLY"
+    }
+  ],
+  "unresolved": [
+    "exact georeferenced building/apron/helipad polygons",
+    "waterfront helipad operator/tenant identity",
+    "authoritative Benitez hangar tenancy binding",
+    "authoritative Modern Aviation hangar tenancy binding",
+    "published/documented dedicated LZ status for Benitez and Modern sectors",
+    "imagery acquisition epoch distinct from screenshot capture date"
+  ]
+}
