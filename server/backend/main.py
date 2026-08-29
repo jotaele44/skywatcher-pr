@@ -40,18 +40,6 @@ RLSM_GEOREF_VERSION = "rlsm-spatial-georef-v1"
 RLSM_MAX_POSITION_ERROR_M = 500
 ADSB_DB = Path(os.environ["SKYWATCHER_DB"]) if os.environ.get("SKYWATCHER_DB") else ROOT / "data" / "skywatcher.db"
 
-# The root-level gis_intelligence.py shim bootstraps src/ onto sys.path itself
-# (see docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md); importing it here rather than
-# reaching into skywatcher.corrim.gis_intelligence directly keeps this file on
-# the one supported cross-boundary entry point.
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-from gis_intelligence import (  # noqa: E402
-    CorridorAnalyzer,
-    HeatmapGenerator,
-    PuertoRicoInfrastructure,
-)
-
 app = FastAPI(
     title="Skywatcher-PR Dashboard API",
     description="Read-only federation entity API over committed Skywatcher artifacts.",
@@ -71,6 +59,28 @@ _overlay: dict[str, dict[str, dict[str, Any]]] = {}
 _created: dict[str, list[dict[str, Any]]] = {}
 
 log = logging.getLogger("skywatcher.backend")
+
+# The root-level gis_intelligence.py shim bootstraps src/ onto sys.path itself
+# (see docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md); importing it here rather than
+# reaching into skywatcher.corrim.gis_intelligence directly keeps this file on
+# the one supported cross-boundary entry point. Guarded: src/skywatcher is an
+# implicit namespace package (no __init__.py), which the frozen PyInstaller
+# desktop build's static import analysis does not follow through this
+# runtime sys.path.insert — so this import can legitimately fail there. Rather
+# than crash the whole app on startup, degrade the way _rlsm_rows already does
+# for a checkout without its optional data: the infrastructure/corridor/
+# heatmap geo endpoints report empty until this module is available.
+try:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from gis_intelligence import (
+        CorridorAnalyzer,
+        HeatmapGenerator,
+        PuertoRicoInfrastructure,
+    )
+except ImportError as exc:
+    log.warning("gis_intelligence unavailable (%s); infrastructure/corridor/heatmap geo endpoints will report empty.", exc)
+    CorridorAnalyzer = HeatmapGenerator = PuertoRicoInfrastructure = None
 
 # ── Write authorization ────────────────────────────────────────────────────────
 # Diagnostic mode ships without authentication: /api/auth/me always 401s and
@@ -216,6 +226,8 @@ def load_infrastructure_assets() -> list[dict[str, Any]]:
     This was previously declared with no committed source (`InfrastructureAssets:
     list`), so the Infrastructure page rendered empty regardless of data.
     """
+    if PuertoRicoInfrastructure is None:
+        return []
     infra = PuertoRicoInfrastructure()
     rows = [
         {
@@ -804,6 +816,8 @@ def geo_airports() -> dict[str, Any]:
 
 @app.get("/api/geo/infrastructure.geojson")
 def geo_infrastructure() -> dict[str, Any]:
+    if PuertoRicoInfrastructure is None:
+        return {"type": "FeatureCollection", "features": []}
     infra = PuertoRicoInfrastructure()
     features = [
         {
@@ -826,6 +840,8 @@ def geo_infrastructure() -> dict[str, Any]:
 
 @app.get("/api/geo/corridors.geojson")
 def geo_corridors() -> dict[str, Any]:
+    if CorridorAnalyzer is None or PuertoRicoInfrastructure is None:
+        return {"type": "FeatureCollection", "features": []}
     analyzer = CorridorAnalyzer(PuertoRicoInfrastructure())
     features = [
         {
@@ -847,6 +863,8 @@ def geo_corridors() -> dict[str, Any]:
 
 @app.get("/api/geo/observations/heatmap.geojson")
 def geo_observations_heatmap() -> dict[str, Any]:
+    if HeatmapGenerator is None:
+        return {"type": "FeatureCollection", "features": []}
     generator = HeatmapGenerator()
     for row in load_observations():
         lat, lon = row.get("latitude"), row.get("longitude")
@@ -857,12 +875,13 @@ def geo_observations_heatmap() -> dict[str, Any]:
 
 @app.get("/api/geo/tracks/{icao24}.geojson")
 def geo_track(icao24: str) -> dict[str, Any]:
-    """A single aircraft's ADS-B track as a GeoJSON LineString. Reuses the same
-    track-building logic as the Spiderweb bridge export (spiderweb_export.py),
-    rather than reimplementing point-list-to-LineString conversion here.
+    """A single aircraft's ADS-B track as a GeoJSON LineString. The same
+    point-list-to-LineString shape as the Spiderweb bridge export's
+    _line_string() (spiderweb_export.py), kept as a local one-liner rather
+    than an import across the src/skywatcher package boundary: unlike
+    gis_intelligence.py, this endpoint has no reason to ever hard-fail when
+    that boundary is unavailable (e.g. the frozen desktop build).
     """
-    from skywatcher.fr24.spiderweb_export import _line_string as _track_line_string
-
     rows = _adsb_rows(
         """SELECT icao24, callsign, latitude, longitude, time_position
            FROM adsb_state_vectors
@@ -870,9 +889,10 @@ def geo_track(icao24: str) -> dict[str, Any]:
            ORDER BY time_position ASC""",
         (icao24,),
     )
-    geometry = _track_line_string(rows)
-    if geometry is None:
+    coords = [[float(r["longitude"]), float(r["latitude"])] for r in rows]
+    if len(coords) < 2:
         return {"type": "FeatureCollection", "features": []}
+    geometry = {"type": "LineString", "coordinates": coords}
     return {
         "type": "FeatureCollection",
         "features": [{
