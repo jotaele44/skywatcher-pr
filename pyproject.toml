@@ -63,7 +63,7 @@ geo = [
     "numpy>=1.24",
     # Upper-bounded below 1.18: newer scipy releases require Python >=3.12,
     # which breaks the universal lock across this project's 3.10-3.12 matrix.
-    "scipy>=1.11,<1.18",
+    "scipy>=1.15.3,<1.18",
     "xarray>=2023.1",
     "netCDF4>=1.6",
 ]
