@@ -47,6 +47,11 @@ CSV_FIELDS = [
     "lat", "lon", "altitude_ft", "bearing", "duration_seconds", "signal_type",
     "description_summary", "source_id", "source_type", "evidence_tier",
     "confidence", "geometry_status", "temporal_status", "lineage_id", "synthetic",
+    "position_precision", "aircraft_point_status", "aircraft_point_method",
+    "aircraft_point_uncertainty_m", "aircraft_icon_visibility",
+    "capture_bbox_geojson", "capture_geometry_method",
+    "capture_geometry_confidence", "capture_geometry_uncertainty_m",
+    "control_point_count", "control_point_residual_px",
 ]
 
 
@@ -72,6 +77,10 @@ def _blend_confidence(ocr: float | None, coord: float | None) -> float:
     if not parts:
         return 0.5
     return round(max(0.0, min(1.0, sum(parts) / len(parts))), 3)
+
+
+def _row_value(row: sqlite3.Row, key: str, default: Any = None) -> Any:
+    return row[key] if key in row.keys() else default
 
 
 class RlsmEnricher:
@@ -193,6 +202,21 @@ def build_records(
         lineage_id = f"lin-{sid}"
         coord_conf = row["coordinate_confidence"]
         coord_method = row["coordinate_method"] or "unknown"
+        point_status = _row_value(row, "aircraft_point_status") or (
+            "SOURCE_PROVIDED" if coord_method == "source_drop_coordinates" else "UNRESOLVED"
+        )
+        point_method = _row_value(row, "aircraft_point_method") or coord_method
+        point_uncertainty_m = _row_value(row, "estimated_error_m")
+        icon_visibility = _row_value(row, "aircraft_icon_visibility") or ""
+        capture_bbox_geojson = _row_value(row, "capture_bbox_geojson") or ""
+        capture_method = _row_value(row, "capture_geometry_method") or ""
+        capture_confidence = _row_value(row, "capture_geometry_confidence")
+        capture_uncertainty_m = _row_value(row, "capture_geometry_uncertainty_m")
+        control_point_count = _row_value(row, "control_point_count")
+        control_point_residual_px = _row_value(row, "control_point_residual_px")
+        precision = _row_value(row, "position_precision") or (
+            "SOURCE_PROVIDED" if point_status == "SOURCE_PROVIDED" else "APPROXIMATE"
+        )
         registry_note = ""
 
         enrichment = enricher.for_sha(row["sha256"]) if enricher else None
@@ -247,6 +271,17 @@ def build_records(
             "temporal_status": "exact",
             "lineage_id": lineage_id,
             "synthetic": bool(mark_synthetic),
+            "position_precision": precision,
+            "aircraft_point_status": point_status,
+            "aircraft_point_method": point_method,
+            "aircraft_point_uncertainty_m": point_uncertainty_m,
+            "aircraft_icon_visibility": icon_visibility,
+            "capture_bbox_geojson": capture_bbox_geojson,
+            "capture_geometry_method": capture_method,
+            "capture_geometry_confidence": capture_confidence,
+            "capture_geometry_uncertainty_m": capture_uncertainty_m,
+            "control_point_count": control_point_count,
+            "control_point_residual_px": control_point_residual_px,
         })
         sources.append({
             "source_id": source_id,
@@ -263,7 +298,11 @@ def build_records(
             "pipeline_stage": "fr24_screenshot_ocr",
             "extraction_method": "ensemble_ocr",
             "coordinate_method": coord_method,
-            "notes": f"review_status={row['review_status'] or 'pending'}",
+            "notes": (
+                f"review_status={row['review_status'] or 'pending'};"
+                f" aircraft_point_status={point_status};"
+                " screenshot-derived points are approximate, not ADS-B exact positions"
+            ),
         })
         confidence.append({
             "observation_id": observation_id,
@@ -273,6 +312,8 @@ def build_records(
                 "lat": coord_conf if isinstance(coord_conf, (int, float)) else 0.5,
                 "lon": coord_conf if isinstance(coord_conf, (int, float)) else 0.5,
                 "signal_type": 0.9,
+                "aircraft_point_status": 0.95 if point_status == "SOURCE_PROVIDED" else 0.8,
+                "capture_bbox": capture_confidence if isinstance(capture_confidence, (int, float)) else 0.0,
             },
         })
 
