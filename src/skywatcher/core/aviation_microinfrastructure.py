@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 
 class PhysicalClass(str, Enum):
@@ -83,10 +82,10 @@ class AviationMicrofacility:
     airfield_id: str
     physical_class: PhysicalClass
     facility_name_raw: str
-    facility_name_normalized: Optional[str] = None
-    canonical_name: Optional[str] = None
-    operator_raw: Optional[str] = None
-    operator_id: Optional[str] = None
+    facility_name_normalized: str | None = None
+    canonical_name: str | None = None
+    operator_raw: str | None = None
+    operator_id: str | None = None
     operator_binding_state: BindingState = BindingState.UNRESOLVED
     footprint_geometry_state: GeometryState = GeometryState.UNRESOLVED
     apron_geometry_state: GeometryState = GeometryState.UNRESOLVED
@@ -95,8 +94,8 @@ class AviationMicrofacility:
     helipad_evidence: HelipadEvidence = HelipadEvidence.NONE
     rotor_activity_observed: bool = False
     fixed_wing_activity_observed: bool = False
-    source_manifestation: Optional[str] = None
-    source_observation_id: Optional[str] = None
+    source_manifestation: str | None = None
+    source_observation_id: str | None = None
 
     def validate(self) -> None:
         """Fail closed on internally contradictory physical claims."""
@@ -106,9 +105,11 @@ class AviationMicrofacility:
             if self.helipad_evidence != HelipadEvidence.NONE:
                 raise ValueError("non-aviation adjacency cannot carry helipad evidence")
 
-        if self.landing_surface_type == LandingSurfaceType.HELIPAD:
-            if self.helipad_evidence == HelipadEvidence.NONE:
-                raise ValueError("helipad landing surface requires positive helipad evidence")
+        if (
+            self.landing_surface_type == LandingSurfaceType.HELIPAD
+            and self.helipad_evidence == HelipadEvidence.NONE
+        ):
+            raise ValueError("helipad landing surface requires positive helipad evidence")
 
         if self.operator_id is not None and self.operator_binding_state == BindingState.UNRESOLVED:
             raise ValueError("operator_id requires a resolved binding state")
