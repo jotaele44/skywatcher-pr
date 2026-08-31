@@ -25,13 +25,9 @@ def test_bbox_context_join_stamps_status_with_no_layers():
     assert out.loc[0, "gis_layer_count"] == 0
 
 def test_bbox_context_join_preserves_baseline_column_order():
-    # The context-only path feeds the committed production baseline SHA, so its
-    # header must stay source,latitude,longitude,gis_join_status,gis_layer_count.
     df = pd.DataFrame([{"source": "track.csv", "latitude": 18.1, "longitude": -66.1}])
     out = bbox_context_join(df)
-    assert list(out.columns) == [
-        "source", "latitude", "longitude", "gis_join_status", "gis_layer_count"
-    ]
+    assert list(out.columns) == ["source", "latitude", "longitude", "gis_join_status", "gis_layer_count"]
 
 def test_bbox_context_join_counts_supplied_layers():
     df = pd.DataFrame([{"source": "track.csv", "latitude": 18.1, "longitude": -66.1}])
@@ -40,6 +36,11 @@ def test_bbox_context_join_counts_supplied_layers():
 
 def test_bbox_context_join_never_mutates_input():
     df = pd.DataFrame([{"source": "track.csv", "latitude": 18.1, "longitude": -66.1}])
-    original = df.copy()
-    bbox_context_join(df)
-    pd.testing.assert_frame_equal(df, original)
+    original = df.copy(); bbox_context_join(df); pd.testing.assert_frame_equal(df, original)
+
+def test_bbox_context_join_emits_geodesic_meters():
+    df = pd.DataFrame([{"source":"track.csv","latitude":18.5,"longitude":-65.5}])
+    out = bbox_context_join(df, layers={"west":{"bbox":[-67.0,18.0,-66.0,19.0]}})
+    assert out.loc[0,"gis_join_status"] == "GIS_JOIN_OFFLINE_GEODESIC"
+    assert out.loc[0,"gis_nearest_layer_deg"] == 0.5
+    assert 50_000 < out.loc[0,"gis_nearest_layer_m"] < 55_000
