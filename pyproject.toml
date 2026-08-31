@@ -65,7 +65,7 @@ geo = [
     # which breaks the universal lock across this project's 3.10-3.12 matrix.
     "scipy>=1.11,<1.18",
     "xarray>=2023.1",
-    "netCDF4>=1.6",
+    "netCDF4>=1.7.4",
 ]
 # Imagery MCP server — fetch/search/compare satellite imagery over MCP.
 # Entry point: python -m imagery.server
