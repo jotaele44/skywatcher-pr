@@ -39,7 +39,7 @@ dependencies = [
 # Provider: OpenSky Network (free; OAuth2 client-credentials, anonymous fallback).
 adsb = [
     "opensky-api",
-    "python-dotenv>=1.0",
+    "python-dotenv>=1.2.3",
 ]
 dev = [
     "pytest-cov>=5",
@@ -73,7 +73,7 @@ geo = [
 imagery = [
     "fastmcp>=2.9,<3",
     "requests>=2.34.2",
-    "python-dotenv>=1.0",
+    "python-dotenv>=1.2.3",
     "numpy",
 ]
 
