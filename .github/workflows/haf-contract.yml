@@ -1,0 +1,19 @@
+name: HAF Contract Gate
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  haf-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate contract file
+        run: |
+          test -f .federation/haf_contract.json
+          python -m json.tool .federation/haf_contract.json >/dev/null
+          grep -q '"schema_version": "haf_repo_contract_v2"' .federation/haf_contract.json
+          grep -q '"certification_required": true' .federation/haf_contract.json
+          grep -q '"unresolved_policy": "FAIL_CLOSED"' .federation/haf_contract.json
