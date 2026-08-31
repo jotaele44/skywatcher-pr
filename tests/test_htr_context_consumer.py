@@ -31,6 +31,14 @@ def test_discovery_only_row_is_rejected():
         consume_htr_context([r])
 
 
+def test_unsupported_row_is_rejected():
+    r = row()
+    r["state"] = "UNSUPPORTED"
+    r["identity_state"] = "UNRESOLVED"
+    with pytest.raises(HTRContextError):
+        consume_htr_context([r])
+
+
 def test_identity_relation_is_rejected():
     r = row()
     r["relation_type"] = "SAME_AS"
