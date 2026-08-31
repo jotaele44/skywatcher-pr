@@ -227,7 +227,7 @@ def test_distance_candidates_do_not_overwrite_route_fields():
     mapped = map_to_flight_event(adapter_row)
     assert mapped["num_screenshots"] == 3
     assert mapped["origin_airport"] == "SJU"
-    assert mapped["destination_airport"] == ""
+    assert mapped["destination_airport"] is None
     assert mapped["confirmation_status"] == "not_confirmed"
 
 
