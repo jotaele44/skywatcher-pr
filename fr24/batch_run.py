@@ -39,7 +39,6 @@ import uuid
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
 
 try:
     from PIL import Image, ImageOps
@@ -93,7 +92,7 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _load_complete_set(ledger_path: Path, batch_id: str, mode: str) -> Set[str]:
+def _load_complete_set(ledger_path: Path, batch_id: str, mode: str) -> set[str]:
     if not ledger_path.exists():
         return set()
     complete = set()
@@ -126,7 +125,7 @@ def _append_error_queue(error_path: Path, row: dict) -> None:
         writer.writerow({k: row.get(k, "") for k in ERROR_QUEUE_FIELDS})
 
 
-def _ocr_full_image(path: Path) -> Tuple[str, int]:
+def _ocr_full_image(path: Path) -> tuple[str, int]:
     if Image is None:
         raise RuntimeError("Pillow is required for OCR")
     if pytesseract is None:
@@ -139,7 +138,7 @@ def _ocr_full_image(path: Path) -> Tuple[str, int]:
     return text, len(text.strip())
 
 
-def _ocr_regions(path: Path, segmenter: FR24UISegmenter) -> List[dict]:
+def _ocr_regions(path: Path, segmenter: FR24UISegmenter) -> list[dict]:
     if Image is None:
         raise RuntimeError("Pillow is required for region OCR")
     if pytesseract is None:
@@ -193,9 +192,9 @@ def run_batch(
     batch_id: str,
     mode: str,
     output_dir: Path,
-    limit: Optional[int] = None,
+    limit: int | None = None,
 ) -> dict:
-    batch_rows: List[dict] = []
+    batch_rows: list[dict] = []
     with batch_plan.open(encoding="utf-8") as f:
         for row in csv.DictReader(f):
             if row.get("batch_id") == batch_id:
@@ -219,8 +218,8 @@ def run_batch(
     complete_set = _load_complete_set(ledger_path, batch_id, mode)
     segmenter = FR24UISegmenter(mode="geometric") if mode == "region" else None
 
-    stats: Dict[str, int] = Counter()
-    written_records: List[dict] = []
+    stats: dict[str, int] = Counter()
+    written_records: list[dict] = []
 
     for plan_row in batch_rows:
         image_path_str = plan_row.get("image_path", "")

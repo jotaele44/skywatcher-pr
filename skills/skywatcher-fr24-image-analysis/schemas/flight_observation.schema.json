@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Screen-derived Flight Observation",
+  "type": "object",
+  "required": ["schema_version", "status", "time_fields_separate", "flight_fields", "frame_ids", "intent_assessment"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "status": {"enum": ["screen_derived_unverified", "corroborated", "rejected"]},
+    "device_capture_time": {"type": ["string", "null"]},
+    "fr24_replay_time": {"type": ["string", "null"]},
+    "time_fields_separate": {"const": true},
+    "flight_fields": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["value", "source_frame", "source_region", "method", "confidence"],
+        "properties": {
+          "value": {},
+          "source_frame": {"type": "string"},
+          "source_region": {"type": "string"},
+          "method": {"type": "string"},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    },
+    "frame_ids": {"type": "array", "items": {"type": "string"}},
+    "intent_assessment": {"const": "not_assessed"},
+    "notes": {"type": "array", "items": {"type": "string"}}
+  }
+}

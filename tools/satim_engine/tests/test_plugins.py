@@ -1,6 +1,7 @@
 import pandas as pd
-from satim_engine.plugins.visual_ocr import extract_visual_metadata
 from satim_engine.plugins.gis_join import bbox_context_join
+from satim_engine.plugins.visual_ocr import extract_visual_metadata
+
 
 def test_extract_visual_metadata_uses_filename_fallback():
     meta = extract_visual_metadata("/tmp/screenshots/FR24_TEST1_2026-01-01.jpg")

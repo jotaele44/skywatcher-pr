@@ -10,12 +10,12 @@ exporter does not confirm events.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import json
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List
 
 DASHBOARD_DATA_VERSION = "fr24_dashboard_data_v0.1.0"
 LOCAL_STATE_SCHEMA_VERSION = "fr24_review_queue_local_state_v1"
@@ -38,7 +38,7 @@ ALLOWED_QUEUE_STATUSES = (
 )
 
 
-def read_csv(path: Path) -> List[dict]:
+def read_csv(path: Path) -> list[dict]:
     if not path.exists() or path.stat().st_size == 0:
         return []
     return list(csv.DictReader(path.open(encoding="utf-8")))
@@ -66,16 +66,14 @@ def normalize_row(row: dict) -> dict:
     out["confirmation_status"] = "not_confirmed"
     for key in ("priority_score", "priority_tier", "conflict_count"):
         if key in out and out[key] not in (None, ""):
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 out[key] = int(out[key])
-            except (TypeError, ValueError):
-                pass
     return out
 
 
 def run(queue_csv: Path, summary_json: Path, output_json: Path) -> dict:
     rows = read_csv(queue_csv)
-    kept: List[dict] = []
+    kept: list[dict] = []
     dropped = 0
     for row in rows:
         if has_prohibited_label(row):

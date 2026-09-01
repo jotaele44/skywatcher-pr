@@ -1,0 +1,131 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -66.08866807610994,
+          18.5255859375
+        ]
+      },
+      "properties": {
+        "observation_id": "fr24-1",
+        "event_datetime": "2026-07-06T22:50:00Z",
+        "location_name": "",
+        "municipality": "",
+        "lat": 18.5255859375,
+        "lon": -66.08866807610994,
+        "altitude_ft": 2800,
+        "bearing": "",
+        "duration_seconds": "",
+        "signal_type": "FR24_SCREENSHOT",
+        "description_summary": "FR24 screenshot-derived observation (callsign C6062, flight C6062)",
+        "source_id": "src-1",
+        "source_type": "screenshot",
+        "evidence_tier": "T2",
+        "confidence": 0.55,
+        "geometry_status": "approximate",
+        "temporal_status": "exact",
+        "lineage_id": "lin-1",
+        "synthetic": false,
+        "position_precision": "APPROXIMATE",
+        "aircraft_point_status": "ICON_DERIVED_APPROX",
+        "aircraft_point_method": "screenshot_icon_georeference",
+        "aircraft_point_uncertainty_m": 7000.0,
+        "aircraft_icon_visibility": "visible",
+        "capture_bbox_geojson": "{\"type\":\"Polygon\",\"coordinates\":[[[-66.36,18.08],[-65.9,18.08],[-65.9,18.69],[-66.36,18.69],[-66.36,18.08]]]}",
+        "capture_geometry_method": "manual_landmark_viewport_estimate",
+        "capture_geometry_confidence": 0.55,
+        "capture_geometry_uncertainty_m": 7000.0,
+        "control_point_count": 4,
+        "control_point_residual_px": 85.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -66.09109936575054,
+          18.539287109375
+        ]
+      },
+      "properties": {
+        "observation_id": "fr24-2",
+        "event_datetime": "2026-07-06T22:50:00Z",
+        "location_name": "",
+        "municipality": "",
+        "lat": 18.539287109375,
+        "lon": -66.09109936575054,
+        "altitude_ft": 2800,
+        "bearing": "",
+        "duration_seconds": "",
+        "signal_type": "FR24_SCREENSHOT",
+        "description_summary": "FR24 screenshot-derived observation (callsign C6062, flight C6062)",
+        "source_id": "src-2",
+        "source_type": "screenshot",
+        "evidence_tier": "T2",
+        "confidence": 0.55,
+        "geometry_status": "approximate",
+        "temporal_status": "exact",
+        "lineage_id": "lin-2",
+        "synthetic": false,
+        "position_precision": "APPROXIMATE",
+        "aircraft_point_status": "ICON_DERIVED_APPROX",
+        "aircraft_point_method": "screenshot_icon_georeference",
+        "aircraft_point_uncertainty_m": 7000.0,
+        "aircraft_icon_visibility": "visible",
+        "capture_bbox_geojson": "{\"type\":\"Polygon\",\"coordinates\":[[[-66.36,18.08],[-65.9,18.08],[-65.9,18.69],[-66.36,18.69],[-66.36,18.08]]]}",
+        "capture_geometry_method": "manual_landmark_viewport_estimate",
+        "capture_geometry_confidence": 0.55,
+        "capture_geometry_uncertainty_m": 7000.0,
+        "control_point_count": 4,
+        "control_point_residual_px": 85.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -66.09109936575054,
+          18.539287109375
+        ]
+      },
+      "properties": {
+        "observation_id": "fr24-3",
+        "event_datetime": "2026-07-06T22:50:00Z",
+        "location_name": "",
+        "municipality": "",
+        "lat": 18.539287109375,
+        "lon": -66.09109936575054,
+        "altitude_ft": 2800,
+        "bearing": "",
+        "duration_seconds": "",
+        "signal_type": "FR24_SCREENSHOT",
+        "description_summary": "FR24 screenshot-derived observation (callsign C6062, flight C6062)",
+        "source_id": "src-3",
+        "source_type": "screenshot",
+        "evidence_tier": "T2",
+        "confidence": 0.55,
+        "geometry_status": "approximate",
+        "temporal_status": "exact",
+        "lineage_id": "lin-3",
+        "synthetic": false,
+        "position_precision": "APPROXIMATE",
+        "aircraft_point_status": "ICON_DERIVED_APPROX",
+        "aircraft_point_method": "screenshot_icon_georeference",
+        "aircraft_point_uncertainty_m": 7000.0,
+        "aircraft_icon_visibility": "visible",
+        "capture_bbox_geojson": "{\"type\":\"Polygon\",\"coordinates\":[[[-66.36,18.08],[-65.9,18.08],[-65.9,18.69],[-66.36,18.69],[-66.36,18.08]]]}",
+        "capture_geometry_method": "manual_landmark_viewport_estimate",
+        "capture_geometry_confidence": 0.55,
+        "capture_geometry_uncertainty_m": 7000.0,
+        "control_point_count": 4,
+        "control_point_residual_px": 85.0
+      }
+    }
+  ]
+}

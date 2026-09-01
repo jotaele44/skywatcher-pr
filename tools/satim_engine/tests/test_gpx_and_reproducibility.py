@@ -1,7 +1,6 @@
-from pathlib import Path
 import pandas as pd
-from satim_engine.tracks import parse_gpx_coordinates
 from satim_engine.graph import build_graph_from_ledgers
+from satim_engine.tracks import parse_gpx_coordinates
 
 
 def test_parse_gpx_coordinates(tmp_path):

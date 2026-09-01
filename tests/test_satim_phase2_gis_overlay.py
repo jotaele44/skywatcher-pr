@@ -1,4 +1,7 @@
-from fr24.calibration.satim_gis_overlay import overlay_score_patch_from_metrics, patch_candidate_with_gis_scores
+from fr24.calibration.satim_gis_overlay import (
+    overlay_score_patch_from_metrics,
+    patch_candidate_with_gis_scores,
+)
 
 
 def test_overlay_score_patch_from_metrics_normalizes_gis_fields():

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SATIM Finding",
+  "type": "object",
+  "required": ["finding_id", "observation_class", "source_frame", "pixel_bbox", "confidence", "status", "purpose_inference"],
+  "properties": {
+    "finding_id": {"type": "string"},
+    "observation_class": {
+      "enum": ["UI_OVERLAY", "ROUTE_LINE_CONTAMINATION", "MAP_LABEL", "ZOOM_BLUR", "SCREENSHOT_RESAMPLING", "COMPRESSION_ARTIFACT", "TILE_SEAM", "POSSIBLE_TILE_SEAM", "RADIOMETRIC_BOUNDARY", "MOSAIC_DATE_BOUNDARY", "ORTHORECTIFICATION_MISMATCH", "TERRAIN_SHADOW", "VEGETATION_SHADOW", "DARK_SURFACE_POLYGON", "EXPOSED_GROUND", "VEGETATION_BOUNDARY", "PERSISTENT_SURFACE_FEATURE", "UNRESOLVED"]
+    },
+    "source_frame": {"type": "string"},
+    "pixel_bbox": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "number"}},
+    "geometry": {"type": ["object", "null"]},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "registration_error_m": {"type": ["number", "null"], "minimum": 0},
+    "status": {"enum": ["candidate", "corroborated", "contradicted", "unresolved", "rejected"]},
+    "purpose_inference": {"const": false},
+    "function_assessment": {
+      "description": "Bounded facility-function claim authorized by ADR v2.1 A1. Distinct from purpose_inference, which stays false and denotes UNBOUNDED purpose inference. A function assessment states only that observable form is compatible with more than one plausible function; it never asserts ownership, intent, mission, wrongdoing, coordination, access, or operational significance. Every field below is mandatory when the object is present, so an assessment can never be emitted without the confidence record ADR v2.0 section 5.3 requires.",
+      "type": ["object", "null"],
+      "required": ["class", "confidence", "confidence_method", "confidence_scope", "method_version", "supporting_observation_ids", "limitations", "interpretation_restriction"],
+      "additionalProperties": false,
+      "properties": {
+        "class": {"enum": ["DUAL_USE_FUNCTION_CANDIDATE", "SINGLE_USE_CIVILIAN_CANDIDATE", "UNRESOLVED"]},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "confidence_method": {"type": "string", "minLength": 1},
+        "confidence_scope": {"type": "string", "minLength": 1},
+        "method_version": {"type": "string", "minLength": 1},
+        "supporting_observation_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "limitations": {"type": "array", "items": {"type": "string"}},
+        "interpretation_restriction": {"enum": ["NONE", "SPECTRAL_ONLY_DEGRADED", "GEOMETRY_DEGRADED", "OBJECT_LEVEL_PROHIBITED", "ALL_INFERENCE_SUSPENDED"]},
+        "threshold_id": {"type": "string"}
+      }
+    },
+    "supporting_frames": {"type": "array", "items": {"type": "string"}},
+    "contradicting_frames": {"type": "array", "items": {"type": "string"}}
+  }
+}

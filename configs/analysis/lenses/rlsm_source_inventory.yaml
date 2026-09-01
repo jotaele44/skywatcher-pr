@@ -1,0 +1,59 @@
+lens_id: rlsm.source_inventory
+name: Source inventory and integrity
+owner: RLSM
+stage: flight_data_collection
+status: active
+version: 1.0.0
+objective: Account for every input file, hash it, and record availability state, so that later stages can never silently analyze a partial corpus.
+
+required_inputs:
+  - source_directory
+
+required_parameters:
+  - parameter_id: source_directory
+    name: Source directory
+    kind: path
+    description: Root of the capture corpus.
+  - parameter_id: supported_extensions
+    name: Supported extensions
+    kind: array
+    description: Extensions counted as analyzable input.
+
+optional_parameters:
+  - parameter_id: max_images
+    name: Image cap
+    kind: integer
+    required: false
+    degraded_behavior: Without a cap the full corpus is scanned, and with one the inventory is partial, so every downstream count is a subset and must be stated in the run manifest.
+  - parameter_id: perceptual_hash
+    name: Perceptual hash
+    kind: boolean
+    required: false
+    default: false
+    degraded_behavior: Near-duplicate detection is unavailable, so only byte-identical duplicates are found and re-encoded copies of one capture are counted as distinct sources.
+
+measurements:
+  - file_count
+  - sha256_coverage_ratio
+  - duplicate_count
+  - corrupt_count
+
+emits:
+  - SOURCE_ARTIFACT
+  - DUPLICATE_SOURCE
+  - CORRUPT_SOURCE
+  - UNAVAILABLE_SOURCE
+
+interpretation_restriction_minimum: NONE
+
+contradiction_tests:
+  - duplicate_vs_legitimate_resequence
+
+evidence_axes_required:
+  - evidence_tier
+  - provenance_status
+  - source_availability
+
+prohibited_claims:
+  - Extraction and accounting only. No terrain, behavior, or mission interpretation.
+  - Do not treat an unreadable file as absent, because unavailable and missing are distinct states.

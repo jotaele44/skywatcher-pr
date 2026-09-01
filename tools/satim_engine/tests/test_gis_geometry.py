@@ -5,7 +5,6 @@ run without pandas. The pandas-facing ``bbox_context_join`` tests are guarded
 with ``importorskip`` so the file still collects in a pandas-free environment.
 """
 import pytest
-
 from satim_engine.plugins.gis_geometry import (
     bbox_distance_deg,
     layer_bbox,

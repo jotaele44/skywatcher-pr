@@ -15,12 +15,11 @@ from collections import Counter
 from datetime import datetime, timezone
 from math import ceil
 from pathlib import Path
-from typing import List
 
 DEFAULT_BATCH_SIZE = 250
 
 
-def load_manifest(path: Path) -> List[dict]:
+def load_manifest(path: Path) -> list[dict]:
     return list(csv.DictReader(path.open(encoding="utf-8")))
 
 
@@ -45,13 +44,13 @@ def batch_label(index: int) -> str:
     return f"fr24_batch_{index:04d}"
 
 
-def build_plan(rows: List[dict], batch_size: int = DEFAULT_BATCH_SIZE, max_images: int = 0) -> List[dict]:
+def build_plan(rows: list[dict], batch_size: int = DEFAULT_BATCH_SIZE, max_images: int = 0) -> list[dict]:
     eligible = [r for r in rows if r.get("ocr_status", "eligible") == "eligible"]
     eligible = sorted(eligible, key=priority_rank)
     if max_images > 0:
         eligible = eligible[:max_images]
 
-    planned: List[dict] = []
+    planned: list[dict] = []
     for idx, row in enumerate(eligible):
         batch_index = idx // batch_size + 1
         out = dict(row)
@@ -64,7 +63,7 @@ def build_plan(rows: List[dict], batch_size: int = DEFAULT_BATCH_SIZE, max_image
     return planned
 
 
-def write_csv(path: Path, rows: List[dict]) -> None:
+def write_csv(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not rows:
         path.write_text("", encoding="utf-8")

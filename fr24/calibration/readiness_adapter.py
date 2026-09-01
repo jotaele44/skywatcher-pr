@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Dict, Mapping
+from typing import Any
 
 from .models import derive_overall_status, layer_status_to_readiness, read_json
 
 
-def satim_report_to_legacy_calibration(report: Mapping[str, Any]) -> Dict[str, Any]:
+def satim_report_to_legacy_calibration(report: Mapping[str, Any]) -> dict[str, Any]:
     """Convert SATIM v1 layer report into the legacy PRII calibration contract.
 
     The existing readiness engine expects {status, baseline_mode,
@@ -53,7 +54,7 @@ def satim_report_to_legacy_calibration(report: Mapping[str, Any]) -> Dict[str, A
     }
 
 
-def load_satim_or_legacy(path: str | Path) -> Dict[str, Any]:
+def load_satim_or_legacy(path: str | Path) -> dict[str, Any]:
     payload = read_json(path)
     if payload.get("schema_version") == "satim.calibration.v1":
         return satim_report_to_legacy_calibration(payload)

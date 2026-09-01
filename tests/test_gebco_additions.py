@@ -1,6 +1,6 @@
 """Tests for new GEBCO module additions: validate_bounds, mona_passage_profile, underwater_ridges.
 
-The GEBCO terrain layer is an optional extra (`pip install -r requirements-geo.txt`).
+The GEBCO terrain layer is an optional extra (`uv sync --extra geo`).
 These tests self-skip when numpy/scipy are absent so the core suite stays pure-Python.
 """
 
@@ -13,7 +13,6 @@ import numpy as np  # noqa: E402
 
 from gebco.io import validate_bounds  # noqa: E402
 from gebco.terrain import mona_passage_profile, underwater_ridges  # noqa: E402
-
 
 # ── validate_bounds ───────────────────────────────────────────────────────────
 

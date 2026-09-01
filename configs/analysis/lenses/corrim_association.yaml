@@ -1,0 +1,86 @@
+lens_id: corrim.association
+name: Cross-domain spatiotemporal association
+owner: CORRIM
+stage: cross_domain
+status: active
+version: 1.0.0
+objective: Join frozen SATIM imagery findings to frozen FPIM flight-path findings under a declared spatial and temporal method, and report the relationship for human review.
+
+required_inputs:
+  - satim_findings_frozen
+  - fpim_findings_frozen
+
+required_parameters:
+  - parameter_id: satim_finding_ids
+    name: Contributing SATIM findings
+    kind: array
+    description: Finding ids from the imagery side.
+  - parameter_id: fpim_finding_ids
+    name: Contributing FPIM findings
+    kind: array
+    description: Finding ids from the flight-path side.
+  - parameter_id: spatial_method
+    name: Spatial method
+    kind: string
+    description: Named method used to test spatial coincidence.
+  - parameter_id: temporal_method
+    name: Temporal method
+    kind: string
+    description: Named method used to test temporal coincidence.
+  - parameter_id: method_version
+    name: Method version
+    kind: string
+    description: Version of the association method.
+
+optional_parameters:
+  - parameter_id: null_test_sample
+    name: Null test sample
+    kind: array
+    required: false
+    degraded_behavior: No null comparison, so an association cannot be distinguished from the rate expected by chance and must not be treated as meaningful.
+  - parameter_id: alternative_explanations
+    name: Alternative explanations
+    kind: array
+    required: false
+    degraded_behavior: No alternatives recorded, so the association is reported without the competing explanations a reviewer needs to weigh it.
+
+measurements:
+  - separation_m
+  - time_delta_s
+  - association_score
+  - null_rate
+
+emits:
+  - CROSS_AIRCRAFT_SPATIOTEMPORAL_ASSOCIATION
+  - ILAP
+  - UNRESOLVED
+
+interpretation_restriction_minimum: NONE
+
+threshold_ids:
+  - ILAP-WEIGHT-RECURRENCE
+  - ILAP-WEIGHT-LOITER
+  - ILAP-WEIGHT-INFRA
+  - ILAP-WEIGHT-HYDRO-UTILITY
+  - ILAP-WEIGHT-MBIL-PROXIMITY
+  - ILAP-OVERALL-HIGH-0.70
+  - ILAP-OVERALL-MEDIUM-0.40
+
+contradiction_tests:
+  - association_vs_null_rate
+  - coincidence_vs_shared_corridor_geometry
+  - temporal_overlap_vs_replay_time_confusion
+
+evidence_axes_required:
+  - evidence_tier
+  - geometry_status
+  - temporal_status
+  - hypothesis_status
+  - confidence_score
+  - review_priority
+
+prohibited_claims:
+  - Association is not causation, coordination, or intent.
+  - Review context only. operator_action stays review_context_only, live_tracking and operational_cueing stay false.
+  - Weak or absent aircraft identity may be recorded as a gap but must never raise review priority, because ILAP-IDENTITY-PRIORITY is PROHIBITED in the threshold registry.
+  - Do not promote proximity to significance.

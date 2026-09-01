@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "fr24"))
-from todays_batch import compute_status, days_to_expiry, RETENTION_DAYS  # noqa: E402
+from todays_batch import RETENTION_DAYS, compute_status, days_to_expiry  # noqa: E402
 
 
 def test_fresh_flight_is_available():

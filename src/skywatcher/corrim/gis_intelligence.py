@@ -14,12 +14,8 @@ Components:
 
 import sqlite3
 from dataclasses import dataclass, field
-from typing import List, Tuple, Dict, Optional
 from enum import Enum
-import json
 from pathlib import Path
-import math
-
 
 # ============================================================================
 # PUERTO RICO INFRASTRUCTURE DEFINITIONS
@@ -63,7 +59,7 @@ class InfrastructureFeature:
 
 class PuertoRicoInfrastructure:
     def __init__(self):
-        self.features: Dict[str, InfrastructureFeature] = {}
+        self.features: dict[str, InfrastructureFeature] = {}
         self._load_infrastructure()
 
     def _load_infrastructure(self):
@@ -280,18 +276,18 @@ class PuertoRicoInfrastructure:
         self.features[feature.feature_id] = feature
 
     def get_nearby_features(self, lat: float, lon: float,
-                            radius_nm: float = 5.0) -> List[InfrastructureFeature]:
+                            radius_nm: float = 5.0) -> list[InfrastructureFeature]:
         nearby = [f for f in self.features.values()
                   if f.distance_to_point(lat, lon) <= radius_nm]
         return sorted(nearby, key=lambda f: f.distance_to_point(lat, lon))
 
-    def get_features_by_type(self, feature_type: InfrastructureType) -> List[InfrastructureFeature]:
+    def get_features_by_type(self, feature_type: InfrastructureType) -> list[InfrastructureFeature]:
         return [f for f in self.features.values() if f.type == feature_type]
 
-    def get_features_by_operator(self, operator: str) -> List[InfrastructureFeature]:
+    def get_features_by_operator(self, operator: str) -> list[InfrastructureFeature]:
         return [f for f in self.features.values() if f.operator == operator]
 
-    def features_by_sector(self, sector: str) -> List[InfrastructureFeature]:
+    def features_by_sector(self, sector: str) -> list[InfrastructureFeature]:
         """Return all features belonging to the named sector."""
         return [f for f in self.features.values() if getattr(f, "sector", "") == sector]
 
@@ -304,13 +300,13 @@ class PuertoRicoInfrastructure:
 class FlightCorridor:
     corridor_id: str
     name: str
-    start_point: Tuple[float, float]
-    end_point: Tuple[float, float]
+    start_point: tuple[float, float]
+    end_point: tuple[float, float]
     width_nm: float
     purpose: str
     typical_operator: str
     activity_level: str
-    associated_infrastructure: List[str] = field(default_factory=list)
+    associated_infrastructure: list[str] = field(default_factory=list)
     confidence: float = 0.0
 
     def contains_point(self, lat: float, lon: float,
@@ -326,7 +322,7 @@ class CorridorAnalyzer:
         self.infrastructure = infrastructure
         self.corridors = self._define_corridors()
 
-    def _define_corridors(self) -> List[FlightCorridor]:
+    def _define_corridors(self) -> list[FlightCorridor]:
         return [
             FlightCorridor(
                 corridor_id="PREPA_SOUTH",
@@ -354,7 +350,7 @@ class CorridorAnalyzer:
             ),
         ]
 
-    def find_corridors_for_flight(self, track_points: List[Dict]) -> List[FlightCorridor]:
+    def find_corridors_for_flight(self, track_points: list[dict]) -> list[FlightCorridor]:
         matching = []
         for corridor in self.corridors:
             in_corridor = sum(
@@ -377,7 +373,7 @@ class AnomalyDetector:
     def __init__(self, infrastructure: PuertoRicoInfrastructure):
         self.infrastructure = infrastructure
 
-    def detect_restricted_airspace_entry(self, track_points: List[Dict]) -> List[Dict]:
+    def detect_restricted_airspace_entry(self, track_points: list[dict]) -> list[dict]:
         violations = []
         restricted = self.infrastructure.get_features_by_type(
             InfrastructureType.RESTRICTED_AIRSPACE
@@ -397,8 +393,8 @@ class AnomalyDetector:
                     })
         return violations
 
-    def detect_infrastructure_proximity(self, track_points: List[Dict],
-                                        radius_nm: float = 2.0) -> List[Dict]:
+    def detect_infrastructure_proximity(self, track_points: list[dict],
+                                        radius_nm: float = 2.0) -> list[dict]:
         proximities = []
         for point in track_points:
             nearby = self.infrastructure.get_nearby_features(
@@ -418,7 +414,7 @@ class AnomalyDetector:
                 })
         return proximities
 
-    def detect_unusual_patterns(self, flight_data: Dict) -> List[Dict]:
+    def detect_unusual_patterns(self, flight_data: dict) -> list[dict]:
         anomalies = []
 
         if flight_data.get("operator") == "PREPA":
@@ -458,7 +454,7 @@ class AnomalyDetector:
 class HeatmapGenerator:
     def __init__(self, grid_size: float = 0.1):
         self.grid_size = grid_size
-        self.grid: Dict[Tuple[float, float], float] = {}
+        self.grid: dict[tuple[float, float], float] = {}
 
     def add_point(self, lat: float, lon: float, weight: float = 1.0):
         lat_bucket = round(lat / self.grid_size) * self.grid_size
@@ -466,11 +462,11 @@ class HeatmapGenerator:
         key = (lat_bucket, lon_bucket)
         self.grid[key] = self.grid.get(key, 0) + weight
 
-    def add_track(self, track_points: List[Dict], weight: float = 1.0):
+    def add_track(self, track_points: list[dict], weight: float = 1.0):
         for point in track_points:
             self.add_point(point["latitude"], point["longitude"], weight)
 
-    def get_geojson(self) -> Dict:
+    def get_geojson(self) -> dict:
         features = []
         for (lat, lon), count in self.grid.items():
             intensity = min(1.0, count / 10.0)
@@ -508,7 +504,7 @@ class HeatmapGenerator:
             '</kml>'
         )
 
-    def get_density_stats(self) -> Dict:
+    def get_density_stats(self) -> dict:
         counts = list(self.grid.values())
         if not counts:
             return {}
@@ -526,7 +522,7 @@ class HeatmapGenerator:
 # ============================================================================
 
 def haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    from math import radians, cos, sin, asin, sqrt
+    from math import asin, cos, radians, sin, sqrt
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
     dlon = lon2 - lon1
     dlat = lat2 - lat1
@@ -535,9 +531,9 @@ def haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return c * 3440.065
 
 
-def point_to_line_distance(point: Tuple[float, float],
-                           line_start: Tuple[float, float],
-                           line_end: Tuple[float, float]) -> float:
+def point_to_line_distance(point: tuple[float, float],
+                           line_start: tuple[float, float],
+                           line_end: tuple[float, float]) -> float:
     px, py = point
     x1, y1 = line_start
     x2, y2 = line_end
@@ -659,7 +655,7 @@ class Phase2Database:
         conn.commit()
         conn.close()
 
-    def store_anomalies(self, flight_id: str, anomalies: List[Dict]):
+    def store_anomalies(self, flight_id: str, anomalies: list[dict]):
         from datetime import datetime
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()

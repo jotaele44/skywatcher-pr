@@ -1,0 +1,400 @@
+{
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/ai_imagery/legacy_shadow_export.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Content-addressed, non-production legacy shadow export for H08 dual-run evidence preparation.",
+  "properties": {
+    "active_snapshot_promoted": {
+      "const": false
+    },
+    "campaign_id": {
+      "pattern": "^dual-run-campaign-sha256-[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "certified_state_created": {
+      "const": false
+    },
+    "created_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "deterministic_outputs": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "normalized_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "output_id": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "output_id",
+          "normalized_sha256"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "dispositions": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "source_artifact_id": {
+            "pattern": "^artifact-sha256-[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PROCESSED",
+              "EXCLUDED",
+              "FAILED"
+            ]
+          }
+        },
+        "required": [
+          "source_artifact_id",
+          "status",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "engine": {
+      "additionalProperties": false,
+      "properties": {
+        "engine_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "engine_revision": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "engine_id",
+        "engine_revision"
+      ],
+      "type": "object"
+    },
+    "execution_receipt": {
+      "additionalProperties": false,
+      "properties": {
+        "receipt_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "run_id": {
+          "pattern": "^[0-9a-f]{32}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "receipt_sha256"
+      ],
+      "type": "object"
+    },
+    "historical_artifacts": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "logical_name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "media_type": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "relative_path": {
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?![A-Za-z]:)[^\\\\]+$",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "logical_name",
+          "sha256",
+          "bytes",
+          "media_type",
+          "relative_path"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "input_accounting": {
+      "additionalProperties": false,
+      "properties": {
+        "excluded": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "failed": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "inputs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "processed": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "inputs",
+        "processed",
+        "excluded",
+        "failed"
+      ],
+      "type": "object"
+    },
+    "legacy_shadow_export_id": {
+      "pattern": "^legacy-shadow-export-sha256-[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "model_fields": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "field_key": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "provenance": {
+            "additionalProperties": false,
+            "properties": {
+              "access_context_hash": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "extraction_schema_version": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "model_id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "model_revision": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "model_run_receipt_id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "policy_version": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "prompt_template_hash": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "provider_id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "source_artifact_id": {
+                "pattern": "^artifact-sha256-[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "source_sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "access_context_hash",
+              "extraction_schema_version",
+              "model_id",
+              "model_revision",
+              "model_run_receipt_id",
+              "policy_version",
+              "prompt_template_hash",
+              "provider_id",
+              "source_artifact_id",
+              "source_sha256"
+            ],
+            "type": "object"
+          },
+          "review_status": {
+            "enum": [
+              "REVIEWED",
+              "UNRESOLVED_REVIEW"
+            ]
+          },
+          "value": {}
+        },
+        "required": [
+          "field_key",
+          "value",
+          "provenance",
+          "review_status"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "normalized_legacy_records": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint_entries": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "csv_rows": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "log_records": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "csv_rows",
+        "checkpoint_entries",
+        "log_records"
+      ],
+      "type": "object"
+    },
+    "output_accounting": {
+      "additionalProperties": false,
+      "properties": {
+        "failed": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "produced": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "required": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "required",
+        "produced",
+        "failed"
+      ],
+      "type": "object"
+    },
+    "pins_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "production_mutation_allowed": {
+      "const": false
+    },
+    "retirement_authorized": {
+      "const": false
+    },
+    "schema_version": {
+      "const": "legacy_shadow_export.v1"
+    },
+    "skywatcher_revision": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": "string"
+    },
+    "source_artifacts": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_id": {
+            "pattern": "^artifact-sha256-[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "classification": {
+            "enum": [
+              "PUBLIC",
+              "INTERNAL",
+              "RESTRICTED",
+              "SENSITIVE_LOCATION",
+              "LEGAL_HOLD",
+              "QUARANTINED",
+              "TEST_ONLY"
+            ]
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifact_id",
+          "sha256",
+          "classification"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "source_set_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "trial_id": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "legacy_shadow_export_id",
+    "campaign_id",
+    "trial_id",
+    "skywatcher_revision",
+    "source_set_sha256",
+    "pins_sha256",
+    "engine",
+    "execution_receipt",
+    "source_artifacts",
+    "normalized_legacy_records",
+    "dispositions",
+    "deterministic_outputs",
+    "model_fields",
+    "historical_artifacts",
+    "input_accounting",
+    "output_accounting",
+    "production_mutation_allowed",
+    "certified_state_created",
+    "active_snapshot_promoted",
+    "retirement_authorized",
+    "created_at"
+  ],
+  "title": "ADR 0006 legacy shadow export v1",
+  "type": "object"
+}

@@ -7,7 +7,10 @@ import csv
 from pathlib import Path
 from typing import Any
 
-from .features.airport_alignment import enrich_candidate_with_airport_alignment, load_airport_footprints
+from .features.airport_alignment import (
+    enrich_candidate_with_airport_alignment,
+    load_airport_footprints,
+)
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:

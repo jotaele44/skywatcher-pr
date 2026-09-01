@@ -1,15 +1,15 @@
 from copy import deepcopy
 
 from satim_temporal_change import (
-    ChangeType,
-    EpochRecord,
-    EvidenceLink,
     NO_CAUSAL_INFERENCE,
     ORIGINAL_EPOCH_RECORD_IMMUTABILITY,
     SEPARATE_BEFORE_AFTER_PROVENANCE,
+    VISIBLE_EPOCH_CHANGE_ONLY,
+    ChangeType,
+    EpochRecord,
+    EvidenceLink,
     TemporalClass,
     TemporalObservation,
-    VISIBLE_EPOCH_CHANGE_ONLY,
     build_detector_confidence_patch,
     build_human_review_queue,
     build_temporal_change_ledger,
@@ -135,7 +135,7 @@ def test_confidence_patch_is_non_destructive():
     source = fixture("contraction")
     patches = build_detector_confidence_patch([source])
     assert len(patches) == 2
-    for patch, record in zip(patches, (source.before, source.after)):
+    for patch, record in zip(patches, (source.before, source.after), strict=True):
         assert patch["record_id"] == record.record_id
         assert patch["original_classification"] == record.classification
         assert patch["original_score"] == record.detector_score

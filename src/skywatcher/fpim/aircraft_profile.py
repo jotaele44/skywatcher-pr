@@ -7,9 +7,8 @@ AircraftIntelligence — N-number → owner/operator/mission lookup
 
 import sqlite3
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Dict, List, Optional
 from datetime import datetime
+from pathlib import Path
 
 from skywatcher.core.known_operators import KNOWN_OPERATORS
 
@@ -48,9 +47,9 @@ class AircraftProfile:
     operator: str = "Unknown"
     country: str = "Unknown"
     primary_mission: str = "Unknown"
-    secondary_missions: List[str] = field(default_factory=list)
+    secondary_missions: list[str] = field(default_factory=list)
     confidence_level: float = 0.0
-    operational_patterns: Dict = field(default_factory=dict)
+    operational_patterns: dict = field(default_factory=dict)
     total_flights: int = 0
     first_seen: str = ""
     last_seen: str = ""
@@ -258,14 +257,14 @@ class AircraftIntelligence:
             except Exception:
                 pass
 
-    def find_unknown(self, callsigns: List[str]) -> List[str]:
+    def find_unknown(self, callsigns: list[str]) -> list[str]:
         """Return the subset of callsigns that have no profile match in KNOWN_OPERATORS.
 
         A callsign is considered 'unknown' when neither a substring match nor a
         prefix match resolves it to a known entry — i.e. it would fall through to
         the 'deduced' path with data_source == 'deduced'.
         """
-        unknown: List[str] = []
+        unknown: list[str] = []
         for cs in callsigns:
             matched = False
             for key in KNOWN_OPERATORS:

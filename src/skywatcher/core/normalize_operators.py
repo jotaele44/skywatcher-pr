@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from skywatcher.core.normalize_locations import load_simple_yaml
 
@@ -41,14 +41,14 @@ def _is_masked_identity(raw_tail: Any) -> bool:
 
 class OperatorIndex:
     def __init__(self) -> None:
-        self.aliases: Dict[str, Dict[str, Any]] = {}
+        self.aliases: dict[str, dict[str, Any]] = {}
 
-    def add(self, alias: str, record: Dict[str, Any]) -> None:
+    def add(self, alias: str, record: dict[str, Any]) -> None:
         key = _norm(alias)
         if key and key not in self.aliases:
             self.aliases[key] = record
 
-    def resolve_operator(self, raw_text: str) -> Dict[str, Any]:
+    def resolve_operator(self, raw_text: str) -> dict[str, Any]:
         key = _norm(raw_text)
         record = self.aliases.get(key)
         if record:
@@ -83,7 +83,7 @@ def build_operator_index(config_dir: Path = Path("configs")) -> OperatorIndex:
     return index
 
 
-def normalize_aircraft_identity(raw_tail: Any, aircraft_type: Any = None) -> Dict[str, Any]:
+def normalize_aircraft_identity(raw_tail: Any, aircraft_type: Any = None) -> dict[str, Any]:
     raw = "" if raw_tail is None else str(raw_tail).strip()
     key = _norm(raw)
     compact_key = key.replace(" ", "")
@@ -117,11 +117,11 @@ def normalize_aircraft_identity(raw_tail: Any, aircraft_type: Any = None) -> Dic
     }
 
 
-def normalize_operator(raw_operator: str, config_dir: Path = Path("configs")) -> Dict[str, Any]:
+def normalize_operator(raw_operator: str, config_dir: Path = Path("configs")) -> dict[str, Any]:
     return build_operator_index(config_dir).resolve_operator(raw_operator)
 
 
-def normalize_aircraft_record(event: Dict[str, Any], config_dir: Path = Path("configs")) -> Dict[str, Any]:
+def normalize_aircraft_record(event: dict[str, Any], config_dir: Path = Path("configs")) -> dict[str, Any]:
     result = dict(event)
     tail_raw = event.get("tail_raw") or event.get("tail") or event.get("registration") or event.get("callsign")
     result["aircraft_identity_normalized"] = normalize_aircraft_identity(tail_raw, event.get("aircraft_type"))

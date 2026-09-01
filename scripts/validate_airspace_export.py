@@ -70,6 +70,31 @@ def parse_float(value: Any, field_name: str) -> float:
         raise ValueError(f"{field_name} must be numeric") from exc
 
 
+def validate_capture_bbox(value: Any) -> list[str]:
+    if not isinstance(value, str) or not value.strip():
+        return ["capture_bbox_geojson is required for icon-derived approximate points"]
+    try:
+        geometry = json.loads(value)
+    except json.JSONDecodeError as exc:
+        return [f"capture_bbox_geojson is invalid JSON: {exc}"]
+    if geometry.get("type") != "Polygon":
+        return ["capture_bbox_geojson must be a Polygon"]
+    rings = geometry.get("coordinates")
+    if not isinstance(rings, list) or not rings or not isinstance(rings[0], list):
+        return ["capture_bbox_geojson polygon coordinates are required"]
+    points = rings[0]
+    if len(points) < 5 or points[0] != points[-1]:
+        return ["capture_bbox_geojson polygon ring must be closed"]
+    for point in points:
+        if not isinstance(point, list) or len(point) != 2:
+            return ["capture_bbox_geojson points must be [lon, lat] pairs"]
+        lon = parse_float(point[0], "capture_bbox lon")
+        lat = parse_float(point[1], "capture_bbox lat")
+        if not -180 <= lon <= 180 or not -90 <= lat <= 90:
+            return ["capture_bbox_geojson coordinates outside valid range"]
+    return []
+
+
 def validate_datetime(value: Any) -> None:
     if not isinstance(value, str) or not value.strip():
         raise ValueError("event_datetime is required")
@@ -194,6 +219,33 @@ def validate_package(package_dir: Path, mode: str) -> list[str]:
             is_synthetic = False
         if mode == "production" and is_synthetic:
             errors.append(f"{obs_id}: synthetic rows are not allowed in production mode")
+
+        point_status = obs.get("aircraft_point_status")
+        if point_status == "ICON_DERIVED_APPROX":
+            if obs.get("geometry_status") != "approximate":
+                errors.append(f"{obs_id}: icon-derived points must use geometry_status=approximate")
+            if obs.get("position_precision") != "APPROXIMATE":
+                errors.append(f"{obs_id}: icon-derived points must use position_precision=APPROXIMATE")
+            if obs.get("aircraft_icon_visibility") != "visible":
+                errors.append(f"{obs_id}: icon-derived points require aircraft_icon_visibility=visible")
+            if obs.get("aircraft_point_method") != "screenshot_icon_georeference":
+                errors.append(f"{obs_id}: icon-derived points require aircraft_point_method=screenshot_icon_georeference")
+            try:
+                uncertainty = parse_float(obs.get("aircraft_point_uncertainty_m"), "aircraft_point_uncertainty_m")
+                if uncertainty <= 0:
+                    errors.append(f"{obs_id}: aircraft_point_uncertainty_m must be positive")
+            except ValueError as exc:
+                errors.append(f"{obs_id}: {exc}")
+            try:
+                capture_uncertainty = parse_float(obs.get("capture_geometry_uncertainty_m"), "capture_geometry_uncertainty_m")
+                if capture_uncertainty <= 0:
+                    errors.append(f"{obs_id}: capture_geometry_uncertainty_m must be positive")
+            except ValueError as exc:
+                errors.append(f"{obs_id}: {exc}")
+            for bbox_error in validate_capture_bbox(obs.get("capture_bbox_geojson")):
+                errors.append(f"{obs_id}: {bbox_error}")
+        elif point_status == "SOURCE_PROVIDED" and obs.get("position_precision") == "APPROXIMATE":
+            errors.append(f"{obs_id}: SOURCE_PROVIDED points must not be labeled APPROXIMATE")
 
     return errors
 
