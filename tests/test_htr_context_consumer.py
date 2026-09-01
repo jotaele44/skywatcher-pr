@@ -44,3 +44,40 @@ def test_identity_relation_is_rejected():
     r["relation_type"] = "SAME_AS"
     with pytest.raises(HTRContextError):
         consume_htr_context([r])
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("identity_state", "UNRESOLVED", "distinct entities"),
+        ("downstream_semantics", "IDENTITY", "context-only contract"),
+        ("candidate_id", "", "missing candidate_id"),
+        ("relation_type", [], "relation_type"),
+        ("evidence", {}, "evidence must be a list"),
+    ],
+)
+def test_contract_shape_invariants_are_rejected(field, value, message):
+    r = row()
+    r[field] = value
+    with pytest.raises(HTRContextError, match=message):
+        consume_htr_context([r])
+
+
+def test_duplicate_candidate_and_endpoint_collapse_are_rejected():
+    with pytest.raises(HTRContextError, match="duplicate candidate_id"):
+        consume_htr_context([row(), row()])
+
+    r = row()
+    r["hydro_entity_id"] = r["source_observation_id"]
+    with pytest.raises(HTRContextError, match="endpoints must remain distinct"):
+        consume_htr_context([r])
+
+
+def test_state_error_names_rejected_value_and_allowed_states():
+    r = row()
+    r["state"] = "PROVISIONAL"
+    with pytest.raises(
+        HTRContextError,
+        match=r"unsupported HTR state 'PROVISIONAL'; allowed:",
+    ):
+        consume_htr_context([r])
