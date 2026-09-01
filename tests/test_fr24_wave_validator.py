@@ -6,17 +6,13 @@ import csv
 import json
 from pathlib import Path
 
-import pytest
-
 from fr24.wave_validator import (
-    PROHIBITED_LABELS,
-    MAX_CLIMB_FT_PER_MIN,
     MAX_SPEED_MPH,
+    PROHIBITED_LABELS,
     _check_pair,
     run,
     validate_wave,
 )
-
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 

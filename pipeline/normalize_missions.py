@@ -3,10 +3,10 @@ See docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md."""
 from __future__ import annotations
 
 from skywatcher.core.normalize_missions import (
+    normalize_behavior,
     normalize_blackout,
     normalize_mission,
     normalize_mission_record,
-    normalize_behavior,
 )
 
 __all__ = [

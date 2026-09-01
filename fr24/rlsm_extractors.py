@@ -3,7 +3,9 @@ RLSM derived extractors. Parse already-stored OCR observations into structured
 tables:
 
   - aircraft_observations  (from aircraft_card + top_bar zones)
-  - labeled_pins           (from label_layer + map_center zones)
+  - labeled_pins           (from the word boxes of every label-bearing zone,
+                            matched against the GNIS gazetteer in
+                            fr24/rlsm_gazetteer.py; carries real pixel geometry)
   - flight_track_features  (populated by fr24/rlsm_flight_track.py — the
                             speed/heading heuristic, plus an optional CV
                             track-vectorizer pass; NOT produced by this module)
@@ -21,10 +23,10 @@ CLI:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import re
 import sqlite3
-import sys
 import time
 from pathlib import Path
 
@@ -79,10 +81,8 @@ def _scan_text(text: str) -> dict:
 
     m = RE_ALT.search(text)
     if m:
-        try:
+        with contextlib.suppress(ValueError):
             result["altitude_ft"] = int(m.group(1).replace(",", ""))
-        except ValueError:
-            pass
 
     m = RE_SPEED_KT.search(text)
     if m:
@@ -185,25 +185,22 @@ def extract_aircraft(conn: sqlite3.Connection, run_id: int, limit: int = 0) -> d
 
 # ----------------------------- labeled-POI extractor ------------------------
 
-_VOWELS = set("AEIOU")
-
-# USA / generic tokens to skip
-SKIP_TOKENS = {
-    "USA", "MAR", "USA", "AIRPORT", "Air Force",
-    "Coast Guard", "Air Cargo", "AirCargo",
+# Zones whose word boxes are scanned for place labels, with a per-zone
+# confidence multiplier.
+#
+# label_layer (5-65%) is the sparse-text map crop and the primary source.
+# aircraft_card (65-95%) is already OCR'd for the aircraft extractor, so reading
+# its words costs nothing — and it is the only way map labels in the bottom 35%
+# of the frame are seen at all. It gets a lower weight because PSM 6 on a card
+# zone is a weaker source for sparse map text than PSM 11 on the map crop.
+LABEL_ZONE_WEIGHTS = {
+    "label_layer":   1.00,
+    "map_center":    1.00,   # legacy 6-zone runs
+    "aircraft_card": 0.80,
 }
 
-
-def _ascii_fold(s: str) -> str:
-    """Very simple accent-strip for matching."""
-    return (s.replace("Á", "A").replace("É", "E").replace("Í", "I")
-             .replace("Ó", "O").replace("Ú", "U").replace("Ñ", "N")
-             .replace("á", "a").replace("é", "e").replace("í", "i")
-             .replace("ó", "o").replace("ú", "u").replace("ñ", "n"))
-
-
-def _normalize_for_match(s: str) -> str:
-    return _ascii_fold(s).upper().strip()
+# A Tier-2 candidate needs at least this many characters to be worth a row.
+MIN_UNKNOWN_LEN = 4
 
 
 def _normalize_label(s: str) -> str:
@@ -211,130 +208,154 @@ def _normalize_label(s: str) -> str:
     return s.strip().title()
 
 
-def _load_pr_vocab() -> dict:
+def _latest_zone_observations(conn: sqlite3.Connection, sid: int) -> list:
     """
-    Load PR + Caribbean POI vocabulary from multiple sources. Returns a dict:
-        norm_ascii_upper -> {"canonical": str, "type": str, "lat": float?, "lon": float?, "source": str}
+    Newest observation per zone for one screenshot.
+
+    Raw OCR is append-only (re-runs write fresh rows under a new run_id rather
+    than overwriting), so a screenshot can carry rows from the legacy 6-zone run,
+    the 3-zone run, and a --reocr-boxes pass. Taking MAX(obs_id) per zone means
+    the extractor reads the newest read of each zone instead of concatenating
+    every historical one.
     """
-    vocab: dict = {}
-    # Static anchors (5 key airports / facilities known to appear in FR24 labels)
-    static = [
-        ("TJSJ", "Luis Muñoz Marín International Airport", "airport",   18.4394, -66.0018),
-        ("TJIG", "Fernando Luis Ribas Dominicci Airport",  "airport",   18.4567, -66.0982),
-        ("TJBQ", "Rafael Hernández Airport",              "airport",   18.4949, -67.1294),
-        ("TJMZ", "Eugenio María de Hostos Airport",       "airport",   18.2556, -67.1485),
-        ("TJNR", "José Aponte de la Torre Airport",       "airport",   18.2453, -65.6436),
-    ]
-    for code, name, ptype, lat, lon in static:
-        vocab[_normalize_for_match(code)] = {"canonical": name, "type": ptype, "lat": lat, "lon": lon, "source": "static_anchor"}
-        vocab[_normalize_for_match(name)] = {"canonical": name, "type": ptype, "lat": lat, "lon": lon, "source": "static_anchor"}
-
-    # Common PR municipality names
-    municipalities = [
-        "ADJUNTAS", "AGUADA", "AGUADILLA", "AGUAS BUENAS", "AIBONITO",
-        "AÑASCO", "ARECIBO", "ARROYO", "BARCELONETA", "BARRANQUITAS",
-        "BAYAMÓN", "CABO ROJO", "CAGUAS", "CAMUY", "CANÓVANAS",
-        "CAROLINA", "CATAÑO", "CAYEY", "CEIBA", "CIALES",
-        "CIDRA", "COAMO", "COMERÍO", "COROZAL", "CULEBRA",
-        "DORADO", "FAJARDO", "FLORIDA", "GUÁNICA", "GUAYAMA",
-        "GUAYANILLA", "GUAYNABO", "GURABO", "HATILLO", "HORMIGUEROS",
-        "HUMACAO", "ISABELA", "JAYUYA", "JUANA DÍAZ", "JUNCOS",
-        "LAJAS", "LARES", "LAS MARÍAS", "LAS PIEDRAS", "LOÍZA",
-        "LUQUILLO", "MANATÍ", "MARICAO", "MAUNABO", "MAYAGÜEZ",
-        "MOCA", "MOROVIS", "NAGUABO", "NARANJITO", "OROCOVIS",
-        "PATILLAS", "PEÑUELAS", "PONCE", "QUEBRADILLAS", "RINCÓN",
-        "RÍO GRANDE", "SABANA GRANDE", "SALINAS", "SAN GERMÁN", "SAN JUAN",
-        "SAN LORENZO", "SAN SEBASTIÁN", "SANTA ISABEL", "TOA ALTA", "TOA BAJA",
-        "TRUJILLO ALTO", "UTUADO", "VEGA ALTA", "VEGA BAJA", "VIEQUES",
-        "VILLALBA", "YABUCOA", "YAUCO",
-    ]
-    for name in municipalities:
-        key = _normalize_for_match(name)
-        vocab[key] = {"canonical": _normalize_label(name), "type": "municipality",
-                      "lat": None, "lon": None, "source": "pr_municipalities"}
-
-    # Caribbean / water features
-    for name, ptype in [
-        ("CARIBBEAN SEA",  "water"), ("ATLANTIC OCEAN", "water"),
-        ("MONA PASSAGE",   "water"), ("VIEQUES SOUND",  "water"),
-        ("DOMINICAN REPUBLIC", "territory"), ("US VIRGIN ISLANDS", "territory"),
-        ("SAINT THOMAS",   "territory"), ("SAINT CROIX",   "territory"),
-        ("CULEBRA",        "territory"),
-    ]:
-        vocab[_normalize_for_match(name)] = {"canonical": name.title(), "type": ptype,
-                                              "lat": None, "lon": None, "source": "caribbean"}
-    return vocab
+    return conn.execute(
+        """SELECT zone, raw_text, raw_lines_json, confidence_mean
+           FROM ocr_observations
+           WHERE obs_id IN (
+               SELECT MAX(obs_id) FROM ocr_observations
+               WHERE screenshot_id = ? GROUP BY zone)
+           ORDER BY zone""",
+        (sid,),
+    ).fetchall()
 
 
-_PR_VOCAB: dict = {}
-
-
-def _scan_text_for_pois(text: str) -> list:
+def _pin_confidence(entry: dict, span_len: int, word_conf: float,
+                    zone_weight: float) -> float:
     """
-    Two-tier extraction from a single OCR text blob:
-      1. Substring match against the PR vocabulary (high-confidence Tier-1 hits)
-      2. Capitalized word groups that don't match (low-confidence Tier-2 candidates)
-    Returns: list of (matched_string, vocab_entry_or_None_for_unknown)
+    Confidence from four signals, replacing the old constant 0.70.
+
+      - the gazetteer entry's tier (anchor / high / geo / low)
+      - how many tokens the match consumed (multi-word hits are far less likely
+        to be coincidence than single-token ones)
+      - mean Tesseract confidence over the matched words
+      - which zone the words came from
     """
-    global _PR_VOCAB
-    if not _PR_VOCAB:
-        _PR_VOCAB = _load_pr_vocab()
-
-    results = []
-    text_upper = _normalize_for_match(text)
-
-    # Tier 1 – vocabulary hits
-    matched_spans = []
-    for key, entry in _PR_VOCAB.items():
-        if key in text_upper:
-            results.append((entry["canonical"], entry))
-            # track rough span to avoid double-emitting sub-matches
-            idx = text_upper.find(key)
-            matched_spans.append((idx, idx + len(key)))
-
-    # Tier 2 – capitalized word groups not already matched
-    for m in re.finditer(r'\b([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ]+)*)\b', text):
-        word = m.group(1)
-        norm = _normalize_for_match(word)
-        if norm in _PR_VOCAB:
-            continue
-        if len(word) < 4 or word.upper() in SKIP_TOKENS:
-            continue
-        # Skip purely numeric or single-letter tokens
-        if not any(c.isalpha() for c in word):
-            continue
-        results.append((word, None))
-
-    return results
+    conf = float(entry.get("base_confidence", 0.5))
+    if span_len >= 3:
+        conf += 0.06
+    elif span_len == 2:
+        conf += 0.04
+    # OCR quality: full credit at 90+, a real penalty below 50.
+    conf += max(-0.15, min(0.06, (word_conf - 75.0) / 250.0))
+    conf *= zone_weight
+    return round(max(0.05, min(0.97, conf)), 3)
 
 
-def _classify_poi(label: str, vocab_entry) -> tuple:
-    """Fallback classifier for tokens with no vocab entry."""
-    if vocab_entry:
-        return vocab_entry["type"], min(0.90, 0.70)
-    label_up = label.upper()
-    if any(t in label_up for t in ("AIRPORT", "AIRFIELD", "AEROPUERTO")):
-        return "airport", 0.55
-    if any(t in label_up for t in ("BAY", "LAGOON", "LAKE", "RIVER", "SEA", "OCEAN")):
-        return "water", 0.45
-    if any(t in label_up for t in ("HWY", "HIGHWAY", "PR-", "ROUTE")):
-        return "highway", 0.45
+def _classify_unknown(label: str) -> tuple:
+    """Weak classifier for a Tier-2 candidate with no gazetteer entry."""
+    up = label.upper()
+    if any(t in up for t in ("AIRPORT", "AIRFIELD", "AEROPUERTO")):
+        return "airport", 0.45
+    if any(t in up for t in ("BAY", "BAHIA", "LAGUNA", "LAGOON", "LAKE",
+                             "RIVER", "RIO", "SEA", "OCEAN", "CANO")):
+        return "water", 0.40
+    if any(t in up for t in ("HWY", "HIGHWAY", "PR-", "ROUTE", "EXPRESO")):
+        return "highway", 0.40
     return "unknown", 0.25
+
+
+def scan_words_for_pois(words: list, zone_weight: float = 1.0) -> list:
+    """
+    Two-tier place extraction over a zone's OCR **word boxes**.
+
+    Tier 1 matches gazetteer n-grams with word boundaries and records the token
+    span each hit consumed. Tier 2 then emits only from runs of leftover tokens —
+    which is what the old ``matched_spans`` list (computed and then never read)
+    was meant to do. Under the old substring scan every Tier-1 hit was re-emitted
+    as an overlapping Tier-2 "unknown": ``"FLORIDA Bayamon"`` produced three rows
+    (``Bayamón``, ``Florida``, and junk ``"FLORIDA Bayamon"`` at 0.25) and the
+    junk row fell under the 0.5 review threshold, so a meaningful share of the
+    review backlog was self-inflicted.
+
+    Returns a list of dicts with ``label``, ``entry`` (None for Tier 2),
+    ``pin_type``, ``confidence`` and ``words`` (the source boxes).
+    """
+    from fr24.rlsm_gazetteer import load_gazetteer, tokenize
+
+    if not words:
+        return []
+    gaz = load_gazetteer()
+    texts = [w.get("t", "") for w in words]
+    tokens, owners = tokenize(texts)
+    if not tokens:
+        return []
+
+    out = []
+    consumed = [False] * len(tokens)
+
+    # Tier 1 — gazetteer hits.
+    for start, end, entry in gaz.match_tokens(tokens):
+        for i in range(start, end):
+            consumed[i] = True
+        src = [words[j] for j in sorted({owners[i] for i in range(start, end)})]
+        wconf = sum(w.get("c", 0.0) for w in src) / max(1, len(src))
+        out.append({
+            "label": entry["canonical"],
+            "entry": entry,
+            "pin_type": entry["type"],
+            "confidence": _pin_confidence(entry, end - start, wconf, zone_weight),
+            "words": src,
+        })
+
+    # Tier 2 — maximal runs of tokens no Tier-1 match claimed.
+    i = 0
+    while i < len(tokens):
+        if consumed[i]:
+            i += 1
+            continue
+        j = i
+        while j < len(tokens) and not consumed[j]:
+            j += 1
+        run_owners = sorted({owners[k] for k in range(i, j)})
+        raw = " ".join(words[o].get("t", "") for o in run_owners).strip()
+        if len(raw) >= MIN_UNKNOWN_LEN and any(ch.isalpha() for ch in raw):
+            src = [words[o] for o in run_owners]
+            wconf = sum(w.get("c", 0.0) for w in src) / max(1, len(src))
+            ptype, base = _classify_unknown(raw)
+            out.append({
+                "label": raw,
+                "entry": None,
+                "pin_type": ptype,
+                "confidence": round(max(0.05, base * zone_weight
+                                        + max(-0.10, (wconf - 75.0) / 300.0)), 3),
+                "words": src,
+            })
+        i = j
+
+    return out
 
 
 def extract_labeled_pins(conn: sqlite3.Connection, run_id: int,
                           limit: int = 0, reset: bool = False) -> dict:
     """
-    v2 extractor: tokenize OCR text and substring-match against PR vocabulary
-    (5 anchors + 279 municipalities + Caribbean territories + water features).
+    Word-box place-label extractor.
 
-    Two-tier emission:
-      Tier 1 (matched): raw_label = canonical name, pin_type_guess in
-              {airport, anchor, municipality, territory, water}, confidence
-              boosted to 90 if OCR mean was high enough.
-      Tier 2 (unknown_label_candidate): unmatched but plausibly-labeled tokens
-              from the OCR text. Marked review_status='unreviewed'.
+    Reads the per-word geometry stored in ``ocr_observations.raw_lines_json``
+    (see fr24/rlsm_wordboxes.py) rather than the flat text blob, and matches it
+    against the GNIS-backed gazetteer in fr24/rlsm_gazetteer.py — 5,744 keys
+    across the archipelago, against the 91 hardcoded names this used to carry.
+
+    Every pin gets **real geometry**: ``bbox_*`` and ``centroid_*`` are the union
+    box over the matched words. They used to be inserted as six literal ``None``
+    values, which meant a "labeled pin" was a name with no position on the frame
+    — and the per-screenshot affine geocoder needs two located pins to fit.
+
+    Tier 1 rows carry a gazetteer entry; Tier 2 rows are leftover token runs kept
+    as ``unknown`` candidates for review. Deduplicated per screenshot, highest
+    confidence winning.
     """
+    from fr24.rlsm_wordboxes import load_words, union_box
+
     if reset:
         conn.execute("DELETE FROM labeled_pins")
         conn.commit()
@@ -349,54 +370,53 @@ def extract_labeled_pins(conn: sqlite3.Connection, run_id: int,
     rows = conn.execute(sql).fetchall()
 
     n_emitted = 0
+    n_no_boxes = 0
     for (sid,) in rows:
-        # Only use ONE of label_layer/map_center per screenshot to avoid double-emit.
-        # label_layer takes priority because its OCR config targets sparse text.
-        text_rows = conn.execute(
-            "SELECT raw_text, confidence_mean FROM ocr_observations "
-            "WHERE screenshot_id=? AND zone = 'label_layer'",
-            (sid,),
-        ).fetchall()
-        if not text_rows:
-            text_rows = conn.execute(
-                "SELECT raw_text, confidence_mean FROM ocr_observations "
-                "WHERE screenshot_id=? AND zone = 'map_center'",
-                (sid,),
-            ).fetchall()
-        if not text_rows:
+        observations = _latest_zone_observations(conn, sid)
+        if not observations:
             continue
 
-        combined = " ".join(r[0] for r in text_rows if r[0])
-        avg_conf = (sum(r[1] for r in text_rows if r[1] is not None)
-                    / max(1, sum(1 for r in text_rows if r[1] is not None)))
-
-        hits = _scan_text_for_pois(combined)
-        seen_labels: set = set()
-        for raw_label, vocab_entry in hits:
-            norm = _normalize_for_match(raw_label)
-            if norm in seen_labels:
+        best: dict = {}
+        saw_boxes = False
+        for zone, _raw_text, raw_lines_json, _conf_mean in observations:
+            weight = LABEL_ZONE_WEIGHTS.get(zone)
+            if weight is None:
                 continue
-            seen_labels.add(norm)
+            words = load_words(raw_lines_json)
+            if not words:
+                continue
+            saw_boxes = True
+            for hit in scan_words_for_pois(words, zone_weight=weight):
+                key = hit["label"].casefold()
+                if key not in best or hit["confidence"] > best[key]["confidence"]:
+                    best[key] = hit
 
-            poi_type, confidence = _classify_poi(raw_label, vocab_entry)
-            # Boost confidence if OCR was high quality
-            if avg_conf > 70 and vocab_entry:
-                confidence = min(0.95, confidence + 0.15)
+        if not saw_boxes:
+            # Pre-word-box observation. Skipped rather than emitted without
+            # geometry: run `--stage ocr --reocr-boxes` to backfill.
+            n_no_boxes += 1
+            continue
 
+        for hit in best.values():
+            box = union_box(hit["words"])
+            bx, by, bw, bh = box if box else (None, None, None, None)
+            cx = bx + bw // 2 if box else None
+            cy = by + bh // 2 if box else None
             conn.execute(
                 """INSERT INTO labeled_pins
                    (screenshot_id, run_id, raw_label, normalized_label,
                     bbox_x, bbox_y, bbox_w, bbox_h, centroid_x, centroid_y,
                     pin_type_guess, confidence, review_status, observed_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (sid, run_id, raw_label, _normalize_label(raw_label),
-                 None, None, None, None, None, None,
-                 poi_type, confidence, "unreviewed", _iso_now()),
+                (sid, run_id, hit["label"], _normalize_label(hit["label"]),
+                 bx, by, bw, bh, cx, cy,
+                 hit["pin_type"], hit["confidence"], "unreviewed", _iso_now()),
             )
             n_emitted += 1
 
     conn.commit()
-    return {"kind": "labeled_poi", "emitted": n_emitted, "targets": len(rows)}
+    return {"kind": "labeled_poi", "emitted": n_emitted, "targets": len(rows),
+            "skipped_no_word_boxes": n_no_boxes}
 
 
 # ----------------------------- aircraft roster (export helper) ---------------
@@ -581,7 +601,7 @@ def main() -> None:
     if args.kind in ("labeled_poi", "all"):
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO processing_runs (run_kind, started_at, status, n_inputs, n_processed, n_failed) VALUES ('labeled_poi_v2', ?, 'in_progress', 0, 0, 0)",
+            "INSERT INTO processing_runs (run_kind, started_at, status, n_inputs, n_processed, n_failed) VALUES ('labeled_poi_v3_wordbox', ?, 'in_progress', 0, 0, 0)",
             (_iso_now(),),
         )
         run_id = cur.lastrowid

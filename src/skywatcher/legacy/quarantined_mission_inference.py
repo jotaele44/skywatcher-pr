@@ -21,7 +21,6 @@ analyze_all_aircraft  — Convenience CLI-style entry point
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List
 
 from skywatcher.core.known_operators import KNOWN_OPERATORS
 from skywatcher.fpim.aircraft_profile import AircraftIntelligence
@@ -37,7 +36,7 @@ class MissionAnalysis:
     avg_speed_mph: float
     likely_mission: str
     mission_confidence: float
-    evidence: List[str] = field(default_factory=list)
+    evidence: list[str] = field(default_factory=list)
 
 
 # ============================================================================
@@ -107,9 +106,9 @@ class FlightMissionAnalyzer:
 
     def _deduce_mission(self, callsign: str, duration_min: int,
                         max_alt_ft: int, avg_spd_mph: float,
-                        altitudes: List[int]) -> tuple:
+                        altitudes: list[int]) -> tuple:
         evidence = []
-        scores: Dict[str, float] = {}
+        scores: dict[str, float] = {}
 
         alt_variance = (max(altitudes) - min(altitudes)) if len(altitudes) > 1 else 0
 

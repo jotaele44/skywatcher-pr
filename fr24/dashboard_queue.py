@@ -14,7 +14,6 @@ import json
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List
 
 DASHBOARD_QUEUE_VERSION = "fr24_dashboard_queue_v0.1.1"
 
@@ -58,7 +57,7 @@ PROHIBITED_LABELS = {
 }
 
 
-def read_csv(path: Path) -> List[dict]:
+def read_csv(path: Path) -> list[dict]:
     if not path.exists() or path.stat().st_size == 0:
         return []
     return list(csv.DictReader(path.open(encoding="utf-8")))
@@ -149,12 +148,12 @@ def queue_dedup_key(row: dict) -> tuple:
 
 
 def collect_queue(
-    selected_rows: List[dict],
-    field_review_rows: List[dict],
-    duplicate_review_rows: List[dict],
-    ocr_error_rows: List[dict],
-) -> List[dict]:
-    queue: List[dict] = []
+    selected_rows: list[dict],
+    field_review_rows: list[dict],
+    duplicate_review_rows: list[dict],
+    ocr_error_rows: list[dict],
+) -> list[dict]:
+    queue: list[dict] = []
     captured_images: set[str] = set()
 
     for row in field_review_rows:
@@ -190,7 +189,7 @@ def collect_queue(
         queue.append(enrich_row(row, TIER_OCR_FAILURE, "ocr_failure"))
 
     seen: set[tuple] = set()
-    deduped: List[dict] = []
+    deduped: list[dict] = []
     for row in queue:
         key = queue_dedup_key(row)
         if key in seen:
@@ -202,12 +201,12 @@ def collect_queue(
     return deduped
 
 
-def write_csv(path: Path, rows: List[dict]) -> None:
+def write_csv(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not rows:
         path.write_text("", encoding="utf-8")
         return
-    fieldnames = sorted({k for row in rows for k in row.keys()})
+    fieldnames = sorted({k for row in rows for k in row})
     preferred_head = [
         "priority_score", "priority_tier", "queue_source", "queue_status",
         "candidate_id", "image_path", "image_name",

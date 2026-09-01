@@ -10,19 +10,19 @@ confidence grading can cap ungrounded claims.
 Core-only imports (stdlib). Must not import satim/corrim (see
 docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md).
 """
+
 from __future__ import annotations
 
 import sqlite3
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
 
 DOW_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 HOUR_BUCKET_SIZE = 3
 NOISE_FLOOR = 0.25  # expected sightings/day below this are dropped as noise
 
 
-def parse_ts(s: Optional[str]) -> Optional[datetime]:
+def parse_ts(s: str | None) -> datetime | None:
     """Parse an ISO-8601 timestamp string; return None on missing/short/invalid.
 
     Mirrors the parser in the RLSM intel scripts (16-char minimum guards
@@ -45,9 +45,7 @@ def ts_expr(conn: sqlite3.Connection) -> str:
     return "s.filename_ts"
 
 
-def load_observations(
-    conn: sqlite3.Connection, since: Optional[str] = None
-) -> List[Tuple[str, str]]:
+def load_observations(conn: sqlite3.Connection, since: str | None = None) -> list[tuple[str, str]]:
     """Return ``[(registration, ts)]`` for every registered aircraft observation.
 
     ``since`` (ISO string) filters to timestamps at or after it when provided.
@@ -59,16 +57,16 @@ def load_observations(
         JOIN screenshots s USING(screenshot_id)
         WHERE a.registration IS NOT NULL AND {expr} IS NOT NULL
     """
-    params: Tuple = ()
+    params: tuple = ()
     if since is not None:
         sql += f" AND {expr} >= ?"
         params = (since,)
     return list(conn.execute(sql, params).fetchall())
 
 
-def max_corpus_ts(rows: List[Tuple[str, str]]) -> Optional[datetime]:
+def max_corpus_ts(rows: list[tuple[str, str]]) -> datetime | None:
     """Latest parseable timestamp across ``rows`` (the corpus "now")."""
-    best: Optional[datetime] = None
+    best: datetime | None = None
     for _reg, ts in rows:
         dt = parse_ts(ts)
         if dt and (best is None or dt > best):
@@ -77,15 +75,15 @@ def max_corpus_ts(rows: List[Tuple[str, str]]) -> Optional[datetime]:
 
 
 def build_cells(
-    rows: List[Tuple[str, str]],
-    keep_regs: Optional[set] = None,
+    rows: list[tuple[str, str]],
+    keep_regs: set | None = None,
     hour_bucket_size: int = HOUR_BUCKET_SIZE,
-) -> Dict[Tuple[str, int, int], int]:
+) -> dict[tuple[str, int, int], int]:
     """Aggregate observations into ``(registration, dow, hour_bucket) -> count``.
 
     ``keep_regs`` optionally restricts to a set of registrations.
     """
-    cells: Dict[Tuple[str, int, int], int] = defaultdict(int)
+    cells: dict[tuple[str, int, int], int] = defaultdict(int)
     for reg, ts in rows:
         if keep_regs is not None and reg not in keep_regs:
             continue
@@ -97,27 +95,27 @@ def build_cells(
     return cells
 
 
-def top_registrations(rows: List[Tuple[str, str]], limit: int) -> List[str]:
+def top_registrations(rows: list[tuple[str, str]], limit: int) -> list[str]:
     """Registrations ranked by observation volume, most-frequent first."""
     counts = Counter(reg for reg, _ in rows)
     return [reg for reg, _ in counts.most_common(limit)]
 
 
 def forecast_rows(
-    cells: Dict[Tuple[str, int, int], int],
-    regs: List[str],
+    cells: dict[tuple[str, int, int], int],
+    regs: list[str],
     max_dt: datetime,
     lookback_weeks: int,
     forecast_days: int,
     hour_bucket_size: int = HOUR_BUCKET_SIZE,
-) -> List[dict]:
+) -> list[dict]:
     """Project ``cells`` forward into per-day expected-sighting rows.
 
     Expected sightings for a cell = hits / lookback_weeks. Cells below
     ``NOISE_FLOOR`` are dropped. Output is sorted by (date, -expected).
     """
     today = (max_dt + timedelta(days=1)).date()
-    out: List[dict] = []
+    out: list[dict] = []
     for offset in range(forecast_days):
         d = today + timedelta(days=offset)
         dow = d.weekday()
@@ -172,8 +170,8 @@ def craft_schedule(
     windowed = [(r, t) for r, t in reg_rows if (parse_ts(t) or max_dt) >= parse_ts(since)]
     cells = build_cells(windowed, keep_regs={registration}, hour_bucket_size=hour_bucket_size)
 
-    dow_hour_cells: List[dict] = []
-    hours_seen: List[int] = []
+    dow_hour_cells: list[dict] = []
+    hours_seen: list[int] = []
     for (_reg, dow, hb), hits in sorted(cells.items(), key=lambda kv: (kv[0][1], kv[0][2])):
         expected = hits / lookback_weeks
         if expected < NOISE_FLOOR:
@@ -190,7 +188,9 @@ def craft_schedule(
 
     if hours_seen:
         lo, hi = min(hours_seen), max(hours_seen) + hour_bucket_size
-        operating = f"Observed {lo:02d}:00-{hi:02d}:00 local (empirical, {lookback_weeks}-wk baseline)"
+        operating = (
+            f"Observed {lo:02d}:00-{hi:02d}:00 local (empirical, {lookback_weeks}-wk baseline)"
+        )
     else:
         operating = ""
 

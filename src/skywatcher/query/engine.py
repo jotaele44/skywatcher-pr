@@ -9,6 +9,7 @@ Doctrine: never surfaces ``primary_mission`` as fact unless the profile marks it
 authoritative (``data_source == known_db``); every answer carries the supporting
 confidence grade, citations (profile field), and coverage gaps.
 """
+
 from __future__ import annotations
 
 import json
@@ -16,7 +17,6 @@ import re
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
 
 REPO = Path(__file__).resolve().parents[3]
 DEFAULT_DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -41,12 +41,12 @@ class Answer:
     """Structured, grounded answer. ``to_text()`` renders it deterministically."""
 
     intent: str
-    craft: Optional[str]
-    facts: List[str] = field(default_factory=list)
-    citations: List[dict] = field(default_factory=list)
+    craft: str | None
+    facts: list[str] = field(default_factory=list)
+    citations: list[dict] = field(default_factory=list)
     confidence_grade: str = "INSUFFICIENT"
-    coverage_gaps: List[str] = field(default_factory=list)
-    caveats: List[str] = field(default_factory=list)
+    coverage_gaps: list[str] = field(default_factory=list)
+    caveats: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -60,7 +60,7 @@ class Answer:
         }
 
     def to_text(self) -> str:
-        lines: List[str] = []
+        lines: list[str] = []
         if not self.facts:
             lines.append("Insufficient evidence in the current profiles to answer that.")
         else:
@@ -89,33 +89,34 @@ class QueryEngine:
 
     def __init__(
         self,
-        db_path: Optional[Path] = None,
+        db_path: Path | None = None,
         profile_dir: Path = DEFAULT_PROFILE_DIR,
     ):
         self.db_path = Path(db_path) if db_path else DEFAULT_DB
         self.profile_dir = Path(profile_dir)
-        self._profiles: Optional[Dict[str, dict]] = None
+        self._profiles: dict[str, dict] | None = None
 
     # -- loading -----------------------------------------------------------
 
-    def profiles(self) -> Dict[str, dict]:
+    def profiles(self) -> dict[str, dict]:
         if self._profiles is None:
             self._profiles = self._load()
         return self._profiles
 
-    def _load(self) -> Dict[str, dict]:
+    def _load(self) -> dict[str, dict]:
         db_profiles = self._load_from_db()
         if db_profiles:
             return db_profiles
         return self._load_from_json()
 
-    def _load_from_db(self) -> Dict[str, dict]:
+    def _load_from_db(self) -> dict[str, dict]:
         if not self.db_path.exists():
             return {}
         try:
             conn = sqlite3.connect(str(self.db_path))
-            tables = {r[0] for r in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'")}
+            tables = {
+                r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            }
             if "craft_profiles" not in tables:
                 conn.close()
                 return {}
@@ -124,13 +125,13 @@ class QueryEngine:
             conn.close()
         except sqlite3.Error:
             return {}
-        out: Dict[str, dict] = {}
+        out: dict[str, dict] = {}
         for row in rows:
             out[row["registration"]] = _row_to_profile(dict(row))
         return out
 
-    def _load_from_json(self) -> Dict[str, dict]:
-        out: Dict[str, dict] = {}
+    def _load_from_json(self) -> dict[str, dict]:
+        out: dict[str, dict] = {}
         if not self.profile_dir.exists():
             return out
         for path in sorted(self.profile_dir.glob("*.json")):
@@ -163,8 +164,8 @@ class QueryEngine:
             time_slot = "recent"
         return {"intent": intent, "craft": craft, "operator": operator, "time": time_slot}
 
-    def _match_operator(self, text: str) -> Optional[str]:
-        for reg, prof in self.profiles().items():
+    def _match_operator(self, text: str) -> str | None:
+        for _reg, prof in self.profiles().items():
             op = (prof.get("operator") or "").lower()
             if op and op != "unknown" and op in text:
                 return prof.get("operator")
@@ -177,7 +178,9 @@ class QueryEngine:
         intent = slots["intent"]
         craft = slots["craft"]
 
-        if intent in ("FLEET_SUMMARY", "CO_OCCURRENCE") or (not craft and intent in ("NEW_PATTERNS",)):
+        if intent in ("FLEET_SUMMARY", "CO_OCCURRENCE") or (
+            not craft and intent in ("NEW_PATTERNS",)
+        ):
             if intent == "CO_OCCURRENCE":
                 return self._answer_co_occurrence()
             if intent == "NEW_PATTERNS":
@@ -187,15 +190,19 @@ class QueryEngine:
         if not craft:
             # No craft resolved and not a fleet-level intent.
             return Answer(
-                intent=intent, craft=None,
+                intent=intent,
+                craft=None,
                 facts=[],
-                caveats=["Specify an aircraft registration (e.g. N5854Z) or ask a fleet-level question."],
+                caveats=[
+                    "Specify an aircraft registration (e.g. N5854Z) or ask a fleet-level question."
+                ],
             )
 
         profile = self.profiles().get(craft)
         if not profile:
-            return Answer(intent=intent, craft=craft, facts=[],
-                          caveats=[f"No profile for {craft}."])
+            return Answer(
+                intent=intent, craft=craft, facts=[], caveats=[f"No profile for {craft}."]
+            )
 
         handler = {
             "SCHEDULE": self._answer_schedule,
@@ -215,7 +222,7 @@ class QueryEngine:
     def _answer_schedule(self, craft: str, p: dict) -> Answer:
         sched = p.get("schedule") or {}
         cells = sched.get("dow_hour_cells") or []
-        facts: List[str] = []
+        facts: list[str] = []
         if sched.get("operating_hours_summary"):
             facts.append(f"{craft}: {sched['operating_hours_summary']}.")
         for c in cells[:8]:
@@ -224,7 +231,9 @@ class QueryEngine:
                 f"({c['based_on_hits']} hits)."
             )
         return Answer(
-            intent="SCHEDULE", craft=craft, facts=facts,
+            intent="SCHEDULE",
+            craft=craft,
+            facts=facts,
             citations=[self._cite(craft, "schedule")],
             confidence_grade=sched.get("confidence_grade", "INSUFFICIENT"),
             coverage_gaps=[g for g in p.get("coverage_gaps", []) if "schedule" in g],
@@ -234,9 +243,15 @@ class QueryEngine:
     def _answer_home_base(self, craft: str, p: dict) -> Answer:
         hb = p.get("home_base")
         if not hb:
-            return Answer(intent="HOME_BASE", craft=craft, facts=[],
-                          coverage_gaps=[g for g in p.get("coverage_gaps", []) if "base" in g or "origin" in g],
-                          caveats=["No origin/destination endpoints resolved for this craft."])
+            return Answer(
+                intent="HOME_BASE",
+                craft=craft,
+                facts=[],
+                coverage_gaps=[
+                    g for g in p.get("coverage_gaps", []) if "base" in g or "origin" in g
+                ],
+                caveats=["No origin/destination endpoints resolved for this craft."],
+            )
         name = hb.get("name") or hb.get("iata")
         facts = [
             f"{craft} home-base candidate: {name} "
@@ -244,7 +259,9 @@ class QueryEngine:
             f"over {hb.get('eligible_periods_denominator')} eligible flight-days)."
         ]
         return Answer(
-            intent="HOME_BASE", craft=craft, facts=facts,
+            intent="HOME_BASE",
+            craft=craft,
+            facts=facts,
             citations=[self._cite(craft, "home_base")],
             confidence_grade=hb.get("confidence_grade", "INSUFFICIENT"),
             coverage_gaps=[g for g in p.get("coverage_gaps", []) if "base" in g],
@@ -260,7 +277,9 @@ class QueryEngine:
         ]
         best = _best_grade([lz.get("confidence_grade", "INSUFFICIENT") for lz in lzs])
         return Answer(
-            intent="PREFERRED_LZS", craft=craft, facts=facts,
+            intent="PREFERRED_LZS",
+            craft=craft,
+            facts=facts,
             citations=[self._cite(craft, "preferred_lzs")],
             confidence_grade=best,
             caveats=[] if lzs else ["No landing-zone endpoints resolved."],
@@ -275,7 +294,9 @@ class QueryEngine:
         ]
         best = _best_grade([r.get("confidence_grade", "INSUFFICIENT") for r in routes])
         return Answer(
-            intent="RECURRING_ROUTES", craft=craft, facts=facts,
+            intent="RECURRING_ROUTES",
+            craft=craft,
+            facts=facts,
             citations=[self._cite(craft, "recurring_routes")],
             confidence_grade=best,
             coverage_gaps=[g for g in p.get("coverage_gaps", []) if "route" in g],
@@ -285,17 +306,25 @@ class QueryEngine:
     def _answer_new_patterns(self, craft: str, p: dict) -> Answer:
         new = p.get("new_patterns") or []
         events = p.get("recurring_events") or []
-        facts = [f"NEW: {n.get('route_pattern')} [{n.get('shape')}] x{n.get('n_observed')}." for n in new]
+        facts = [
+            f"NEW: {n.get('route_pattern')} [{n.get('shape')}] x{n.get('n_observed')}." for n in new
+        ]
         facts += [
             f"REINFORCED: {e.get('route_pattern')} now x{e.get('n_observed')} "
-            f"(was x{e.get('n_observed_prior')})." for e in events
+            f"(was x{e.get('n_observed_prior')})."
+            for e in events
         ]
         return Answer(
-            intent="NEW_PATTERNS", craft=craft, facts=facts,
+            intent="NEW_PATTERNS",
+            craft=craft,
+            facts=facts,
             citations=[self._cite(craft, "new_patterns"), self._cite(craft, "recurring_events")],
             confidence_grade=_best_grade(
-                [n.get("confidence_grade", "INSUFFICIENT") for n in new + events]),
-            caveats=[] if (new or events) else ["No new or reinforced patterns since the last build."],
+                [n.get("confidence_grade", "INSUFFICIENT") for n in new + events]
+            ),
+            caveats=[]
+            if (new or events)
+            else ["No new or reinforced patterns since the last build."],
         )
 
     def _answer_profile(self, craft: str, p: dict) -> Answer:
@@ -315,7 +344,9 @@ class QueryEngine:
         )
         caveats = [] if p.get("mission_is_authoritative") else [_NO_INTENT_CAVEAT]
         return Answer(
-            intent="PROFILE", craft=craft, facts=facts,
+            intent="PROFILE",
+            craft=craft,
+            facts=facts,
             citations=[self._cite(craft, "*")],
             confidence_grade=p.get("profile_confidence_grade", "INSUFFICIENT"),
             coverage_gaps=p.get("coverage_gaps", []),
@@ -324,7 +355,7 @@ class QueryEngine:
 
     # -- fleet-level handlers ---------------------------------------------
 
-    def _answer_fleet_summary(self, operator: Optional[str]) -> Answer:
+    def _answer_fleet_summary(self, operator: str | None) -> Answer:
         profs = list(self.profiles().values())
         if operator:
             profs = [p for p in profs if (p.get("operator") or "") == operator]
@@ -335,18 +366,24 @@ class QueryEngine:
                 f"{p.get('total_observations', 0)} obs, grade {p.get('profile_confidence_grade')}."
             )
         return Answer(
-            intent="FLEET_SUMMARY", craft=None, facts=facts,
+            intent="FLEET_SUMMARY",
+            craft=None,
+            facts=facts,
             citations=[{"source": "craft_profiles", "field": "*"}],
-            confidence_grade=_best_grade([p.get("profile_confidence_grade", "INSUFFICIENT") for p in profs]),
+            confidence_grade=_best_grade(
+                [p.get("profile_confidence_grade", "INSUFFICIENT") for p in profs]
+            ),
         )
 
     def _answer_new_patterns_fleet(self) -> Answer:
-        facts: List[str] = []
+        facts: list[str] = []
         for reg, p in self.profiles().items():
-            for n in (p.get("new_patterns") or []):
+            for n in p.get("new_patterns") or []:
                 facts.append(f"{reg}: NEW {n.get('route_pattern')} x{n.get('n_observed')}.")
         return Answer(
-            intent="NEW_PATTERNS", craft=None, facts=facts,
+            intent="NEW_PATTERNS",
+            craft=None,
+            facts=facts,
             citations=[{"source": "craft_profiles", "field": "new_patterns"}],
             confidence_grade="MODERATE" if facts else "INSUFFICIENT",
             caveats=[] if facts else ["No new patterns across the fleet since the last build."],
@@ -356,9 +393,13 @@ class QueryEngine:
         # Co-occurrence is derived elsewhere (rlsm_network_graph); profiles don't
         # carry it yet. Report honestly rather than guess.
         return Answer(
-            intent="CO_OCCURRENCE", craft=None, facts=[],
-            caveats=["Co-occurrence is not part of the per-craft profile yet; "
-                     "run scripts/rlsm_network_graph.py for pairwise co-occurrence."],
+            intent="CO_OCCURRENCE",
+            craft=None,
+            facts=[],
+            caveats=[
+                "Co-occurrence is not part of the per-craft profile yet; "
+                "run scripts/rlsm_network_graph.py for pairwise co-occurrence."
+            ],
         )
 
 
@@ -369,13 +410,19 @@ class QueryEngine:
 _GRADE_ORDER = ["INSUFFICIENT", "LOW", "MODERATE", "HIGH", "VERIFIED"]
 
 _JSON_FIELDS = [
-    "home_base", "preferred_lzs", "schedule", "recurring_routes",
-    "recurring_events", "new_patterns", "coverage_gaps", "caps_applied",
+    "home_base",
+    "preferred_lzs",
+    "schedule",
+    "recurring_routes",
+    "recurring_events",
+    "new_patterns",
+    "coverage_gaps",
+    "caps_applied",
     "secondary_missions",
 ]
 
 
-def _best_grade(grades: List[str]) -> str:
+def _best_grade(grades: list[str]) -> str:
     best = "INSUFFICIENT"
     for g in grades:
         if g in _GRADE_ORDER and _GRADE_ORDER.index(g) > _GRADE_ORDER.index(best):
@@ -383,7 +430,7 @@ def _best_grade(grades: List[str]) -> str:
     return best
 
 
-def _caps_to_caveats(caps: List[str]) -> List[str]:
+def _caps_to_caveats(caps: list[str]) -> list[str]:
     mapping = {
         "no_georef_spatial_capped": "Spatial claim capped (no georeferenced positions).",
         "no_denominator_recurrence_capped_below_high": "Recurrence capped (no eligible-period denominator).",

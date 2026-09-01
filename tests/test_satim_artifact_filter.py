@@ -1,9 +1,9 @@
 from satim_artifact_filter import (
+    NON_DESTRUCTIVE_CONFIDENCE_PATCH_STATUS,
     ArtifactClass,
     ArtifactLink,
     ArtifactObservation,
     ArtifactSignal,
-    NON_DESTRUCTIVE_CONFIDENCE_PATCH_STATUS,
     artifact_filter_schema,
     build_artifact_filter_ledger,
     build_detector_confidence_patch,
@@ -57,6 +57,8 @@ def test_schema_contains_required_signals_and_guardrail():
     assert set(schema["signals"]) == {signal.value for signal in ArtifactSignal}
     assert set(schema["signal_weights"]) == set(schema["signals"])
     assert "REVIEW_REQUIRED" in schema["classes"]
+    assert "UNRESOLVED" in schema["classes"]
+    assert schema["threshold_status"] == "CALIBRATION_REQUIRED"
 
 
 def test_fixture_scores_artifact_and_preserves_detector_score():
@@ -97,3 +99,20 @@ def test_detector_confidence_patch_is_non_destructive():
     assert row["provenance_rule"] == "artifact_score and original_detector_score remain separable"
     assert row["mutation_rule"] == "candidate retained; emit confidence patch only"
     assert row["patch_status"] == NON_DESTRUCTIVE_CONFIDENCE_PATCH_STATUS
+
+
+def test_low_artifact_evidence_does_not_prove_true_surface_feature():
+    observation = ArtifactObservation(
+        artifact_id="LOW-ARTIFACT-EVIDENCE",
+        grid_id="TEST",
+        source_id="TEST",
+        signals={},
+        classes=(),
+        links={},
+    )
+
+    score = score_artifact_observation(observation)
+
+    assert score.combined_artifact_score == 0.0
+    assert score.classes == (ArtifactClass.UNRESOLVED.value,)
+    assert ArtifactClass.TRUE_SURFACE_FEATURE.value not in score.classes

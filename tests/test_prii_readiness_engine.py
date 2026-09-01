@@ -3,8 +3,6 @@
 import json
 from pathlib import Path
 
-import pytest
-
 from prii_readiness_engine import (
     READINESS_STATUS_DEGRADED,
     READINESS_STATUS_NOT_READY,
@@ -12,7 +10,6 @@ from prii_readiness_engine import (
     REQUIRED_REPORT_KEYS,
     PRIIReadinessEngine,
 )
-
 
 # ── Fixture helpers ───────────────────────────────────────────────────────────
 

@@ -1,0 +1,73 @@
+lens_id: satim.hydrogeography
+name: Hydrogeography and surface water
+owner: SATIM
+stage: satellite_image_processing
+status: active
+version: 1.0.0
+objective: Characterize visible surface hydrology - channels, impoundments, shorelines, wetland margins - and whether a water body's form reads as natural or engineered, plus how its extent changes between epochs.
+
+required_inputs:
+  - source_frame
+  - roi_target
+
+required_parameters:
+  - parameter_id: roi_target
+    name: Target ROI
+    kind: array
+    description: Pixel bbox of the water feature under assessment.
+  - parameter_id: artifact_exclusion_complete
+    name: Artifact exclusion complete
+    kind: boolean
+    description: The image artifacts lens must have run first, because shadow and dark-surface polygons are the dominant false positives for water detection.
+
+optional_parameters:
+  - parameter_id: second_epoch_frame
+    name: Second epoch frame
+    kind: path
+    required: false
+    degraded_behavior: No extent-change measurement, so the lens reports a static observation only and WATER_EXTENT_CHANGE cannot be emitted.
+  - parameter_id: bathymetry_source
+    name: Bathymetry source
+    kind: path
+    required: false
+    degraded_behavior: No depth context for coastal or nearshore features, so marine-adjacent findings stay surface-only.
+  - parameter_id: shoreline_reference
+    name: Shoreline reference
+    kind: path
+    required: false
+    degraded_behavior: Shoreline change cannot be separated from tide state, so coastal extent deltas are reported with the tidal caveat unresolved.
+
+measurements:
+  - water_extent_px
+  - shoreline_sinuosity
+  - bank_regularity
+  - spectral_darkness_ratio
+  - extent_delta_px
+
+emits:
+  - NATURAL_WATER_BODY_CANDIDATE
+  - ARTIFICIAL_IMPOUNDMENT_CANDIDATE
+  - DRAINAGE_CHANNEL_CANDIDATE
+  - WETLAND_MARGIN_CANDIDATE
+  - WATER_EXTENT_CHANGE
+  - UNRESOLVED
+
+interpretation_restriction_minimum: NONE
+
+contradiction_tests:
+  - water_vs_terrain_shadow
+  - water_vs_dark_surface_polygon
+  - extent_change_vs_seasonal_variation
+  - extent_change_vs_tide_state
+
+evidence_axes_required:
+  - evidence_tier
+  - visibility_class
+  - geometry_status
+  - temporal_status
+  - confidence_score
+
+prohibited_claims:
+  - Visible surface hydrology only. Do not infer subsurface flow, aquifer extent, or water table depth from surface imagery.
+  - Do not infer facility purpose or ownership from an impoundment's presence.
+  - Do not treat bank regularity alone as proof of engineering.

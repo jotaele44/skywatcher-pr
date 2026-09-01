@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import csv
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from .cluster_summary import build_route_cluster_summary
 from .fn_candidates import build_fn_candidate_summary
@@ -12,7 +12,6 @@ from .loaders import load_required_ledgers
 from .review_queue import build_review_queue
 from .schemas import REQUIRED_FILENAMES, validate_ledgers
 from .util import require_safe_output_dir
-
 
 ROUTE_CLUSTER_COLUMNS = (
     "cluster_id",

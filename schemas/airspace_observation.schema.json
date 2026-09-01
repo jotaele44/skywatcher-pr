@@ -41,6 +41,17 @@
     "geometry_status": {"type": "string", "enum": ["located", "approximate", "unlocated", "invalid"]},
     "temporal_status": {"type": "string", "enum": ["exact", "approximate", "missing", "invalid"]},
     "lineage_id": {"type": "string", "minLength": 1},
-    "synthetic": {"type": "boolean"}
+    "synthetic": {"type": "boolean"},
+    "position_precision": {"type": ["string", "null"], "enum": ["SOURCE_PROVIDED", "APPROXIMATE", "UNRESOLVED", null]},
+    "aircraft_point_status": {"type": ["string", "null"], "enum": ["SOURCE_PROVIDED", "ICON_DERIVED_APPROX", "UNRESOLVED", null]},
+    "aircraft_point_method": {"type": ["string", "null"]},
+    "aircraft_point_uncertainty_m": {"type": ["number", "null"], "exclusiveMinimum": 0},
+    "aircraft_icon_visibility": {"type": ["string", "null"], "enum": ["visible", "not_visible", "ambiguous", "occluded", "unreviewed", "", null]},
+    "capture_bbox_geojson": {"type": ["string", "null"]},
+    "capture_geometry_method": {"type": ["string", "null"]},
+    "capture_geometry_confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "capture_geometry_uncertainty_m": {"type": ["number", "null"], "exclusiveMinimum": 0},
+    "control_point_count": {"type": ["integer", "null"], "minimum": 0},
+    "control_point_residual_px": {"type": ["number", "null"], "minimum": 0}
   }
 }

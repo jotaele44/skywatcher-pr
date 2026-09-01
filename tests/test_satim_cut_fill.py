@@ -1,9 +1,9 @@
 from satim_cut_fill import (
+    VISIBLE_EARTHWORK_ONLY_STATUS,
     CutFillClass,
     CutFillLink,
     CutFillObservation,
     CutFillSignal,
-    VISIBLE_EARTHWORK_ONLY_STATUS,
     build_cut_fill_ledger,
     build_p_route_confidence_patch,
     cut_fill_schema,

@@ -20,13 +20,13 @@ This lives in Core (like ``geo_utils``) because both the FPIM profile builder
 and the query layer need it, and Core is the only bucket importable by all
 (see docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 # Ordered weakest -> strongest. Index is the ordinal used for min-capping.
-GRADES: List[str] = ["INSUFFICIENT", "LOW", "MODERATE", "HIGH", "VERIFIED"]
+GRADES: list[str] = ["INSUFFICIENT", "LOW", "MODERATE", "HIGH", "VERIFIED"]
 
 # Evidence tiers, aligned with the repo schemas (flight_event.schema.json etc.).
 TIER_TECHNICAL = "T1"
@@ -50,7 +50,7 @@ class Grade:
     confidence_grade: str
     evidence_tier: str
     confidence_level: float
-    caps_applied: List[str] = field(default_factory=list)
+    caps_applied: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict:
         return {
@@ -65,7 +65,7 @@ def _ordinal(grade: str) -> int:
     return GRADES.index(grade)
 
 
-def _cap(current: str, ceiling: str, caps: List[str], reason: str) -> str:
+def _cap(current: str, ceiling: str, caps: list[str], reason: str) -> str:
     """Lower ``current`` to ``ceiling`` when it exceeds it, recording ``reason``."""
     if _ordinal(current) > _ordinal(ceiling):
         caps.append(reason)
@@ -78,7 +78,7 @@ def grade_to_float(grade: str) -> float:
     return _GRADE_TO_FLOAT.get(grade, 0.10)
 
 
-def float_to_grade(value: Optional[float]) -> str:
+def float_to_grade(value: float | None) -> str:
     """Map a 0..1 confidence float onto the 5-grade scale."""
     if value is None:
         return "INSUFFICIENT"
@@ -96,7 +96,7 @@ def float_to_grade(value: Optional[float]) -> str:
 def grade(
     *,
     observation_count: int,
-    denominator: Optional[int] = None,
+    denominator: int | None = None,
     is_ground_truth: bool = False,
     is_spatial: bool = False,
     has_georef: bool = True,
@@ -120,7 +120,7 @@ def grade(
     has_source_context:
         Whether source/receiver context is available (termination-style claims).
     """
-    caps: List[str] = []
+    caps: list[str] = []
 
     if is_ground_truth:
         base = "VERIFIED"

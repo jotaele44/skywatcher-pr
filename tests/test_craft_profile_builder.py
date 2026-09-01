@@ -95,7 +95,9 @@ def test_persistence_roundtrip(rlsm_db, builder, tmp_path):
     upsert_profile(conn, p)
     # upsert twice must not duplicate (PRIMARY KEY registration).
     upsert_profile(conn, p)
-    n = conn.execute("SELECT COUNT(*) FROM craft_profiles WHERE registration='N5854Z'").fetchone()[0]
+    n = conn.execute("SELECT COUNT(*) FROM craft_profiles WHERE registration='N5854Z'").fetchone()[
+        0
+    ]
     conn.close()
     assert n == 1
     out = write_json(p, tmp_path)

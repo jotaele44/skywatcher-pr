@@ -30,7 +30,6 @@ import argparse
 import csv
 import json
 from pathlib import Path
-from typing import List, Optional
 
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_CLUSTERS = REPO / "outputs" / "intel_unlabeled_clusters.csv"
@@ -65,7 +64,7 @@ def _as_int(value) -> int:
         return 0
 
 
-def _as_float(value) -> Optional[float]:
+def _as_float(value) -> float | None:
     try:
         return float(str(value).strip())
     except (TypeError, ValueError):
@@ -101,7 +100,7 @@ def _rationale(row: dict) -> str:
     return "; ".join(parts)
 
 
-def build_worklist(cluster_rows: List[dict], top_n: int) -> List[dict]:
+def build_worklist(cluster_rows: list[dict], top_n: int) -> list[dict]:
     ranked = sorted(
         cluster_rows,
         key=lambda row: (-score_cluster(row), str(row.get("cluster_key", ""))),
@@ -117,7 +116,7 @@ def build_worklist(cluster_rows: List[dict], top_n: int) -> List[dict]:
     return worklist
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Rank unlabeled-POI clusters into a review worklist."
     )

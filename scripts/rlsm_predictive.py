@@ -19,6 +19,7 @@ The (dow, hour_bucket) cell + forecast logic lives in
 ``skywatcher.fpim.schedule`` so the per-craft profile builder can reuse it;
 this script is a thin CLI wrapper that preserves the original outputs.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -67,28 +68,43 @@ def main():
 
     weeks = args.lookback_weeks
     today = (max_dt + timedelta(days=1)).date()
-    fc_rows = forecast_rows(cells, top_regs, max_dt, weeks, args.forecast_days,
-                            hour_bucket_size=HOUR_BUCKET_SIZE)
+    fc_rows = forecast_rows(
+        cells, top_regs, max_dt, weeks, args.forecast_days, hour_bucket_size=HOUR_BUCKET_SIZE
+    )
 
     OUTS.mkdir(parents=True, exist_ok=True)
     with (OUTS / "intel_forecast_7day.csv").open("w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["date", "dow", "hour_bucket", "registration",
-                                          "expected_sightings", "based_on_hits", "lookback_weeks"],
-                           quoting=csv.QUOTE_ALL)
+        w = csv.DictWriter(
+            f,
+            fieldnames=[
+                "date",
+                "dow",
+                "hour_bucket",
+                "registration",
+                "expected_sightings",
+                "based_on_hits",
+                "lookback_weeks",
+            ],
+            quoting=csv.QUOTE_ALL,
+        )
         w.writeheader()
         for r in fc_rows:
             w.writerow(r)
 
     # Summary
-    md = [f"# RLSM 7-day operational forecast\n",
-          f"Generated from {args.lookback_weeks}-week empirical baseline (last corpus date: {max_dt.date().isoformat()})\n",
-          f"Forecast window: **{today.isoformat()} → {(today + timedelta(days=args.forecast_days-1)).isoformat()}**\n",
-          "\n## Top 30 high-probability cells\n",
-          "| Date | DOW | Hour | Aircraft | Expected | Based on |",
-          "|---|---|---|---|---|---|"]
+    md = [
+        "# RLSM 7-day operational forecast\n",
+        f"Generated from {args.lookback_weeks}-week empirical baseline (last corpus date: {max_dt.date().isoformat()})\n",
+        f"Forecast window: **{today.isoformat()} → {(today + timedelta(days=args.forecast_days - 1)).isoformat()}**\n",
+        "\n## Top 30 high-probability cells\n",
+        "| Date | DOW | Hour | Aircraft | Expected | Based on |",
+        "|---|---|---|---|---|---|",
+    ]
     for r in sorted(fc_rows, key=lambda x: -x["expected_sightings"])[:30]:
-        md.append(f"| {r['date']} | {r['dow']} | {r['hour_bucket']} | {r['registration']} | "
-                  f"{r['expected_sightings']} | {r['based_on_hits']} hits in {weeks} weeks |")
+        md.append(
+            f"| {r['date']} | {r['dow']} | {r['hour_bucket']} | {r['registration']} | "
+            f"{r['expected_sightings']} | {r['based_on_hits']} hits in {weeks} weeks |"
+        )
     md.append("\n## Per-day expected sightings (sum over top aircraft)\n")
     md.append("| Date | DOW | Total expected sightings |")
     md.append("|---|---|---|")
@@ -102,16 +118,22 @@ def main():
 
     (OUTS / "intel_forecast_summary.md").write_text("\n".join(md) + "\n")
     conn.close()
-    print(json.dumps({
-        "lookback_weeks": args.lookback_weeks,
-        "max_corpus_ts": max_dt.isoformat(),
-        "forecast_window": [today.isoformat(),
-                            (today + timedelta(days=args.forecast_days - 1)).isoformat()],
-        "top_aircraft": top_regs[:10],
-        "forecast_cells_emitted": len(fc_rows),
-        "outputs": ["outputs/intel_forecast_7day.csv",
-                    "outputs/intel_forecast_summary.md"],
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "lookback_weeks": args.lookback_weeks,
+                "max_corpus_ts": max_dt.isoformat(),
+                "forecast_window": [
+                    today.isoformat(),
+                    (today + timedelta(days=args.forecast_days - 1)).isoformat(),
+                ],
+                "top_aircraft": top_regs[:10],
+                "forecast_cells_emitted": len(fc_rows),
+                "outputs": ["outputs/intel_forecast_7day.csv", "outputs/intel_forecast_summary.md"],
+            },
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

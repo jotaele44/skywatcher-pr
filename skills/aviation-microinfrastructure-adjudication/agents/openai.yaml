@@ -1,0 +1,26 @@
+schema_version: prii_openai_agent_v1
+name: aviation-microinfrastructure-adjudication
+description: >-
+  Evidence-gated adjudication for hangars, aprons, helipads, FBOs, airport
+  endpoint candidates, and landing-zone associations. Proximity, names,
+  addresses, and nearest-neighbour results remain discovery-only.
+instructions_ref: ../SKILL.md
+owner_repo: jotaele44/skywatcher-pr
+default_mode: write_guarded
+allowed_modes: [read_only, write_guarded]
+stop_conditions:
+  - identity rests only on name, normalized name, address, proximity, nearest result, same category, or source absence
+  - exact spatial relation is requested without usable geometry
+  - tied top evidence remains unresolved
+result_envelope:
+  - status
+  - frozen_inputs
+  - source_manifestations
+  - candidate_ledger
+  - geometry_states
+  - identity_states
+  - event_associations
+  - contradictions
+  - blockers
+  - regression_results
+  - next_safe_action

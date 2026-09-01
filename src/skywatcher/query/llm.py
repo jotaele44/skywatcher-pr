@@ -8,12 +8,12 @@ Graceful degradation: with no ``ANTHROPIC_API_KEY`` (or the ``anthropic``
 package not installed), ``ask()`` returns the engine's deterministic text
 answer, so the query capability works fully offline / in CI.
 """
+
 from __future__ import annotations
 
 import json
 import os
 from pathlib import Path
-from typing import Optional
 
 from skywatcher.query.engine import Answer, QueryEngine
 
@@ -38,11 +38,11 @@ def _context_block(answer: Answer) -> str:
 def ask(
     prompt: str,
     *,
-    db_path: Optional[Path] = None,
-    profile_dir: Optional[Path] = None,
+    db_path: Path | None = None,
+    profile_dir: Path | None = None,
     model: str = DEFAULT_MODEL,
-    engine: Optional[QueryEngine] = None,
-    api_key: Optional[str] = None,
+    engine: QueryEngine | None = None,
+    api_key: str | None = None,
     _client=None,
 ) -> str:
     """Answer a natural-language prompt, grounded on the QueryEngine.
@@ -79,7 +79,7 @@ def ask(
         return answer.to_text()
 
 
-def _build_client(api_key: Optional[str]):
+def _build_client(api_key: str | None):
     key = api_key or os.environ.get("ANTHROPIC_API_KEY")
     if not key:
         return None

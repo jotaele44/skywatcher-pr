@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pytest
 
-
 # ──────────────────────────────────────────────────────────────────────────
 # Unit tests — the pure heuristic function (no SQLite, no FS)
 # ──────────────────────────────────────────────────────────────────────────
@@ -120,7 +119,7 @@ def test_run_is_idempotent(tmp_rlsm_db):
 
 def test_run_writes_schema_compliant_rows(tmp_rlsm_db):
     """Verify the inserted rows obey the schema's path_shape enum + confidence range."""
-    from fr24.rlsm_flight_track import run, HEURISTIC_CONFIDENCE
+    from fr24.rlsm_flight_track import HEURISTIC_CONFIDENCE, run
     run(budget_sec=10.0)
     conn = sqlite3.connect(str(tmp_rlsm_db))
     rows = conn.execute(
@@ -163,7 +162,7 @@ def test_processing_runs_row_recorded(tmp_rlsm_db):
 # ──────────────────────────────────────────────────────────────────────────
 
 def test_golden_rows_per_screenshot(tmp_rlsm_db):
-    from fr24.rlsm_flight_track import run, HEURISTIC_CONFIDENCE
+    from fr24.rlsm_flight_track import HEURISTIC_CONFIDENCE, run
     run(budget_sec=10.0)
     conn = sqlite3.connect(str(tmp_rlsm_db))
     rows = conn.execute(

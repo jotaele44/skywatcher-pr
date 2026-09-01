@@ -25,12 +25,11 @@ CLI: python3 scripts/rlsm_diacritic_repoi.py
 """
 from __future__ import annotations
 
-import csv
 import json
 import sqlite3
 import time
 import unicodedata
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -154,7 +153,7 @@ def main():
     unvisited_after = sorted(set(pr_munis_ascii_to_orig.values()) - visited_munis)
 
     OUTS.mkdir(parents=True, exist_ok=True)
-    md = [f"# Diacritic-aware POI recovery report\n",
+    md = ["# Diacritic-aware POI recovery report\n",
           f"Generated: {now}\n",
           f"\n## New labeled_pins rows inserted: **{inserted}**\n",
           "\n### By canonical label\n",
@@ -165,7 +164,7 @@ def main():
            f"- PR municipalities total: **{len(pr_munis_ascii_to_orig)}**",
            f"- Municipalities visited (diacritic-tolerant join): **{len(visited_munis)}**",
            f"- Still unvisited: **{len(unvisited_after)}**",
-           f"\n### Sample unvisited (first 30):\n",
+           "\n### Sample unvisited (first 30):\n",
            ", ".join(unvisited_after[:30])]
     (OUTS / "intel_diacritic_recovery_report.md").write_text("\n".join(md) + "\n")
 

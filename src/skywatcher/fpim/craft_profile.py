@@ -18,16 +18,16 @@ Doctrine (docs/MODULE_SPEC_FPIM.md, skywatcher-airspace-evidence skill):
 Core+FPIM imports only. Persists to a ``craft_profiles`` table (incremental
 upsert) and schema-valid JSON under ``profiles/craft/<reg>.json``.
 """
+
 from __future__ import annotations
 
 import json
 import sqlite3
-from dataclasses import dataclass, field, asdict
-from datetime import datetime
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, List, Optional
 
-from skywatcher.core.confidence import GRADES, float_to_grade, grade
+from skywatcher.core.confidence import GRADES, grade
 from skywatcher.core.known_operators import KNOWN_OPERATORS
 from skywatcher.core.normalize_locations import load_simple_yaml
 from skywatcher.fpim.aircraft_profile import CALLSIGN_PREFIXES
@@ -45,10 +45,11 @@ STALE_THRESHOLD_DAYS = 30
 # Registry indexes (ground-truth reference data)
 # ---------------------------------------------------------------------------
 
-def load_airport_index(config_dir: Path = CONFIGS) -> Dict[str, dict]:
+
+def load_airport_index(config_dir: Path = CONFIGS) -> dict[str, dict]:
     """IATA/ICAO code -> {airport_id, canonical_name, lat, lon}."""
     data = load_simple_yaml(config_dir / "airport_registry.yaml")
-    index: Dict[str, dict] = {}
+    index: dict[str, dict] = {}
     for ap in data.get("airports", []) or []:
         entry = {
             "airport_id": ap.get("airport_id"),
@@ -62,10 +63,10 @@ def load_airport_index(config_dir: Path = CONFIGS) -> Dict[str, dict]:
     return index
 
 
-def load_lz_class_index(config_dir: Path = CONFIGS) -> Dict[str, str]:
+def load_lz_class_index(config_dir: Path = CONFIGS) -> dict[str, str]:
     """airport_id -> lz_class for known LZ candidates (ground truth)."""
     data = load_simple_yaml(config_dir / "lz_registry.yaml")
-    index: Dict[str, str] = {}
+    index: dict[str, str] = {}
     for lz in data.get("known_lz_candidates", []) or []:
         aid = lz.get("airport_id")
         if aid:
@@ -77,32 +78,33 @@ def load_lz_class_index(config_dir: Path = CONFIGS) -> Dict[str, str]:
 # Data structure
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CraftProfile:
     registration: str
-    callsign: Optional[str] = None
-    aircraft_type: Optional[str] = None
-    owner: Optional[str] = None
-    operator: Optional[str] = None
-    country: Optional[str] = None
+    callsign: str | None = None
+    aircraft_type: str | None = None
+    owner: str | None = None
+    operator: str | None = None
+    country: str | None = None
     data_source: str = "unknown"
-    primary_mission: Optional[str] = None
+    primary_mission: str | None = None
     mission_is_authoritative: bool = False
-    secondary_missions: List[str] = field(default_factory=list)
-    home_base: Optional[dict] = None
-    preferred_lzs: List[dict] = field(default_factory=list)
-    schedule: Optional[dict] = None
-    recurring_routes: List[dict] = field(default_factory=list)
-    recurring_events: List[dict] = field(default_factory=list)
-    new_patterns: List[dict] = field(default_factory=list)
-    first_seen: Optional[str] = None
-    last_seen: Optional[str] = None
+    secondary_missions: list[str] = field(default_factory=list)
+    home_base: dict | None = None
+    preferred_lzs: list[dict] = field(default_factory=list)
+    schedule: dict | None = None
+    recurring_routes: list[dict] = field(default_factory=list)
+    recurring_events: list[dict] = field(default_factory=list)
+    new_patterns: list[dict] = field(default_factory=list)
+    first_seen: str | None = None
+    last_seen: str | None = None
     total_observations: int = 0
     is_stale: bool = True
     confidence_level: float = 0.0
     profile_confidence_grade: str = "INSUFFICIENT"
-    coverage_gaps: List[str] = field(default_factory=list)
-    caps_applied: List[str] = field(default_factory=list)
+    coverage_gaps: list[str] = field(default_factory=list)
+    caps_applied: list[str] = field(default_factory=list)
     source_baseline: str = ""
     generated_at: str = ""
 
@@ -113,6 +115,7 @@ class CraftProfile:
 # ---------------------------------------------------------------------------
 # Builder
 # ---------------------------------------------------------------------------
+
 
 class CraftProfileBuilder:
     """Builds/enriches CraftProfiles from the RLSM corpus.
@@ -130,7 +133,7 @@ class CraftProfileBuilder:
 
     # -- public API --------------------------------------------------------
 
-    def registrations(self, conn: sqlite3.Connection) -> List[str]:
+    def registrations(self, conn: sqlite3.Connection) -> list[str]:
         rows = conn.execute(
             """
             SELECT DISTINCT registration FROM aircraft_observations
@@ -140,7 +143,7 @@ class CraftProfileBuilder:
         ).fetchall()
         return [r[0] for r in rows]
 
-    def build_all(self, conn: sqlite3.Connection) -> List[CraftProfile]:
+    def build_all(self, conn: sqlite3.Connection) -> list[CraftProfile]:
         baseline = self._source_baseline(conn)
         return [self.build_one(conn, reg, baseline) for reg in self.registrations(conn)]
 
@@ -148,13 +151,13 @@ class CraftProfileBuilder:
         self,
         conn: sqlite3.Connection,
         registration: str,
-        source_baseline: Optional[str] = None,
+        source_baseline: str | None = None,
     ) -> CraftProfile:
         baseline = source_baseline or self._source_baseline(conn)
         profile = CraftProfile(
             registration=registration,
             source_baseline=baseline,
-            generated_at=datetime.utcnow().isoformat(timespec="seconds"),
+            generated_at=datetime.now(UTC).isoformat(timespec="seconds"),
         )
 
         self._resolve_identity(conn, profile)
@@ -220,7 +223,7 @@ class CraftProfileBuilder:
                 break
 
     @staticmethod
-    def _match_known_operator(registration: str) -> Optional[dict]:
+    def _match_known_operator(registration: str) -> dict | None:
         for key, data in KNOWN_OPERATORS.items():
             if key in registration or registration in key:
                 return data
@@ -245,13 +248,12 @@ class CraftProfileBuilder:
         p.is_stale = self._is_stale(p.last_seen)
 
     @staticmethod
-    def _is_stale(last_seen: Optional[str]) -> bool:
+    def _is_stale(last_seen: str | None) -> bool:
         dt = parse_ts(last_seen) if last_seen else None
         if dt is None:
             return True
-        ref = datetime.utcnow()
-        if dt.tzinfo is not None:
-            ref = ref.replace(tzinfo=dt.tzinfo)
+        ref = datetime.now(UTC)
+        ref = ref.replace(tzinfo=None) if dt.tzinfo is None else ref.astimezone(dt.tzinfo)
         return (ref - dt).days > STALE_THRESHOLD_DAYS
 
     def _has_georef(self, conn: sqlite3.Connection, registration: str) -> bool:
@@ -271,7 +273,7 @@ class CraftProfileBuilder:
         origins = routes_base.get("origin_counts", {})
         dests = routes_base.get("destination_counts", {})
         denom = routes_base.get("eligible_flight_days") or 0
-        combined: Dict[str, int] = {}
+        combined: dict[str, int] = {}
         for code, n in {**origins}.items():
             combined[code] = combined.get(code, 0) + n
         for code, n in dests.items():
@@ -306,7 +308,7 @@ class CraftProfileBuilder:
     def _resolve_preferred_lzs(self, p: CraftProfile, routes_base: dict, has_georef: bool) -> None:
         dests = routes_base.get("destination_counts", {})
         denom = routes_base.get("eligible_flight_days") or 0
-        lzs: List[dict] = []
+        lzs: list[dict] = []
         for code, n in sorted(dests.items(), key=lambda kv: -kv[1]):
             facility = self.airport_index.get(code.upper(), {})
             aid = facility.get("airport_id")
@@ -317,21 +319,23 @@ class CraftProfileBuilder:
                 is_spatial=True,
                 has_georef=has_georef,
             )
-            lzs.append({
-                "facility_id": aid,
-                "lz_class": lz_class,
-                "name": facility.get("canonical_name") or code,
-                "hit_count": n,
-                "eligible_periods_denominator": denom or None,
-                "review_status": "candidate",
-                **g.as_dict(),
-            })
+            lzs.append(
+                {
+                    "facility_id": aid,
+                    "lz_class": lz_class,
+                    "name": facility.get("canonical_name") or code,
+                    "hit_count": n,
+                    "eligible_periods_denominator": denom or None,
+                    "review_status": "candidate",
+                    **g.as_dict(),
+                }
+            )
         p.preferred_lzs = lzs
 
     # -- recurring routes --------------------------------------------------
 
     def _resolve_recurring_routes(self, p: CraftProfile, routes_base: dict) -> None:
-        routes: List[dict] = []
+        routes: list[dict] = []
         for r in routes_base.get("recurring_routes", []):
             denom = r.get("denominator") or 0
             g = grade(observation_count=r.get("n_observed", 0), denominator=denom or None)
@@ -360,45 +364,53 @@ class CraftProfileBuilder:
     def _resolve_patterns(self, conn: sqlite3.Connection, p: CraftProfile) -> None:
         prior = self._load_prior_snapshot(conn, p.registration)
         prior_routes = {r["route_pattern"] for r in prior.get("recurring_routes", [])}
-        prior_counts = {r["route_pattern"]: r.get("n_observed", 0)
-                        for r in prior.get("recurring_routes", [])}
+        prior_counts = {
+            r["route_pattern"]: r.get("n_observed", 0) for r in prior.get("recurring_routes", [])
+        }
 
-        new_patterns: List[dict] = []
-        recurring_events: List[dict] = []
+        new_patterns: list[dict] = []
+        recurring_events: list[dict] = []
         for r in p.recurring_routes:
             pat = r["route_pattern"]
             if pat not in prior_routes:
-                new_patterns.append({
-                    "kind": "new_recurring_route",
-                    "route_pattern": pat,
-                    "shape": r.get("shape"),
-                    "n_observed": r.get("n_observed"),
-                    "review_status": "candidate",
-                    "confidence_grade": r.get("confidence_grade"),
-                    "evidence_tier": r.get("evidence_tier"),
-                })
+                new_patterns.append(
+                    {
+                        "kind": "new_recurring_route",
+                        "route_pattern": pat,
+                        "shape": r.get("shape"),
+                        "n_observed": r.get("n_observed"),
+                        "review_status": "candidate",
+                        "confidence_grade": r.get("confidence_grade"),
+                        "evidence_tier": r.get("evidence_tier"),
+                    }
+                )
             elif r.get("n_observed", 0) > prior_counts.get(pat, 0):
-                recurring_events.append({
-                    "kind": "route_reinforced",
-                    "route_pattern": pat,
-                    "n_observed": r.get("n_observed"),
-                    "n_observed_prior": prior_counts.get(pat, 0),
-                    "review_status": "candidate",
-                    "confidence_grade": r.get("confidence_grade"),
-                    "evidence_tier": r.get("evidence_tier"),
-                })
+                recurring_events.append(
+                    {
+                        "kind": "route_reinforced",
+                        "route_pattern": pat,
+                        "n_observed": r.get("n_observed"),
+                        "n_observed_prior": prior_counts.get(pat, 0),
+                        "review_status": "candidate",
+                        "confidence_grade": r.get("confidence_grade"),
+                        "evidence_tier": r.get("evidence_tier"),
+                    }
+                )
         p.new_patterns = new_patterns
         p.recurring_events = recurring_events
 
     # -- finalize ----------------------------------------------------------
 
     def _finalize(self, p: CraftProfile, routes_base: dict) -> None:
-        grades = [g["confidence_grade"] for g in (
-            [p.home_base] if p.home_base else []
-        ) + p.recurring_routes + ([p.schedule] if p.schedule else [])
-            if isinstance(g, dict) and g.get("confidence_grade")]
-        caps: List[str] = []
-        for src in ([p.home_base, p.schedule] + p.recurring_routes + p.preferred_lzs):
+        grades = [
+            g["confidence_grade"]
+            for g in ([p.home_base] if p.home_base else [])
+            + p.recurring_routes
+            + ([p.schedule] if p.schedule else [])
+            if isinstance(g, dict) and g.get("confidence_grade")
+        ]
+        caps: list[str] = []
+        for src in [p.home_base, p.schedule] + p.recurring_routes + p.preferred_lzs:
             if isinstance(src, dict):
                 caps.extend(src.get("caps_applied", []) or [])
         p.caps_applied = sorted(set(caps))
@@ -448,8 +460,10 @@ class CraftProfileBuilder:
 # Small helpers
 # ---------------------------------------------------------------------------
 
-def _most_common(values: List[Optional[str]]) -> Optional[str]:
+
+def _most_common(values: list[str | None]) -> str | None:
     from collections import Counter
+
     cleaned = [v for v in values if v]
     if not cleaned:
         return None
@@ -465,6 +479,7 @@ def _ts_expr(conn: sqlite3.Connection) -> str:
 
 def _grade_float(g: str) -> float:
     from skywatcher.core.confidence import grade_to_float
+
     return grade_to_float(g)
 
 
@@ -473,8 +488,14 @@ def _grade_float(g: str) -> float:
 # ---------------------------------------------------------------------------
 
 _JSON_COLUMNS = [
-    "home_base", "preferred_lzs", "schedule", "recurring_routes",
-    "recurring_events", "new_patterns", "coverage_gaps", "caps_applied",
+    "home_base",
+    "preferred_lzs",
+    "schedule",
+    "recurring_routes",
+    "recurring_events",
+    "new_patterns",
+    "coverage_gaps",
+    "caps_applied",
     "secondary_missions",
 ]
 
@@ -529,12 +550,32 @@ def upsert_profile(conn: sqlite3.Connection, profile: CraftProfile) -> None:
     row["mission_is_authoritative"] = int(bool(d["mission_is_authoritative"]))
     row["is_stale"] = int(bool(d["is_stale"]))
     cols = [
-        "registration", "callsign", "aircraft_type", "owner", "operator", "country",
-        "data_source", "primary_mission", "mission_is_authoritative", "secondary_missions",
-        "home_base", "preferred_lzs", "schedule", "recurring_routes", "recurring_events",
-        "new_patterns", "first_seen", "last_seen", "total_observations", "is_stale",
-        "confidence_level", "profile_confidence_grade", "coverage_gaps", "caps_applied",
-        "source_baseline", "generated_at",
+        "registration",
+        "callsign",
+        "aircraft_type",
+        "owner",
+        "operator",
+        "country",
+        "data_source",
+        "primary_mission",
+        "mission_is_authoritative",
+        "secondary_missions",
+        "home_base",
+        "preferred_lzs",
+        "schedule",
+        "recurring_routes",
+        "recurring_events",
+        "new_patterns",
+        "first_seen",
+        "last_seen",
+        "total_observations",
+        "is_stale",
+        "confidence_level",
+        "profile_confidence_grade",
+        "coverage_gaps",
+        "caps_applied",
+        "source_baseline",
+        "generated_at",
     ]
     placeholders = ", ".join("?" for _ in cols)
     updates = ", ".join(f"{c}=excluded.{c}" for c in cols if c != "registration")
@@ -561,6 +602,7 @@ def write_snapshot(conn: sqlite3.Connection, profile: CraftProfile) -> None:
 def write_json(profile: CraftProfile, out_dir: Path = DEFAULT_PROFILE_DIR) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{profile.registration}.json"
-    path.write_text(json.dumps(profile.to_dict(), indent=2, ensure_ascii=False) + "\n",
-                    encoding="utf-8")
+    path.write_text(
+        json.dumps(profile.to_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     return path

@@ -9,19 +9,19 @@ observed geometry only.
 
 Core-only imports (stdlib). Must not import satim/corrim.
 """
+
 from __future__ import annotations
 
 import sqlite3
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
 
 CLUSTER_GAP_MINUTES = 60
 DEFAULT_MIN_ROUTE_REPEAT = 3
 MAX_ROUTE_POIS = 8
 
 
-def parse_ts(s: Optional[str]) -> Optional[datetime]:
+def parse_ts(s: str | None) -> datetime | None:
     """Parse an ISO-8601 timestamp; None on missing/short/invalid (16-char min)."""
     if not s or len(s) < 16:
         return None
@@ -31,7 +31,7 @@ def parse_ts(s: Optional[str]) -> Optional[datetime]:
         return None
 
 
-def shape_of(sequence: List[str]) -> str:
+def shape_of(sequence: list[str]) -> str:
     """Classify an ordered POI sequence's geometry.
 
     loop / out_and_back / hub_and_spoke / linear / multi_visit / single_poi /
@@ -68,7 +68,7 @@ def has_side_mining(conn: sqlite3.Connection) -> bool:
     return "origin_iata" in cols
 
 
-def load_observation_rows(conn: sqlite3.Connection) -> List[tuple]:
+def load_observation_rows(conn: sqlite3.Connection) -> list[tuple]:
     """Return ``[(registration, ts, screenshot_id, origin_iata, destination_iata,
     operator_text_manual)]`` ordered by registration then time.
 
@@ -98,9 +98,9 @@ def load_observation_rows(conn: sqlite3.Connection) -> List[tuple]:
     return list(conn.execute(sql).fetchall())
 
 
-def load_poi_index(conn: sqlite3.Connection) -> Dict[int, List[str]]:
+def load_poi_index(conn: sqlite3.Connection) -> dict[int, list[str]]:
     """Map ``screenshot_id -> [normalized_label]`` for real (non-candidate) pins."""
-    poi_idx: Dict[int, List[str]] = defaultdict(list)
+    poi_idx: dict[int, list[str]] = defaultdict(list)
     for sid, label, _guess in conn.execute(
         """
         SELECT screenshot_id, normalized_label, pin_type_guess
@@ -112,14 +112,14 @@ def load_poi_index(conn: sqlite3.Connection) -> Dict[int, List[str]]:
     return poi_idx
 
 
-def cluster_flights(rows: List[tuple]) -> List[dict]:
+def cluster_flights(rows: list[tuple]) -> list[dict]:
     """Cluster observation rows into flight events.
 
     A cluster is same registration + same calendar date + consecutive gaps
     <= CLUSTER_GAP_MINUTES. Rows must be pre-sorted by (registration, ts).
     """
-    clusters: List[dict] = []
-    cur: Optional[dict] = None
+    clusters: list[dict] = []
+    cur: dict | None = None
     for reg, ts, sid, oia, dia, op in rows:
         dt = parse_ts(ts)
         if not dt:
@@ -144,7 +144,7 @@ def cluster_flights(rows: List[tuple]) -> List[dict]:
     return clusters
 
 
-def _new_cluster(reg: str, dt: datetime, sid: int, operator: Optional[str] = None) -> dict:
+def _new_cluster(reg: str, dt: datetime, sid: int, operator: str | None = None) -> dict:
     return {
         "reg": reg,
         "date": dt.date().isoformat(),
@@ -157,9 +157,9 @@ def _new_cluster(reg: str, dt: datetime, sid: int, operator: Optional[str] = Non
     }
 
 
-def sequence_for_cluster(cluster: dict, poi_idx: Dict[int, List[str]]) -> List[str]:
+def sequence_for_cluster(cluster: dict, poi_idx: dict[int, list[str]]) -> list[str]:
     """Ordered, consecutive-deduplicated POI sequence for a flight cluster."""
-    seq: List[str] = []
+    seq: list[str] = []
     for sid in cluster["sids"]:
         for poi in poi_idx.get(sid, []):
             if not seq or seq[-1] != poi:
@@ -167,9 +167,7 @@ def sequence_for_cluster(cluster: dict, poi_idx: Dict[int, List[str]]) -> List[s
     return seq
 
 
-def derive_route_counts(
-    clusters: List[dict], poi_idx: Dict[int, List[str]]
-) -> Counter:
+def derive_route_counts(clusters: list[dict], poi_idx: dict[int, list[str]]) -> Counter:
     """Count ``(registration, route_pattern, shape)`` occurrences across clusters."""
     counts: Counter = Counter()
     for c in clusters:
@@ -183,7 +181,7 @@ def derive_route_counts(
 
 def recurring_routes(
     route_counts: Counter, min_repeat: int = DEFAULT_MIN_ROUTE_REPEAT
-) -> List[Tuple[str, str, str, int]]:
+) -> list[tuple[str, str, str, int]]:
     """``(registration, route_pattern, shape, n_observed)`` seen >= min_repeat,
     most-frequent first."""
     return [
@@ -193,7 +191,7 @@ def recurring_routes(
     ]
 
 
-def eligible_flight_days(clusters: List[dict], registration: str) -> int:
+def eligible_flight_days(clusters: list[dict], registration: str) -> int:
     """Distinct flight-days observed for a registration — the recurrence
     denominator. A route seen 4x over 40 eligible days is graded very
     differently from 4x over 5."""

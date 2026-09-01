@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher.local/schemas/analysis_coverage_report_v1.schema.json",
+  "title": "Skywatcher Analysis Coverage Report",
+  "description": "Per-run record of which lenses ran, which degraded, and which could not run. Exists so that a check which never ran is distinguishable from a check that ran and found nothing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profile_id", "run_id", "entries", "complete", "blocking_reasons"],
+  "properties": {
+    "profile_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "generated_by": {"type": "string"},
+    "complete": {
+      "description": "False whenever any required lens is MISSING, DEGRADED, or NOT_APPLICABLE. Fail-closed: completion is asserted only when every required lens is SATISFIED.",
+      "type": "boolean"
+    },
+    "blocking_reasons": {"type": "array", "items": {"type": "string"}},
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lens_id", "state"],
+        "properties": {
+          "lens_id": {"type": "string", "minLength": 1},
+          "state": {"enum": ["SATISFIED", "DEGRADED", "MISSING", "NOT_APPLICABLE"]},
+          "unmet_parameters": {"type": "array", "items": {"type": "string"}},
+          "reason": {
+            "description": "Mandatory for every state other than SATISFIED. A lens that did not run without a stated cause is the outcome this record exists to prevent.",
+            "type": "string"
+          },
+          "method_version": {"type": "string"},
+          "thresholds_applied": {
+            "description": "Provenance for every threshold this lens executed, per ADR v2.1 A2.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["threshold_id", "value", "status"],
+              "properties": {
+                "threshold_id": {"type": "string"},
+                "value": {},
+                "status": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

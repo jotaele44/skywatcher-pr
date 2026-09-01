@@ -8,6 +8,7 @@ intent/mission. Registered as the ``query`` bucket in
 ``skywatcher.core.module_boundaries`` (may consume core/satim/fpim/corrim; must
 not import ``legacy``).
 """
+
 from skywatcher.query.engine import Answer, QueryEngine
 
 __all__ = ["Answer", "QueryEngine"]

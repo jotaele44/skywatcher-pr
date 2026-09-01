@@ -31,7 +31,7 @@ import sqlite3
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -47,6 +47,11 @@ CSV_FIELDS = [
     "lat", "lon", "altitude_ft", "bearing", "duration_seconds", "signal_type",
     "description_summary", "source_id", "source_type", "evidence_tier",
     "confidence", "geometry_status", "temporal_status", "lineage_id", "synthetic",
+    "position_precision", "aircraft_point_status", "aircraft_point_method",
+    "aircraft_point_uncertainty_m", "aircraft_icon_visibility",
+    "capture_bbox_geojson", "capture_geometry_method",
+    "capture_geometry_confidence", "capture_geometry_uncertainty_m",
+    "control_point_count", "control_point_residual_px",
 ]
 
 
@@ -54,7 +59,7 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _iso_or_none(value: Any) -> Optional[str]:
+def _iso_or_none(value: Any) -> str | None:
     if not value:
         return None
     text = str(value).strip()
@@ -67,11 +72,15 @@ def _iso_or_none(value: Any) -> Optional[str]:
     return parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _blend_confidence(ocr: Optional[float], coord: Optional[float]) -> float:
+def _blend_confidence(ocr: float | None, coord: float | None) -> float:
     parts = [p for p in (ocr, coord) if isinstance(p, (int, float))]
     if not parts:
         return 0.5
     return round(max(0.0, min(1.0, sum(parts) / len(parts))), 3)
+
+
+def _row_value(row: sqlite3.Row, key: str, default: Any = None) -> Any:
+    return row[key] if key in row.keys() else default  # noqa: SIM118 -- sqlite3.Row's `in` checks values, not column names
 
 
 class RlsmEnricher:
@@ -101,9 +110,9 @@ class RlsmEnricher:
             )
         }
         self.geo_lookup = build_geo_lookup(self.conn)
-        self._cache: Dict[str, Optional[Dict[str, Any]]] = {}
+        self._cache: dict[str, dict[str, Any] | None] = {}
 
-    def for_sha(self, sha: Optional[str]) -> Optional[Dict[str, Any]]:
+    def for_sha(self, sha: str | None) -> dict[str, Any] | None:
         if not sha or sha not in self.by_sha:
             return None
         if sha in self._cache:
@@ -149,7 +158,7 @@ class RlsmEnricher:
         self._cache[sha] = result
         return result
 
-    def refit(self, lat: float, lon: float, enrichment: Dict[str, Any]):
+    def refit(self, lat: float, lon: float, enrichment: dict[str, Any]):
         """Re-project a fixed_pr_bounds stamp through the per-screenshot affine."""
         from integration.geo_calibration import invert_fixed_pr_bounds
 
@@ -158,7 +167,7 @@ class RlsmEnricher:
         return enrichment["cal"].pixel_to_coord(px, py, img_w, img_h)
 
 
-def read_screenshot_rows(db_path: Path) -> List[sqlite3.Row]:
+def read_screenshot_rows(db_path: Path) -> list[sqlite3.Row]:
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     try:
@@ -171,14 +180,14 @@ def read_screenshot_rows(db_path: Path) -> List[sqlite3.Row]:
 
 
 def build_records(
-    rows: List[sqlite3.Row], *, mark_synthetic: bool = False,
-    enricher: Optional[RlsmEnricher] = None,
-) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], List[str]]:
-    observations: List[Dict[str, Any]] = []
-    sources: List[Dict[str, Any]] = []
-    lineage: List[Dict[str, Any]] = []
-    confidence: List[Dict[str, Any]] = []
-    skipped: List[str] = []
+    rows: list[sqlite3.Row], *, mark_synthetic: bool = False,
+    enricher: RlsmEnricher | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[str]]:
+    observations: list[dict[str, Any]] = []
+    sources: list[dict[str, Any]] = []
+    lineage: list[dict[str, Any]] = []
+    confidence: list[dict[str, Any]] = []
+    skipped: list[str] = []
 
     for row in rows:
         sid = row["screenshot_id"]
@@ -193,6 +202,21 @@ def build_records(
         lineage_id = f"lin-{sid}"
         coord_conf = row["coordinate_confidence"]
         coord_method = row["coordinate_method"] or "unknown"
+        point_status = _row_value(row, "aircraft_point_status") or (
+            "SOURCE_PROVIDED" if coord_method == "source_drop_coordinates" else "UNRESOLVED"
+        )
+        point_method = _row_value(row, "aircraft_point_method") or coord_method
+        point_uncertainty_m = _row_value(row, "estimated_error_m")
+        icon_visibility = _row_value(row, "aircraft_icon_visibility") or ""
+        capture_bbox_geojson = _row_value(row, "capture_bbox_geojson") or ""
+        capture_method = _row_value(row, "capture_geometry_method") or ""
+        capture_confidence = _row_value(row, "capture_geometry_confidence")
+        capture_uncertainty_m = _row_value(row, "capture_geometry_uncertainty_m")
+        control_point_count = _row_value(row, "control_point_count")
+        control_point_residual_px = _row_value(row, "control_point_residual_px")
+        precision = _row_value(row, "position_precision") or (
+            "SOURCE_PROVIDED" if point_status == "SOURCE_PROVIDED" else "APPROXIMATE"
+        )
         registry_note = ""
 
         enrichment = enricher.for_sha(row["sha256"]) if enricher else None
@@ -247,6 +271,17 @@ def build_records(
             "temporal_status": "exact",
             "lineage_id": lineage_id,
             "synthetic": bool(mark_synthetic),
+            "position_precision": precision,
+            "aircraft_point_status": point_status,
+            "aircraft_point_method": point_method,
+            "aircraft_point_uncertainty_m": point_uncertainty_m,
+            "aircraft_icon_visibility": icon_visibility,
+            "capture_bbox_geojson": capture_bbox_geojson,
+            "capture_geometry_method": capture_method,
+            "capture_geometry_confidence": capture_confidence,
+            "capture_geometry_uncertainty_m": capture_uncertainty_m,
+            "control_point_count": control_point_count,
+            "control_point_residual_px": control_point_residual_px,
         })
         sources.append({
             "source_id": source_id,
@@ -263,7 +298,11 @@ def build_records(
             "pipeline_stage": "fr24_screenshot_ocr",
             "extraction_method": "ensemble_ocr",
             "coordinate_method": coord_method,
-            "notes": f"review_status={row['review_status'] or 'pending'}",
+            "notes": (
+                f"review_status={row['review_status'] or 'pending'};"
+                f" aircraft_point_status={point_status};"
+                " screenshot-derived points are approximate, not ADS-B exact positions"
+            ),
         })
         confidence.append({
             "observation_id": observation_id,
@@ -273,6 +312,8 @@ def build_records(
                 "lat": coord_conf if isinstance(coord_conf, (int, float)) else 0.5,
                 "lon": coord_conf if isinstance(coord_conf, (int, float)) else 0.5,
                 "signal_type": 0.9,
+                "aircraft_point_status": 0.95 if point_status == "SOURCE_PROVIDED" else 0.8,
+                "capture_bbox": capture_confidence if isinstance(capture_confidence, (int, float)) else 0.0,
             },
         })
 
@@ -281,14 +322,14 @@ def build_records(
 
 def write_package(
     out_dir: Path,
-    observations: List[Dict[str, Any]],
-    sources: List[Dict[str, Any]],
-    lineage: List[Dict[str, Any]],
-    confidence: List[Dict[str, Any]],
+    observations: list[dict[str, Any]],
+    sources: list[dict[str, Any]],
+    lineage: list[dict[str, Any]],
+    confidence: list[dict[str, Any]],
     *,
     mode: str,
     package_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     import csv
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -339,7 +380,7 @@ def write_package(
     return manifest
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Build the airspace producer package from the FR24 DB.")
     ap.add_argument("--db", required=True, help="Path to the FR24 pipeline SQLite DB")
     ap.add_argument("--out", required=True, help="Output package directory")

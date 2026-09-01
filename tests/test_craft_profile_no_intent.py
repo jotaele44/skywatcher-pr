@@ -7,8 +7,6 @@ FlightMissionAnalyzer; this guards the new craft-profile path.
 import sqlite3
 from pathlib import Path
 
-import pytest
-
 from skywatcher.fpim import craft_profile
 from skywatcher.fpim.craft_profile import CraftProfileBuilder
 
