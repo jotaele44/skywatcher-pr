@@ -2,7 +2,7 @@
   "contract_version":"federation-spatial-impact/1.0",
   "producer_repo":"skywatcher-pr",
   "branch":"feat/federation-gis-max-v1",
-  "base_sha":"b7b153fc64988ad62873841a3a61b75eab7721dd",
+  "base_sha":"6d7831c1cc665ad3080c9cab92a673cc5eb8e2e9",
   "head_sha":null,
   "changes":{
     "contracts":["federation-spatial-contract/1.0","federation-map-runtime/1.0","fedgeopack/1.0","federation-spatial-manifest/1.0"],

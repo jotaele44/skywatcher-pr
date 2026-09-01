@@ -1,4 +1,5 @@
 """WGS84 geodesic primitives for SATIM GIS joins."""
+
 from __future__ import annotations
 
 import math
@@ -42,9 +43,9 @@ def distance_m(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
     for _ in range(200):
         sin_lam = math.sin(lam)
         cos_lam = math.cos(lam)
-        sin_sigma = math.sqrt(
-            (math.cos(u2) * sin_lam) ** 2
-            + (math.cos(u1) * math.sin(u2) - math.sin(u1) * math.cos(u2) * cos_lam) ** 2
+        sin_sigma = math.hypot(
+            math.cos(u2) * sin_lam,
+            math.cos(u1) * math.sin(u2) - math.sin(u1) * math.cos(u2) * cos_lam,
         )
         if sin_sigma == 0:
             return 0.0
@@ -53,19 +54,13 @@ def distance_m(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
         sin_alpha = math.cos(u1) * math.cos(u2) * sin_lam / sin_sigma
         cos_sq_alpha = 1 - sin_alpha**2
         cos_2sigma_m = (
-            0.0
-            if cos_sq_alpha == 0
-            else cos_sigma - 2 * math.sin(u1) * math.sin(u2) / cos_sq_alpha
+            0.0 if cos_sq_alpha == 0 else cos_sigma - 2 * math.sin(u1) * math.sin(u2) / cos_sq_alpha
         )
         c = F / 16 * cos_sq_alpha * (4 + F * (4 - 3 * cos_sq_alpha))
         next_lam = longitude_delta + (1 - c) * F * sin_alpha * (
-            sigma
-            + c
-            * sin_sigma
-            * (cos_2sigma_m + c * cos_sigma * (-1 + 2 * cos_2sigma_m**2))
+            sigma + c * sin_sigma * (cos_2sigma_m + c * cos_sigma * (-1 + 2 * cos_2sigma_m**2))
         )
         if abs(next_lam - lam) < 1e-12:
-            lam = next_lam
             break
         lam = next_lam
     else:
@@ -74,17 +69,17 @@ def distance_m(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
     reduced = cos_sq_alpha * (A**2 - B**2) / B**2
     coef_a = 1 + reduced / 16384 * (4096 + reduced * (-768 + reduced * (320 - 175 * reduced)))
     coef_b = reduced / 1024 * (256 + reduced * (-128 + reduced * (74 - 47 * reduced)))
-    delta_sigma = coef_b * sin_sigma * (
-        cos_2sigma_m
-        + coef_b
-        / 4
+    delta_sigma = (
+        coef_b
+        * sin_sigma
         * (
-            cos_sigma * (-1 + 2 * cos_2sigma_m**2)
-            - coef_b
-            / 6
-            * cos_2sigma_m
-            * (-3 + 4 * sin_sigma**2)
-            * (-3 + 4 * cos_2sigma_m**2)
+            cos_2sigma_m
+            + coef_b
+            / 4
+            * (
+                cos_sigma * (-1 + 2 * cos_2sigma_m**2)
+                - coef_b / 6 * cos_2sigma_m * (-3 + 4 * sin_sigma**2) * (-3 + 4 * cos_2sigma_m**2)
+            )
         )
     )
     return B * coef_a * (sigma - delta_sigma)

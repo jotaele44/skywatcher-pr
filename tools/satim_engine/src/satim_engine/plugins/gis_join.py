@@ -7,12 +7,13 @@ The legacy ``gis_nearest_layer_deg`` output remains for reproducibility, but
 WGS84 geodesics. Context-only behavior remains fail-closed when no geometry is
 available.
 """
+
 from __future__ import annotations
 
 import pandas as pd
 
-from .gis_geometry import as_float, bbox_distance_deg, point_in_bbox, resolve_geometry_layers
 from .gis_geodesic import bbox_distance_m
+from .gis_geometry import as_float, bbox_distance_deg, point_in_bbox, resolve_geometry_layers
 
 CONTEXT_ONLY_STATUS = "BBOX_CONTEXT_ONLY"
 OFFLINE_JOIN_STATUS = "GIS_JOIN_OFFLINE_GEODESIC"

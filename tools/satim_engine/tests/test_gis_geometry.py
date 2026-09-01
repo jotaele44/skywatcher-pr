@@ -1,7 +1,6 @@
 """Unit tests for SATIM GIS geometry and geodesic joins."""
 
 import pytest
-
 from satim_engine.plugins.gis_geometry import (
     bbox_distance_deg,
     layer_bbox,
