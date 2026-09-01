@@ -340,8 +340,6 @@ def test_aircraft_observations_dedup_rejects_duplicates():
 
 def test_empty_label_ocr_is_not_wordbox_migration_residue(tmp_path):
     """A modern OCR row with zero words legitimately has raw_lines_json='[]'."""
-    import sqlite3
-
     db = sqlite3.connect(":memory:")
     db.executescript("""
         CREATE TABLE ocr_observations (
@@ -380,8 +378,6 @@ def test_empty_label_ocr_is_not_wordbox_migration_residue(tmp_path):
 
 def test_text_without_wordboxes_is_migration_residue():
     """OCR text with no recorded boxes still requires repair."""
-    import sqlite3
-
     db = sqlite3.connect(":memory:")
     db.executescript("""
         CREATE TABLE ocr_observations (
@@ -416,3 +412,31 @@ def test_text_without_wordboxes_is_migration_residue():
     """).fetchone()[0]
 
     assert n == 1
+
+
+def test_preflight_accepts_legacy_wordbox_schema(tmp_path, monkeypatch):
+    """Preflight must classify legacy OCR rows without a version column."""
+    from fr24 import rlsm_pipeline
+
+    db_path = tmp_path / "legacy.sqlite"
+    db = sqlite3.connect(db_path)
+    db.executescript("""
+        CREATE TABLE screenshots (screenshot_id INTEGER PRIMARY KEY);
+        CREATE TABLE ocr_observations (
+            obs_id INTEGER PRIMARY KEY,
+            screenshot_id INTEGER NOT NULL,
+            zone TEXT NOT NULL,
+            raw_text TEXT NOT NULL,
+            raw_lines_json TEXT,
+            n_words INTEGER
+        );
+        INSERT INTO ocr_observations
+            (obs_id, screenshot_id, zone, raw_text, raw_lines_json, n_words)
+        VALUES (1, 100, 'label_layer', 'San Juan', '[]', 2);
+    """)
+    db.close()
+
+    monkeypatch.setattr(rlsm_pipeline, "DB", db_path)
+    info = rlsm_pipeline.preflight({"stages": ["preflight"], "dry_run": True})
+
+    assert info["screenshots_needing_word_boxes"] == 1

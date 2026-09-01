@@ -275,7 +275,7 @@ def preflight(ctx: dict) -> dict:
                     COALESCE(TRIM(o.raw_text), '') != ''
                     OR COALESCE(o.n_words, 0) > 0
                   )
-              AND COALESCE(o.word_boxes_version, '') != 'rlsm-wordboxes-v1'""")
+              AND COALESCE(o.raw_lines_json, '') IN ('', '[]')""")
         info["screenshots_needing_word_boxes"] = stale
         if stale:
             warnings.append(

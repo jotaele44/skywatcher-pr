@@ -201,7 +201,7 @@ def _build_target_query(
                     COALESCE(TRIM(o.raw_text), '') != ''
                     OR COALESCE(o.n_words, 0) > 0
                   )
-              AND COALESCE(o.word_boxes_version, '') != 'rlsm-wordboxes-v1'
+              AND COALESCE(o.raw_lines_json, '') IN ('', '[]')
         )""")
     elif retry_failed:
         where_parts.append("s.ocr_status IN ('pending','failed')")

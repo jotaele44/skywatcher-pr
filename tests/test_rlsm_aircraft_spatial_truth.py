@@ -655,20 +655,17 @@ def test_multi_anchor_and_one_anchor_projection_with_bounded_error(
 
 
 def test_fit_screenshot_rejects_nonpositive_or_nonfinite_scale(monkeypatch):
-    import fr24.rlsm_georeference as g
-
     anchors = [
         (0.0, 0.0, 18.0, -66.0),
         (100.0, 100.0, 17.9, -65.9),
     ]
 
     monkeypatch.setattr(
-        g,
-        "affine_scale_metrics",
+        "fr24.rlsm_georeference.affine_scale_metrics",
         lambda affine, center_lat: (0.0, 10.0, 5.0, 2.0),
     )
 
-    result = g.fit_screenshot(
+    result = fit_screenshot(
         anchors,
         (0, 0, 100, 100),
     )
@@ -679,14 +676,11 @@ def test_fit_screenshot_rejects_nonpositive_or_nonfinite_scale(monkeypatch):
 
 
 def test_fit_screenshot_rejects_impossible_viewport_center_latitude(monkeypatch):
-    import fr24.rlsm_georeference as g
-
     # Fit with valid axis signs but an absurd latitude slope. The viewport
     # center extrapolates outside [-90,+90] and must be rejected before metric
     # scale calculation.
     monkeypatch.setattr(
-        g,
-        "fit_affine",
+        "fr24.rlsm_georeference.fit_affine",
         lambda pixel_xy, geo_latlon: (
             -66.0,
             0.001,
@@ -701,12 +695,11 @@ def test_fit_screenshot_rejects_impossible_viewport_center_latitude(monkeypatch)
         )
 
     monkeypatch.setattr(
-        g,
-        "affine_scale_metrics",
+        "fr24.rlsm_georeference.affine_scale_metrics",
         must_not_be_called,
     )
 
-    result = g.fit_screenshot(
+    result = fit_screenshot(
         [
             (0.0, 0.0, 18.0, -66.0),
             (100.0, 100.0, 17.9, -65.9),
