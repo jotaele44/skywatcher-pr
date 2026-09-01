@@ -433,7 +433,6 @@ def pr_fixture_db(tmp_path):
 
 @pytest.fixture
 def rlsm_db(tmp_path):
-    import sqlite3
     from pathlib import Path
 
     repo = Path(__file__).resolve().parents[1]
