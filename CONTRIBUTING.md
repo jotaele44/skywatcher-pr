@@ -42,7 +42,7 @@ job and in `pyproject.toml`, not hidden.
 | Types | `python -m mypy` |
 | Tests | `pytest -q` |
 | Coverage | `pytest -q --cov` — must stay at or above the `fail_under` floor in `pyproject.toml` |
-| Lockfile | `uv pip compile requirements.txt --universal --python-version 3.12 -o requirements.lock` |
+| Lockfile | `uv lock --check` |
 | Template drift | Run `python3 tools/render_federation_templates.py --repo skywatcher-pr --repo-root /path/to/skywatcher-pr --check` from a local Hub checkout. |
 
 ### Coverage is a ratchet
