@@ -1,0 +1,18 @@
+{
+  "aircraft_observation_rows": 3,
+  "batch_id": 1,
+  "blocker_classification": "FOUND",
+  "blocker_reason": "FR24 rows include source or audited screenshot-derived approximate coordinates.",
+  "capture_review_lookup_keys": 6,
+  "capture_review_rows": 3,
+  "db_path": "data/operational/fr24_bbox_icon_scaled_20260827T0010Z.sqlite",
+  "exportable_rows": 3,
+  "icon_derived_approx_rows": 3,
+  "manual_review_rows": 3685,
+  "media_rows": 2856,
+  "missing_geometry_rows": 0,
+  "missing_media_sha_rows": 0,
+  "screenshots_inserted_or_seen": 3,
+  "source_coordinate_rows": 0,
+  "unresolved_capture_review_rows": 0
+}

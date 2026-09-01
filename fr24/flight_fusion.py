@@ -1,15 +1,8 @@
 """Same-flight screenshot fusion (strategy #3).
 
-Temporal-wave grouping (fr24/ocr_analysis_vector.py) already clusters
-same-aircraft observations, but everything downstream still treats each frame
-as an isolated event. This module fuses a wave's rows into ONE multi-point
-record — consistent registration + advancing positions across N frames is far
-stronger evidence than N independent single-frame candidates — and shapes the
-result so fr24/spiderweb_adapter.py and fr24/endpoint_matcher.py can consume
-it directly.
-
-No-auto-confirm discipline: fused records carry
-confirmation_status='not_confirmed' and never invent a selection_status.
+Temporal-wave grouping clusters same-aircraft observations; this module fuses a
+wave into one multi-point record. Endpoint distance candidates may accompany the
+fused record, but discovery-only matches cannot silently become route truth.
 """
 from __future__ import annotations
 
@@ -22,12 +15,10 @@ FUSION_VERSION = "fr24_flight_fusion_v0.1.0"
 
 
 def aircraft_identity(row: dict) -> str:
-    """Registration > callsign_or_label > image name (shared with the waves)."""
     return _aircraft_identity(row)
 
 
 def _row_iso(row: dict) -> str:
-    """Best available ISO timestamp for a row."""
     for key in ("vector_playback_iso", "timestamp", "timestamp_iso"):
         value = (row.get(key) or "").strip() if isinstance(row.get(key), str) else ""
         if value:
@@ -51,9 +42,9 @@ def _int_or_none(value) -> int | None:
 
 
 def _consensus(rows: list[dict], key: str) -> str:
-    """Most common non-empty value for a field across the wave's rows."""
     counts = Counter(
-        str(row.get(key)).strip() for row in rows
+        str(row.get(key)).strip()
+        for row in rows
         if row.get(key) is not None and str(row.get(key)).strip()
     )
     return counts.most_common(1)[0][0] if counts else ""
@@ -71,12 +62,6 @@ def _duration_minutes(first_iso: str, last_iso: str) -> float:
 
 
 def fuse_wave(rows: list[dict]) -> dict:
-    """Fuse one wave's rows (same aircraft identity) into a multi-point record.
-
-    Rows are ordered by timestamp (timestamp-less rows sink to the end, ordered
-    by image name, matching the wave sort). Points keep whatever position data
-    each frame carries; missing lat/lon stays None rather than being invented.
-    """
     if not rows:
         raise ValueError("fuse_wave requires at least one row")
 
@@ -92,37 +77,48 @@ def fuse_wave(rows: list[dict]) -> dict:
 
     points = []
     for row in ordered:
-        points.append({
-            "image_name": (row.get("image_name") or "").strip(),
-            "timestamp_iso": _row_iso(row),
-            "lat": _float_or_none(row.get("lat") if row.get("lat") is not None
-                                  else row.get("latitude")),
-            "lon": _float_or_none(row.get("lon") if row.get("lon") is not None
-                                  else row.get("longitude")),
-            "altitude_ft": _int_or_none(row.get("barometric_altitude_ft")
-                                        or row.get("altitude_ft")),
-        })
+        points.append(
+            {
+                "image_name": (row.get("image_name") or "").strip(),
+                "timestamp_iso": _row_iso(row),
+                "lat": _float_or_none(
+                    row.get("lat") if row.get("lat") is not None else row.get("latitude")
+                ),
+                "lon": _float_or_none(
+                    row.get("lon") if row.get("lon") is not None else row.get("longitude")
+                ),
+                "altitude_ft": _int_or_none(
+                    row.get("barometric_altitude_ft") or row.get("altitude_ft")
+                ),
+            }
+        )
 
     confidences = [
-        c for c in (
-            _float_or_none(row.get("confidence")
-                           if row.get("confidence") is not None
-                           else row.get("vector_max_confidence"))
+        c
+        for c in (
+            _float_or_none(
+                row.get("confidence")
+                if row.get("confidence") is not None
+                else row.get("vector_max_confidence")
+            )
             for row in ordered
-        ) if c is not None
+        )
+        if c is not None
     ]
     blended = round(sum(confidences) / len(confidences), 4) if confidences else 0.0
 
     altitudes = [p["altitude_ft"] for p in points if p["altitude_ft"] is not None]
     speeds = [
-        s for s in (_float_or_none(r.get("ground_speed_mph")) for r in ordered)
+        s
+        for s in (_float_or_none(r.get("ground_speed_mph")) for r in ordered)
         if s is not None
     ]
 
     return {
         "aircraft_identity": identity,
         "registration": _consensus(ordered, "registration"),
-        "callsign": _consensus(ordered, "callsign_or_label") or _consensus(ordered, "callsign"),
+        "callsign": _consensus(ordered, "callsign_or_label")
+        or _consensus(ordered, "callsign"),
         "aircraft_type": _consensus(ordered, "aircraft_type"),
         "operator": _consensus(ordered, "operator"),
         "origin_code": _consensus(ordered, "origin_code"),
@@ -141,26 +137,42 @@ def fuse_wave(rows: list[dict]) -> dict:
 
 
 def fuse_rows(rows: list[dict]) -> list[dict]:
-    """Group rows by aircraft identity and fuse each group into one record."""
     groups: dict[str, list[dict]] = defaultdict(list)
     for row in rows:
         groups[aircraft_identity(row)].append(row)
     return [fuse_wave(group) for _, group in sorted(groups.items())]
 
 
-def to_adapter_row(fused: dict, *, candidate_id: str = "",
-                   selection_status: str = "",
-                   endpoint_events: list[dict] | None = None) -> dict:
-    """Shape a fused record like an export row for fr24/spiderweb_adapter.py.
+def endpoint_event_can_promote_route(event: dict) -> bool:
+    """Require explicit reviewed identity before endpoint data can alter a route.
 
-    origin/destination prefer the endpoint matcher's facility resolution
-    ('start'/'end' events from fr24/endpoint_matcher.py) over the OCR'd codes.
-    selection_status is NOT invented — pass the gate decision explicitly or
-    the adapter routes the record to its hold queue.
+    Distance, nearest-neighbour, screenshot label, or any event still marked
+    CANDIDATE_NOT_IDENTITY is never sufficient regardless of confidence.
+    """
+    return (
+        event.get("review_status") == "promoted"
+        and event.get("identity_state") == "CERTIFIED"
+        and event.get("association_state") != "DISCOVERY_ONLY"
+    )
+
+
+def to_adapter_row(
+    fused: dict,
+    *,
+    candidate_id: str = "",
+    selection_status: str = "",
+    endpoint_events: list[dict] | None = None,
+) -> dict:
+    """Shape a fused record for the Spiderweb adapter without heuristic promotion.
+
+    OCR/source-declared origin/destination remain intact. Endpoint candidates can
+    replace them only after explicit promotion plus certified facility identity.
     """
     origin = fused.get("origin_code") or ""
     destination = fused.get("destination_code") or ""
     for event in endpoint_events or []:
+        if not endpoint_event_can_promote_route(event):
+            continue
         code = event.get("matched_facility_code") or event.get("matched_facility_id") or ""
         if event.get("endpoint_type") == "start" and code:
             origin = code
@@ -177,8 +189,11 @@ def to_adapter_row(fused: dict, *, candidate_id: str = "",
 
     identity = fused.get("aircraft_identity") or ""
     return {
-        "candidate_id": candidate_id or f"fr24-fused::{identity}::{playback_date or 'undated'}",
-        "callsign_or_label": fused.get("callsign") or fused.get("registration") or identity,
+        "candidate_id": candidate_id
+        or f"fr24-fused::{identity}::{playback_date or 'undated'}",
+        "callsign_or_label": fused.get("callsign")
+        or fused.get("registration")
+        or identity,
         "registration": fused.get("registration") or "",
         "aircraft_type": fused.get("aircraft_type") or "",
         "operator": fused.get("operator") or "",

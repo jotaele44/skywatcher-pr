@@ -52,7 +52,7 @@ the real risk: 51.5k LOC of Python and 8.8k of JSX with nothing enforcing consis
 
 | Item | Why |
 |---|---|
-| `gebco/` terrain layer | requires `requirements-geo.txt` (numpy/scipy/xarray/netCDF4); optional, not in the default path |
+| `gebco/` terrain layer | requires the `geo` extra in `pyproject.toml` (numpy/scipy/xarray/netCDF4); optional, not in the default path |
 | Canonical export adapter | `scripts/federation_export.py` projects observations → entities/sources/relationships, but has only synthetic observations to project |
 | ILAP intake | needs FlightRadar24 screenshots supplied locally — an external data gap, correctly declared |
 

@@ -1,4 +1,9 @@
-"""Correlate aircraft events against static airspace footprints."""
+"""Correlate aircraft events against static airspace footprints.
+
+This module is discovery-only. Distance, nearest-neighbour ordering and facility
+class boosts may rank candidates, but cannot establish facility identity or a
+landing/takeoff association.
+"""
 
 from __future__ import annotations
 
@@ -20,6 +25,8 @@ class FootprintMatch:
     match_type: str
     score: float
     explanation: str
+    evidence_role: str = "DISCOVERY_ONLY"
+    identity_state: str = "CANDIDATE_NOT_IDENTITY"
 
 
 def score_match(distance_m: float, radius_m: int, facility_type: str) -> float:
@@ -63,7 +70,7 @@ def correlate_point_to_footprints(
                     score=score,
                     explanation=(
                         f"Point is {round(distance, 1)} m from {footprint.facility_name} "
-                        f"({footprint.facility_type})."
+                        f"({footprint.facility_type}); proximity is discovery only."
                     ),
                 )
             )
