@@ -1,0 +1,23 @@
+{
+  "fixture_id": "canovanas_econo_vs_walmart_nearby_false_identity",
+  "lesson": "discovery_is_not_identity",
+  "target_geometry_id": "canovanas-econo-distribution-complex",
+  "expected_poi_label": "Centro de Distribución Econo",
+  "facility_class_advisory": "DISTRIBUTION_WAREHOUSE",
+  "candidates": [
+    {
+      "name": "Walmart Supercenter",
+      "candidate_geometry_id": "canovanas-walmart-supercenter-distinct-property",
+      "binding_evidence": "DISTINCT_PROPERTY",
+      "discovery_signals": ["PROXIMITY_ONLY", "SEARCH_RANK"],
+      "expected_decision": "REJECTED"
+    },
+    {
+      "name": "Centro de Distribución Econo",
+      "candidate_geometry_id": "canovanas-econo-distribution-complex",
+      "binding_evidence": "POINT_IN_POLYGON",
+      "discovery_signals": ["UNBOUND_MAP_LABEL"],
+      "expected_decision": "BOUND"
+    }
+  ]
+}

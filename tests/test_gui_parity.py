@@ -118,8 +118,8 @@ export default function Items() {
         route_ids = {
             item["id"] for item in candidates if item["kind"] == "gui_route"
         }
-        self.assertTrue(endpoint_ids <= mapped)
-        self.assertTrue(route_ids <= mapped)
+        self.assertLessEqual(endpoint_ids, mapped)
+        self.assertLessEqual(route_ids, mapped)
 
     def test_backend_without_gui_is_rejected(self) -> None:
         manifest = self._manifest()

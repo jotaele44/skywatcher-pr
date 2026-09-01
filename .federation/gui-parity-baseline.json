@@ -1,5 +1,5 @@
 {
-  "candidate_count": 1211,
+  "candidate_count": 1542,
   "candidates": [
     {
       "id": "analysis_module:imagery/__init__.py",
@@ -128,6 +128,42 @@
       "signal": "ANALYSIS_NOT_GUI_RENDERED"
     },
     {
+      "id": "analysis_module:scripts/adsb_poll.py",
+      "kind": "analysis_module",
+      "path": "scripts/adsb_poll.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
+      "id": "analysis_module:scripts/audit_visual_reasoning_baseline.py",
+      "kind": "analysis_module",
+      "path": "scripts/audit_visual_reasoning_baseline.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
+      "id": "analysis_module:scripts/build_ai_imagery_producer_package_v2.py",
+      "kind": "analysis_module",
+      "path": "scripts/build_ai_imagery_producer_package_v2.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
+      "id": "analysis_module:scripts/build_fr24_bbox_icon_review_batch.py",
+      "kind": "analysis_module",
+      "path": "scripts/build_fr24_bbox_icon_review_batch.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
+      "id": "analysis_module:scripts/build_fr24_capture_review_worklist.py",
+      "kind": "analysis_module",
+      "path": "scripts/build_fr24_capture_review_worklist.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
+      "id": "analysis_module:scripts/build_multisensor_replay.py",
+      "kind": "analysis_module",
+      "path": "scripts/build_multisensor_replay.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
       "id": "analysis_module:scripts/build_producer_package.py",
       "kind": "analysis_module",
       "path": "scripts/build_producer_package.py",
@@ -158,6 +194,12 @@
       "signal": "ANALYSIS_NOT_GUI_RENDERED"
     },
     {
+      "id": "analysis_module:scripts/build_source_drop_manifest.py",
+      "kind": "analysis_module",
+      "path": "scripts/build_source_drop_manifest.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
       "id": "analysis_module:scripts/classify_satim_artifacts.py",
       "kind": "analysis_module",
       "path": "scripts/classify_satim_artifacts.py",
@@ -179,6 +221,12 @@
       "id": "analysis_module:scripts/federation_export.py",
       "kind": "analysis_module",
       "path": "scripts/federation_export.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
+      "id": "analysis_module:scripts/federation_setup_smoke.py",
+      "kind": "analysis_module",
+      "path": "scripts/federation_setup_smoke.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED"
     },
     {
@@ -242,9 +290,39 @@
       "signal": "ANALYSIS_NOT_GUI_RENDERED"
     },
     {
+      "id": "analysis_module:scripts/ingest_vision_result_to_rlsm.py",
+      "kind": "analysis_module",
+      "path": "scripts/ingest_vision_result_to_rlsm.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
+      "id": "analysis_module:scripts/init_database.py",
+      "kind": "analysis_module",
+      "path": "scripts/init_database.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
+      "id": "analysis_module:scripts/load_fr24_source_drop.py",
+      "kind": "analysis_module",
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
       "id": "analysis_module:scripts/parse_flight_log.py",
       "kind": "analysis_module",
       "path": "scripts/parse_flight_log.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
+      "id": "analysis_module:scripts/prii_export_utils.py",
+      "kind": "analysis_module",
+      "path": "scripts/prii_export_utils.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
+      "id": "analysis_module:scripts/reconcile_fr24_media_identity.py",
+      "kind": "analysis_module",
+      "path": "scripts/reconcile_fr24_media_identity.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED"
     },
     {
@@ -296,6 +374,12 @@
       "signal": "ANALYSIS_NOT_GUI_RENDERED"
     },
     {
+      "id": "analysis_module:scripts/rlsm_normalize_takeout.py",
+      "kind": "analysis_module",
+      "path": "scripts/rlsm_normalize_takeout.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
       "id": "analysis_module:scripts/rlsm_ocr_bench.py",
       "kind": "analysis_module",
       "path": "scripts/rlsm_ocr_bench.py",
@@ -317,6 +401,12 @@
       "id": "analysis_module:scripts/rlsm_quality_audit.py",
       "kind": "analysis_module",
       "path": "scripts/rlsm_quality_audit.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED"
+    },
+    {
+      "id": "analysis_module:scripts/rlsm_reconcile_source_availability.py",
+      "kind": "analysis_module",
+      "path": "scripts/rlsm_reconcile_source_availability.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED"
     },
     {
@@ -824,9 +914,177 @@
       "symbol": "persist"
     },
     {
+      "id": "analysis_symbol:scripts/adsb_poll.py:main",
+      "kind": "analysis_symbol",
+      "line": 33,
+      "path": "scripts/adsb_poll.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/audit_visual_reasoning_baseline.py:MarkerHit",
+      "kind": "analysis_symbol",
+      "line": 64,
+      "path": "scripts/audit_visual_reasoning_baseline.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "MarkerHit"
+    },
+    {
+      "id": "analysis_symbol:scripts/audit_visual_reasoning_baseline.py:NumericLiteral",
+      "kind": "analysis_symbol",
+      "line": 53,
+      "path": "scripts/audit_visual_reasoning_baseline.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "NumericLiteral"
+    },
+    {
+      "id": "analysis_symbol:scripts/audit_visual_reasoning_baseline.py:audit",
+      "kind": "analysis_symbol",
+      "line": 192,
+      "path": "scripts/audit_visual_reasoning_baseline.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "audit"
+    },
+    {
+      "id": "analysis_symbol:scripts/audit_visual_reasoning_baseline.py:main",
+      "kind": "analysis_symbol",
+      "line": 212,
+      "path": "scripts/audit_visual_reasoning_baseline.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/audit_visual_reasoning_baseline.py:marker_inventory",
+      "kind": "analysis_symbol",
+      "line": 158,
+      "path": "scripts/audit_visual_reasoning_baseline.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "marker_inventory"
+    },
+    {
+      "id": "analysis_symbol:scripts/audit_visual_reasoning_baseline.py:numeric_inventory",
+      "kind": "analysis_symbol",
+      "line": 147,
+      "path": "scripts/audit_visual_reasoning_baseline.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "numeric_inventory"
+    },
+    {
+      "id": "analysis_symbol:scripts/audit_visual_reasoning_baseline.py:root_satim_classification",
+      "kind": "analysis_symbol",
+      "line": 176,
+      "path": "scripts/audit_visual_reasoning_baseline.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "root_satim_classification"
+    },
+    {
+      "id": "analysis_symbol:scripts/audit_visual_reasoning_baseline.py:target_files",
+      "kind": "analysis_symbol",
+      "line": 140,
+      "path": "scripts/audit_visual_reasoning_baseline.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "target_files"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_ai_imagery_producer_package_v2.py:main",
+      "kind": "analysis_symbol",
+      "line": 37,
+      "path": "scripts/build_ai_imagery_producer_package_v2.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_fr24_bbox_icon_review_batch.py:build_batch",
+      "kind": "analysis_symbol",
+      "line": 62,
+      "path": "scripts/build_fr24_bbox_icon_review_batch.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "build_batch"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_fr24_bbox_icon_review_batch.py:main",
+      "kind": "analysis_symbol",
+      "line": 178,
+      "path": "scripts/build_fr24_bbox_icon_review_batch.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_fr24_bbox_icon_review_batch.py:media_maps",
+      "kind": "analysis_symbol",
+      "line": 42,
+      "path": "scripts/build_fr24_bbox_icon_review_batch.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "media_maps"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_fr24_bbox_icon_review_batch.py:read_csv",
+      "kind": "analysis_symbol",
+      "line": 29,
+      "path": "scripts/build_fr24_bbox_icon_review_batch.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "read_csv"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_fr24_bbox_icon_review_batch.py:require",
+      "kind": "analysis_symbol",
+      "line": 55,
+      "path": "scripts/build_fr24_bbox_icon_review_batch.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "require"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_fr24_bbox_icon_review_batch.py:sha256_file",
+      "kind": "analysis_symbol",
+      "line": 34,
+      "path": "scripts/build_fr24_bbox_icon_review_batch.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "sha256_file"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_fr24_bbox_icon_review_batch.py:utc_now",
+      "kind": "analysis_symbol",
+      "line": 25,
+      "path": "scripts/build_fr24_bbox_icon_review_batch.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "utc_now"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_fr24_capture_review_worklist.py:build_worklist",
+      "kind": "analysis_symbol",
+      "line": 72,
+      "path": "scripts/build_fr24_capture_review_worklist.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "build_worklist"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_fr24_capture_review_worklist.py:main",
+      "kind": "analysis_symbol",
+      "line": 135,
+      "path": "scripts/build_fr24_capture_review_worklist.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_fr24_capture_review_worklist.py:read_csv",
+      "kind": "analysis_symbol",
+      "line": 58,
+      "path": "scripts/build_fr24_capture_review_worklist.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "read_csv"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_multisensor_replay.py:main",
+      "kind": "analysis_symbol",
+      "line": 10,
+      "path": "scripts/build_multisensor_replay.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
       "id": "analysis_symbol:scripts/build_producer_package.py:RlsmEnricher",
       "kind": "analysis_symbol",
-      "line": 77,
+      "line": 86,
       "path": "scripts/build_producer_package.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "RlsmEnricher"
@@ -834,7 +1092,7 @@
     {
       "id": "analysis_symbol:scripts/build_producer_package.py:build_records",
       "kind": "analysis_symbol",
-      "line": 173,
+      "line": 182,
       "path": "scripts/build_producer_package.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "build_records"
@@ -842,7 +1100,7 @@
     {
       "id": "analysis_symbol:scripts/build_producer_package.py:main",
       "kind": "analysis_symbol",
-      "line": 342,
+      "line": 383,
       "path": "scripts/build_producer_package.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "main"
@@ -850,7 +1108,7 @@
     {
       "id": "analysis_symbol:scripts/build_producer_package.py:read_screenshot_rows",
       "kind": "analysis_symbol",
-      "line": 161,
+      "line": 170,
       "path": "scripts/build_producer_package.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "read_screenshot_rows"
@@ -858,7 +1116,7 @@
     {
       "id": "analysis_symbol:scripts/build_producer_package.py:write_package",
       "kind": "analysis_symbol",
-      "line": 282,
+      "line": 323,
       "path": "scripts/build_producer_package.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "write_package"
@@ -1006,6 +1264,62 @@
       "path": "scripts/build_sensor_fusion_visualization.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "read_json"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_source_drop_manifest.py:build_records",
+      "kind": "analysis_symbol",
+      "line": 116,
+      "path": "scripts/build_source_drop_manifest.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "build_records"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_source_drop_manifest.py:inspect_csv",
+      "kind": "analysis_symbol",
+      "line": 79,
+      "path": "scripts/build_source_drop_manifest.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "inspect_csv"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_source_drop_manifest.py:inspect_path",
+      "kind": "analysis_symbol",
+      "line": 87,
+      "path": "scripts/build_source_drop_manifest.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "inspect_path"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_source_drop_manifest.py:main",
+      "kind": "analysis_symbol",
+      "line": 160,
+      "path": "scripts/build_source_drop_manifest.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_source_drop_manifest.py:sha256_file",
+      "kind": "analysis_symbol",
+      "line": 69,
+      "path": "scripts/build_source_drop_manifest.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "sha256_file"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_source_drop_manifest.py:utc_now",
+      "kind": "analysis_symbol",
+      "line": 65,
+      "path": "scripts/build_source_drop_manifest.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "utc_now"
+    },
+    {
+      "id": "analysis_symbol:scripts/build_source_drop_manifest.py:write_outputs",
+      "kind": "analysis_symbol",
+      "line": 132,
+      "path": "scripts/build_source_drop_manifest.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "write_outputs"
     },
     {
       "id": "analysis_symbol:scripts/classify_satim_artifacts.py:classify_csv",
@@ -1234,7 +1548,7 @@
     {
       "id": "analysis_symbol:scripts/federation_export.py:build_streams",
       "kind": "analysis_symbol",
-      "line": 133,
+      "line": 143,
       "path": "scripts/federation_export.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "build_streams"
@@ -1242,7 +1556,7 @@
     {
       "id": "analysis_symbol:scripts/federation_export.py:main",
       "kind": "analysis_symbol",
-      "line": 490,
+      "line": 503,
       "path": "scripts/federation_export.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "main"
@@ -1250,10 +1564,18 @@
     {
       "id": "analysis_symbol:scripts/federation_export.py:write_package",
       "kind": "analysis_symbol",
-      "line": 460,
+      "line": 470,
       "path": "scripts/federation_export.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "write_package"
+    },
+    {
+      "id": "analysis_symbol:scripts/federation_setup_smoke.py:main",
+      "kind": "analysis_symbol",
+      "line": 42,
+      "path": "scripts/federation_setup_smoke.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
     },
     {
       "id": "analysis_symbol:scripts/fetch_gebco_pr.py:convert_to_gebco_netcdf",
@@ -1736,6 +2058,126 @@
       "symbol": "match_screenshot_id"
     },
     {
+      "id": "analysis_symbol:scripts/ingest_vision_result_to_rlsm.py:main",
+      "kind": "analysis_symbol",
+      "line": 32,
+      "path": "scripts/ingest_vision_result_to_rlsm.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/init_database.py:main",
+      "kind": "analysis_symbol",
+      "line": 32,
+      "path": "scripts/init_database.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:best_media_by_filename",
+      "kind": "analysis_symbol",
+      "line": 224,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "best_media_by_filename"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:create_review_tables",
+      "kind": "analysis_symbol",
+      "line": 200,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "create_review_tables"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:derive_icon_point",
+      "kind": "analysis_symbol",
+      "line": 143,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "derive_icon_point"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:ensure_compat_columns",
+      "kind": "analysis_symbol",
+      "line": 193,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "ensure_compat_columns"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:first_present",
+      "kind": "analysis_symbol",
+      "line": 97,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "first_present"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:load_capture_review",
+      "kind": "analysis_symbol",
+      "line": 129,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "load_capture_review"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:load_source_drop",
+      "kind": "analysis_symbol",
+      "line": 233,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "load_source_drop"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:main",
+      "kind": "analysis_symbol",
+      "line": 444,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:read_csv",
+      "kind": "analysis_symbol",
+      "line": 63,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "read_csv"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:to_float",
+      "kind": "analysis_symbol",
+      "line": 89,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "to_float"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:to_float_0_1",
+      "kind": "analysis_symbol",
+      "line": 76,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "to_float_0_1"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:to_int",
+      "kind": "analysis_symbol",
+      "line": 68,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "to_int"
+    },
+    {
+      "id": "analysis_symbol:scripts/load_fr24_source_drop.py:utc_now",
+      "kind": "analysis_symbol",
+      "line": 59,
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "utc_now"
+    },
+    {
       "id": "analysis_symbol:scripts/parse_flight_log.py:extract_tail",
       "kind": "analysis_symbol",
       "line": 38,
@@ -1758,6 +2200,78 @@
       "path": "scripts/parse_flight_log.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "parse"
+    },
+    {
+      "id": "analysis_symbol:scripts/prii_export_utils.py:fid",
+      "kind": "analysis_symbol",
+      "line": 12,
+      "path": "scripts/prii_export_utils.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "fid"
+    },
+    {
+      "id": "analysis_symbol:scripts/prii_export_utils.py:norm",
+      "kind": "analysis_symbol",
+      "line": 17,
+      "path": "scripts/prii_export_utils.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "norm"
+    },
+    {
+      "id": "analysis_symbol:scripts/prii_export_utils.py:sha256",
+      "kind": "analysis_symbol",
+      "line": 23,
+      "path": "scripts/prii_export_utils.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "sha256"
+    },
+    {
+      "id": "analysis_symbol:scripts/reconcile_fr24_media_identity.py:aircraft_key",
+      "kind": "analysis_symbol",
+      "line": 35,
+      "path": "scripts/reconcile_fr24_media_identity.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "aircraft_key"
+    },
+    {
+      "id": "analysis_symbol:scripts/reconcile_fr24_media_identity.py:date_bucket",
+      "kind": "analysis_symbol",
+      "line": 30,
+      "path": "scripts/reconcile_fr24_media_identity.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "date_bucket"
+    },
+    {
+      "id": "analysis_symbol:scripts/reconcile_fr24_media_identity.py:main",
+      "kind": "analysis_symbol",
+      "line": 139,
+      "path": "scripts/reconcile_fr24_media_identity.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/reconcile_fr24_media_identity.py:media_aircraft_key",
+      "kind": "analysis_symbol",
+      "line": 39,
+      "path": "scripts/reconcile_fr24_media_identity.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "media_aircraft_key"
+    },
+    {
+      "id": "analysis_symbol:scripts/reconcile_fr24_media_identity.py:read_csv",
+      "kind": "analysis_symbol",
+      "line": 25,
+      "path": "scripts/reconcile_fr24_media_identity.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "read_csv"
+    },
+    {
+      "id": "analysis_symbol:scripts/reconcile_fr24_media_identity.py:reconcile",
+      "kind": "analysis_symbol",
+      "line": 43,
+      "path": "scripts/reconcile_fr24_media_identity.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "reconcile"
     },
     {
       "id": "analysis_symbol:scripts/rlsm_change_detection.py:main",
@@ -1792,9 +2306,17 @@
       "symbol": "strip_diacritics"
     },
     {
-      "id": "analysis_symbol:scripts/rlsm_geocode_unlabeled.py:main",
+      "id": "analysis_symbol:scripts/rlsm_geocode_unlabeled.py:build_affine_inputs",
       "kind": "analysis_symbol",
       "line": 76,
+      "path": "scripts/rlsm_geocode_unlabeled.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "build_affine_inputs"
+    },
+    {
+      "id": "analysis_symbol:scripts/rlsm_geocode_unlabeled.py:main",
+      "kind": "analysis_symbol",
+      "line": 104,
       "path": "scripts/rlsm_geocode_unlabeled.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "main"
@@ -1874,7 +2396,7 @@
     {
       "id": "analysis_symbol:scripts/rlsm_inventory.py:main",
       "kind": "analysis_symbol",
-      "line": 337,
+      "line": 364,
       "path": "scripts/rlsm_inventory.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "main"
@@ -1882,7 +2404,7 @@
     {
       "id": "analysis_symbol:scripts/rlsm_inventory.py:run",
       "kind": "analysis_symbol",
-      "line": 280,
+      "line": 307,
       "path": "scripts/rlsm_inventory.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "run"
@@ -1918,6 +2440,38 @@
       "path": "scripts/rlsm_network_graph.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "parse_ts"
+    },
+    {
+      "id": "analysis_symbol:scripts/rlsm_normalize_takeout.py:main",
+      "kind": "analysis_symbol",
+      "line": 88,
+      "path": "scripts/rlsm_normalize_takeout.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/rlsm_normalize_takeout.py:sha8",
+      "kind": "analysis_symbol",
+      "line": 46,
+      "path": "scripts/rlsm_normalize_takeout.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "sha8"
+    },
+    {
+      "id": "analysis_symbol:scripts/rlsm_normalize_takeout.py:sidecar_for",
+      "kind": "analysis_symbol",
+      "line": 54,
+      "path": "scripts/rlsm_normalize_takeout.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "sidecar_for"
+    },
+    {
+      "id": "analysis_symbol:scripts/rlsm_normalize_takeout.py:target_name",
+      "kind": "analysis_symbol",
+      "line": 78,
+      "path": "scripts/rlsm_normalize_takeout.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "target_name"
     },
     {
       "id": "analysis_symbol:scripts/rlsm_ocr_bench.py:available_langs",
@@ -1996,6 +2550,30 @@
       "kind": "analysis_symbol",
       "line": 28,
       "path": "scripts/rlsm_quality_audit.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "main"
+    },
+    {
+      "id": "analysis_symbol:scripts/rlsm_reconcile_source_availability.py:file_sha256",
+      "kind": "analysis_symbol",
+      "line": 32,
+      "path": "scripts/rlsm_reconcile_source_availability.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "file_sha256"
+    },
+    {
+      "id": "analysis_symbol:scripts/rlsm_reconcile_source_availability.py:git_sha",
+      "kind": "analysis_symbol",
+      "line": 40,
+      "path": "scripts/rlsm_reconcile_source_availability.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "git_sha"
+    },
+    {
+      "id": "analysis_symbol:scripts/rlsm_reconcile_source_availability.py:main",
+      "kind": "analysis_symbol",
+      "line": 52,
+      "path": "scripts/rlsm_reconcile_source_availability.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "main"
     },
@@ -2554,7 +3132,7 @@
     {
       "id": "analysis_symbol:scripts/validate_airspace_export.py:load_csv_ids",
       "kind": "analysis_symbol",
-      "line": 94,
+      "line": 119,
       "path": "scripts/validate_airspace_export.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "load_csv_ids"
@@ -2570,7 +3148,7 @@
     {
       "id": "analysis_symbol:scripts/validate_airspace_export.py:load_observations",
       "kind": "analysis_symbol",
-      "line": 80,
+      "line": 105,
       "path": "scripts/validate_airspace_export.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "load_observations"
@@ -2578,7 +3156,7 @@
     {
       "id": "analysis_symbol:scripts/validate_airspace_export.py:main",
       "kind": "analysis_symbol",
-      "line": 201,
+      "line": 253,
       "path": "scripts/validate_airspace_export.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "main"
@@ -2600,9 +3178,17 @@
       "symbol": "parse_float"
     },
     {
-      "id": "analysis_symbol:scripts/validate_airspace_export.py:validate_datetime",
+      "id": "analysis_symbol:scripts/validate_airspace_export.py:validate_capture_bbox",
       "kind": "analysis_symbol",
       "line": 73,
+      "path": "scripts/validate_airspace_export.py",
+      "signal": "ANALYSIS_NOT_GUI_RENDERED",
+      "symbol": "validate_capture_bbox"
+    },
+    {
+      "id": "analysis_symbol:scripts/validate_airspace_export.py:validate_datetime",
+      "kind": "analysis_symbol",
+      "line": 98,
       "path": "scripts/validate_airspace_export.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "validate_datetime"
@@ -2610,7 +3196,7 @@
     {
       "id": "analysis_symbol:scripts/validate_airspace_export.py:validate_package",
       "kind": "analysis_symbol",
-      "line": 100,
+      "line": 125,
       "path": "scripts/validate_airspace_export.py",
       "signal": "ANALYSIS_NOT_GUI_RENDERED",
       "symbol": "validate_package"
@@ -3040,10 +3626,18 @@
       "symbol": "stable_id"
     },
     {
+      "detail": "GET /api/analysis/registry",
+      "id": "backend_endpoint:server/backend/main.py:GET /api/analysis/registry",
+      "kind": "backend_endpoint",
+      "line": 560,
+      "path": "server/backend/main.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
       "detail": "GET /api/apps/public-settings",
       "id": "backend_endpoint:server/backend/main.py:GET /api/apps/public-settings",
       "kind": "backend_endpoint",
-      "line": 280,
+      "line": 543,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
@@ -3051,7 +3645,7 @@
       "detail": "GET /api/auth/me",
       "id": "backend_endpoint:server/backend/main.py:GET /api/auth/me",
       "kind": "backend_endpoint",
-      "line": 297,
+      "line": 595,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
@@ -3059,7 +3653,7 @@
       "detail": "GET /api/entities/{entity_name}",
       "id": "backend_endpoint:server/backend/main.py:GET /api/entities/{entity_name}",
       "kind": "backend_endpoint",
-      "line": 302,
+      "line": 600,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
@@ -3067,7 +3661,7 @@
       "detail": "GET /api/entities/{entity_name}/{entity_id}",
       "id": "backend_endpoint:server/backend/main.py:GET /api/entities/{entity_name}/{entity_id}",
       "kind": "backend_endpoint",
-      "line": 324,
+      "line": 622,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
@@ -3075,7 +3669,7 @@
       "detail": "GET /api/health",
       "id": "backend_endpoint:server/backend/main.py:GET /api/health",
       "kind": "backend_endpoint",
-      "line": 275,
+      "line": 538,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
@@ -3083,7 +3677,7 @@
       "detail": "GET /health",
       "id": "backend_endpoint:server/backend/main.py:GET /health",
       "kind": "backend_endpoint",
-      "line": 269,
+      "line": 532,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
@@ -3091,7 +3685,7 @@
       "detail": "PATCH /api/entities/{entity_name}/{entity_id}",
       "id": "backend_endpoint:server/backend/main.py:PATCH /api/entities/{entity_name}/{entity_id}",
       "kind": "backend_endpoint",
-      "line": 341,
+      "line": 639,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
@@ -3099,7 +3693,7 @@
       "detail": "POST /api/entities/{entity_name}",
       "id": "backend_endpoint:server/backend/main.py:POST /api/entities/{entity_name}",
       "kind": "backend_endpoint",
-      "line": 332,
+      "line": 630,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
@@ -3107,7 +3701,7 @@
       "detail": "POST /api/entities/{entity_name}/filter",
       "id": "backend_endpoint:server/backend/main.py:POST /api/entities/{entity_name}/filter",
       "kind": "backend_endpoint",
-      "line": 311,
+      "line": 609,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
@@ -3262,6 +3856,18 @@
       "signal": "TERMINAL_REQUIRED"
     },
     {
+      "id": "cli_surface:fr24/rlsm_aircraft_markers.py",
+      "kind": "cli_surface",
+      "path": "fr24/rlsm_aircraft_markers.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:fr24/rlsm_cave_search.py",
+      "kind": "cli_surface",
+      "path": "fr24/rlsm_cave_search.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
       "id": "cli_surface:fr24/rlsm_extractors.py",
       "kind": "cli_surface",
       "path": "fr24/rlsm_extractors.py",
@@ -3283,6 +3889,12 @@
       "id": "cli_surface:fr24/rlsm_geo_anchors.py",
       "kind": "cli_surface",
       "path": "fr24/rlsm_geo_anchors.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:fr24/rlsm_georeference.py",
+      "kind": "cli_surface",
+      "path": "fr24/rlsm_georeference.py",
       "signal": "TERMINAL_REQUIRED"
     },
     {
@@ -3319,12 +3931,6 @@
       "id": "cli_surface:fr24/satim_engine.py",
       "kind": "cli_surface",
       "path": "fr24/satim_engine.py",
-      "signal": "TERMINAL_REQUIRED"
-    },
-    {
-      "id": "cli_surface:fr24/satim_engine_core.py",
-      "kind": "cli_surface",
-      "path": "fr24/satim_engine_core.py",
       "signal": "TERMINAL_REQUIRED"
     },
     {
@@ -3406,6 +4012,42 @@
       "signal": "TERMINAL_REQUIRED"
     },
     {
+      "id": "cli_surface:scripts/adsb_poll.py",
+      "kind": "cli_surface",
+      "path": "scripts/adsb_poll.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:scripts/audit_visual_reasoning_baseline.py",
+      "kind": "cli_surface",
+      "path": "scripts/audit_visual_reasoning_baseline.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:scripts/build_ai_imagery_producer_package_v2.py",
+      "kind": "cli_surface",
+      "path": "scripts/build_ai_imagery_producer_package_v2.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:scripts/build_fr24_bbox_icon_review_batch.py",
+      "kind": "cli_surface",
+      "path": "scripts/build_fr24_bbox_icon_review_batch.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:scripts/build_fr24_capture_review_worklist.py",
+      "kind": "cli_surface",
+      "path": "scripts/build_fr24_capture_review_worklist.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:scripts/build_multisensor_replay.py",
+      "kind": "cli_surface",
+      "path": "scripts/build_multisensor_replay.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
       "id": "cli_surface:scripts/build_producer_package.py",
       "kind": "cli_surface",
       "path": "scripts/build_producer_package.py",
@@ -3433,6 +4075,12 @@
       "id": "cli_surface:scripts/build_sensor_fusion_visualization.py",
       "kind": "cli_surface",
       "path": "scripts/build_sensor_fusion_visualization.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:scripts/build_source_drop_manifest.py",
+      "kind": "cli_surface",
+      "path": "scripts/build_source_drop_manifest.py",
       "signal": "TERMINAL_REQUIRED"
     },
     {
@@ -3514,9 +4162,33 @@
       "signal": "TERMINAL_REQUIRED"
     },
     {
+      "id": "cli_surface:scripts/ingest_vision_result_to_rlsm.py",
+      "kind": "cli_surface",
+      "path": "scripts/ingest_vision_result_to_rlsm.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:scripts/init_database.py",
+      "kind": "cli_surface",
+      "path": "scripts/init_database.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:scripts/load_fr24_source_drop.py",
+      "kind": "cli_surface",
+      "path": "scripts/load_fr24_source_drop.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
       "id": "cli_surface:scripts/parse_flight_log.py",
       "kind": "cli_surface",
       "path": "scripts/parse_flight_log.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:scripts/reconcile_fr24_media_identity.py",
+      "kind": "cli_surface",
+      "path": "scripts/reconcile_fr24_media_identity.py",
       "signal": "TERMINAL_REQUIRED"
     },
     {
@@ -3562,6 +4234,12 @@
       "signal": "TERMINAL_REQUIRED"
     },
     {
+      "id": "cli_surface:scripts/rlsm_normalize_takeout.py",
+      "kind": "cli_surface",
+      "path": "scripts/rlsm_normalize_takeout.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
       "id": "cli_surface:scripts/rlsm_ocr_bench.py",
       "kind": "cli_surface",
       "path": "scripts/rlsm_ocr_bench.py",
@@ -3577,6 +4255,12 @@
       "id": "cli_surface:scripts/rlsm_predictive.py",
       "kind": "cli_surface",
       "path": "scripts/rlsm_predictive.py",
+      "signal": "TERMINAL_REQUIRED"
+    },
+    {
+      "id": "cli_surface:scripts/rlsm_reconcile_source_availability.py",
+      "kind": "cli_surface",
+      "path": "scripts/rlsm_reconcile_source_availability.py",
       "signal": "TERMINAL_REQUIRED"
     },
     {
@@ -3774,7 +4458,7 @@
     {
       "id": "frontend_api_client:frontend/src/lib/SkywatcherData.jsx:SkywatcherDataProvider",
       "kind": "frontend_api_client",
-      "line": 20,
+      "line": 38,
       "path": "frontend/src/lib/SkywatcherData.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED",
       "symbol": "SkywatcherDataProvider"
@@ -3782,7 +4466,7 @@
     {
       "id": "frontend_api_client:frontend/src/lib/SkywatcherData.jsx:useResolvers",
       "kind": "frontend_api_client",
-      "line": 77,
+      "line": 95,
       "path": "frontend/src/lib/SkywatcherData.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED",
       "symbol": "useResolvers"
@@ -3790,7 +4474,7 @@
     {
       "id": "frontend_api_client:frontend/src/lib/SkywatcherData.jsx:useSkywatcher",
       "kind": "frontend_api_client",
-      "line": 70,
+      "line": 88,
       "path": "frontend/src/lib/SkywatcherData.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED",
       "symbol": "useSkywatcher"
@@ -3945,6 +4629,14 @@
       "kind": "gui_control",
       "line": 76,
       "path": "frontend/src/pages/Airports.jsx",
+      "signal": "GUI_NOT_BACKEND_WIRED"
+    },
+    {
+      "detail": "select#68a718f74a6a",
+      "id": "gui_control:frontend/src/pages/AnalysisLenses.jsx:select#68a718f74a6a",
+      "kind": "gui_control",
+      "line": 149,
+      "path": "frontend/src/pages/AnalysisLenses.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
     {
@@ -4160,6 +4852,12 @@
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
     {
+      "id": "gui_page:frontend/src/pages/AnalysisLenses.jsx",
+      "kind": "gui_page",
+      "path": "frontend/src/pages/AnalysisLenses.jsx",
+      "signal": "GUI_NOT_BACKEND_WIRED"
+    },
+    {
       "id": "gui_page:frontend/src/pages/Calibration.jsx",
       "kind": "gui_page",
       "path": "frontend/src/pages/Calibration.jsx",
@@ -4238,10 +4936,16 @@
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
     {
+      "id": "gui_page:frontend/src/pages/SpatialTruth.jsx",
+      "kind": "gui_page",
+      "path": "frontend/src/pages/SpatialTruth.jsx",
+      "signal": "GUI_NOT_BACKEND_WIRED"
+    },
+    {
       "detail": "*",
       "id": "gui_route:frontend/src/App.jsx:*",
       "kind": "gui_route",
-      "line": 84,
+      "line": 88,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4249,7 +4953,7 @@
       "detail": "/",
       "id": "gui_route:frontend/src/App.jsx:/",
       "kind": "gui_route",
-      "line": 52,
+      "line": 54,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4257,7 +4961,7 @@
       "detail": "/aircraft",
       "id": "gui_route:frontend/src/App.jsx:/aircraft",
       "kind": "gui_route",
-      "line": 54,
+      "line": 56,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4265,7 +4969,15 @@
       "detail": "/airports",
       "id": "gui_route:frontend/src/App.jsx:/airports",
       "kind": "gui_route",
-      "line": 58,
+      "line": 60,
+      "path": "frontend/src/App.jsx",
+      "signal": "GUI_NOT_BACKEND_WIRED"
+    },
+    {
+      "detail": "/analysis",
+      "id": "gui_route:frontend/src/App.jsx:/analysis",
+      "kind": "gui_route",
+      "line": 65,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4273,7 +4985,7 @@
       "detail": "/calibration",
       "id": "gui_route:frontend/src/App.jsx:/calibration",
       "kind": "gui_route",
-      "line": 62,
+      "line": 64,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4281,7 +4993,7 @@
       "detail": "/export",
       "id": "gui_route:frontend/src/App.jsx:/export",
       "kind": "gui_route",
-      "line": 60,
+      "line": 62,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4289,7 +5001,7 @@
       "detail": "/forgot-password",
       "id": "gui_route:frontend/src/App.jsx:/forgot-password",
       "kind": "gui_route",
-      "line": 80,
+      "line": 84,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4297,7 +5009,7 @@
       "detail": "/fr24",
       "id": "gui_route:frontend/src/App.jsx:/fr24",
       "kind": "gui_route",
-      "line": 55,
+      "line": 57,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4305,7 +5017,7 @@
       "detail": "/infrastructure",
       "id": "gui_route:frontend/src/App.jsx:/infrastructure",
       "kind": "gui_route",
-      "line": 57,
+      "line": 59,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4313,7 +5025,7 @@
       "detail": "/login",
       "id": "gui_route:frontend/src/App.jsx:/login",
       "kind": "gui_route",
-      "line": 78,
+      "line": 82,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4321,7 +5033,7 @@
       "detail": "/observations",
       "id": "gui_route:frontend/src/App.jsx:/observations",
       "kind": "gui_route",
-      "line": 53,
+      "line": 55,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4329,7 +5041,7 @@
       "detail": "/readiness",
       "id": "gui_route:frontend/src/App.jsx:/readiness",
       "kind": "gui_route",
-      "line": 61,
+      "line": 63,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4337,7 +5049,7 @@
       "detail": "/register",
       "id": "gui_route:frontend/src/App.jsx:/register",
       "kind": "gui_route",
-      "line": 79,
+      "line": 83,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4345,7 +5057,7 @@
       "detail": "/reset-password",
       "id": "gui_route:frontend/src/App.jsx:/reset-password",
       "kind": "gui_route",
-      "line": 81,
+      "line": 85,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4353,7 +5065,7 @@
       "detail": "/review",
       "id": "gui_route:frontend/src/App.jsx:/review",
       "kind": "gui_route",
-      "line": 59,
+      "line": 61,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4361,7 +5073,15 @@
       "detail": "/routes",
       "id": "gui_route:frontend/src/App.jsx:/routes",
       "kind": "gui_route",
-      "line": 56,
+      "line": 58,
+      "path": "frontend/src/App.jsx",
+      "signal": "GUI_NOT_BACKEND_WIRED"
+    },
+    {
+      "detail": "/spatial-truth",
+      "id": "gui_route:frontend/src/App.jsx:/spatial-truth",
+      "kind": "gui_route",
+      "line": 66,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
@@ -4369,7 +5089,7 @@
       "detail": "/reset-password",
       "id": "gui_unreachable:frontend/src/App.jsx:/reset-password",
       "kind": "gui_unreachable",
-      "line": 81,
+      "line": 85,
       "path": "frontend/src/App.jsx",
       "signal": "GUI_WORKFLOW_UNREACHABLE"
     },
@@ -4674,9 +5394,21 @@
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
     {
+      "id": "python_module:fr24/rlsm_aircraft_markers.py",
+      "kind": "python_module",
+      "path": "fr24/rlsm_aircraft_markers.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
       "id": "python_module:fr24/rlsm_anchors.py",
       "kind": "python_module",
       "path": "fr24/rlsm_anchors.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:fr24/rlsm_cave_search.py",
+      "kind": "python_module",
+      "path": "fr24/rlsm_cave_search.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
     {
@@ -4716,6 +5448,12 @@
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
     {
+      "id": "python_module:fr24/rlsm_georeference.py",
+      "kind": "python_module",
+      "path": "fr24/rlsm_georeference.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
       "id": "python_module:fr24/rlsm_icons.py",
       "kind": "python_module",
       "path": "fr24/rlsm_icons.py",
@@ -4743,6 +5481,18 @@
       "id": "python_module:fr24/rlsm_preprocess.py",
       "kind": "python_module",
       "path": "fr24/rlsm_preprocess.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:fr24/rlsm_source_availability.py",
+      "kind": "python_module",
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:fr24/rlsm_spatial_schema.py",
+      "kind": "python_module",
+      "path": "fr24/rlsm_spatial_schema.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
     {
@@ -4884,9 +5634,57 @@
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
     {
+      "id": "python_module:src/skywatcher/ai_imagery/__init__.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/ai_imagery/__init__.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/ai_imagery/_dual_run_common.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/ai_imagery/dual_run_projection.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/ai_imagery/dual_run_projection.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/ai_imagery/legacy_shadow_export.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/ai_imagery/legacy_shadow_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/ai_imagery/producer_package.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/ai_imagery/producer_package.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/ai_imagery/vision_result_ingest.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/ai_imagery/vision_result_ingest.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
       "id": "python_module:src/skywatcher/core/__init__.py",
       "kind": "python_module",
       "path": "src/skywatcher/core/__init__.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/core/aviation_geometry_adjudication.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/core/aviation_geometry_adjudication.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/core/aviation_microinfrastructure.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
     {
@@ -4905,6 +5703,36 @@
       "id": "python_module:src/skywatcher/core/known_operators.py",
       "kind": "python_module",
       "path": "src/skywatcher/core/known_operators.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/core/lenses/__init__.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/core/lenses/__init__.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/core/lenses/coverage.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/core/lenses/coverage.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/core/lenses/models.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/core/lenses/models.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/core/lenses/registry.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/core/lenses/registry.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/core/lenses/thresholds.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/core/lenses/thresholds.py",
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
     {
@@ -4986,6 +5814,102 @@
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
     {
+      "id": "python_module:src/skywatcher/fr24/__init__.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/__init__.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/cli_support.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/cli_support.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/database.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/database.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/database_migrations.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/database_migrations.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/duplicate_detection.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/duplicate_detection.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/flight_reconstruction.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/flight_reconstruction.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/flightradar24_ocr.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/flightradar24_ocr.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/mission_classification.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/mission_classification.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/ocr_normalization.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/ocr_normalization.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/review_status.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/review_status.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/screenshot_identity.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/screenshot_identity.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/screenshot_metadata.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/screenshot_metadata.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/screenshot_source.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/screenshot_source.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/spiderweb_export.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/spiderweb_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/telemetry_parser.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/telemetry_parser.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
+      "id": "python_module:src/skywatcher/fr24/telemetry_validation.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/fr24/telemetry_validation.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
       "id": "python_module:src/skywatcher/fusion/anomaly_scoring.py",
       "kind": "python_module",
       "path": "src/skywatcher/fusion/anomaly_scoring.py",
@@ -5064,6 +5988,12 @@
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
     {
+      "id": "python_module:src/skywatcher/satim/artifacts/crosswalk.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/satim/artifacts/crosswalk.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
       "id": "python_module:src/skywatcher/satim/artifacts/engine.py",
       "kind": "python_module",
       "path": "src/skywatcher/satim/artifacts/engine.py",
@@ -5106,6 +6036,12 @@
       "signal": "BACKEND_NOT_GUI_SURFACED"
     },
     {
+      "id": "python_module:src/skywatcher/satim/provisional_signal.py",
+      "kind": "python_module",
+      "path": "src/skywatcher/satim/provisional_signal.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED"
+    },
+    {
       "id": "python_symbol:desktop/launch.py:main",
       "kind": "python_symbol",
       "line": 24,
@@ -5114,17 +6050,9 @@
       "symbol": "main"
     },
     {
-      "id": "python_symbol:desktop/setup.py:ensure_hub_sibling",
-      "kind": "python_symbol",
-      "line": 59,
-      "path": "desktop/setup.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "ensure_hub_sibling"
-    },
-    {
       "id": "python_symbol:desktop/setup.py:is_complete",
       "kind": "python_symbol",
-      "line": 44,
+      "line": 45,
       "path": "desktop/setup.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "is_complete"
@@ -5132,7 +6060,7 @@
     {
       "id": "python_symbol:desktop/setup.py:main",
       "kind": "python_symbol",
-      "line": 117,
+      "line": 88,
       "path": "desktop/setup.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "main"
@@ -5140,7 +6068,7 @@
     {
       "id": "python_symbol:desktop/setup.py:run",
       "kind": "python_symbol",
-      "line": 37,
+      "line": 38,
       "path": "desktop/setup.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "run"
@@ -5148,7 +6076,7 @@
     {
       "id": "python_symbol:desktop/setup.py:setup_frontend",
       "kind": "python_symbol",
-      "line": 96,
+      "line": 70,
       "path": "desktop/setup.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "setup_frontend"
@@ -5156,7 +6084,7 @@
     {
       "id": "python_symbol:desktop/setup.py:setup_python",
       "kind": "python_symbol",
-      "line": 76,
+      "line": 53,
       "path": "desktop/setup.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "setup_python"
@@ -5164,7 +6092,7 @@
     {
       "id": "python_symbol:desktop/setup.py:venv_python",
       "kind": "python_symbol",
-      "line": 31,
+      "line": 32,
       "path": "desktop/setup.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "venv_python"
@@ -5684,7 +6612,7 @@
     {
       "id": "python_symbol:fr24/calibration/l3_ocr_scoring.py:calibrate",
       "kind": "python_symbol",
-      "line": 125,
+      "line": 165,
       "path": "fr24/calibration/l3_ocr_scoring.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "calibrate"
@@ -5692,7 +6620,7 @@
     {
       "id": "python_symbol:fr24/calibration/l3_ocr_scoring.py:compare_field",
       "kind": "python_symbol",
-      "line": 73,
+      "line": 107,
       "path": "fr24/calibration/l3_ocr_scoring.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "compare_field"
@@ -5716,7 +6644,7 @@
     {
       "id": "python_symbol:fr24/calibration/l3_ocr_scoring.py:main",
       "kind": "python_symbol",
-      "line": 180,
+      "line": 221,
       "path": "fr24/calibration/l3_ocr_scoring.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "main"
@@ -5748,7 +6676,7 @@
     {
       "id": "python_symbol:fr24/calibration/l3_ocr_scoring.py:score_records",
       "kind": "python_symbol",
-      "line": 79,
+      "line": 117,
       "path": "fr24/calibration/l3_ocr_scoring.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "score_records"
@@ -5882,6 +6810,14 @@
       "symbol": "calibrate"
     },
     {
+      "id": "python_symbol:fr24/calibration/l5_tile_seam_shadow_calibration.py:calibrate_strict",
+      "kind": "python_symbol",
+      "line": 262,
+      "path": "fr24/calibration/l5_tile_seam_shadow_calibration.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "calibrate_strict"
+    },
+    {
       "id": "python_symbol:fr24/calibration/l5_tile_seam_shadow_calibration.py:clamp01",
       "kind": "python_symbol",
       "line": 22,
@@ -5896,6 +6832,14 @@
       "path": "fr24/calibration/l5_tile_seam_shadow_calibration.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "classify_candidate"
+    },
+    {
+      "id": "python_symbol:fr24/calibration/l5_tile_seam_shadow_calibration.py:classify_candidate_strict",
+      "kind": "python_symbol",
+      "line": 215,
+      "path": "fr24/calibration/l5_tile_seam_shadow_calibration.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "classify_candidate_strict"
     },
     {
       "id": "python_symbol:fr24/calibration/l5_tile_seam_shadow_calibration.py:context_suppression_score",
@@ -5924,7 +6868,7 @@
     {
       "id": "python_symbol:fr24/calibration/l5_tile_seam_shadow_calibration.py:main",
       "kind": "python_symbol",
-      "line": 202,
+      "line": 297,
       "path": "fr24/calibration/l5_tile_seam_shadow_calibration.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "main"
@@ -6164,7 +7108,7 @@
     {
       "id": "python_symbol:fr24/calibration/satim_multidate_validation.py:clamp01",
       "kind": "python_symbol",
-      "line": 24,
+      "line": 27,
       "path": "fr24/calibration/satim_multidate_validation.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "clamp01"
@@ -6172,7 +7116,7 @@
     {
       "id": "python_symbol:fr24/calibration/satim_multidate_validation.py:classify_epoch_pair",
       "kind": "python_symbol",
-      "line": 45,
+      "line": 48,
       "path": "fr24/calibration/satim_multidate_validation.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "classify_epoch_pair"
@@ -6180,7 +7124,7 @@
     {
       "id": "python_symbol:fr24/calibration/satim_multidate_validation.py:validate_candidate_across_dates",
       "kind": "python_symbol",
-      "line": 67,
+      "line": 70,
       "path": "fr24/calibration/satim_multidate_validation.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "validate_candidate_across_dates"
@@ -6364,7 +7308,7 @@
     {
       "id": "python_symbol:fr24/endpoint_matcher.py:endpoint_events_for_wave",
       "kind": "python_symbol",
-      "line": 90,
+      "line": 93,
       "path": "fr24/endpoint_matcher.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "endpoint_events_for_wave"
@@ -6372,7 +7316,7 @@
     {
       "id": "python_symbol:fr24/endpoint_matcher.py:facility_code",
       "kind": "python_symbol",
-      "line": 60,
+      "line": 61,
       "path": "fr24/endpoint_matcher.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "facility_code"
@@ -6380,7 +7324,7 @@
     {
       "id": "python_symbol:fr24/endpoint_matcher.py:haversine_m",
       "kind": "python_symbol",
-      "line": 37,
+      "line": 36,
       "path": "fr24/endpoint_matcher.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "haversine_m"
@@ -6388,7 +7332,7 @@
     {
       "id": "python_symbol:fr24/endpoint_matcher.py:load_airports",
       "kind": "python_symbol",
-      "line": 47,
+      "line": 48,
       "path": "fr24/endpoint_matcher.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "load_airports"
@@ -6396,7 +7340,7 @@
     {
       "id": "python_symbol:fr24/endpoint_matcher.py:match_endpoint",
       "kind": "python_symbol",
-      "line": 76,
+      "line": 78,
       "path": "fr24/endpoint_matcher.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "match_endpoint"
@@ -6404,7 +7348,7 @@
     {
       "id": "python_symbol:fr24/endpoint_matcher.py:nearest_airport",
       "kind": "python_symbol",
-      "line": 65,
+      "line": 66,
       "path": "fr24/endpoint_matcher.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "nearest_airport"
@@ -6412,7 +7356,7 @@
     {
       "id": "python_symbol:fr24/endpoint_matcher.py:schema_fields",
       "kind": "python_symbol",
-      "line": 148,
+      "line": 159,
       "path": "fr24/endpoint_matcher.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "schema_fields"
@@ -6492,15 +7436,23 @@
     {
       "id": "python_symbol:fr24/flight_fusion.py:aircraft_identity",
       "kind": "python_symbol",
-      "line": 24,
+      "line": 17,
       "path": "fr24/flight_fusion.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "aircraft_identity"
     },
     {
+      "id": "python_symbol:fr24/flight_fusion.py:endpoint_event_can_promote_route",
+      "kind": "python_symbol",
+      "line": 146,
+      "path": "fr24/flight_fusion.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "endpoint_event_can_promote_route"
+    },
+    {
       "id": "python_symbol:fr24/flight_fusion.py:fuse_rows",
       "kind": "python_symbol",
-      "line": 143,
+      "line": 139,
       "path": "fr24/flight_fusion.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "fuse_rows"
@@ -6508,7 +7460,7 @@
     {
       "id": "python_symbol:fr24/flight_fusion.py:fuse_wave",
       "kind": "python_symbol",
-      "line": 73,
+      "line": 64,
       "path": "fr24/flight_fusion.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "fuse_wave"
@@ -6516,7 +7468,7 @@
     {
       "id": "python_symbol:fr24/flight_fusion.py:to_adapter_row",
       "kind": "python_symbol",
-      "line": 151,
+      "line": 159,
       "path": "fr24/flight_fusion.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "to_adapter_row"
@@ -6962,9 +7914,73 @@
       "symbol": "write_local_state_json"
     },
     {
+      "id": "python_symbol:fr24/rlsm_aircraft_markers.py:MarkerCandidate",
+      "kind": "python_symbol",
+      "line": 72,
+      "path": "fr24/rlsm_aircraft_markers.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "MarkerCandidate"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_aircraft_markers.py:choose_candidate",
+      "kind": "python_symbol",
+      "line": 291,
+      "path": "fr24/rlsm_aircraft_markers.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "choose_candidate"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_aircraft_markers.py:detect_candidates_from_grids",
+      "kind": "python_symbol",
+      "line": 180,
+      "path": "fr24/rlsm_aircraft_markers.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "detect_candidates_from_grids"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_aircraft_markers.py:detect_image",
+      "kind": "python_symbol",
+      "line": 305,
+      "path": "fr24/rlsm_aircraft_markers.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "detect_image"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_aircraft_markers.py:estimate_rotation",
+      "kind": "python_symbol",
+      "line": 123,
+      "path": "fr24/rlsm_aircraft_markers.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "estimate_rotation"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_aircraft_markers.py:main",
+      "kind": "python_symbol",
+      "line": 582,
+      "path": "fr24/rlsm_aircraft_markers.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "main"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_aircraft_markers.py:map_viewport",
+      "kind": "python_symbol",
+      "line": 93,
+      "path": "fr24/rlsm_aircraft_markers.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "map_viewport"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_aircraft_markers.py:run",
+      "kind": "python_symbol",
+      "line": 406,
+      "path": "fr24/rlsm_aircraft_markers.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "run"
+    },
+    {
       "id": "python_symbol:fr24/rlsm_anchors.py:anchors_for_screenshot",
       "kind": "python_symbol",
-      "line": 68,
+      "line": 96,
       "path": "fr24/rlsm_anchors.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "anchors_for_screenshot"
@@ -6972,7 +7988,7 @@
     {
       "id": "python_symbol:fr24/rlsm_anchors.py:ascii_upper",
       "kind": "python_symbol",
-      "line": 30,
+      "line": 32,
       "path": "fr24/rlsm_anchors.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "ascii_upper"
@@ -6980,10 +7996,74 @@
     {
       "id": "python_symbol:fr24/rlsm_anchors.py:build_geo_lookup",
       "kind": "python_symbol",
-      "line": 39,
+      "line": 50,
       "path": "fr24/rlsm_anchors.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "build_geo_lookup"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_cave_search.py:Match",
+      "kind": "python_symbol",
+      "line": 43,
+      "path": "fr24/rlsm_cave_search.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "Match"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_cave_search.py:SearchTerm",
+      "kind": "python_symbol",
+      "line": 33,
+      "path": "fr24/rlsm_cave_search.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "SearchTerm"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_cave_search.py:build_terms",
+      "kind": "python_symbol",
+      "line": 76,
+      "path": "fr24/rlsm_cave_search.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "build_terms"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_cave_search.py:load_baseline",
+      "kind": "python_symbol",
+      "line": 69,
+      "path": "fr24/rlsm_cave_search.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_baseline"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_cave_search.py:main",
+      "kind": "python_symbol",
+      "line": 293,
+      "path": "fr24/rlsm_cave_search.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "main"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_cave_search.py:normalize_text",
+      "kind": "python_symbol",
+      "line": 26,
+      "path": "fr24/rlsm_cave_search.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "normalize_text"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_cave_search.py:query_terms",
+      "kind": "python_symbol",
+      "line": 266,
+      "path": "fr24/rlsm_cave_search.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "query_terms"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_cave_search.py:search_corpus",
+      "kind": "python_symbol",
+      "line": 210,
+      "path": "fr24/rlsm_cave_search.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "search_corpus"
     },
     {
       "id": "python_symbol:fr24/rlsm_coverage.py:build",
@@ -7004,7 +8084,7 @@
     {
       "id": "python_symbol:fr24/rlsm_export.py:export_all",
       "kind": "python_symbol",
-      "line": 44,
+      "line": 46,
       "path": "fr24/rlsm_export.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "export_all"
@@ -7012,7 +8092,7 @@
     {
       "id": "python_symbol:fr24/rlsm_export.py:main",
       "kind": "python_symbol",
-      "line": 196,
+      "line": 281,
       "path": "fr24/rlsm_export.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "main"
@@ -7146,9 +8226,81 @@
       "symbol": "run"
     },
     {
+      "id": "python_symbol:fr24/rlsm_georeference.py:affine_scale_metrics",
+      "kind": "python_symbol",
+      "line": 59,
+      "path": "fr24/rlsm_georeference.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "affine_scale_metrics"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_georeference.py:derive_zoom_rungs",
+      "kind": "python_symbol",
+      "line": 128,
+      "path": "fr24/rlsm_georeference.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "derive_zoom_rungs"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_georeference.py:distance_m",
+      "kind": "python_symbol",
+      "line": 51,
+      "path": "fr24/rlsm_georeference.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "distance_m"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_georeference.py:fit_screenshot",
+      "kind": "python_symbol",
+      "line": 71,
+      "path": "fr24/rlsm_georeference.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "fit_screenshot"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_georeference.py:load_persisted_affines",
+      "kind": "python_symbol",
+      "line": 599,
+      "path": "fr24/rlsm_georeference.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_persisted_affines"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_georeference.py:main",
+      "kind": "python_symbol",
+      "line": 686,
+      "path": "fr24/rlsm_georeference.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "main"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_georeference.py:project_aircraft_positions",
+      "kind": "python_symbol",
+      "line": 525,
+      "path": "fr24/rlsm_georeference.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "project_aircraft_positions"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_georeference.py:run",
+      "kind": "python_symbol",
+      "line": 618,
+      "path": "fr24/rlsm_georeference.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "run"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_georeference.py:viewport_profile",
+      "kind": "python_symbol",
+      "line": 45,
+      "path": "fr24/rlsm_georeference.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "viewport_profile"
+    },
+    {
       "id": "python_symbol:fr24/rlsm_icons.py:average_hash",
       "kind": "python_symbol",
-      "line": 146,
+      "line": 158,
       "path": "fr24/rlsm_icons.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "average_hash"
@@ -7156,7 +8308,7 @@
     {
       "id": "python_symbol:fr24/rlsm_icons.py:circular_mean_hue",
       "kind": "python_symbol",
-      "line": 167,
+      "line": 179,
       "path": "fr24/rlsm_icons.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "circular_mean_hue"
@@ -7164,7 +8316,7 @@
     {
       "id": "python_symbol:fr24/rlsm_icons.py:connected_components",
       "kind": "python_symbol",
-      "line": 200,
+      "line": 212,
       "path": "fr24/rlsm_icons.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "connected_components"
@@ -7172,7 +8324,7 @@
     {
       "id": "python_symbol:fr24/rlsm_icons.py:detect_for_screenshot",
       "kind": "python_symbol",
-      "line": 341,
+      "line": 396,
       "path": "fr24/rlsm_icons.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "detect_for_screenshot"
@@ -7180,7 +8332,7 @@
     {
       "id": "python_symbol:fr24/rlsm_icons.py:detect_in_window",
       "kind": "python_symbol",
-      "line": 243,
+      "line": 255,
       "path": "fr24/rlsm_icons.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "detect_in_window"
@@ -7188,7 +8340,7 @@
     {
       "id": "python_symbol:fr24/rlsm_icons.py:ensure_schema",
       "kind": "python_symbol",
-      "line": 134,
+      "line": 142,
       "path": "fr24/rlsm_icons.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "ensure_schema"
@@ -7196,7 +8348,7 @@
     {
       "id": "python_symbol:fr24/rlsm_icons.py:glyph_window",
       "kind": "python_symbol",
-      "line": 326,
+      "line": 338,
       "path": "fr24/rlsm_icons.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "glyph_window"
@@ -7204,7 +8356,7 @@
     {
       "id": "python_symbol:fr24/rlsm_icons.py:main",
       "kind": "python_symbol",
-      "line": 456,
+      "line": 523,
       "path": "fr24/rlsm_icons.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "main"
@@ -7212,7 +8364,7 @@
     {
       "id": "python_symbol:fr24/rlsm_icons.py:percentile",
       "kind": "python_symbol",
-      "line": 186,
+      "line": 198,
       "path": "fr24/rlsm_icons.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "percentile"
@@ -7220,15 +8372,23 @@
     {
       "id": "python_symbol:fr24/rlsm_icons.py:run",
       "kind": "python_symbol",
-      "line": 398,
+      "line": 465,
       "path": "fr24/rlsm_icons.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "run"
     },
     {
+      "id": "python_symbol:fr24/rlsm_icons.py:search_sides",
+      "kind": "python_symbol",
+      "line": 376,
+      "path": "fr24/rlsm_icons.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "search_sides"
+    },
+    {
       "id": "python_symbol:fr24/rlsm_ocr.py:main",
       "kind": "python_symbol",
-      "line": 242,
+      "line": 309,
       "path": "fr24/rlsm_ocr.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "main"
@@ -7236,7 +8396,7 @@
     {
       "id": "python_symbol:fr24/rlsm_ocr.py:process_screenshot",
       "kind": "python_symbol",
-      "line": 113,
+      "line": 140,
       "path": "fr24/rlsm_ocr.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "process_screenshot"
@@ -7244,7 +8404,7 @@
     {
       "id": "python_symbol:fr24/rlsm_ocr.py:run",
       "kind": "python_symbol",
-      "line": 175,
+      "line": 248,
       "path": "fr24/rlsm_ocr.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "run"
@@ -7252,7 +8412,7 @@
     {
       "id": "python_symbol:fr24/rlsm_ocr_parallel.py:main",
       "kind": "python_symbol",
-      "line": 254,
+      "line": 387,
       "path": "fr24/rlsm_ocr_parallel.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "main"
@@ -7260,7 +8420,7 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:StageError",
       "kind": "python_symbol",
-      "line": 61,
+      "line": 66,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "StageError"
@@ -7268,7 +8428,7 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:build_report",
       "kind": "python_symbol",
-      "line": 389,
+      "line": 663,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "build_report"
@@ -7276,7 +8436,7 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:collect_status",
       "kind": "python_symbol",
-      "line": 333,
+      "line": 480,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "collect_status"
@@ -7284,7 +8444,7 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:main",
       "kind": "python_symbol",
-      "line": 500,
+      "line": 854,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "main"
@@ -7292,7 +8452,7 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:preflight",
       "kind": "python_symbol",
-      "line": 115,
+      "line": 120,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "preflight"
@@ -7300,7 +8460,7 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:resolve_stages",
       "kind": "python_symbol",
-      "line": 480,
+      "line": 834,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "resolve_stages"
@@ -7308,15 +8468,23 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:stage_aircraft",
       "kind": "python_symbol",
-      "line": 266,
+      "line": 337,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "stage_aircraft"
     },
     {
+      "id": "python_symbol:fr24/rlsm_pipeline.py:stage_aircraft_markers",
+      "kind": "python_symbol",
+      "line": 359,
+      "path": "fr24/rlsm_pipeline.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "stage_aircraft_markers"
+    },
+    {
       "id": "python_symbol:fr24/rlsm_pipeline.py:stage_export",
       "kind": "python_symbol",
-      "line": 296,
+      "line": 378,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "stage_export"
@@ -7324,15 +8492,23 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:stage_geocode",
       "kind": "python_symbol",
-      "line": 288,
+      "line": 370,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "stage_geocode"
     },
     {
+      "id": "python_symbol:fr24/rlsm_pipeline.py:stage_georeference",
+      "kind": "python_symbol",
+      "line": 366,
+      "path": "fr24/rlsm_pipeline.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "stage_georeference"
+    },
+    {
       "id": "python_symbol:fr24/rlsm_pipeline.py:stage_icons",
       "kind": "python_symbol",
-      "line": 280,
+      "line": 351,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "stage_icons"
@@ -7340,7 +8516,7 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:stage_inventory",
       "kind": "python_symbol",
-      "line": 249,
+      "line": 316,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "stage_inventory"
@@ -7348,7 +8524,7 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:stage_ocr",
       "kind": "python_symbol",
-      "line": 254,
+      "line": 321,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "stage_ocr"
@@ -7356,7 +8532,7 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:stage_pins",
       "kind": "python_symbol",
-      "line": 273,
+      "line": 344,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "stage_pins"
@@ -7364,7 +8540,7 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:stage_report",
       "kind": "python_symbol",
-      "line": 308,
+      "line": 390,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "stage_report"
@@ -7372,7 +8548,7 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:stage_review",
       "kind": "python_symbol",
-      "line": 292,
+      "line": 374,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "stage_review"
@@ -7380,10 +8556,26 @@
     {
       "id": "python_symbol:fr24/rlsm_pipeline.py:stage_unlabeled",
       "kind": "python_symbol",
-      "line": 301,
+      "line": 383,
       "path": "fr24/rlsm_pipeline.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "stage_unlabeled"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_preprocess.py:config_stamp",
+      "kind": "python_symbol",
+      "line": 150,
+      "path": "fr24/rlsm_preprocess.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "config_stamp"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_preprocess.py:ensure_observation_columns",
+      "kind": "python_symbol",
+      "line": 124,
+      "path": "fr24/rlsm_preprocess.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ensure_observation_columns"
     },
     {
       "id": "python_symbol:fr24/rlsm_preprocess.py:otsu_threshold",
@@ -7408,6 +8600,270 @@
       "path": "fr24/rlsm_preprocess.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "scale_for"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:AvailabilityDecision",
+      "kind": "python_symbol",
+      "line": 87,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "AvailabilityDecision"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:AvailabilitySchemaError",
+      "kind": "python_symbol",
+      "line": 58,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "AvailabilitySchemaError"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:ReconciliationError",
+      "kind": "python_symbol",
+      "line": 62,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ReconciliationError"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:RestoreEntry",
+      "kind": "python_symbol",
+      "line": 80,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "RestoreEntry"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:SourceUnavailableError",
+      "kind": "python_symbol",
+      "line": 75,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "SourceUnavailableError"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:apply_file_actions_atomic",
+      "kind": "python_symbol",
+      "line": 1951,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "apply_file_actions_atomic"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:apply_reconciliation",
+      "kind": "python_symbol",
+      "line": 2715,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "apply_reconciliation"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:availability_predicate",
+      "kind": "python_symbol",
+      "line": 270,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "availability_predicate"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:backup_database",
+      "kind": "python_symbol",
+      "line": 985,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "backup_database"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:backup_database_locked",
+      "kind": "python_symbol",
+      "line": 855,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "backup_database_locked"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:connect_read_only",
+      "kind": "python_symbol",
+      "line": 304,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "connect_read_only"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:connection_snapshot_sha256",
+      "kind": "python_symbol",
+      "line": 845,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "connection_snapshot_sha256"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:database_snapshot_sha256",
+      "kind": "python_symbol",
+      "line": 2723,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "database_snapshot_sha256"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:has_availability_schema",
+      "kind": "python_symbol",
+      "line": 187,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "has_availability_schema"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:load_restore_manifest",
+      "kind": "python_symbol",
+      "line": 1108,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_restore_manifest"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:load_restore_manifest_with_receipt",
+      "kind": "python_symbol",
+      "line": 1068,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_restore_manifest_with_receipt"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:mark_missing_during_ocr",
+      "kind": "python_symbol",
+      "line": 276,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "mark_missing_during_ocr"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:migrate_schema",
+      "kind": "python_symbol",
+      "line": 215,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "migrate_schema"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:open_stable_source",
+      "kind": "python_symbol",
+      "line": 640,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "open_stable_source"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:plan_digest",
+      "kind": "python_symbol",
+      "line": 1406,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "plan_digest"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:plan_reconciliation",
+      "kind": "python_symbol",
+      "line": 1180,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "plan_reconciliation"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:reconcile_apply",
+      "kind": "python_symbol",
+      "line": 2336,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "reconcile_apply"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:require_availability_schema",
+      "kind": "python_symbol",
+      "line": 194,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "require_availability_schema"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:sha256_file",
+      "kind": "python_symbol",
+      "line": 124,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "sha256_file"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:summarize",
+      "kind": "python_symbol",
+      "line": 2731,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "summarize"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:table_columns",
+      "kind": "python_symbol",
+      "line": 173,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "table_columns"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:table_indexes",
+      "kind": "python_symbol",
+      "line": 180,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "table_indexes"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:utc_now",
+      "kind": "python_symbol",
+      "line": 120,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "utc_now"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:validate_apply_control_paths",
+      "kind": "python_symbol",
+      "line": 719,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "validate_apply_control_paths"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:validate_report_output_paths",
+      "kind": "python_symbol",
+      "line": 771,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "validate_report_output_paths"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_source_availability.py:write_reports",
+      "kind": "python_symbol",
+      "line": 2803,
+      "path": "fr24/rlsm_source_availability.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "write_reports"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_spatial_schema.py:ensure_spatial_schema",
+      "kind": "python_symbol",
+      "line": 275,
+      "path": "fr24/rlsm_spatial_schema.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ensure_spatial_schema"
+    },
+    {
+      "id": "python_symbol:fr24/rlsm_spatial_schema.py:table_exists",
+      "kind": "python_symbol",
+      "line": 269,
+      "path": "fr24/rlsm_spatial_schema.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "table_exists"
     },
     {
       "id": "python_symbol:fr24/rlsm_unlabeled.py:detect_for_screenshot",
@@ -7468,15 +8924,23 @@
     {
       "id": "python_symbol:fr24/rlsm_zones.py:ZoneBox",
       "kind": "python_symbol",
-      "line": 41,
+      "line": 49,
       "path": "fr24/rlsm_zones.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "ZoneBox"
     },
     {
+      "id": "python_symbol:fr24/rlsm_zones.py:orientation_for",
+      "kind": "python_symbol",
+      "line": 65,
+      "path": "fr24/rlsm_zones.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "orientation_for"
+    },
+    {
       "id": "python_symbol:fr24/rlsm_zones.py:zones_for",
       "kind": "python_symbol",
-      "line": 53,
+      "line": 88,
       "path": "fr24/rlsm_zones.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "zones_for"
@@ -7516,7 +8980,7 @@
     {
       "id": "python_symbol:fr24/satim_engine.py:build_arg_parser",
       "kind": "python_symbol",
-      "line": 565,
+      "line": 609,
       "path": "fr24/satim_engine.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "build_arg_parser"
@@ -7524,7 +8988,7 @@
     {
       "id": "python_symbol:fr24/satim_engine.py:build_provenance",
       "kind": "python_symbol",
-      "line": 334,
+      "line": 370,
       "path": "fr24/satim_engine.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "build_provenance"
@@ -7532,7 +8996,7 @@
     {
       "id": "python_symbol:fr24/satim_engine.py:degraded_layer",
       "kind": "python_symbol",
-      "line": 258,
+      "line": 259,
       "path": "fr24/satim_engine.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "degraded_layer"
@@ -7556,7 +9020,7 @@
     {
       "id": "python_symbol:fr24/satim_engine.py:main",
       "kind": "python_symbol",
-      "line": 577,
+      "line": 621,
       "path": "fr24/satim_engine.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "main"
@@ -7572,7 +9036,7 @@
     {
       "id": "python_symbol:fr24/satim_engine.py:missing_layer",
       "kind": "python_symbol",
-      "line": 247,
+      "line": 248,
       "path": "fr24/satim_engine.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "missing_layer"
@@ -7586,9 +9050,17 @@
       "symbol": "prepare_input_root"
     },
     {
+      "id": "python_symbol:fr24/satim_engine.py:run_l5",
+      "kind": "python_symbol",
+      "line": 280,
+      "path": "fr24/satim_engine.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "run_l5"
+    },
+    {
       "id": "python_symbol:fr24/satim_engine.py:run_satim_engine",
       "kind": "python_symbol",
-      "line": 366,
+      "line": 402,
       "path": "fr24/satim_engine.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "run_satim_engine"
@@ -7596,7 +9068,7 @@
     {
       "id": "python_symbol:fr24/satim_engine.py:score_calibration_packet",
       "kind": "python_symbol",
-      "line": 309,
+      "line": 345,
       "path": "fr24/satim_engine.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "score_calibration_packet"
@@ -7604,120 +9076,8 @@
     {
       "id": "python_symbol:fr24/satim_engine.py:validate_calibration_set",
       "kind": "python_symbol",
-      "line": 292,
+      "line": 328,
       "path": "fr24/satim_engine.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "validate_calibration_set"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:SATIMEngineManifest",
-      "kind": "python_symbol",
-      "line": 63,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "SATIMEngineManifest"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:autodetect_inputs",
-      "kind": "python_symbol",
-      "line": 151,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "autodetect_inputs"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:build_arg_parser",
-      "kind": "python_symbol",
-      "line": 422,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "build_arg_parser"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:build_provenance",
-      "kind": "python_symbol",
-      "line": 293,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "build_provenance"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:degraded_layer",
-      "kind": "python_symbol",
-      "line": 225,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "degraded_layer"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:find_manifest",
-      "kind": "python_symbol",
-      "line": 172,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "find_manifest"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:load_manifest",
-      "kind": "python_symbol",
-      "line": 109,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "load_manifest"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:main",
-      "kind": "python_symbol",
-      "line": 433,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "main"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:manifest_from_input",
-      "kind": "python_symbol",
-      "line": 198,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "manifest_from_input"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:missing_layer",
-      "kind": "python_symbol",
-      "line": 214,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "missing_layer"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:prepare_input_root",
-      "kind": "python_symbol",
-      "line": 181,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "prepare_input_root"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:run_satim_engine",
-      "kind": "python_symbol",
-      "line": 322,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "run_satim_engine"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:score_calibration_packet",
-      "kind": "python_symbol",
-      "line": 270,
-      "path": "fr24/satim_engine_core.py",
-      "signal": "BACKEND_NOT_GUI_SURFACED",
-      "symbol": "score_calibration_packet"
-    },
-    {
-      "id": "python_symbol:fr24/satim_engine_core.py:validate_calibration_set",
-      "kind": "python_symbol",
-      "line": 259,
-      "path": "fr24/satim_engine_core.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "validate_calibration_set"
     },
@@ -8290,9 +9650,17 @@
       "symbol": "run_checks"
     },
     {
+      "id": "python_symbol:server/backend/main.py:analysis_registry",
+      "kind": "python_symbol",
+      "line": 561,
+      "path": "server/backend/main.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "analysis_registry"
+    },
+    {
       "id": "python_symbol:server/backend/main.py:api_health",
       "kind": "python_symbol",
-      "line": 276,
+      "line": 539,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "api_health"
@@ -8300,7 +9668,7 @@
     {
       "id": "python_symbol:server/backend/main.py:auth_me",
       "kind": "python_symbol",
-      "line": 298,
+      "line": 596,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "auth_me"
@@ -8308,7 +9676,7 @@
     {
       "id": "python_symbol:server/backend/main.py:coerce",
       "kind": "python_symbol",
-      "line": 145,
+      "line": 150,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "coerce"
@@ -8316,7 +9684,7 @@
     {
       "id": "python_symbol:server/backend/main.py:create_entity",
       "kind": "python_symbol",
-      "line": 333,
+      "line": 631,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "create_entity"
@@ -8324,7 +9692,7 @@
     {
       "id": "python_symbol:server/backend/main.py:entity_rows",
       "kind": "python_symbol",
-      "line": 251,
+      "line": 514,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "entity_rows"
@@ -8332,7 +9700,7 @@
     {
       "id": "python_symbol:server/backend/main.py:filter_entities",
       "kind": "python_symbol",
-      "line": 312,
+      "line": 610,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "filter_entities"
@@ -8340,7 +9708,7 @@
     {
       "id": "python_symbol:server/backend/main.py:get_entity",
       "kind": "python_symbol",
-      "line": 325,
+      "line": 623,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "get_entity"
@@ -8348,7 +9716,7 @@
     {
       "id": "python_symbol:server/backend/main.py:health",
       "kind": "python_symbol",
-      "line": 270,
+      "line": 533,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "health"
@@ -8356,31 +9724,63 @@
     {
       "id": "python_symbol:server/backend/main.py:list_entities",
       "kind": "python_symbol",
-      "line": 303,
+      "line": 601,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "list_entities"
     },
     {
+      "id": "python_symbol:server/backend/main.py:load_aircraft_profiles",
+      "kind": "python_symbol",
+      "line": 314,
+      "path": "server/backend/main.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_aircraft_profiles"
+    },
+    {
       "id": "python_symbol:server/backend/main.py:load_airports",
       "kind": "python_symbol",
-      "line": 178,
+      "line": 183,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "load_airports"
     },
     {
+      "id": "python_symbol:server/backend/main.py:load_analysis_lenses",
+      "kind": "python_symbol",
+      "line": 444,
+      "path": "server/backend/main.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_analysis_lenses"
+    },
+    {
+      "id": "python_symbol:server/backend/main.py:load_analysis_objectives",
+      "kind": "python_symbol",
+      "line": 460,
+      "path": "server/backend/main.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_analysis_objectives"
+    },
+    {
       "id": "python_symbol:server/backend/main.py:load_export_packages",
       "kind": "python_symbol",
-      "line": 207,
+      "line": 400,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "load_export_packages"
     },
     {
+      "id": "python_symbol:server/backend/main.py:load_lens_coverage",
+      "kind": "python_symbol",
+      "line": 474,
+      "path": "server/backend/main.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_lens_coverage"
+    },
+    {
       "id": "python_symbol:server/backend/main.py:load_observations",
       "kind": "python_symbol",
-      "line": 193,
+      "line": 300,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "load_observations"
@@ -8388,15 +9788,39 @@
     {
       "id": "python_symbol:server/backend/main.py:load_readiness",
       "kind": "python_symbol",
-      "line": 230,
+      "line": 423,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "load_readiness"
     },
     {
+      "id": "python_symbol:server/backend/main.py:load_rlsm_spatial_frames",
+      "kind": "python_symbol",
+      "line": 344,
+      "path": "server/backend/main.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_rlsm_spatial_frames"
+    },
+    {
+      "id": "python_symbol:server/backend/main.py:load_rlsm_spatial_observations",
+      "kind": "python_symbol",
+      "line": 214,
+      "path": "server/backend/main.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_rlsm_spatial_observations"
+    },
+    {
+      "id": "python_symbol:server/backend/main.py:load_rlsm_zoom_rungs",
+      "kind": "python_symbol",
+      "line": 380,
+      "path": "server/backend/main.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_rlsm_zoom_rungs"
+    },
+    {
       "id": "python_symbol:server/backend/main.py:public_settings",
       "kind": "python_symbol",
-      "line": 281,
+      "line": 544,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "public_settings"
@@ -8404,7 +9828,7 @@
     {
       "id": "python_symbol:server/backend/main.py:read_csv",
       "kind": "python_symbol",
-      "line": 159,
+      "line": 164,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "read_csv"
@@ -8412,7 +9836,7 @@
     {
       "id": "python_symbol:server/backend/main.py:read_jsonl",
       "kind": "python_symbol",
-      "line": 123,
+      "line": 128,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "read_jsonl"
@@ -8420,7 +9844,7 @@
     {
       "id": "python_symbol:server/backend/main.py:require_write_access",
       "kind": "python_symbol",
-      "line": 93,
+      "line": 98,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "require_write_access"
@@ -8428,7 +9852,7 @@
     {
       "id": "python_symbol:server/backend/main.py:sort_rows",
       "kind": "python_symbol",
-      "line": 261,
+      "line": 524,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "sort_rows"
@@ -8436,7 +9860,7 @@
     {
       "id": "python_symbol:server/backend/main.py:update_entity",
       "kind": "python_symbol",
-      "line": 342,
+      "line": 640,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "update_entity"
@@ -8444,10 +9868,506 @@
     {
       "id": "python_symbol:server/backend/main.py:with_id",
       "kind": "python_symbol",
-      "line": 172,
+      "line": 177,
       "path": "server/backend/main.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "with_id"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:DualRunProjectionError",
+      "kind": "python_symbol",
+      "line": 28,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "DualRunProjectionError"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:artifact_sha256",
+      "kind": "python_symbol",
+      "line": 95,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "artifact_sha256"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:canonical_campaign_identity_payload",
+      "kind": "python_symbol",
+      "line": 166,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "canonical_campaign_identity_payload"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:canonical_json",
+      "kind": "python_symbol",
+      "line": 32,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "canonical_json"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:canonical_json_bytes",
+      "kind": "python_symbol",
+      "line": 45,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "canonical_json_bytes"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:clean_relative_path",
+      "kind": "python_symbol",
+      "line": 118,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "clean_relative_path"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:compute_campaign_id",
+      "kind": "python_symbol",
+      "line": 198,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "compute_campaign_id"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:compute_pins_sha256",
+      "kind": "python_symbol",
+      "line": 162,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "compute_pins_sha256"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:compute_source_set_sha256",
+      "kind": "python_symbol",
+      "line": 149,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "compute_source_set_sha256"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:ensure_revision",
+      "kind": "python_symbol",
+      "line": 68,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ensure_revision"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:ensure_run_id",
+      "kind": "python_symbol",
+      "line": 75,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ensure_run_id"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:ensure_sha256",
+      "kind": "python_symbol",
+      "line": 61,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ensure_sha256"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:ensure_trial_id",
+      "kind": "python_symbol",
+      "line": 82,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ensure_trial_id"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:reject_secret_or_unsafe_paths",
+      "kind": "python_symbol",
+      "line": 130,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "reject_secret_or_unsafe_paths"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:require_list",
+      "kind": "python_symbol",
+      "line": 55,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "require_list"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:require_mapping",
+      "kind": "python_symbol",
+      "line": 49,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "require_mapping"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:sha256_bytes",
+      "kind": "python_symbol",
+      "line": 37,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "sha256_bytes"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:sha256_json",
+      "kind": "python_symbol",
+      "line": 41,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "sha256_json"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:unique_index",
+      "kind": "python_symbol",
+      "line": 103,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "unique_index"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:validate_campaign",
+      "kind": "python_symbol",
+      "line": 204,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "validate_campaign"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:validate_execution_receipt_ref",
+      "kind": "python_symbol",
+      "line": 241,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "validate_execution_receipt_ref"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/_dual_run_common.py:validate_provenance",
+      "kind": "python_symbol",
+      "line": 253,
+      "path": "src/skywatcher/ai_imagery/_dual_run_common.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "validate_provenance"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/dual_run_projection.py:build_candidate_lane_projection_input",
+      "kind": "python_symbol",
+      "line": 303,
+      "path": "src/skywatcher/ai_imagery/dual_run_projection.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "build_candidate_lane_projection_input"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/dual_run_projection.py:build_legacy_lane_projection_input",
+      "kind": "python_symbol",
+      "line": 61,
+      "path": "src/skywatcher/ai_imagery/dual_run_projection.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "build_legacy_lane_projection_input"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/dual_run_projection.py:compute_lane_evidence_id",
+      "kind": "python_symbol",
+      "line": 41,
+      "path": "src/skywatcher/ai_imagery/dual_run_projection.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "compute_lane_evidence_id"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/dual_run_projection.py:project_s05_deterministic_outputs",
+      "kind": "python_symbol",
+      "line": 214,
+      "path": "src/skywatcher/ai_imagery/dual_run_projection.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "project_s05_deterministic_outputs"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/dual_run_projection.py:project_s05_model_fields",
+      "kind": "python_symbol",
+      "line": 235,
+      "path": "src/skywatcher/ai_imagery/dual_run_projection.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "project_s05_model_fields"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/dual_run_projection.py:write_dual_run_evidence_staging",
+      "kind": "python_symbol",
+      "line": 415,
+      "path": "src/skywatcher/ai_imagery/dual_run_projection.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "write_dual_run_evidence_staging"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/legacy_shadow_export.py:build_legacy_shadow_export",
+      "kind": "python_symbol",
+      "line": 208,
+      "path": "src/skywatcher/ai_imagery/legacy_shadow_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "build_legacy_shadow_export"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/legacy_shadow_export.py:canonical_legacy_shadow_export_bytes",
+      "kind": "python_symbol",
+      "line": 302,
+      "path": "src/skywatcher/ai_imagery/legacy_shadow_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "canonical_legacy_shadow_export_bytes"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/legacy_shadow_export.py:compute_legacy_shadow_export_id",
+      "kind": "python_symbol",
+      "line": 202,
+      "path": "src/skywatcher/ai_imagery/legacy_shadow_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "compute_legacy_shadow_export_id"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/legacy_shadow_export.py:legacy_shadow_export_identity_payload",
+      "kind": "python_symbol",
+      "line": 196,
+      "path": "src/skywatcher/ai_imagery/legacy_shadow_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "legacy_shadow_export_identity_payload"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/legacy_shadow_export.py:normalize_legacy_csv_checkpoint_and_logs",
+      "kind": "python_symbol",
+      "line": 35,
+      "path": "src/skywatcher/ai_imagery/legacy_shadow_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "normalize_legacy_csv_checkpoint_and_logs"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/producer_package.py:ProducerPackageError",
+      "kind": "python_symbol",
+      "line": 16,
+      "path": "src/skywatcher/ai_imagery/producer_package.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ProducerPackageError"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/producer_package.py:build_package",
+      "kind": "python_symbol",
+      "line": 100,
+      "path": "src/skywatcher/ai_imagery/producer_package.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "build_package"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/producer_package.py:canonical_json",
+      "kind": "python_symbol",
+      "line": 20,
+      "path": "src/skywatcher/ai_imagery/producer_package.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "canonical_json"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/producer_package.py:write_package",
+      "kind": "python_symbol",
+      "line": 219,
+      "path": "src/skywatcher/ai_imagery/producer_package.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "write_package"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/vision_result_ingest.py:VisionResultError",
+      "kind": "python_symbol",
+      "line": 57,
+      "path": "src/skywatcher/ai_imagery/vision_result_ingest.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "VisionResultError"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/vision_result_ingest.py:canonical_json",
+      "kind": "python_symbol",
+      "line": 61,
+      "path": "src/skywatcher/ai_imagery/vision_result_ingest.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "canonical_json"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/vision_result_ingest.py:ensure_provenance_tables",
+      "kind": "python_symbol",
+      "line": 65,
+      "path": "src/skywatcher/ai_imagery/vision_result_ingest.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ensure_provenance_tables"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/vision_result_ingest.py:ingest_extractions",
+      "kind": "python_symbol",
+      "line": 220,
+      "path": "src/skywatcher/ai_imagery/vision_result_ingest.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ingest_extractions"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/vision_result_ingest.py:resolve_screenshot_id",
+      "kind": "python_symbol",
+      "line": 118,
+      "path": "src/skywatcher/ai_imagery/vision_result_ingest.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "resolve_screenshot_id"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/ai_imagery/vision_result_ingest.py:validate_extraction",
+      "kind": "python_symbol",
+      "line": 69,
+      "path": "src/skywatcher/ai_imagery/vision_result_ingest.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "validate_extraction"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_geometry_adjudication.py:AdjudicationState",
+      "kind": "python_symbol",
+      "line": 42,
+      "path": "src/skywatcher/core/aviation_geometry_adjudication.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "AdjudicationState"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_geometry_adjudication.py:GeometryEvidence",
+      "kind": "python_symbol",
+      "line": 23,
+      "path": "src/skywatcher/core/aviation_geometry_adjudication.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "GeometryEvidence"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_geometry_adjudication.py:GeometrySourceManifestation",
+      "kind": "python_symbol",
+      "line": 60,
+      "path": "src/skywatcher/core/aviation_geometry_adjudication.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "GeometrySourceManifestation"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_geometry_adjudication.py:IdentityAdjudication",
+      "kind": "python_symbol",
+      "line": 86,
+      "path": "src/skywatcher/core/aviation_geometry_adjudication.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "IdentityAdjudication"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_geometry_adjudication.py:IdentityEvidence",
+      "kind": "python_symbol",
+      "line": 31,
+      "path": "src/skywatcher/core/aviation_geometry_adjudication.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "IdentityEvidence"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_geometry_adjudication.py:SourceAuthority",
+      "kind": "python_symbol",
+      "line": 15,
+      "path": "src/skywatcher/core/aviation_geometry_adjudication.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "SourceAuthority"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_geometry_adjudication.py:SpatialState",
+      "kind": "python_symbol",
+      "line": 50,
+      "path": "src/skywatcher/core/aviation_geometry_adjudication.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "SpatialState"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_geometry_adjudication.py:adjudicate_identity",
+      "kind": "python_symbol",
+      "line": 92,
+      "path": "src/skywatcher/core/aviation_geometry_adjudication.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "adjudicate_identity"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_geometry_adjudication.py:adjudicate_spatial_relation",
+      "kind": "python_symbol",
+      "line": 138,
+      "path": "src/skywatcher/core/aviation_geometry_adjudication.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "adjudicate_spatial_relation"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_microinfrastructure.py:AviationMicrofacility",
+      "kind": "python_symbol",
+      "line": 80,
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "AviationMicrofacility"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_microinfrastructure.py:BindingState",
+      "kind": "python_symbol",
+      "line": 45,
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "BindingState"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_microinfrastructure.py:GeometryState",
+      "kind": "python_symbol",
+      "line": 52,
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "GeometryState"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_microinfrastructure.py:HelipadEvidence",
+      "kind": "python_symbol",
+      "line": 37,
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "HelipadEvidence"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_microinfrastructure.py:LandingSurfaceType",
+      "kind": "python_symbol",
+      "line": 29,
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "LandingSurfaceType"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_microinfrastructure.py:PhysicalClass",
+      "kind": "python_symbol",
+      "line": 18,
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "PhysicalClass"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_microinfrastructure.py:SpatialRelation",
+      "kind": "python_symbol",
+      "line": 59,
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "SpatialRelation"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_microinfrastructure.py:TerminalAssociation",
+      "kind": "python_symbol",
+      "line": 69,
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "TerminalAssociation"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_microinfrastructure.py:can_promote_to_physical_helipad",
+      "kind": "python_symbol",
+      "line": 136,
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "can_promote_to_physical_helipad"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/aviation_microinfrastructure.py:classify_terminal_event",
+      "kind": "python_symbol",
+      "line": 118,
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "classify_terminal_event"
     },
     {
       "id": "python_symbol:src/skywatcher/core/db_utils.py:configure_connection",
@@ -8464,6 +10384,134 @@
       "path": "src/skywatcher/core/geo_utils.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "haversine_m"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/coverage.py:evaluate_coverage",
+      "kind": "python_symbol",
+      "line": 144,
+      "path": "src/skywatcher/core/lenses/coverage.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "evaluate_coverage"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/coverage.py:evaluate_lens",
+      "kind": "python_symbol",
+      "line": 67,
+      "path": "src/skywatcher/core/lenses/coverage.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "evaluate_lens"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/models.py:CoverageReport",
+      "kind": "python_symbol",
+      "line": 340,
+      "path": "src/skywatcher/core/lenses/models.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "CoverageReport"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/models.py:LensCoverage",
+      "kind": "python_symbol",
+      "line": 308,
+      "path": "src/skywatcher/core/lenses/models.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "LensCoverage"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/models.py:LensSpec",
+      "kind": "python_symbol",
+      "line": 143,
+      "path": "src/skywatcher/core/lenses/models.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "LensSpec"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/models.py:ObjectiveProfile",
+      "kind": "python_symbol",
+      "line": 256,
+      "path": "src/skywatcher/core/lenses/models.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ObjectiveProfile"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/models.py:ParameterSpec",
+      "kind": "python_symbol",
+      "line": 78,
+      "path": "src/skywatcher/core/lenses/models.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ParameterSpec"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/registry.py:LensRegistry",
+      "kind": "python_symbol",
+      "line": 47,
+      "path": "src/skywatcher/core/lenses/registry.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "LensRegistry"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/registry.py:ObjectiveProfileRegistry",
+      "kind": "python_symbol",
+      "line": 107,
+      "path": "src/skywatcher/core/lenses/registry.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ObjectiveProfileRegistry"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/registry.py:load_default_registries",
+      "kind": "python_symbol",
+      "line": 168,
+      "path": "src/skywatcher/core/lenses/registry.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_default_registries"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/registry.py:resolve_profile_lenses",
+      "kind": "python_symbol",
+      "line": 150,
+      "path": "src/skywatcher/core/lenses/registry.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "resolve_profile_lenses"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/registry.py:unknown_lens_references",
+      "kind": "python_symbol",
+      "line": 177,
+      "path": "src/skywatcher/core/lenses/registry.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "unknown_lens_references"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/thresholds.py:ThresholdNotExecutable",
+      "kind": "python_symbol",
+      "line": 36,
+      "path": "src/skywatcher/core/lenses/thresholds.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ThresholdNotExecutable"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/thresholds.py:ThresholdRegistry",
+      "kind": "python_symbol",
+      "line": 81,
+      "path": "src/skywatcher/core/lenses/thresholds.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ThresholdRegistry"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/thresholds.py:ThresholdSpec",
+      "kind": "python_symbol",
+      "line": 41,
+      "path": "src/skywatcher/core/lenses/thresholds.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ThresholdSpec"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/core/lenses/thresholds.py:default_registry",
+      "kind": "python_symbol",
+      "line": 179,
+      "path": "src/skywatcher/core/lenses/thresholds.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "default_registry"
     },
     {
       "id": "python_symbol:src/skywatcher/core/normalize_locations.py:AliasIndex",
@@ -8596,7 +10644,7 @@
     {
       "id": "python_symbol:src/skywatcher/core/ontology_gate.py:main",
       "kind": "python_symbol",
-      "line": 151,
+      "line": 198,
       "path": "src/skywatcher/core/ontology_gate.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "main"
@@ -8604,7 +10652,7 @@
     {
       "id": "python_symbol:src/skywatcher/core/ontology_gate.py:run_gate",
       "kind": "python_symbol",
-      "line": 39,
+      "line": 84,
       "path": "src/skywatcher/core/ontology_gate.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "run_gate"
@@ -8620,7 +10668,7 @@
     {
       "id": "python_symbol:src/skywatcher/correlation/footprint_proximity.py:FootprintMatch",
       "kind": "python_symbol",
-      "line": 13,
+      "line": 18,
       "path": "src/skywatcher/correlation/footprint_proximity.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "FootprintMatch"
@@ -8628,7 +10676,7 @@
     {
       "id": "python_symbol:src/skywatcher/correlation/footprint_proximity.py:correlate_point_to_footprints",
       "kind": "python_symbol",
-      "line": 40,
+      "line": 47,
       "path": "src/skywatcher/correlation/footprint_proximity.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "correlate_point_to_footprints"
@@ -8636,7 +10684,7 @@
     {
       "id": "python_symbol:src/skywatcher/correlation/footprint_proximity.py:matches_as_dicts",
       "kind": "python_symbol",
-      "line": 73,
+      "line": 80,
       "path": "src/skywatcher/correlation/footprint_proximity.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "matches_as_dicts"
@@ -8644,7 +10692,7 @@
     {
       "id": "python_symbol:src/skywatcher/correlation/footprint_proximity.py:score_match",
       "kind": "python_symbol",
-      "line": 25,
+      "line": 32,
       "path": "src/skywatcher/correlation/footprint_proximity.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "score_match"
@@ -8748,7 +10796,7 @@
     {
       "id": "python_symbol:src/skywatcher/corrim/ilap_airspace_bridge.py:ILAPAirspaceBridge",
       "kind": "python_symbol",
-      "line": 94,
+      "line": 111,
       "path": "src/skywatcher/corrim/ilap_airspace_bridge.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "ILAPAirspaceBridge"
@@ -8756,7 +10804,7 @@
     {
       "id": "python_symbol:src/skywatcher/corrim/ilap_airspace_bridge.py:poi_to_earthgpt_context",
       "kind": "python_symbol",
-      "line": 320,
+      "line": 337,
       "path": "src/skywatcher/corrim/ilap_airspace_bridge.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "poi_to_earthgpt_context"
@@ -8778,9 +10826,393 @@
       "symbol": "AircraftProfile"
     },
     {
+      "id": "python_symbol:src/skywatcher/fr24/cli_support.py:ImageDirUnavailableError",
+      "kind": "python_symbol",
+      "line": 33,
+      "path": "src/skywatcher/fr24/cli_support.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ImageDirUnavailableError"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/cli_support.py:database_status",
+      "kind": "python_symbol",
+      "line": 69,
+      "path": "src/skywatcher/fr24/cli_support.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "database_status"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/cli_support.py:resolve_image_dir",
+      "kind": "python_symbol",
+      "line": 37,
+      "path": "src/skywatcher/fr24/cli_support.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "resolve_image_dir"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database.py:DatabaseError",
+      "kind": "python_symbol",
+      "line": 56,
+      "path": "src/skywatcher/fr24/database.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "DatabaseError"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database.py:SchemaValidationError",
+      "kind": "python_symbol",
+      "line": 60,
+      "path": "src/skywatcher/fr24/database.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "SchemaValidationError"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database.py:connect",
+      "kind": "python_symbol",
+      "line": 82,
+      "path": "src/skywatcher/fr24/database.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "connect"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database.py:foreign_keys_enabled",
+      "kind": "python_symbol",
+      "line": 149,
+      "path": "src/skywatcher/fr24/database.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "foreign_keys_enabled"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database.py:get_schema_version",
+      "kind": "python_symbol",
+      "line": 130,
+      "path": "src/skywatcher/fr24/database.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "get_schema_version"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database.py:list_tables",
+      "kind": "python_symbol",
+      "line": 142,
+      "path": "src/skywatcher/fr24/database.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "list_tables"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database.py:read_schema_sql",
+      "kind": "python_symbol",
+      "line": 123,
+      "path": "src/skywatcher/fr24/database.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "read_schema_sql"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database.py:resolve_db_path",
+      "kind": "python_symbol",
+      "line": 64,
+      "path": "src/skywatcher/fr24/database.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "resolve_db_path"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database.py:validate_schema",
+      "kind": "python_symbol",
+      "line": 155,
+      "path": "src/skywatcher/fr24/database.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "validate_schema"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database_migrations.py:InitResult",
+      "kind": "python_symbol",
+      "line": 131,
+      "path": "src/skywatcher/fr24/database_migrations.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "InitResult"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database_migrations.py:Migration",
+      "kind": "python_symbol",
+      "line": 52,
+      "path": "src/skywatcher/fr24/database_migrations.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "Migration"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database_migrations.py:MigrationError",
+      "kind": "python_symbol",
+      "line": 43,
+      "path": "src/skywatcher/fr24/database_migrations.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "MigrationError"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database_migrations.py:apply_migrations",
+      "kind": "python_symbol",
+      "line": 96,
+      "path": "src/skywatcher/fr24/database_migrations.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "apply_migrations"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/database_migrations.py:initialize_database",
+      "kind": "python_symbol",
+      "line": 143,
+      "path": "src/skywatcher/fr24/database_migrations.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "initialize_database"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/duplicate_detection.py:find_exact_duplicates",
+      "kind": "python_symbol",
+      "line": 33,
+      "path": "src/skywatcher/fr24/duplicate_detection.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "find_exact_duplicates"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/flight_reconstruction.py:build_track_points",
+      "kind": "python_symbol",
+      "line": 57,
+      "path": "src/skywatcher/fr24/flight_reconstruction.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "build_track_points"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/flight_reconstruction.py:reconstruct_flights",
+      "kind": "python_symbol",
+      "line": 47,
+      "path": "src/skywatcher/fr24/flight_reconstruction.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "reconstruct_flights"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/flightradar24_ocr.py:OCREngine",
+      "kind": "python_symbol",
+      "line": 30,
+      "path": "src/skywatcher/fr24/flightradar24_ocr.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "OCREngine"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/flightradar24_ocr.py:TesseractOCREngine",
+      "kind": "python_symbol",
+      "line": 41,
+      "path": "src/skywatcher/fr24/flightradar24_ocr.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "TesseractOCREngine"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/flightradar24_ocr.py:extract_text_region",
+      "kind": "python_symbol",
+      "line": 78,
+      "path": "src/skywatcher/fr24/flightradar24_ocr.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "extract_text_region"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/flightradar24_ocr.py:run_region_ocr",
+      "kind": "python_symbol",
+      "line": 71,
+      "path": "src/skywatcher/fr24/flightradar24_ocr.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "run_region_ocr"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/mission_classification.py:MissionClassification",
+      "kind": "python_symbol",
+      "line": 48,
+      "path": "src/skywatcher/fr24/mission_classification.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "MissionClassification"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/mission_classification.py:MissionClassificationStatus",
+      "kind": "python_symbol",
+      "line": 42,
+      "path": "src/skywatcher/fr24/mission_classification.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "MissionClassificationStatus"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/mission_classification.py:classify",
+      "kind": "python_symbol",
+      "line": 69,
+      "path": "src/skywatcher/fr24/mission_classification.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "classify"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/ocr_normalization.py:normalize_observation",
+      "kind": "python_symbol",
+      "line": 33,
+      "path": "src/skywatcher/fr24/ocr_normalization.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "normalize_observation"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/review_status.py:to_spiderweb_review_status",
+      "kind": "python_symbol",
+      "line": 71,
+      "path": "src/skywatcher/fr24/review_status.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "to_spiderweb_review_status"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/screenshot_identity.py:screenshot_id_for_bytes",
+      "kind": "python_symbol",
+      "line": 51,
+      "path": "src/skywatcher/fr24/screenshot_identity.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "screenshot_id_for_bytes"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/screenshot_identity.py:screenshot_id_for_file",
+      "kind": "python_symbol",
+      "line": 55,
+      "path": "src/skywatcher/fr24/screenshot_identity.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "screenshot_id_for_file"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/screenshot_identity.py:sha256_of_bytes",
+      "kind": "python_symbol",
+      "line": 26,
+      "path": "src/skywatcher/fr24/screenshot_identity.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "sha256_of_bytes"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/screenshot_identity.py:sha256_of_file",
+      "kind": "python_symbol",
+      "line": 33,
+      "path": "src/skywatcher/fr24/screenshot_identity.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "sha256_of_file"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/screenshot_metadata.py:ScreenshotMetadata",
+      "kind": "python_symbol",
+      "line": 42,
+      "path": "src/skywatcher/fr24/screenshot_metadata.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ScreenshotMetadata"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/screenshot_metadata.py:extract_metadata",
+      "kind": "python_symbol",
+      "line": 65,
+      "path": "src/skywatcher/fr24/screenshot_metadata.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "extract_metadata"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/screenshot_metadata.py:parse_filename_timestamp",
+      "kind": "python_symbol",
+      "line": 28,
+      "path": "src/skywatcher/fr24/screenshot_metadata.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "parse_filename_timestamp"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/screenshot_source.py:DirectoryScreenshotSource",
+      "kind": "python_symbol",
+      "line": 52,
+      "path": "src/skywatcher/fr24/screenshot_source.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "DirectoryScreenshotSource"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/screenshot_source.py:ScreenshotSource",
+      "kind": "python_symbol",
+      "line": 41,
+      "path": "src/skywatcher/fr24/screenshot_source.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ScreenshotSource"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/screenshot_source.py:is_supported_extension",
+      "kind": "python_symbol",
+      "line": 35,
+      "path": "src/skywatcher/fr24/screenshot_source.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "is_supported_extension"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/spiderweb_export.py:build_bridge_record",
+      "kind": "python_symbol",
+      "line": 85,
+      "path": "src/skywatcher/fr24/spiderweb_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "build_bridge_record"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/spiderweb_export.py:export_package",
+      "kind": "python_symbol",
+      "line": 176,
+      "path": "src/skywatcher/fr24/spiderweb_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "export_package"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/spiderweb_export.py:load_bridge_schema",
+      "kind": "python_symbol",
+      "line": 53,
+      "path": "src/skywatcher/fr24/spiderweb_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_bridge_schema"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/spiderweb_export.py:make_export_id",
+      "kind": "python_symbol",
+      "line": 57,
+      "path": "src/skywatcher/fr24/spiderweb_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "make_export_id"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/spiderweb_export.py:validate_bridge_record",
+      "kind": "python_symbol",
+      "line": 170,
+      "path": "src/skywatcher/fr24/spiderweb_export.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "validate_bridge_record"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/telemetry_parser.py:coordinate_from_pixel",
+      "kind": "python_symbol",
+      "line": 71,
+      "path": "src/skywatcher/fr24/telemetry_parser.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "coordinate_from_pixel"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/telemetry_parser.py:parse_telemetry",
+      "kind": "python_symbol",
+      "line": 50,
+      "path": "src/skywatcher/fr24/telemetry_parser.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "parse_telemetry"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/telemetry_validation.py:FailureLedger",
+      "kind": "python_symbol",
+      "line": 36,
+      "path": "src/skywatcher/fr24/telemetry_validation.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "FailureLedger"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/fr24/telemetry_validation.py:validate_against_schema",
+      "kind": "python_symbol",
+      "line": 70,
+      "path": "src/skywatcher/fr24/telemetry_validation.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "validate_against_schema"
+    },
+    {
       "id": "python_symbol:src/skywatcher/fusion/anomaly_scoring.py:score_against_historical_baselines",
       "kind": "python_symbol",
-      "line": 20,
+      "line": 41,
       "path": "src/skywatcher/fusion/anomaly_scoring.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "score_against_historical_baselines"
@@ -8900,7 +11332,7 @@
     {
       "id": "python_symbol:src/skywatcher/satim/artifacts/compound_artifacts.py:normalize_classes",
       "kind": "python_symbol",
-      "line": 21,
+      "line": 15,
       "path": "src/skywatcher/satim/artifacts/compound_artifacts.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "normalize_classes"
@@ -8908,7 +11340,7 @@
     {
       "id": "python_symbol:src/skywatcher/satim/artifacts/compound_artifacts.py:select_primary",
       "kind": "python_symbol",
-      "line": 32,
+      "line": 26,
       "path": "src/skywatcher/satim/artifacts/compound_artifacts.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "select_primary"
@@ -8922,9 +11354,73 @@
       "symbol": "ConfidenceLedger"
     },
     {
+      "id": "python_symbol:src/skywatcher/satim/artifacts/crosswalk.py:ambiguous_equivalents",
+      "kind": "python_symbol",
+      "line": 95,
+      "path": "src/skywatcher/satim/artifacts/crosswalk.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "ambiguous_equivalents"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/satim/artifacts/crosswalk.py:auto_derivable",
+      "kind": "python_symbol",
+      "line": 77,
+      "path": "src/skywatcher/satim/artifacts/crosswalk.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "auto_derivable"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/satim/artifacts/crosswalk.py:class_ids",
+      "kind": "python_symbol",
+      "line": 62,
+      "path": "src/skywatcher/satim/artifacts/crosswalk.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "class_ids"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/satim/artifacts/crosswalk.py:equivalents",
+      "kind": "python_symbol",
+      "line": 87,
+      "path": "src/skywatcher/satim/artifacts/crosswalk.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "equivalents"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/satim/artifacts/crosswalk.py:load_crosswalk",
+      "kind": "python_symbol",
+      "line": 33,
+      "path": "src/skywatcher/satim/artifacts/crosswalk.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "load_crosswalk"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/satim/artifacts/crosswalk.py:resolve",
+      "kind": "python_symbol",
+      "line": 108,
+      "path": "src/skywatcher/satim/artifacts/crosswalk.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "resolve"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/satim/artifacts/crosswalk.py:restriction_minimums",
+      "kind": "python_symbol",
+      "line": 68,
+      "path": "src/skywatcher/satim/artifacts/crosswalk.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "restriction_minimums"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/satim/artifacts/crosswalk.py:unmapped_terms",
+      "kind": "python_symbol",
+      "line": 116,
+      "path": "src/skywatcher/satim/artifacts/crosswalk.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "unmapped_terms"
+    },
+    {
       "id": "python_symbol:src/skywatcher/satim/artifacts/engine.py:ArtifactAssessmentEngine",
       "kind": "python_symbol",
-      "line": 17,
+      "line": 35,
       "path": "src/skywatcher/satim/artifacts/engine.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "ArtifactAssessmentEngine"
@@ -8956,7 +11452,7 @@
     {
       "id": "python_symbol:src/skywatcher/satim/artifacts/pipeline_chain.py:build_assessment_from_l5",
       "kind": "python_symbol",
-      "line": 79,
+      "line": 73,
       "path": "src/skywatcher/satim/artifacts/pipeline_chain.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "build_assessment_from_l5"
@@ -8964,7 +11460,7 @@
     {
       "id": "python_symbol:src/skywatcher/satim/artifacts/pipeline_chain.py:build_ledger_entry",
       "kind": "python_symbol",
-      "line": 131,
+      "line": 125,
       "path": "src/skywatcher/satim/artifacts/pipeline_chain.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "build_ledger_entry"
@@ -8980,7 +11476,7 @@
     {
       "id": "python_symbol:src/skywatcher/satim/artifacts/restriction_gate.py:InterpretationRestrictionGate",
       "kind": "python_symbol",
-      "line": 31,
+      "line": 29,
       "path": "src/skywatcher/satim/artifacts/restriction_gate.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "InterpretationRestrictionGate"
@@ -8988,7 +11484,7 @@
     {
       "id": "python_symbol:src/skywatcher/satim/artifacts/restriction_gate.py:RestrictionDecision",
       "kind": "python_symbol",
-      "line": 25,
+      "line": 23,
       "path": "src/skywatcher/satim/artifacts/restriction_gate.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "RestrictionDecision"
@@ -9008,17 +11504,33 @@
       "path": "src/skywatcher/satim/artifacts/schema_validator.py",
       "signal": "BACKEND_NOT_GUI_SURFACED",
       "symbol": "ValidationIssue"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/satim/provisional_signal.py:SatimSignalAdapterError",
+      "kind": "python_symbol",
+      "line": 34,
+      "path": "src/skywatcher/satim/provisional_signal.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "SatimSignalAdapterError"
+    },
+    {
+      "id": "python_symbol:src/skywatcher/satim/provisional_signal.py:adapt_satim_output",
+      "kind": "python_symbol",
+      "line": 48,
+      "path": "src/skywatcher/satim/provisional_signal.py",
+      "signal": "BACKEND_NOT_GUI_SURFACED",
+      "symbol": "adapt_satim_output"
     }
   ],
-  "generated_at": "2026-07-29T19:07:25+00:00",
+  "generated_at": "2026-09-01T02:32:48+00:00",
   "manifest_sha256": "f300050cb2689f40fd90b2cd78f189dabeb3ee5967776ebfb7b11c143e469db5",
   "repository": "jotaele44/skywatcher-pr",
   "schema_version": "prii.gui-parity-baseline/v1",
   "signal_counts": {
-    "ANALYSIS_NOT_GUI_RENDERED": 404,
-    "BACKEND_NOT_GUI_SURFACED": 619,
-    "GUI_NOT_BACKEND_WIRED": 81,
+    "ANALYSIS_NOT_GUI_RENDERED": 481,
+    "BACKEND_NOT_GUI_SURFACED": 853,
+    "GUI_NOT_BACKEND_WIRED": 86,
     "GUI_WORKFLOW_UNREACHABLE": 1,
-    "TERMINAL_REQUIRED": 106
+    "TERMINAL_REQUIRED": 121
   }
 }

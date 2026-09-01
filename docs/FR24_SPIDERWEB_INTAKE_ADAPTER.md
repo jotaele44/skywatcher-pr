@@ -1,5 +1,21 @@
 # FR24 Spiderweb Intake Adapter
 
+> **Status 2026-07-29 — no downstream consumer.** A cross-repo audit found this
+> handoff broken on both ends: nothing in `spiderweb-pr` ever read
+> `fr24_spiderweb_intake_candidates.jsonl`, while spiderweb's live path instead
+> read `outputs/fr24_selected_export.csv` — a repo-internal artifact of
+> `scripts/fr24_vision_ingest.py` that was never a published contract, copied
+> between checkouts by hand with no validation.
+>
+> spiderweb-pr has now **retired its FR24/ADS-B ingestion entirely** and ceded the
+> airspace surface to this repo, so this adapter currently has **no consumer**.
+> Keep it as the *only* sanctioned shape for a future intake, and treat
+> `outputs/fr24_selected_export.csv` as repo-internal — **not** a handoff artifact.
+>
+> Per `docs/ADR_SKYWATCHER_SPIDERWEB_INTEGRATION.md`, any revived path must go
+> through the canonical federation package validated by `thehub-pr`, after that
+> ADR's four preconditions — not a direct repo-to-repo file drop.
+
 ## Purpose
 
 This layer wires the FR24 OCR export JSONL

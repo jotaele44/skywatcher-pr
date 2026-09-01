@@ -1,0 +1,146 @@
+spec_version: 0.2.0
+status: VECTOR_2_LEGACY_PARAMETER_DEBT
+policy: >-
+  Values below are existing implementation values discovered in the bounded
+  visual-baseline audit. Listing them does not validate them. Unless already
+  supported by a named validation artifact, status is CALIBRATION_REQUIRED.
+
+parameters:
+  - legacy_id: RLSM.UNLABELED.PAD_AREA_MIN_PX
+    path: fr24/rlsm_unlabeled.py
+    value: 16
+    unit: pixel
+    effect: connected-component minimum area
+    canonical_mapping: IMAGE_OBJECT_MIN_AREA_BY_CLASS
+    status: CALIBRATION_REQUIRED
+  - legacy_id: RLSM.UNLABELED.PAD_AREA_MAX_PX
+    path: fr24/rlsm_unlabeled.py
+    value: 600
+    unit: pixel
+    effect: pad/tank/clearing/quarry class boundary
+    canonical_mapping: IMAGE_OBJECT_AREA_RANGE_BY_CLASS
+    status: CALIBRATION_REQUIRED
+  - legacy_id: RLSM.UNLABELED.ROADSCAR_ASPECT_MIN
+    path: fr24/rlsm_unlabeled.py
+    value: 4.0
+    unit: ratio
+    effect: road-scar discovery
+    status: CALIBRATION_REQUIRED
+  - legacy_id: RLSM.UNLABELED.ANTENNA_ASPECT_MIN
+    path: fr24/rlsm_unlabeled.py
+    value: 8.0
+    unit: ratio
+    effect: antenna discovery
+    status: CALIBRATION_REQUIRED
+  - legacy_id: RLSM.UNLABELED.TANK_ROUNDNESS_MIN
+    path: fr24/rlsm_unlabeled.py
+    value: 0.65
+    unit: ratio
+    effect: tank discovery
+    status: CALIBRATION_REQUIRED
+  - legacy_id: RLSM.UNLABELED.BRIGHTNESS_THRESHOLD
+    path: fr24/rlsm_unlabeled.py
+    value: 180
+    unit: luminance_0_255
+    effect: candidate connected-component threshold
+    status: CALIBRATION_REQUIRED
+  - legacy_id: RLSM.UNLABELED.MAX_CANDIDATES_PER_IMAGE
+    path: fr24/rlsm_unlabeled.py
+    value: 60
+    unit: candidates
+    effect: bounded candidate output
+    status: IMPLEMENTATION_LIMIT_NOT_IDENTITY
+  - legacy_id: RLSM.PIPELINE.MAX_POSITION_ERROR_M
+    path: fr24/rlsm_pipeline.py
+    value: 500
+    unit: metre
+    effect: localization quality gate
+    canonical_mapping: SCENE_LOCATION_ERROR_RADIUS_GATE
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.ARTIFACT.HIGH_BAND
+    path: satim_artifact_filter.py
+    value: 0.70
+    unit: score
+    effect: artifact recommendation/confidence band
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.ARTIFACT.MEDIUM_BAND
+    path: satim_artifact_filter.py
+    value: 0.40
+    unit: score
+    effect: review recommendation/confidence band
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.ARTIFACT.ADJUSTMENT_FACTOR
+    path: satim_artifact_filter.py
+    value: 0.5
+    unit: multiplier
+    effect: advisory detector-score reduction by artifact score
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.WATER.HIGH_BAND
+    path: satim_water_feature.py
+    value: 0.70
+    unit: score
+    effect: legacy confidence band
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.WATER.MEDIUM_BAND
+    path: satim_water_feature.py
+    value: 0.40
+    unit: score
+    effect: legacy confidence band/review rule
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.WATER.ARTIFACT_REVIEW
+    path: satim_water_feature.py
+    value: 0.70
+    unit: score
+    effect: high artifact review reason
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.WATER.ADJUSTMENT_FACTOR
+    path: satim_water_feature.py
+    value: 0.5
+    unit: multiplier
+    effect: advisory artifact reduction
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.ROAD_END.HIGH_BAND
+    path: satim_road_end.py
+    value: 0.70
+    unit: score
+    effect: legacy confidence band
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.ROAD_END.MEDIUM_BAND
+    path: satim_road_end.py
+    value: 0.40
+    unit: score
+    effect: legacy confidence band
+    status: CALIBRATION_REQUIRED
+
+weight_families:
+  - legacy_id: SATIM.ARTIFACT.SIGNAL_WEIGHTS
+    path: satim_artifact_filter.py
+    status: CALIBRATION_REQUIRED
+    rule: Preserve exact dictionary values in source until migrated; do not silently copy into canonical registry as validated.
+  - legacy_id: SATIM.ARTIFACT.LINK_WEIGHTS
+    path: satim_artifact_filter.py
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.WATER.SIGNAL_WEIGHTS
+    path: satim_water_feature.py
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.WATER.LINK_WEIGHTS
+    path: satim_water_feature.py
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.CUT_FILL.SIGNAL_WEIGHTS
+    path: satim_cut_fill.py
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.CUT_FILL.LINK_WEIGHTS
+    path: satim_cut_fill.py
+    status: NONCANONICAL_CROSS_DOMAIN
+  - legacy_id: SATIM.ROAD_END.SIGNAL_WEIGHTS
+    path: satim_road_end.py
+    status: CALIBRATION_REQUIRED
+  - legacy_id: SATIM.ROAD_END.LINK_WEIGHTS
+    path: satim_road_end.py
+    status: NONCANONICAL_CROSS_DOMAIN
+
+invariants:
+  - legacy_value_presence_does_not_equal_validation
+  - default_value_is_a_parameter
+  - model_or_library_default_is_a_parameter_if_output_affecting
+  - migration_must_preserve_source_value_and_provenance

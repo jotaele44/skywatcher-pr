@@ -413,6 +413,7 @@ def _discover_frontend(
 def discover_candidates(
     repo_root: Path, manifest: dict[str, Any]
 ) -> list[dict[str, Any]]:
+    repo_root = repo_root.resolve()
     discovery = manifest.get("discovery", {})
     records = [
         *_discover_python(repo_root, discovery),
@@ -524,6 +525,7 @@ def validate_manifest(
     *,
     today: date | None = None,
 ) -> list[dict[str, str]]:
+    repo_root = repo_root.resolve()
     today = today or datetime.now(timezone.utc).date()
     issues: list[dict[str, str]] = []
 

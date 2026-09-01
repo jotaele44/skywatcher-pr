@@ -220,6 +220,54 @@ def test_anchors_for_screenshot_unions_and_dedups(rlsm_db):
     assert cal.pixel_to_coord(700, 1400, 1170, 2532).coordinate_confidence == 0.90
 
 
+def test_geo_lookup_uses_tracked_gnis_when_places_geojson_missing(rlsm_db):
+    from fr24.rlsm_anchors import build_geo_lookup
+
+    conn = sqlite3.connect(str(rlsm_db))
+    lookup = build_geo_lookup(conn, places_geojson=Path("/nonexistent/places.geojson"))
+    conn.close()
+
+    assert len(lookup) > 5000
+    assert lookup["ARECIBO"][0] == pytest.approx(18.43, abs=0.05)
+    assert lookup["ARECIBO"][1] == pytest.approx(-66.67, abs=0.05)
+    assert lookup["CAGUAS"] == pytest.approx((18.6 - 0.0005 * 1000, -67.3 + 0.001 * 500))
+
+
+def test_geocoder_builds_affine_inputs_from_shared_lookup(rlsm_db):
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    try:
+        import rlsm_geocode_unlabeled as geocoder
+    finally:
+        sys.path.pop(0)
+    from fr24.rlsm_anchors import build_geo_lookup
+
+    conn = sqlite3.connect(str(rlsm_db))
+    lookup = build_geo_lookup(conn, places_geojson=Path("/nonexistent/places.geojson"))
+    inputs = geocoder.build_affine_inputs(conn, lookup)
+    conn.close()
+
+    assert sorted(inputs) == [1]
+    assert len(inputs[1]) == 3
+    assert (500.0, 1000.0, *lookup["CAGUAS"]) in inputs[1]
+
+
+def test_geocoder_fails_closed_when_coordinate_lookup_empty(tmp_path, monkeypatch, capsys):
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    try:
+        import rlsm_geocode_unlabeled as geocoder
+    finally:
+        sys.path.pop(0)
+
+    db = tmp_path / "rlsm.sqlite"
+    sqlite3.connect(str(db)).close()
+    monkeypatch.setattr(geocoder, "DB", db)
+    monkeypatch.setattr(geocoder, "build_geo_lookup", lambda conn: {})
+
+    assert geocoder.main([]) == 1
+    err = capsys.readouterr().err
+    assert "zero coordinate keys" in err
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # scripts/sync_rlsm_calibration.py end-to-end
 # ──────────────────────────────────────────────────────────────────────────

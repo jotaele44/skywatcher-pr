@@ -75,10 +75,12 @@ def test_source_dates_compared_is_carried_onto_each_row():
     rows = _rows_by_image(run_driver(load_fixture(FIXTURE)))
     # Required ledger field: the cross-epoch capture dates behind the decision.
     assert rows["IMG_TILE_SEAM_CONTROL_2024_01"]["source_dates_compared"] == [
-        "2022-01-10T00:00:00Z"
+        "2022-01-10T00:00:00Z",
+        "2021-06-10T00:00:00Z",
     ]
     assert rows["IMG_BQN_APRON_2024_03"]["source_dates_compared"] == [
-        "2022-03-05T00:00:00Z"
+        "2022-03-05T00:00:00Z",
+        "2021-09-05T00:00:00Z",
     ]
     # The single-still block has no comparison imagery -> empty (but present) list.
     assert rows["IMG_TILE_SEAM_CONTROL_SINGLE_STILL"]["source_dates_compared"] == []
@@ -103,7 +105,10 @@ def test_write_ledger_csv_roundtrips(tmp_path):
     assert json.loads(csv_first["contradiction_flags"]) == first["contradiction_flags"]
     # source_dates_compared is a required ledger field, JSON-encoded in its cell.
     assert "source_dates_compared" in reader.fieldnames
-    assert json.loads(csv_first["source_dates_compared"]) == ["2022-01-10T00:00:00Z"]
+    assert json.loads(csv_first["source_dates_compared"]) == [
+        "2022-01-10T00:00:00Z",
+        "2021-06-10T00:00:00Z",
+    ]
 
 
 def test_main_cli_writes_csv(tmp_path, capsys):

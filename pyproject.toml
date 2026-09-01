@@ -3,6 +3,88 @@
 # installed as a package, so there is no build-system here — pytest discovers
 # the root modules via pythonpath. "src" is also on the path so the
 # src/skywatcher package (registry/correlation helpers) is importable.
+#
+# Dependencies below used to be spread across 8 separate requirements*.txt
+# files with real duplication between them (Pillow, numpy, jsonschema,
+# python-dotenv, pillow-heif each redeclared 2-4x). Consolidated here as one
+# [project] + extras, matching the aguayluz-pr/centinelas-pr/thehub-pr
+# pattern. `tool.uv.package = false` keeps this a dependency-only ("virtual")
+# project — uv resolves and locks the extras below without trying to build
+# skywatcher-pr itself as an installable package, matching the flat-layout
+# note above.
+[project]
+name = "skywatcher-pr"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "Pillow>=10.0",
+    "PyMuPDF>=1.28.2",
+    "pytest>=8.0",
+    "pillow-heif>=1.5.0; platform_system != 'Windows'",
+    # Manual flight-log workbooks (.xlsx) read by fr24/log_verify.py. Imported
+    # lazily at the call site, so only log-verification runs pay the import cost.
+    "openpyxl>=3.1",
+    # Draft 2020-12 JSON Schema validation for the SATIM artifact-assessment
+    # protocol (src/skywatcher/satim/artifacts) and the federation contract-
+    # compat tests.
+    "jsonschema>=4.20",
+    # Shared federation libraries, pinned via [tool.uv.sources] below to an
+    # immutable TheHub commit. No thehub-pr sibling checkout is needed.
+    "prii-maintenance",
+    "prii-export-utils",
+]
+
+[project.optional-dependencies]
+# ADS-B automated aircraft-state-vector poll. Entry point: python scripts/adsb_poll.py
+# Provider: OpenSky Network (free; OAuth2 client-credentials, anonymous fallback).
+adsb = [
+    "opensky-api",
+    "python-dotenv>=1.0",
+]
+dev = [
+    "pytest-cov>=5",
+]
+# FR24 screenshot-processing (skywatcher-pr owns FR24, transferred from
+# spiderweb-pr as part of the repository-boundary correction). Optional: the
+# consolidated skywatcher.fr24 package imports these lazily, so unit tests
+# using synthetic data do not require this stack.
+#
+# SYSTEM PREREQUISITE (not a pip package): the Tesseract OCR engine must be
+# installed out of band, e.g. `apt-get install tesseract-ocr` or `brew install tesseract`.
+fr24 = [
+    "pytesseract>=0.3.13,<0.4",  # Tesseract OCR bindings (fr24 OCR modules)
+    "opencv-python>=4.8,<5",     # UI segmentation / route + track vectorization
+    "numpy>=1.24",               # affine coordinate fitting / vectorization
+    "pyarrow>=14.0",             # columnar export (Parquet)
+]
+# Optional GEBCO bathymetry/terrain layer (gebco/). Heavy geospatial stack;
+# not required for the core airspace engine or the federation export contract.
+geo = [
+    "numpy>=1.24",
+    # Upper-bounded below 1.18: newer scipy releases require Python >=3.12,
+    # which breaks the universal lock across this project's 3.10-3.12 matrix.
+    "scipy>=1.11,<1.18",
+    "xarray>=2023.1",
+    "netCDF4>=1.6",
+]
+# Imagery MCP server — fetch/search/compare satellite imagery over MCP.
+# Entry point: python -m imagery.server
+# Providers: NASA GIBS (no auth), Sentinel Hub, Copernicus/CDSE (OAuth2).
+imagery = [
+    "fastmcp>=2.9,<3",
+    "requests>=2.34.2",
+    "python-dotenv>=1.0",
+    "numpy",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+prii-maintenance = { git = "https://github.com/jotaele44/thehub-pr.git", rev = "f2b81769924689b4d959554928810b1d7b7ef3d6", subdirectory = "packages/prii_maintenance" }
+prii-export-utils = { git = "https://github.com/jotaele44/thehub-pr.git", rev = "f2b81769924689b4d959554928810b1d7b7ef3d6", subdirectory = "packages/prii_export_utils" }
+opensky-api = { git = "https://github.com/openskynetwork/opensky-api.git", rev = "16e3803d2495d0029bebc3c85b2a235eeb122742", subdirectory = "python" }
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [".", "src"]
@@ -26,7 +108,11 @@ markers = [
 line-length = 100
 target-version = "py310"
 src = [".", "src", "tests"]
-extend-exclude = ["Archive.zip", "gebco", "exports", "data"]
+# docs/architecture/archive holds the byte-frozen pre-unfreeze ontology baseline
+# (ADR v2.1 A0), including a copy of the OLD governance test. Those bytes must not
+# change — their SHA-256 values are asserted — so no linter or formatter may touch
+# them. pytest already skips it via testpaths = ["tests"].
+extend-exclude = ["Archive.zip", "gebco", "exports", "data", "docs/architecture/archive"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "W"]

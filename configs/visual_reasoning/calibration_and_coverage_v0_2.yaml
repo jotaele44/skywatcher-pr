@@ -1,0 +1,41 @@
+spec_version: 0.2.0
+calibration_policy:
+  unvalidated_numeric_status: CALIBRATION_REQUIRED
+  rule: CALIBRATION_REQUIRED values may support AUDIT_ONLY/CANDIDATE behavior but cannot create CERTIFIED auto-promotion
+  material_threshold_tests: [LOW_BOUND, CANONICAL, HIGH_BOUND, BOUNDARY_MINUS_EPSILON, BOUNDARY_PLUS_EPSILON]
+  required_rule_tests: [POSITIVE, NEGATIVE, NULL, BOUNDARY, TIE_IF_APPLICABLE, CONTRADICTION_IF_APPLICABLE]
+  current_12_page_pdf_role: [BEHAVIORAL_REGRESSION, MULTISCALE_REASONING, OVERZOOM, CANOPY, SHADOW, UI_TEXT_SEPARATION, LOW_GROUND_CONTEXT, HYDROGRAPHIC_CONTEXT]
+  current_12_page_pdf_not_valid_for: [STATISTICAL_TRAINING_DENOMINATOR, QUARRY_GROUND_TRUTH, EXCAVATION_GROUND_TRUTH, UNIVERSAL_THRESHOLD_CALIBRATION]
+  dedicated_fixture_universes_required: [SHADOW, TILE_SEAM, STITCHING, DIGITAL_ARTIFACT, PALM, WATER, QUARRY, NATURAL_SCARP, ROAD_CUT, LANDSLIDE, EXCAVATION, CONSTRUCTION, PORTAL_NEGATIVE_CONTROLS, SCENE_LOCATION]
+coverage:
+  declared_families:
+    input_custody: PASS
+    ui_ocr: PASS
+    quality_zoom: PASS
+    illumination_shadow: PASS
+    seam_stitch_artifact: PASS
+    palm_vegetation: PASS
+    water_hydrography: PASS
+    roads_buildings: PASS
+    infrastructure: PASS
+    quarry: PASS
+    excavation: PASS
+    portal_like: PASS
+    multiscale_multiframe: PASS
+    scene_graph: PASS
+    scene_locator: PASS
+    confidence_global: PASS
+  parameter_family_open_count: 0
+  rule_family_open_count: 0
+  undefined_null_policy_count: 0
+  undefined_tie_policy_count: 0
+  undefined_precedence_policy_count: 0
+  caveat: PASS means structurally specified in Vector 1; numerical calibration and implementation validation belong to later vectors
+release_requirements:
+  - zero unregistered output-affecting parameters inside declared scope
+  - zero material decision paths without stable rule id and reason code
+  - zero undefined null/tie/duplicate behaviors
+  - zero unresolved intermodule override semantics
+  - zero certification paths without provenance requirements
+  - no discovery-only evidence promoted to identity
+  - all calibration-required values remain noncanonical until validated
