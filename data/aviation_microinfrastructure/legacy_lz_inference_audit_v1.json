@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "audit_id": "SKYWATCHER_LZ_IDENTITY_INFERENCE_AUDIT_V1",
+  "base_commit": "651d335ed097d6dd017199d1745db931e0c116e9",
+  "scope": "Executable paths surfaced by bounded repository searches for landing, helipad, nearest, matched_facility_id, hangar, apron, and proximity semantics. Search discovery is not represented as universal source-tree exhaustion.",
+  "findings": [
+    {
+      "path": "fr24/flight_fusion.py",
+      "class": "IDENTITY",
+      "prior_state": "FAIL",
+      "finding": "Distance-derived endpoint candidates were allowed to overwrite origin_code/destination_code even though endpoint_matcher labels them needs_review and explicitly says they are not confirmed takeoff/landing events.",
+      "remediation": "Require review_status=promoted, identity_state=CERTIFIED, and association_state stronger than DISCOVERY_ONLY before route mutation.",
+      "post_patch_state": "PASS"
+    },
+    {
+      "path": "fr24/endpoint_matcher.py",
+      "class": "IDENTITY",
+      "prior_state": "PROVISIONAL",
+      "finding": "Nearest-airport candidates were already review-gated in prose but lacked machine-readable identity/association states.",
+      "remediation": "Emit identity_state=CANDIDATE_NOT_IDENTITY and association_state=DISCOVERY_ONLY for every distance-band match.",
+      "post_patch_state": "PASS"
+    },
+    {
+      "path": "src/skywatcher/correlation/footprint_proximity.py",
+      "class": "IDENTITY",
+      "prior_state": "PROVISIONAL",
+      "finding": "Proximity ranking included facility-class boosts but returned no explicit machine-readable statement that results are discovery-only.",
+      "remediation": "Stamp every FootprintMatch with evidence_role=DISCOVERY_ONLY and identity_state=CANDIDATE_NOT_IDENTITY.",
+      "post_patch_state": "PASS"
+    },
+    {
+      "path": "src/skywatcher/core/aviation_microinfrastructure.py",
+      "class": "IDENTITY",
+      "prior_state": "PASS",
+      "finding": "Nearest-only relation already maps to DISCOVERY_ONLY and helicopter presence cannot promote a helipad.",
+      "remediation": "Retain unchanged; add geometry-adjudication companion contract.",
+      "post_patch_state": "PASS"
+    },
+    {
+      "path": "poi_attribution/geometry_binding.py",
+      "class": "IDENTITY",
+      "prior_state": "PASS",
+      "finding": "Nearest, proximity, search rank, same category and unbound labels are discovery signals and cannot bind identity.",
+      "remediation": "Retain unchanged.",
+      "post_patch_state": "PASS"
+    },
+    {
+      "path": "scripts/federation_export.py",
+      "class": "IDENTITY",
+      "prior_state": "AUDIT_ONLY",
+      "finding": "Endpoint events are exported as standalone event entities and include matched_facility_id, but the exporter does not create a facility-identity relationship from that field. Candidate identity/association state propagation is not yet explicit in the canonical entity payload.",
+      "remediation": "Treat matched_facility_id as event evidence only; future contract revision should project identity_state and association_state as explicit fields.",
+      "post_patch_state": "AUDIT_ONLY"
+    }
+  ],
+  "regression_gates": [
+    "distance candidate cannot overwrite origin/destination",
+    "only explicitly promoted certified endpoint may update route",
+    "proximity result remains CANDIDATE_NOT_IDENTITY even at score 1.0",
+    "authoritative airport diagram is not certified machine geometry",
+    "name/address/proximity-only evidence never certifies facility identity"
+  ],
+  "certification": "PROVISIONAL_BOUNDED_AUDIT; one material auto-promotion path found and patched; universal executable-source exhaustion not claimed"
+}

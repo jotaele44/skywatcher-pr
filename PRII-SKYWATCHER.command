@@ -11,7 +11,7 @@ if [ -z "$PYTHON" ]; then
   exit 1
 fi
 
-LOG="${TMPDIR:-/tmp}/prii-skywatcher-pr-setup.log"
+LOG="$(mktemp "${TMPDIR:-/tmp}/prii-skywatcher-pr-setup.XXXXXX")"
 if ! "$PYTHON" desktop/setup.py --ensure >"$LOG" 2>&1; then
   cat "$LOG"
   echo
