@@ -38,6 +38,14 @@ targets:
       - path: Sources/Core
     info:
       path: Config/ShareExtension-Info.plist
+      properties:
+        CFBundleDisplayName: Analyze with Skywatcher
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsImageWithMaxCount: 1
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.prii.skywatcher.mobile.share
