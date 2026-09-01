@@ -17,8 +17,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Dict, Iterable, Mapping
+from typing import Any
 
 from .features import (
     compute_boundary_geometry_features,
@@ -58,7 +59,7 @@ DECISIONS = {
 }
 
 
-def extract_candidate_features(row: Mapping[str, Any]) -> Dict[str, float]:
+def extract_candidate_features(row: Mapping[str, Any]) -> dict[str, float]:
     """Generate normalized L0-L4 features for one candidate boundary."""
     geometry = compute_boundary_geometry_features(row)
     radiometric = compute_radiometric_features(row)
@@ -86,7 +87,7 @@ def infrastructure_explanation_penalty(features: Mapping[str, float]) -> float:
     return clamp01(float(features.get("infrastructure_rejection", 0.0) or 0.0))
 
 
-def classify_synthetic_boundary(features: Mapping[str, float]) -> Dict[str, Any]:
+def classify_synthetic_boundary(features: Mapping[str, float]) -> dict[str, Any]:
     """Classify using weighted features without hard infrastructure rejection."""
     straightness = clamp01(float(features.get("straightness", 0.0) or 0.0))
     radiometric_delta = clamp01(float(features.get("radiometric_delta", 0.0) or 0.0))
@@ -153,7 +154,7 @@ def classify_synthetic_boundary(features: Mapping[str, float]) -> Dict[str, Any]
     }
 
 
-def classify_candidate(row: Mapping[str, Any]) -> Dict[str, Any]:
+def classify_candidate(row: Mapping[str, Any]) -> dict[str, Any]:
     features = extract_candidate_features(row)
     return {**features, **classify_synthetic_boundary({**row, **features})}
 
@@ -163,7 +164,7 @@ def load_candidates(path: str | Path) -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
-def summarize(results: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
+def summarize(results: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     rows = list(results)
     counts = {decision: 0 for decision in DECISIONS}
     for row in rows:
@@ -172,7 +173,7 @@ def summarize(results: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
     return {"candidate_count": len(rows), "decision_counts": counts}
 
 
-def calibrate(candidates_csv: str) -> Dict[str, Any]:
+def calibrate(candidates_csv: str) -> dict[str, Any]:
     candidates = load_candidates(candidates_csv)
     scored = [classify_candidate(row) for row in candidates]
     metrics = summarize(scored)

@@ -1,0 +1,35 @@
+{
+  "generated_at": "2026-07-20",
+  "environment": "local venv (pytest 9.1.1, jsonschema 4.26, Pillow, numpy) — no global installs",
+  "commands": {
+    "skywatcher_new": "PYTHONPATH=.:src pytest tests/test_database_schema.py tests/test_database_initialization.py tests/test_screenshot_identity.py tests/test_ocr_normalization.py tests/test_telemetry_parser.py tests/test_flight_reconstruction.py tests/test_duplicate_detection.py tests/test_mission_classification_gate.py tests/test_cli_image_dir.py tests/test_spiderweb_export.py tests/test_module_boundaries.py -q",
+    "skywatcher_full": "PYTHONPATH=.:src pytest tests/ -q --ignore=tests/test_federation_contract_compat.py --ignore=tests/test_federation_export.py --ignore=tests/test_maintenance.py",
+    "spiderweb_new": "PYTHONPATH=. pytest tests/test_ingest_skywatcher.py tests/test_no_fr24_modules.py tests/test_temporal_validator.py -q",
+    "spiderweb_full": "PYTHONPATH=. pytest tests/ -q (excluding modules needing scipy/requests/prii_* internal pkgs)"
+  },
+  "results": {
+    "skywatcher_full": {"passed": 770, "skipped": 17, "failed": 0, "collection_errors_preexisting": 3},
+    "spiderweb_full": {"passed": 847, "skipped": 18, "failed_preexisting_dep": 2, "errors_preexisting_dep": 8, "regressions": 0}
+  },
+  "mission_gates": [
+    {"gate": 1, "desc": "Skywatcher imports all transferred modules", "status": "PASS"},
+    {"gate": 2, "desc": "DB schema creation in a temp dir", "status": "PASS", "test": "test_database_schema.py"},
+    {"gate": 3, "desc": "Repeated initialization is idempotent", "status": "PASS", "test": "test_database_initialization.py::test_initialization_is_idempotent"},
+    {"gate": 4, "desc": "Schema migrations are deterministic", "status": "PASS", "test": "test_database_initialization.py::test_migration_order_is_deterministic"},
+    {"gate": 5, "desc": "SHA-256 screenshot identity", "status": "PASS", "test": "test_screenshot_identity.py"},
+    {"gate": 6, "desc": "OCR normalization (synthetic strings)", "status": "PASS", "test": "test_ocr_normalization.py"},
+    {"gate": 7, "desc": "Telemetry parsing (synthetic values)", "status": "PASS", "test": "test_telemetry_parser.py"},
+    {"gate": 8, "desc": "Flight reconstruction (synthetic observations)", "status": "PASS", "test": "test_flight_reconstruction.py"},
+    {"gate": 9, "desc": "Duplicate detection without operational data", "status": "PASS", "test": "test_duplicate_detection.py"},
+    {"gate": 10, "desc": "Skywatcher export validates against schema", "status": "PASS", "test": "test_spiderweb_export.py"},
+    {"gate": 11, "desc": "SpiderWeb accepts a valid synthetic fixture", "status": "PASS", "test": "test_ingest_skywatcher.py::test_accepts_valid_fixture"},
+    {"gate": 12, "desc": "SpiderWeb rejects invalid/incompatible fixture", "status": "PASS", "test": "test_ingest_skywatcher.py::test_rejects_invalid_fixture, ::test_rejects_prohibited_confirmed_label"},
+    {"gate": 13, "desc": "SpiderWeb no longer imports removed FR24 modules", "status": "PASS", "test": "test_no_fr24_modules.py::test_removed_modules_not_importable"},
+    {"gate": 14, "desc": "Repo-wide search finds zero active FR24 impls in SpiderWeb", "status": "PASS", "test": "test_no_fr24_modules.py + FINAL_ZERO_HIT_AUDIT.txt"},
+    {"gate": 15, "desc": "Unrelated tests remain passing", "status": "PASS", "note": "770 + 847 pass; only pre-existing missing-dependency collection errors remain"},
+    {"gate": 16, "desc": "Git status: no db/screenshot/cache/export artifacts", "status": "PASS", "note": ".gitignore updated; no runtime artifacts staged"},
+    {"extra": "module_boundaries", "desc": "AST boundary test passes with new fr24_ingest bucket", "status": "PASS", "test": "test_module_boundaries.py"},
+    {"extra": "cli_image_dir", "desc": "image-dir precedence + actionable missing-dir error", "status": "PASS", "test": "test_cli_image_dir.py"},
+    {"extra": "mission_gate", "desc": "mission classification speculative-until-gated", "status": "PASS", "test": "test_mission_classification_gate.py"}
+  ]
+}

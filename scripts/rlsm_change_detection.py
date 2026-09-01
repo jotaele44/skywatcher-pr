@@ -62,10 +62,12 @@ def main():
     # Build monthly grids
     air_grid = defaultdict(Counter)   # reg -> {yyyymm: count}
     for reg, m in rows:
-        if reg and m: air_grid[reg][m] += 1
+        if reg and m:
+            air_grid[reg][m] += 1
     poi_grid = defaultdict(Counter)
     for poi, m in poi_rows:
-        if poi and m: poi_grid[poi][m] += 1
+        if poi and m:
+            poi_grid[poi][m] += 1
 
     all_months = sorted({m for c in air_grid.values() for m in c} |
                         {m for c in poi_grid.values() for m in c})
@@ -77,7 +79,7 @@ def main():
             mean = sum(counts) / len(counts)
             var = sum((c - mean) ** 2 for c in counts) / max(len(counts), 1)
             std = math.sqrt(var) or 1.0
-            active_months = [(m, c) for m, c in zip(all_months, counts) if c > 0]
+            active_months = [(m, c) for m, c in zip(all_months, counts, strict=False) if c > 0]
             for i, m in enumerate(all_months):
                 c = counts[i]
                 prev = counts[i - 1] if i > 0 else 0
@@ -110,13 +112,15 @@ def main():
                                            "zscore_vs_self","flag","active_months_in_corpus"],
                            quoting=csv.QUOTE_ALL)
         w.writeheader()
-        for r in air_monthly: w.writerow(r)
+        for r in air_monthly:
+            w.writerow(r)
     with (OUTS / "intel_change_poi_monthly.csv").open("w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["poi","yyyymm","count","delta_vs_prev",
                                            "zscore_vs_self","flag","active_months_in_corpus"],
                            quoting=csv.QUOTE_ALL)
         w.writeheader()
-        for r in poi_monthly: w.writerow(r)
+        for r in poi_monthly:
+            w.writerow(r)
 
     # Alerts table: surges, vanishes (with sufficient history), debuts of meaningful aircraft
     alerts = []

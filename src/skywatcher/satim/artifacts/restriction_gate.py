@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
+
+from .crosswalk import restriction_minimums
 
 ORDER = {
     "NONE": 0,
@@ -10,15 +12,11 @@ ORDER = {
     "OBJECT_LEVEL_PROHIBITED": 3,
     "ALL_INFERENCE_SUSPENDED": 4,
 }
-CLASS_MINIMUM = {
-    "SATIM-A03": "OBJECT_LEVEL_PROHIBITED",
-    "SATIM-A05": "GEOMETRY_DEGRADED",
-    "SATIM-A06": "OBJECT_LEVEL_PROHIBITED",
-    "SATIM-A07": "GEOMETRY_DEGRADED",
-    "SATIM-A10": "SPECTRAL_ONLY_DEGRADED",
-    "SATIM-A11": "ALL_INFERENCE_SUSPENDED",
-    "SATIM-A12": "ALL_INFERENCE_SUSPENDED",
-}
+
+# Sourced from artifact_crosswalk_v1.json rather than restated here. This table used to
+# duplicate the taxonomy's per-class restriction prose with nothing keeping the two in
+# agreement. Same values as before; single origin now.
+CLASS_MINIMUM = restriction_minimums()
 
 
 @dataclass(frozen=True)

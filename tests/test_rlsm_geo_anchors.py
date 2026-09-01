@@ -12,7 +12,6 @@ from pathlib import Path
 
 import pytest
 
-
 # ──────────────────────────────────────────────────────────────────────────
 # Unit tests — registry loading + projection (no SQLite)
 # ──────────────────────────────────────────────────────────────────────────
@@ -93,7 +92,7 @@ def tmp_rlsm_db(tmp_path: Path, monkeypatch):
 
 def test_run_processes_only_ok_screenshots_with_dimensions(tmp_rlsm_db):
     """Screenshot 1 (ok+dims) is processed; 2 (no dims) and 3 (corrupt) are skipped."""
-    from fr24.rlsm_geo_anchors import run, _load_anchor_registry
+    from fr24.rlsm_geo_anchors import _load_anchor_registry, run
     snapshot = run(budget_sec=10.0)
     n_anchors = len(_load_anchor_registry())
     assert snapshot["processed"] == 1
@@ -104,7 +103,7 @@ def test_run_processes_only_ok_screenshots_with_dimensions(tmp_rlsm_db):
 
 def test_run_emits_static_kind_rows_with_pixel_coords(tmp_rlsm_db):
     """Verify the inserted rows have the expected shape + pixel projection."""
-    from fr24.rlsm_geo_anchors import run, _load_anchor_registry, STATIC_ANCHOR_CONFIDENCE
+    from fr24.rlsm_geo_anchors import STATIC_ANCHOR_CONFIDENCE, _load_anchor_registry, run
     run(budget_sec=10.0)
     conn = sqlite3.connect(str(tmp_rlsm_db))
     rows = conn.execute(
@@ -114,7 +113,7 @@ def test_run_emits_static_kind_rows_with_pixel_coords(tmp_rlsm_db):
     conn.close()
     anchors_registry = _load_anchor_registry()
     assert len(rows) == len(anchors_registry)
-    for (kind, name, px, py, lat, lon, conf, source), expected in zip(rows, anchors_registry):
+    for (kind, name, px, py, lat, lon, conf, source), expected in zip(rows, anchors_registry, strict=True):
         assert kind == "static"
         assert name == expected["name"]
         # Pixel projection: round(fraction * dim)

@@ -1,0 +1,32 @@
+term_id,canonical_term,category,owner,status,definition,prohibited_uses
+SYS-001,Skywatcher,system,repository/program,CANONICAL,Umbrella airspace-analysis producer and repository.,Do not call it an analytical domain.
+DOM-001,Core,contract_layer,Core,CANONICAL,"Shared contracts, provenance, states, registries, normalization, receipts, and validation.",No primary domain analysis or fusion.
+PIPE-001,RLSM,pipeline,RLSM under Core governance,CANONICAL,Restricted/Lossless Screenshot Mining extraction and observation-localization pipeline.,"No route significance, behavior, mission, network significance, or terrain interpretation."
+DOM-002,SATIM,analytical_domain,SATIM,CANONICAL,Satellite/Screenshot and Terrain Imagery Module.,"No flight behavior, mission, or cross-domain significance."
+DOM-003,FPIM,analytical_domain,FPIM,CANONICAL,Flight-Path Interpretation Module.,No imagery interpretation or mission/purpose inference.
+DOM-004,CORRIM,analytical_domain,CORRIM,CANONICAL,Cross-domain Observation Reconciliation and Review Integration Module.,"No primary extraction, causation, live cueing, or field direction."
+Q-001,Legacy,quarantine,Legacy,CANONICAL,Compatibility and quarantined historical behavior.,No active analytical dependency.
+OBJ-001,SOURCE_ARTIFACT,object,Core,CANONICAL,Preserved original input or authoritative external record.,Do not overwrite or relabel source content.
+OBJ-002,EXTRACTED_OBSERVABLE,object,RLSM/Core,CANONICAL,Source-visible or mechanically extracted datum.,No explanatory intent.
+OBJ-003,FINDING,object,SATIM or FPIM,CANONICAL,Single-domain interpretation supported by observations and measurements.,No cross-domain significance.
+OBJ-004,ASSOCIATION,object,CORRIM,CANONICAL,"Tested cross-domain relationship, explicitly non-causal.",Do not call it causation or coordination.
+OBJ-005,ILAP,association_object,CORRIM,CANONICAL,Infrastructure-Linked Airspace Point.,"No access, landing, purpose, ownership, or causation claim."
+ADP-001,AASB,adapter,CORRIM adapter,CANONICAL,Airspace-Asset Spatial Bridge.,"Not a domain, confidence model, or surveillance band."
+LBL-001,SOURCE_OVERLAY_TRACK_LINE,visual_label,RLSM/FPIM,CANONICAL,Application-rendered route/playback line visible in a source.,Do not classify as imagery terrain feature.
+LBL-002,STRUCTURAL_FEATURE_CANDIDATE,imagery_label,SATIM,CANONICAL,Potential physical feature remaining after artifact exclusion.,No purpose or confirmation implied.
+LBL-003,TAKEOFF_CANDIDATE,behavior_label,FPIM,CANONICAL,Endpoint geometry compatible with takeoff but not independently verified.,Do not shorten to TAKEOFF unless verified.
+LBL-004,LANDING_CANDIDATE,behavior_label,FPIM,CANONICAL,Endpoint geometry compatible with landing but not independently verified.,Do not shorten to LANDING unless verified.
+LBL-005,CORRIDOR_FOLLOWING,behavior_label,FPIM,CANONICAL,Observed path alignment with a corridor.,Do not infer inspection purpose.
+LBL-006,CROSS_AIRCRAFT_SPATIOTEMPORAL_ASSOCIATION,association_label,CORRIM,CANONICAL,Measured relationship between aircraft records in space/time.,Do not call coordination or intent.
+AXIS-001,EVIDENCE_TIER,evidence_axis,Core,CANONICAL,Source type and verifiability class.,Not confidence or truth.
+AXIS-002,VISIBILITY_CLASS,evidence_axis,Core,CANONICAL,V0-V4 relationship to source visibility/provenance.,Not confidence or review status.
+AXIS-003,CONFIDENCE_SCORE,evidence_axis,Core/domain,CANONICAL,Method-bounded epistemic confidence.,"Not review priority, recurrence, or source tier."
+AXIS-004,REVIEW_PRIORITY,workflow_axis,Core/domain,CANONICAL,Queue ordering.,Not evidence strength.
+MET-001,ROUTE_RECURRENCE_INDEX,metric,FPIM,CANONICAL_NAME_CALIBRATION_REQUIRED,Explicitly defined recurrence metric with denominator.,Do not call accumulated confidence.
+ENG-001,Repo-native Visual Calibration Orchestrator,legacy_orchestrator,Legacy multi-owner orchestrator,COMPATIBILITY,Qualified name for python -m fr24.satim_engine.,Do not call it a SATIM-only domain engine.
+ENG-002,Legacy Integrated Track/Visual Analysis Engine,legacy_engine,Legacy pending decomposition,QUARANTINED_COMPATIBILITY,Qualified name for tools/satim_engine and satim CLI.,Do not market as imagery-only SATIM.
+ENG-003,Legacy FPIM Route Findings Utility,legacy_utility,Legacy/FPIM pending decomposition,QUARANTINED_COMPATIBILITY,Qualified name for tools/satim_route_findings.,Do not treat route/graph summaries as SATIM imagery output.
+LBL-007,DUAL_USE_FUNCTION_CANDIDATE,imagery_label,SATIM,CANONICAL,"Imagery-derived candidate that a structure's observable form is compatible with more than one plausible function; emitted only under bounded confidence governance per ADR v2.1 A1.","Do not assert ownership, intent, mission, wrongdoing, coordination, access, or operational significance."
+OBJ-006,ANALYSIS_LENS,object,Core,CANONICAL,"Declarative analytical objective binding required parameters, inputs, measurements, and emitted classes to exactly one owning domain.",Do not treat a lens as evidence or as a confirmed finding.
+OBJ-007,ANALYSIS_OBJECTIVE_PROFILE,object,Core,CANONICAL,Named set of lenses a run must satisfy before it may be reported complete.,Do not treat profile completion as corroboration or truth.
+AXIS-005,LENS_COVERAGE_STATE,workflow_axis,Core,CANONICAL,"Per-lens execution state for one run: SATISFIED, DEGRADED, MISSING, or NOT_APPLICABLE.","Not confidence, evidence strength, or review priority."

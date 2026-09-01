@@ -51,8 +51,10 @@ def ocr_aware_lev(a: str, b: str, max_d: int = 3) -> int:
     if abs(len(a) - len(b)) > max_d:
         return max_d + 1
     n, m = len(a), len(b)
-    if n == 0: return m
-    if m == 0: return n
+    if n == 0:
+        return m
+    if m == 0:
+        return n
     prev = list(range(m + 1))
     for i in range(1, n + 1):
         curr = [i] + [0] * m
@@ -61,10 +63,7 @@ def ocr_aware_lev(a: str, b: str, max_d: int = 3) -> int:
             # Substitution cost: 0.5 if OCR-confusable, 1 otherwise
             sub_cost = 0
             if a[i-1] != b[j-1]:
-                if frozenset([a[i-1], b[j-1]]) in OCR_CONFUSABLES:
-                    sub_cost = 0.5
-                else:
-                    sub_cost = 1
+                sub_cost = 0.5 if frozenset([a[i - 1], b[j - 1]]) in OCR_CONFUSABLES else 1
             curr[j] = min(
                 prev[j] + 1,       # deletion
                 curr[j-1] + 1,     # insertion
@@ -90,7 +89,8 @@ def main():
     if FAA_CSV.exists():
         for r in csv.DictReader(FAA_CSV.open()):
             t = (r.get("registration") or "").upper().strip()
-            if t.startswith("N"): faa_set.add(t)
+            if t.startswith("N"):
+                faa_set.add(t)
     print(f"[lev-recover] FAA registry size: {len(faa_set):,}")
 
     conn = sqlite3.connect(DB)
@@ -113,22 +113,28 @@ def main():
 
     # Build candidate → faa-match cache so we don't re-do edit-distance for same input
     cache: dict[str, tuple[str, float] | None] = {}
-    n_recovered = n_ambiguous = 0
+    n_recovered = 0
     by_match = Counter()
     recovered = []
 
     for obs_id, text in rows:
-        if not text: continue
+        if not text:
+            continue
         for m in REG_PAT.findall(text):
             up = m.upper().replace("-", "").replace(" ", "")
-            if up in ("NA", "N/A", "NONE"): continue
-            if not up.startswith("N"): continue
-            if not (3 <= len(up) <= 7): continue
+            if up in ("NA", "N/A", "NONE"):
+                continue
+            if not up.startswith("N"):
+                continue
+            if not (3 <= len(up) <= 7):
+                continue
             # Cache lookup
             if up in cache:
                 hit = cache[up]
             else:
-                best = None; best_d = float("inf"); second_d = float("inf")
+                best = None
+                best_d = float("inf")
+                second_d = float("inf")
                 for faa_tail in faa_set:
                     if abs(len(faa_tail) - len(up)) > args.max_distance:
                         continue

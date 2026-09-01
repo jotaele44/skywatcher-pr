@@ -1,12 +1,12 @@
 from copy import deepcopy
 
 from satim_contradiction_resolver import (
+    EVIDENCE_RECONCILIATION_ONLY_NO_FACT_SYNTHESIS,
+    ORIGINAL_OUTPUT_IMMUTABILITY,
     ConflictType,
     ContradictionObservation,
     DetectorEvidence,
     DetectorType,
-    EVIDENCE_RECONCILIATION_ONLY_NO_FACT_SYNTHESIS,
-    ORIGINAL_OUTPUT_IMMUTABILITY,
     ReconciliationClass,
     build_contradiction_ledger,
     build_detector_confidence_patch,
@@ -120,7 +120,7 @@ def test_confidence_patch_is_non_destructive_and_separable():
     source = fixture("hard")
     patches = build_detector_confidence_patch([source])
     assert len(patches) == len(source.evidence)
-    for patch, original in zip(patches, source.evidence):
+    for patch, original in zip(patches, source.evidence, strict=True):
         assert patch["record_id"] == original.record_id
         assert patch["original_classification"] == original.classification
         assert patch["original_score"] == original.score

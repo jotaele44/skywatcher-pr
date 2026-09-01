@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.0",
+  "dataset_id": "SIG_TJIG_SOURCE_BINDING_V1",
+  "scope": "Public-source bindings for SIG/TJIG and named operators/facilities. These records bind an entity to an airport/ramp address only where supported; they do not prove that a screenshot POI pin identifies a specific building polygon or landing surface.",
+  "bindings": [
+    {
+      "binding_id": "SIG_PARENT_FAA_2026",
+      "subject": "SIG_TJIG",
+      "predicate": "AUTHORITATIVE_AIRFIELD_IDENTITY",
+      "object": "Fernando Luis Ribas Dominicci Airport / Isla Grande Airport",
+      "state": "AUTHORITATIVE",
+      "source": "https://www.faa.gov/flight_deck/sig",
+      "source_authority": "FAA",
+      "assertions": [
+        "SIG/TJIG is Fernando Luis Ribas Dominicci Airport, also known as Isla Grande Airport",
+        "airport has a single runway 9/27",
+        "FBO ramps, services and facilities are on both sides of the runway",
+        "airport supports air-taxi and military helicopter operations"
+      ],
+      "does_not_prove": [
+        "identity of any individual screenshot hangar",
+        "existence of an uncharted dedicated helipad",
+        "operator of the screenshot marked-H pad"
+      ]
+    },
+    {
+      "binding_id": "BENITEZ_NORTH_RAMP_HANGAR_A_FAA_REGISTRY",
+      "subject": "Benitez Aviation Inc",
+      "predicate": "AIRPORT_ADDRESS_BINDING",
+      "object": "PRFBO-1 Muelle Panamericano, Rampa Norte Hangar A, Isla Grande, San Juan",
+      "state": "AUTHORITATIVE",
+      "source": "https://registry.faa.gov/AircraftInquiry/Search/NNumberResult?nNumberTxt=196DM",
+      "source_authority": "FAA Aircraft Registry",
+      "assertions": [
+        "FAA aircraft registration for N196DM lists Benitez Aviation Inc as registered owner",
+        "registered owner street address identifies North Ramp Hangar A at Isla Grande"
+      ],
+      "does_not_prove": [
+        "that a Google Maps pin centroid equals the Hangar A footprint",
+        "that every aircraft visible in the screenshot belongs to Benitez",
+        "dedicated helipad existence"
+      ]
+    },
+    {
+      "binding_id": "MODERN_TJIG_FBO_2024",
+      "subject": "Modern Aviation",
+      "predicate": "TJIG_FBO_OPERATION_BINDING",
+      "object": "Fernando Luis Ribas Dominicci Airport / TJIG",
+      "state": "AUTHORITATIVE_ENTITY_SOURCE",
+      "source": "https://modern-aviation.com/modern-aviation-acquires-puerto-rico-fbo-at-isla-grande-airport-in-san-juan-pr/",
+      "source_authority": "Modern Aviation",
+      "assertions": [
+        "Modern Aviation announced acquisition of Puerto Rico FBO LLC at TJIG in 2024",
+        "Benitez Aviation continued its aircraft-management and Part 135 charter business at the airport"
+      ],
+      "does_not_prove": [
+        "which exact screenshot building polygon is owned or leased by Modern Aviation",
+        "dedicated helipad existence on either pictured Modern apron"
+      ]
+    },
+    {
+      "binding_id": "PLANET_AIR_SOUTH_RAMP_LOT_2A",
+      "subject": "Planet Air Aviation",
+      "predicate": "AIRPORT_LOT_BINDING",
+      "object": "Isla Grande Airport, South Ramp Lot 2A, San Juan PR 00907",
+      "state": "CORROBORATED",
+      "source": "https://www.discoverpuertorico.com/profile/planet-air-aviation/14606",
+      "source_authority": "Discover Puerto Rico",
+      "assertions": [
+        "Planet Air Aviation is listed at Isla Grande Airport South Ramp Lot 2A",
+        "listed activity includes helicopter tours and charter services"
+      ],
+      "does_not_prove": [
+        "exact building footprint from the screenshot pin",
+        "ownership or operation of the marked-H pad"
+      ]
+    },
+    {
+      "binding_id": "LIFE_FLIGHT_SOUTH_HANGAR_4_CANDIDATE",
+      "subject": "Life Flight of Puerto Rico Inc",
+      "predicate": "SOUTH_HANGAR_4_ADDRESS_CANDIDATE",
+      "object": "Via Principal Hangar #4 Sur, Isla Grande Airport, San Juan PR 00907",
+      "state": "CANDIDATE",
+      "source": "https://npiprofile.com/npi/1326231085",
+      "source_authority": "NPPES-derived third-party manifestation",
+      "assertions": [
+        "NPPES-derived listing reports an Isla Grande South Hangar #4 address"
+      ],
+      "does_not_prove": [
+        "marked-H pad operator identity",
+        "current tenancy",
+        "exact screenshot hangar polygon"
+      ]
+    }
+  ],
+  "identity_rule": "Airport/ramp/address binding is not building-polygon identity. Exact tenant-to-footprint promotion requires an authoritative lease/site plan, certified geometry plus independent alias/ID evidence, or equivalent stronger evidence.",
+  "status": "PROVISIONAL_SOURCE_BINDING_COMPLETE_FOR_EXECUTED_PUBLIC_LEADS"
+}

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from hashlib import sha1
-from typing import Any, Mapping
+from typing import Any
 
 
 def _float(value: Any, default: float = 0.0) -> float:

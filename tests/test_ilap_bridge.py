@@ -1,6 +1,5 @@
 """Tests for ILAP Airspace Bridge — Task 21."""
 
-import pytest
 
 from ilap_airspace_bridge import (
     CONFIDENCE_WEIGHTS,
@@ -56,13 +55,13 @@ def test_ilap_bridge_corridor_candidate_output_shape(tmp_path):
         conn.execute(
             "INSERT INTO track_points (flight_id, timestamp, latitude, longitude, "
             "altitude_ft, ground_speed_mph) VALUES (?, ?, ?, ?, ?, ?)",
-            (f"FLT_A", f"2024-03-15T08:{i:02d}:00", 18.44 + i * 0.001,
+            ("FLT_A", f"2024-03-15T08:{i:02d}:00", 18.44 + i * 0.001,
              -66.0 + i * 0.001, 3000, 100),
         )
         conn.execute(
             "INSERT INTO track_points (flight_id, timestamp, latitude, longitude, "
             "altitude_ft, ground_speed_mph) VALUES (?, ?, ?, ?, ?, ?)",
-            (f"FLT_B", f"2024-03-15T09:{i:02d}:00", 18.44 + i * 0.001,
+            ("FLT_B", f"2024-03-15T09:{i:02d}:00", 18.44 + i * 0.001,
              -66.0 + i * 0.001, 3000, 100),
         )
     conn.commit()

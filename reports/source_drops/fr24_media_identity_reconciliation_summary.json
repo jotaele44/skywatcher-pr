@@ -1,0 +1,17 @@
+{
+  "aircraft_observation_rows": 9963,
+  "candidate_ambiguous_rows": 0,
+  "candidate_not_identity_rows": 10,
+  "candidate_unique_rows": 10,
+  "identity_policy": "Exact filename is FOUND; date/aircraft-token matches are discovery candidates only.",
+  "intersection_exact_filename": 0,
+  "media_filename_unique": 2856,
+  "media_index": "/Users/jotaele/Documents/FR24/FR24_DataBank/Media_Canonical/freeze_final/final_active_media_index.csv",
+  "media_only_filenames": 2856,
+  "media_rows": 2856,
+  "observation_filename_unique": 9795,
+  "observation_only_filenames": 9795,
+  "observations": "/Users/jotaele/Documents/Financials/Consolidated/entities/aircraft_observations.csv",
+  "symmetric_difference_filenames": 12651,
+  "union_filenames": 12651
+}

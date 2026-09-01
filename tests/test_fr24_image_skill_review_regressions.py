@@ -68,7 +68,9 @@ def test_overlay_route_is_masked_before_artifact_classification(tmp_path: Path) 
     assert all(row["class"] != "POSSIBLE_TILE_SEAM" for row in findings)
 
 
-def test_stage_1_analyzes_every_rendered_pdf_page(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_stage_1_analyzes_every_rendered_pdf_page(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     paths = []
     frames = []
     for index, page in enumerate((6, 9, 12), 1):
@@ -151,9 +153,7 @@ def test_observation_schema_version_matches_shipped_schema(
 
     output = tmp_path / "out"
     _stage_1([frame], output, AnalysisMode.STANDARD)
-    observation = json.loads(
-        (output / "stage_1" / "STAGE_1_FLIGHT_OBSERVATION.json").read_text()
-    )
+    observation = json.loads((output / "stage_1" / "STAGE_1_FLIGHT_OBSERVATION.json").read_text())
     schema_path = (
         Path(__file__).resolve().parents[1]
         / "skills"

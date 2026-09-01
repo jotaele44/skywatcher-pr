@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from math import sqrt
-from typing import Any, Mapping
+from typing import Any
 
 from .boundary_geometry import as_float, clamp01
 

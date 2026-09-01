@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from hashlib import sha1
-from typing import Mapping, Sequence
 
 from skywatcher.fusion.coastal_corridor_index import haversine_km
 

@@ -7,10 +7,11 @@ import mimetypes
 import re
 import shutil
 import subprocess
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from .adapters import capability_report
 
@@ -19,6 +20,92 @@ class AnalysisMode(str, Enum):
     TRIAGE = "triage"
     STANDARD = "standard"
     FORENSIC = "forensic"
+
+
+# What each mode actually changes. `mode` was threaded through _stage_1 and _stage_2 from
+# the start but never branched on, so all three modes did identical work; the enum
+# described an intent the code did not implement. Values here are the per-mode parameter
+# set, resolved once in RunOptions and carried into deterministic_config so a run states
+# the parameters it used.
+MODE_PARAMETERS: dict[str, dict[str, Any]] = {
+    "triage": {
+        # Cheapest useful pass: sample video sparsely, render PDFs at screen DPI, and
+        # accept a looser seam floor because triage is meant to over-collect candidates
+        # for a human to filter rather than to adjudicate them.
+        "pdf_dpi": 72,
+        "video_fps": 1,
+        "seam_score_threshold": 4.0,
+        "ui_margin_fraction": 0.04,
+        "multi_scale_tests": False,
+        "cross_source_tests": False,
+    },
+    "standard": {
+        "pdf_dpi": 72,
+        "video_fps": 1,
+        "seam_score_threshold": 6.0,
+        "ui_margin_fraction": 0.04,
+        "multi_scale_tests": True,
+        "cross_source_tests": False,
+    },
+    "forensic": {
+        # Higher render fidelity and a stricter floor: forensic output is meant to
+        # survive review, so it trades recall for precision and enables the cross-source
+        # comparison the taxonomy's contradiction tests need.
+        "pdf_dpi": 200,
+        "video_fps": 4,
+        "seam_score_threshold": 7.5,
+        "ui_margin_fraction": 0.02,
+        "multi_scale_tests": True,
+        "cross_source_tests": True,
+    },
+}
+
+
+@dataclass(frozen=True)
+class RunOptions:
+    """The skill's declared input contract, made reachable.
+
+    `skills/skywatcher-fr24-image-analysis/schemas/input.schema.json` has declared
+    execute_stage_1, execute_stage_2, external_verification, target_registration_rmse_m
+    and output_geometry since the skill was written, but the CLI accepted only `--mode`,
+    so four of the six knobs were unreachable. Defaults match the schema's.
+    """
+
+    mode: AnalysisMode = AnalysisMode.STANDARD
+    execute_stage_1: bool = True
+    execute_stage_2: bool = True
+    external_verification: str = "provided_only"
+    target_registration_rmse_m: float = 10.0
+    output_geometry: str = "geojson"
+
+    def __post_init__(self) -> None:
+        if self.external_verification not in {"none", "provided_only", "acquire_when_available"}:
+            raise ValueError(f"unknown external_verification: {self.external_verification}")
+        if self.output_geometry not in {"none", "pixel_space", "geojson"}:
+            raise ValueError(f"unknown output_geometry: {self.output_geometry}")
+        if self.target_registration_rmse_m <= 0:
+            raise ValueError("target_registration_rmse_m must be greater than zero")
+        # Stage 2 reads Stage 1's frozen state, so it cannot run without it (SKILL.md's
+        # freeze-before-proceed invariant). Refuse rather than produce a partial run that
+        # looks complete.
+        if self.execute_stage_2 and not self.execute_stage_1:
+            raise ValueError(
+                "execute_stage_2 requires execute_stage_1: stage 2 consumes stage 1's "
+                "frozen output"
+            )
+
+    def parameters(self) -> dict[str, Any]:
+        """Full resolved parameter set for this run."""
+        return {
+            **MODE_PARAMETERS[self.mode.value],
+            "mode": self.mode.value,
+            "execute_stage_1": self.execute_stage_1,
+            "execute_stage_2": self.execute_stage_2,
+            "external_verification": self.external_verification,
+            "target_registration_rmse_m": self.target_registration_rmse_m,
+            "output_geometry": self.output_geometry,
+            "fixed_bounds_promotion": False,
+        }
 
 
 class FindingDisposition(str, Enum):
@@ -145,7 +232,17 @@ def _frame_record(index: int, source: SourceRecord, path: Path, page: int | None
     }
 
 
-def _render_sources(sources: list[SourceRecord], output: Path) -> list[dict[str, object]]:
+def _render_sources(
+    sources: list[SourceRecord], output: Path, parameters: dict[str, Any] | None = None
+) -> list[dict[str, object]]:
+    # Render fidelity is a mode parameter, not a constant: forensic renders PDFs at
+    # 200 DPI and samples video at 4 fps, triage and standard at 72 DPI / 1 fps. The
+    # extraction_method string records which was used so a frame's provenance states its
+    # own fidelity.
+    parameters = parameters or MODE_PARAMETERS["standard"]
+    pdf_dpi = int(parameters["pdf_dpi"])
+    video_fps = int(parameters["video_fps"])
+
     frame_dir = output / "frames"
     frame_dir.mkdir(parents=True, exist_ok=True)
     frames: list[dict[str, object]] = []
@@ -161,32 +258,34 @@ def _render_sources(sources: list[SourceRecord], output: Path) -> list[dict[str,
             prefix = frame_dir / f"pdf-{index + 1:05d}"
             renderer = shutil.which("pdftoppm")
             if renderer:
-                subprocess.run([renderer, "-png", "-r", "72", str(source_path), str(prefix)], check=True)
+                subprocess.run([renderer, "-png", "-r", str(pdf_dpi), str(source_path), str(prefix)], check=True)
                 rendered_pages = sorted(frame_dir.glob(prefix.name + "-*.png"))
-                method = "pdftoppm-72dpi"
+                method = f"pdftoppm-{pdf_dpi}dpi"
             else:
                 try:
-                    import fitz
-                except ImportError as exc:
-                    raise RuntimeError(
-                        "PDF rendering degraded: neither pdftoppm nor PyMuPDF is available"
-                    ) from exc
+                    import pymupdf as fitz
+                except ImportError:
+                    try:
+                        import fitz
+                    except ImportError as exc:
+                        raise RuntimeError("PDF rendering degraded: neither pdftoppm nor PyMuPDF is available") from exc
                 rendered_pages = []
+                scale = pdf_dpi / 72
                 with fitz.open(source_path) as document:
                     for page_number, pdf_page in enumerate(document, 1):
                         rendered = frame_dir / f"{prefix.name}-{page_number}.png"
-                        pdf_page.get_pixmap(matrix=fitz.Matrix(1, 1), alpha=False).save(rendered)
+                        pdf_page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False).save(rendered)
                         rendered_pages.append(rendered)
-                method = "pymupdf-72dpi-fallback"
+                method = f"pymupdf-{pdf_dpi}dpi-fallback"
             for page, rendered in enumerate(rendered_pages, 1):
                 index += 1
                 frames.append(_frame_record(index, source, rendered, page, method))
         elif source.media_type == "video":
             pattern = frame_dir / f"video-{index + 1:05d}-%06d.png"
-            subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(source_path), "-vf", "fps=1", str(pattern)], check=True)
+            subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(source_path), "-vf", f"fps={video_fps}", str(pattern)], check=True)
             for second, rendered in enumerate(sorted(frame_dir.glob(pattern.name.replace("%06d", "*")))):
                 index += 1
-                frames.append(_frame_record(index, source, rendered, None, "ffmpeg-fps-1", float(second)))
+                frames.append(_frame_record(index, source, rendered, None, f"ffmpeg-fps-{video_fps}", float(second)))
     return frames
 
 
@@ -203,12 +302,28 @@ def _segment_frame(path: Path) -> dict[str, object]:
         return {"map_bbox": [int(.04 * width), int(.08 * height), int(.92 * width), int(.64 * height)], "method": "typed_fallback_geometric", "confidence": .72}
 
 
+def _ocr_unavailable(frame_id: str) -> list[dict[str, object]]:
+    """The degraded result when OCR cannot run at all."""
+    return [{"frame_id": frame_id, "region": "all", "field": "raw_text", "value": "", "confidence": "", "method": "unavailable", "status": "dependency_unavailable"}]
+
+
 def _ocr_regions(path: Path, frame_id: str) -> list[dict[str, object]]:
     from PIL import Image, ImageOps
     try:
         import pytesseract
     except ImportError:
-        return [{"frame_id": frame_id, "region": "all", "field": "raw_text", "value": "", "confidence": "", "method": "unavailable", "status": "dependency_unavailable"}]
+        return _ocr_unavailable(frame_id)
+    # pytesseract is a Python wrapper around the `tesseract` BINARY, and the two
+    # are installed separately — pytesseract is not declared in any manifest here,
+    # so "package present, binary absent" is a normal state, not an edge case.
+    # The import above only proves the package is there; image_to_string raises
+    # TesseractNotFoundError at CALL time when the binary is missing. Probe once
+    # here so that degrades the same way as the package being absent, instead of
+    # crashing partway through the region loop.
+    try:
+        pytesseract.get_tesseract_version()
+    except pytesseract.TesseractNotFoundError:
+        return _ocr_unavailable(frame_id)
     rows: list[dict[str, object]] = []
     with Image.open(path) as source:
         image = ImageOps.exif_transpose(source).convert("RGB")
@@ -311,12 +426,7 @@ def _axis_candidate(axis: str, scores: list[float], x: int, y: int, width: int, 
     return {"frame_id": frame_id, "class": "POSSIBLE_TILE_SEAM", "pixel_bbox": json.dumps(bbox), "confidence": round(min(.85, .35 + ratio / 20), 3), "status": "candidate", "repeat_view_cluster_id": "SOURCE_SEQUENCE_001", "screen_alignment_score": screen_alignment_score, "ground_alignment_status": "NOT_ADJUDICATED", "cross_zoom_persistence": "NOT_ADJUDICATED", "ui_overlay_intersection": False, "analyst_note": f"{axis} gradient ratio {ratio:.2f}; non-UI threshold passed; repeat-view corroboration required"}
 
 
-def _artifact_candidates(
-    path: Path,
-    frame_id: str,
-    map_bbox: list[int],
-    overlay_points: list[list[int]] | list[tuple[int, int]] | None = None,
-) -> list[dict[str, object]]:
+def _artifact_candidates(path: Path, frame_id: str, map_bbox: list[int], overlay_points: list[list[int]] | list[tuple[int, int]] | None = None) -> list[dict[str, object]]:
     from PIL import Image, ImageFilter, ImageStat
     with Image.open(path) as source:
         rgb = source.convert("RGB")
@@ -325,9 +435,6 @@ def _artifact_candidates(
         replacement = crop_rgb.filter(ImageFilter.MedianFilter(size=9))
         clean = crop_rgb.copy()
         clean_pixels, replacement_pixels = clean.load(), replacement.load()
-        # Mask chromatic route/UI pixels and bright map-label pixels before any
-        # basemap classification. Pixel-space track samples add a second mask
-        # around the vectorizer's detected route.
         for py in range(clean.height):
             for px in range(clean.width):
                 red, green, blue = clean_pixels[px, py]
@@ -370,18 +477,16 @@ def _stage_2(frames: list[dict[str, object]], output: Path, mode: AnalysisMode, 
         segment = _segment_frame(path)
         track = _vectorize(path)
         overlay_points = list(track.get("sampled_points", [])) if track else []
-        findings.extend(
-            _artifact_candidates(
-                path,
-                frame_id,
-                list(segment["map_bbox"]),
-                overlay_points=overlay_points,
-            )
-        )
+        findings.extend(_artifact_candidates(path, frame_id, list(segment["map_bbox"]), overlay_points=overlay_points))
         groups.append({"repeat_view_cluster_id": "SOURCE_SEQUENCE_001", "frame_id": frame_id, "zoom_relation": "ordered_sequence", "cross_zoom_persistence": "NOT_ADJUDICATED", "screen_alignment_score": "", "ground_alignment_status": "NOT_ADJUDICATED", "ui_overlay_intersection": False, "status": "requires_review"})
     identified = [{"finding_id": f"SATIM-{index:06d}", **finding} for index, finding in enumerate(findings, 1)]
     features = [{"type": "Feature", "geometry": None, "properties": finding} for finding in identified]
-    _write_json(directory / "STAGE_2_SATIM_FINDINGS.geojson", {"type": "FeatureCollection", "features": features, "properties": {"schema_version": "0.4.0", "source_status": "screenshot_only", "facility_purpose_inference": False}})
+    # facility_purpose_inference stays False: unbounded purpose inference remains
+    # prohibited. function_assessment_enabled reports whether the bounded ADR v2.1 A1
+    # channel produced anything on this run — False here because this stage emits
+    # artifact candidates only, and a function assessment needs corroborating
+    # observations it does not have.
+    _write_json(directory / "STAGE_2_SATIM_FINDINGS.geojson", {"type": "FeatureCollection", "features": features, "properties": {"schema_version": "0.5.0", "source_status": "screenshot_only", "facility_purpose_inference": False, "function_assessment_enabled": False}})
     fields = ["finding_id", "frame_id", "class", "pixel_bbox", "confidence", "status", "repeat_view_cluster_id", "screen_alignment_score", "ground_alignment_status", "cross_zoom_persistence", "ui_overlay_intersection", "analyst_note"]
     _write_csv(directory / "STAGE_2_ARTIFACT_LEDGER.csv", fields, identified)
     _write_csv(directory / "STAGE_2_REPEAT_VIEW_MATRIX.csv", ["repeat_view_cluster_id", "frame_id", "zoom_relation", "cross_zoom_persistence", "screen_alignment_score", "ground_alignment_status", "ui_overlay_intersection", "status"], groups)
@@ -422,12 +527,117 @@ def _digest_tree(output: Path) -> str:
     return digest.hexdigest()
 
 
-def run_analysis(input_path: Path | str, output_dir: Path | str, mode: AnalysisMode = AnalysisMode.STANDARD) -> SkillRun:
+def _write_coverage_report(
+    output: Path,
+    run_id: str,
+    options: RunOptions,
+    sources: list[SourceRecord],
+    stage_1: StageState,
+    stage_2: StageState,
+) -> dict[str, Any] | None:
+    """Emit the run's lens coverage, or a typed reason it could not be produced.
+
+    Imported lazily and degraded explicitly rather than raising: the skill is designed to
+    run standalone with only stdlib available, and SKILL.md requires a missing capability
+    to "produce an explicit degraded-state record rather than fabricated output" - the
+    same contract adapters.py implements for optional dependencies. A run without the
+    registry still says so in writing.
+    """
+    try:
+        from skywatcher.core.lenses import LensRegistry as _LensRegistry
+        from skywatcher.core.lenses import (
+            ObjectiveProfileRegistry,
+            evaluate_coverage,
+        )
+    except ImportError as exc:
+        record = {
+            "run_id": run_id,
+            "available": False,
+            "reason": f"skywatcher.core.lenses unavailable: {exc}",
+        }
+        _write_json(output / "coverage_report.json", record)
+        return record
+
+    repo_root = Path(__file__).resolve().parents[1]
+    lenses, objectives = _LensRegistry(), ObjectiveProfileRegistry()
+    try:
+        lenses.load_dir(repo_root / "configs" / "analysis" / "lenses")
+        objectives.load_dir(repo_root / "configs" / "analysis" / "objectives")
+        profile = objectives.get("satellite_imagery_standard")
+    except (FileNotFoundError, ValueError, KeyError) as exc:
+        record = {
+            "run_id": run_id,
+            "available": False,
+            "reason": f"analysis registry unavailable: {exc}",
+        }
+        _write_json(output / "coverage_report.json", record)
+        return record
+
+    # What this run actually supplied, per lens. The skill masks UI chrome and works from
+    # rendered frames, so it has a target ROI but none of the control ROIs the artifact
+    # lens wants - which is exactly the degradation the coverage record should show
+    # rather than leaving implied.
+    parameters = options.parameters()
+    supplied = {
+        "rlsm.source_inventory": {
+            "source_directory": str(output),
+            "supported_extensions": sorted(SUPPORTED_IMAGE_SUFFIXES),
+        },
+        "satim.image_artifacts": {
+            "source_type": "screenshot",
+            "roi_target": "frame_map_bbox",
+            "seam_score_threshold": parameters["seam_score_threshold"],
+            # Cross-source comparison is what a control ROI needs; only forensic mode
+            # performs it.
+            **(
+                {"roi_remote_control": "cross_source"}
+                if parameters["cross_source_tests"]
+                else {}
+            ),
+        },
+    }
+    report = evaluate_coverage(
+        profile,
+        lenses,
+        run_id=run_id,
+        supplied_parameters=supplied,
+        available_inputs={
+            "rlsm.source_inventory": ["source_directory"],
+            "satim.image_artifacts": ["source_frame", "roi_target"],
+        },
+        produced={
+            "rlsm.source_inventory": bool(sources),
+            "satim.image_artifacts": stage_2.frozen,
+        },
+        applicable={
+            "satim.image_artifacts": options.execute_stage_2,
+        },
+        method_versions={"satim.image_artifacts": parameters["mode"]},
+        generated_by="fr24_image_skill",
+    )
+    record = report.to_dict()
+    record["available"] = True
+    record["stage_1_status"] = stage_1.status
+    record["stage_2_status"] = stage_2.status
+    _write_json(output / "coverage_report.json", record)
+    return record
+
+
+def run_analysis(
+    input_path: Path | str,
+    output_dir: Path | str,
+    mode: AnalysisMode = AnalysisMode.STANDARD,
+    options: RunOptions | None = None,
+) -> SkillRun:
+    # `mode` stays a positional parameter so existing callers keep working; when both are
+    # given, `options` wins and `mode` is ignored.
+    options = options or RunOptions(mode=mode)
+    mode = options.mode
     input_root, output = Path(input_path).resolve(), Path(output_dir).resolve()
     output.mkdir(parents=True, exist_ok=True)
     sources, adapters = inventory_sources(input_root), capability_report()
     run_id = _stable_run_id(sources, mode)
-    frames = _render_sources(sources, output)
+    frames = _render_sources(sources, output, options.parameters())
     _write_csv(output / "SOURCE_INVENTORY.csv", ["source_id", "path", "media_type", "sha256", "size_bytes", "status"], [asdict(source) for source in sources])
     (output / "SOURCE_CHECKSUMS.sha256").write_text("".join(f"{source.sha256}  {source.path}\n" for source in sources), encoding="utf-8")
     _write_csv(output / "FRAME_INVENTORY.csv", ["frame_id", "source_id", "source_page", "video_time_s", "path", "sha256", "size_bytes", "extraction_method", "status"], frames)
@@ -438,15 +648,20 @@ def run_analysis(input_path: Path | str, output_dir: Path | str, mode: AnalysisM
     correlation = _correlate(output, stage_1, stage_2)
     finding_count = len(_read_csv(output / "stage_2" / "STAGE_2_ARTIFACT_LEDGER.csv"))
     digest = _digest_tree(output)
-    run = SkillRun(run_id, mode.value, str(input_root), str(output), sources, stage_1, stage_2, correlation, {"pdf_dpi": 72, "video_fps": 1, "fixed_bounds_promotion": False, "seam_score_threshold": SEAM_SCORE_THRESHOLD, "ui_margin_fraction": UI_MARGIN_FRACTION, "dark_luminance_threshold": DARK_LUMINANCE_THRESHOLD, "dark_ratio_threshold": DARK_RATIO_THRESHOLD}, digest, adapters)
+    run = SkillRun(run_id, mode.value, str(input_root), str(output), sources, stage_1, stage_2, correlation, options.parameters(), digest, adapters)
     _write_json(output / "RUN_MANIFEST.json", asdict(run))
+    _write_coverage_report(output, run_id, options, sources, stage_1, stage_2)
     page_count = sum(1 for frame in frames if frame.get("source_page"))
     errors = []
-    if any(not frame.get("sha256") for frame in frames): errors.append("missing frame hash")
-    if input_root.suffix.lower() == ".pdf" and page_count == 0: errors.append("PDF rendered zero pages")
-    if contradiction_count != finding_count: errors.append("finding-to-contradiction accounting mismatch")
+    if any(not frame.get("sha256") for frame in frames):
+        errors.append("missing frame hash")
+    if input_root.suffix.lower() == ".pdf" and page_count == 0:
+        errors.append("PDF rendered zero pages")
+    if contradiction_count != finding_count:
+        errors.append("finding-to-contradiction accounting mismatch")
     unresolved_count = sum(row.get("status") in {"candidate", "unresolved"} for row in _read_csv(output / "stage_2" / "STAGE_2_ARTIFACT_LEDGER.csv"))
-    if review_count != unresolved_count: errors.append("unresolved-to-review accounting mismatch")
+    if review_count != unresolved_count:
+        errors.append("unresolved-to-review accounting mismatch")
     report = ["# Validation", "", f"- Run ID: `{run_id}`", f"- PDF pages: {page_count}", f"- Sources: {len(sources)}", f"- Frames: {len(frames)}", f"- SATIM findings: {finding_count}", f"- Contradiction accounting: {contradiction_count}/{finding_count}", f"- Manual-review accounting: {review_count}/{unresolved_count}", f"- Adapter capabilities accounted: {len(adapters)}", f"- Deterministic digest: `{digest}`", f"- Validation: {'PASS' if not errors else 'FAIL'}", "", *[f"- {error}" for error in errors]]
     (output / "VALIDATION_REPORT.md").write_text("\n".join(report) + "\n", encoding="utf-8")
     if errors:

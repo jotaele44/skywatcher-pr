@@ -8,9 +8,7 @@ from pathlib import Path
 import pytest
 
 import fr24.dashboard_data as dashboard_schema
-
 import fr24.review_state as mod
-
 
 
 def test_build_local_state_payload_uses_dashboard_schema_single_source():

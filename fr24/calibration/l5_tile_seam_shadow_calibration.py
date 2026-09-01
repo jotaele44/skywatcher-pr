@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping
+from typing import Any
 
 from .models import LayerCalibrationResult, write_json
 
@@ -76,7 +77,7 @@ def corroborating_tile_signal_count(
     return sum(1 for item in signals if item)
 
 
-def classify_candidate(row: Mapping[str, Any]) -> Dict[str, Any]:
+def classify_candidate(row: Mapping[str, Any]) -> dict[str, Any]:
     """Classify one candidate from normalized feature scores.
 
     Existing columns remain supported:
@@ -161,12 +162,12 @@ def classify_candidate(row: Mapping[str, Any]) -> Dict[str, Any]:
     return {**scores, "decision": decision}
 
 
-def load_candidates(path: str | Path) -> List[Dict[str, str]]:
+def load_candidates(path: str | Path) -> list[dict[str, str]]:
     with Path(path).open(newline="", encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
 
 
-def summarize(results: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
+def summarize(results: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     rows = list(results)
     counts = {decision: 0 for decision in DECISIONS}
     for row in rows:
@@ -175,7 +176,7 @@ def summarize(results: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
     return {"candidate_count": len(rows), "decision_counts": counts}
 
 
-def calibrate(candidates_csv: str) -> Dict[str, Any]:
+def calibrate(candidates_csv: str) -> dict[str, Any]:
     candidates = load_candidates(candidates_csv)
     scored = [classify_candidate(row) for row in candidates]
     metrics = summarize(scored)
@@ -193,6 +194,101 @@ def calibrate(candidates_csv: str) -> Dict[str, Any]:
             "tile_seam_rule": "straight/rectangular boundary + radiometric or texture discontinuity + non-persistence + no terrain alignment",
             "context_suppressors": "roads, runways, reservoirs, utility plants, quarries, parcels, and buildings suppress seam promotion",
             "ground_feature_rule": "multi-date persistence + infrastructure/landcover alignment + low cloud/shadow intersection",
+        },
+        findings=findings,
+    ).to_dict()
+
+
+# ---------------------------------------------------------------------------
+# Strict tile-seam AND-gate (docs/SATIM_TRACK_LINE_VS_TILE_SEAM_RULES.md)
+# ---------------------------------------------------------------------------
+# The spec's conjunctive rule, stricter than the default weighted classifier.
+STRICT_STRAIGHTNESS_MIN = 0.85
+STRICT_RADIOMETRIC_MIN = 0.55
+STRICT_SCREEN_LOCKED_MIN = 0.70
+STRICT_PERSISTENCE_MAX = 0.35
+STRICT_TERRAIN_SHADOW_MAX = 0.55
+STRICT_GROUND_FEATURE_MAX = 0.55
+STRICT_OVERLAP_SUPPRESS = 0.55
+
+
+def classify_candidate_strict(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Spec-faithful conjunctive tile-seam gate.
+
+    A candidate is ``probable_tile_seam`` only if ALL hold:
+      straightness >= 0.85, radiometric_delta >= 0.55, screen_locked_score >= 0.70,
+      multi_date_persistence < 0.35, terrain_shadow_likelihood < 0.55,
+      persistent_ground_feature_likelihood < 0.55,
+    and neither track_line_overlap nor ui_overlay_overlap is high (>= 0.55).
+
+    NOTE: ``screen_locked_score`` has no feature extractor yet (candidate rows
+    default it to 0.0), so in production this gate promotes nothing until that
+    feature is produced — the honest, spec-faithful behaviour. The derived
+    likelihoods reuse :func:`classify_candidate`.
+    """
+    base = classify_candidate(row)
+    straightness = score(row, "straightness", "straight_boundary_score", "straight_edge_score")
+    radiometric = score(row, "radiometric_delta", "radiometric_discontinuity_score", "color_discontinuity_score")
+    screen_locked = score(row, "screen_locked_score")
+    persistence = score(row, "multi_date_persistence")
+    track_line_overlap = score(row, "track_line_overlap")
+    ui_overlay_overlap = score(row, "ui_overlay_overlap")
+    terrain_shadow = float(base["terrain_shadow_likelihood"])
+    ground = float(base["persistent_ground_feature_likelihood"])
+
+    clauses = {
+        "straightness": straightness >= STRICT_STRAIGHTNESS_MIN,
+        "radiometric": radiometric >= STRICT_RADIOMETRIC_MIN,
+        "screen_locked": screen_locked >= STRICT_SCREEN_LOCKED_MIN,
+        "non_persistent": persistence < STRICT_PERSISTENCE_MAX,
+        "not_terrain_shadow": terrain_shadow < STRICT_TERRAIN_SHADOW_MAX,
+        "not_ground_feature": ground < STRICT_GROUND_FEATURE_MAX,
+        "no_track_line_overlap": track_line_overlap < STRICT_OVERLAP_SUPPRESS,
+        "no_ui_overlay_overlap": ui_overlay_overlap < STRICT_OVERLAP_SUPPRESS,
+    }
+
+    if all(clauses.values()):
+        decision = "probable_tile_seam"
+    elif track_line_overlap >= STRICT_OVERLAP_SUPPRESS:
+        decision = "probable_track_line"
+    elif ui_overlay_overlap >= STRICT_OVERLAP_SUPPRESS:
+        decision = "probable_ui_overlay"
+    else:
+        decision = "indeterminate"
+
+    return {**base, "decision": decision, "strict_clauses": clauses, "screen_locked_score": round(screen_locked, 4)}
+
+
+def calibrate_strict(candidates_csv: str) -> dict[str, Any]:
+    """L5 calibration using the strict AND-gate. Emits an explicit finding when
+    screen_locked_score is absent/zero across all candidates (the gate is then
+    inert pending a screen-lock feature extractor)."""
+    candidates = load_candidates(candidates_csv)
+    scored = [classify_candidate_strict(row) for row in candidates]
+    metrics = summarize(scored)
+    findings: list[dict[str, Any]] = []
+    if not candidates:
+        findings.append({"severity": "warning", "detail": "no tile seam/shadow calibration candidates found"})
+    elif all(row.get("screen_locked_score", 0.0) <= 0.0 for row in scored):
+        findings.append({
+            "severity": "warning",
+            "detail": "strict L5 gate is inert: screen_locked_score is 0.0 for all candidates "
+                      "(no screen-lock feature extractor yet); no tile seams can be promoted under strict rules",
+        })
+    return LayerCalibrationResult(
+        layer="L5_tile_seam_shadow",
+        status="READY" if candidates else "MISSING",
+        metrics=metrics,
+        thresholds={
+            "mode": "strict_and_gate",
+            "straightness_min": STRICT_STRAIGHTNESS_MIN,
+            "radiometric_delta_min": STRICT_RADIOMETRIC_MIN,
+            "screen_locked_score_min": STRICT_SCREEN_LOCKED_MIN,
+            "multi_date_persistence_max": STRICT_PERSISTENCE_MAX,
+            "terrain_shadow_max": STRICT_TERRAIN_SHADOW_MAX,
+            "ground_feature_max": STRICT_GROUND_FEATURE_MAX,
+            "overlap_suppress": STRICT_OVERLAP_SUPPRESS,
+            "note": "conjunctive spec gate; inert until a screen_locked_score feature extractor exists",
         },
         findings=findings,
     ).to_dict()

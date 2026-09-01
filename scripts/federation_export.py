@@ -29,9 +29,11 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from prii_export_utils import fid as _fid, norm as _norm, sha256 as _sha256
+from prii_export_utils import fid as _fid
+from prii_export_utils import norm as _norm
+from prii_export_utils import sha256 as _sha256
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PRODUCER = "skywatcher-pr"
@@ -79,7 +81,7 @@ def _slug(v: Any) -> str:
     return "_".join(str(v).strip().lower().split()) if v else ""
 
 
-def _num(v: Any) -> Optional[float]:
+def _num(v: Any) -> float | None:
     try:
         if v in (None, ""):
             return None
@@ -88,29 +90,39 @@ def _num(v: Any) -> Optional[float]:
         return None
 
 
-def _obs_attributes(obs: Dict[str, Any]) -> Dict[str, Any]:
+def _obs_attributes(obs: dict[str, Any]) -> dict[str, Any]:
     """Producer-specific observation payload for the canonical observation row.
 
     Carries the airspace-specific fields the Hub has no column for (signal type,
     evidence posture, kinematics, free-text summary) without dropping them. Only
     populated keys are emitted so the payload stays compact and deterministic.
     """
-    attrs: Dict[str, Any] = {}
-    for key in ("signal_type", "evidence_tier", "geometry_status", "temporal_status",
-                "location_name", "description_summary", "callsign", "operator"):
+    attrs: dict[str, Any] = {}
+    for key in (
+        "signal_type", "evidence_tier", "geometry_status", "temporal_status",
+        "location_name", "description_summary", "callsign", "operator",
+        "position_precision", "aircraft_point_status", "aircraft_point_method",
+        "aircraft_icon_visibility", "capture_bbox_geojson",
+        "capture_geometry_method",
+    ):
         val = obs.get(key)
         if val not in (None, ""):
             attrs[key] = val
-    for key in ("altitude_ft", "bearing", "duration_seconds"):
+    for key in (
+        "altitude_ft", "bearing", "duration_seconds",
+        "aircraft_point_uncertainty_m", "capture_geometry_confidence",
+        "capture_geometry_uncertainty_m", "control_point_count",
+        "control_point_residual_px",
+    ):
         num = _num(obs.get(key))
         if num is not None:
             attrs[key] = num
     return attrs
 
 
-def _alert_attributes(al: Dict[str, Any]) -> Dict[str, Any]:
+def _alert_attributes(al: dict[str, Any]) -> dict[str, Any]:
     """Producer-specific alert payload + the review-only guardrail posture."""
-    attrs: Dict[str, Any] = dict(ALERT_GUARDRAILS)
+    attrs: dict[str, Any] = dict(ALERT_GUARDRAILS)
     for key in ("evidence_tier", "anomaly_kind", "description_summary",
                 "location_name", "review_status", "observation_id"):
         val = al.get(key)
@@ -119,7 +131,7 @@ def _alert_attributes(al: Dict[str, Any]) -> Dict[str, Any]:
     return attrs
 
 
-def _lineage(phase: str, inputs: List[str]) -> Dict[str, Any]:
+def _lineage(phase: str, inputs: list[str]) -> dict[str, Any]:
     return {
         "producer_script": PRODUCER_SCRIPT,
         "producer_phase": phase,
@@ -129,21 +141,21 @@ def _lineage(phase: str, inputs: List[str]) -> Dict[str, Any]:
 
 
 def build_streams(
-    observations: List[Dict[str, Any]],
-    sources: List[Dict[str, Any]],
+    observations: list[dict[str, Any]],
+    sources: list[dict[str, Any]],
     now: str,
-    airfields: Optional[List[Dict[str, Any]]] = None,
-    hangar_zones: Optional[List[Dict[str, Any]]] = None,
-    endpoint_events: Optional[List[Dict[str, Any]]] = None,
-    alerts: Optional[List[Dict[str, Any]]] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
+    airfields: list[dict[str, Any]] | None = None,
+    hangar_zones: list[dict[str, Any]] | None = None,
+    endpoint_events: list[dict[str, Any]] | None = None,
+    alerts: list[dict[str, Any]] | None = None,
+) -> dict[str, list[dict[str, Any]]]:
     inputs = ["observations.csv", "sources.json"]
-    src_rows: Dict[str, Dict[str, Any]] = {}
-    src_entity_id: Dict[str, str] = {}
-    entities: Dict[str, Dict[str, Any]] = {}
-    relationships: Dict[str, Dict[str, Any]] = {}
-    observation_rows: Dict[str, Dict[str, Any]] = {}
-    alert_rows: Dict[str, Dict[str, Any]] = {}
+    src_rows: dict[str, dict[str, Any]] = {}
+    src_entity_id: dict[str, str] = {}
+    entities: dict[str, dict[str, Any]] = {}
+    relationships: dict[str, dict[str, Any]] = {}
+    observation_rows: dict[str, dict[str, Any]] = {}
+    alert_rows: dict[str, dict[str, Any]] = {}
 
     # sources -> sources rows + sensor_source entities
     for s in sources:
@@ -208,9 +220,9 @@ def build_streams(
             lon = float(obs.get("lon"))
         except (TypeError, ValueError):
             lat = lon = None
-        obs_loc: Optional[Dict[str, Any]] = None
+        obs_loc: dict[str, Any] | None = None
         if lat is not None and -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
-            loc: Dict[str, Any] = {"lat": round(lat, 6), "lon": round(lon, 6)}
+            loc: dict[str, Any] = {"lat": round(lat, 6), "lon": round(lon, 6)}
             if obs.get("municipality"):
                 loc["municipality"] = obs["municipality"]
             entities[ent_id]["location"] = loc
@@ -296,7 +308,7 @@ def build_streams(
             }
             try:
                 lat_f, lon_f = float(af["lat"]), float(af["lon"])
-                loc: Dict[str, Any] = {"lat": round(lat_f, 6), "lon": round(lon_f, 6)}
+                loc: dict[str, Any] = {"lat": round(lat_f, 6), "lon": round(lon_f, 6)}
                 if af.get("municipio"):
                     loc["municipio"] = af["municipio"]
                 entities[ent_id]["location"] = loc
@@ -397,7 +409,7 @@ def build_streams(
         except (TypeError, ValueError):
             severity = 1
 
-        row: Dict[str, Any] = {
+        row: dict[str, Any] = {
             "alert_id": alid,
             "source_id": sid,
             "module": al.get("module") or "AIRSPACE_OPS",
@@ -429,7 +441,7 @@ def build_streams(
         except (TypeError, ValueError):
             lat = lon = None
         if lat is not None and -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
-            aloc: Dict[str, Any] = {"lat": round(lat, 6), "lon": round(lon, 6)}
+            aloc: dict[str, Any] = {"lat": round(lat, 6), "lon": round(lon, 6)}
             if al.get("municipality"):
                 aloc["municipality"] = al["municipality"]
             row["location"] = aloc
@@ -455,12 +467,15 @@ def _rel(rid, sid, src_ent, tgt_ent, rtype, confidence, synthetic, created, now)
     }
 
 
-def write_package(streams: Dict[str, List[Dict[str, Any]]], out_dir: Path, mode: str, now: str) -> Path:
+def write_package(streams: dict[str, list[dict[str, Any]]], out_dir: Path, mode: str, now: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     files = []
     for stream in STREAM_ORDER:
         rows = streams.get(stream) or []
         if not rows:
+            stale = out_dir / f"{stream}.jsonl"
+            if stale.exists():
+                stale.unlink()
             continue
         fpath = out_dir / f"{stream}.jsonl"
         fpath.write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in rows))
@@ -480,7 +495,7 @@ def write_package(streams: Dict[str, List[Dict[str, Any]]], out_dir: Path, mode:
     return out_dir / "manifest.json"
 
 
-def _load_optional_json(pkg: Path, filename: str) -> List[Dict[str, Any]]:
+def _load_optional_json(pkg: Path, filename: str) -> list[dict[str, Any]]:
     p = pkg / filename
     return json.loads(p.read_text()) if p.exists() else []
 

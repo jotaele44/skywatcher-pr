@@ -1,0 +1,37 @@
+path,source_family,use
+docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md,architecture,accepted module boundaries and readiness exception
+src/skywatcher/core/module_boundaries.py,architecture,current path classification and allowed imports
+tests/test_module_boundaries.py,tests,current AST boundary enforcement
+docs/MODULE_SPEC_CORE.md,architecture,Core role and exception
+docs/MODULE_SPEC_SATIM.md,architecture,current SATIM ownership claims
+docs/MODULE_SPEC_FPIM.md,architecture,FPIM role and active mission fallback debt
+docs/MODULE_SPEC_CORRIM.md,architecture,CORRIM fusion role and ILAP/AASB surfaces
+docs/FR24_GUIDE.md,RLSM,canonical RLSM expansion
+data/rlsm/HANDOFF.md,RLSM,"pipeline stages, localization, semantic unlabeled pass"
+configs/rlsm_operational_ontology.yaml,ontology,visibility classes and required registries
+src/skywatcher/core/ontology_gate.py,ontology,active RLSM gate and mission normalization
+configs/mission_vocab.yaml,vocabulary,mission labels
+configs/behavior_vocab.yaml,vocabulary,behavior labels
+configs/project_language_bridge.yaml,vocabulary,project aliases and status collapse
+configs/spiderweb_terms.yaml,vocabulary,legacy acronym collisions
+docs/SKYWATCHER_SATIM_PIPELINE_SPEC.md,SATIM,integrated pipeline labels
+docs/SATIM_ENGINE_PROTOCOL_INTERFACE.md,integrated runner,L1-L5 stack
+docs/SATIM_CALIBRATION.md,SATIM,calibration bands and shadow alias
+schemas/satim_artifact_assessment_v1.schema.json,schema,artifact confidence/status
+schemas/satim_output_contract.schema.json,schema,SATIM output fields
+schemas/fpim_output_contract.schema.json,schema,FPIM output fields
+schemas/corrim_correlation_output.schema.json,schema,CORRIM output fields
+tests/test_schema_satim_fpim_corrim_contracts.py,tests,contract fixtures
+src/skywatcher/fpim/aircraft_profile.py,FPIM,active mission inference
+schemas/aircraft_intelligence_report.schema.json,schema,mission profile schema
+src/skywatcher/legacy/quarantined_mission_inference.py,Legacy,quarantined mission inference
+src/skywatcher/corrim/ilap_airspace_bridge.py,CORRIM,ILAP heuristics and output fields
+src/skywatcher/corrim/aasb_airspace_bridge.py,CORRIM,AASB edge support mislabeled confidence
+tools/satim_engine/README.md,integrated engine,track and graph outputs
+tools/satim_engine/pyproject.toml,integrated engine,track/visual/graph package description
+.github/workflows/satim-engine-ci.yml,workflow,SATIM_TRACK_LEDGER smoke
+tools/satim_route_findings/pyproject.toml,integrated utility,route findings package
+tools/satim_route_findings/satim_route_findings/report.py,integrated utility,route/graph summaries
+schemas/satim/satim_track_ledger.schema.json,schema,SATIM-namespaced flight-track ledger
+README.md,program,mission and ILAP terminology
+federation.json,federation,RLSM collision and capability ownership

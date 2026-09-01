@@ -1,0 +1,14 @@
+[
+  {
+    "observation_id": "fr24-1",
+    "overall_confidence": 0.55,
+    "field_confidence": {
+      "event_datetime": 0.95,
+      "lat": 0.55,
+      "lon": 0.55,
+      "signal_type": 0.9,
+      "aircraft_point_status": 0.8,
+      "capture_bbox": 0.55
+    }
+  }
+]

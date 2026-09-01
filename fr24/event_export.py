@@ -6,16 +6,15 @@ Acts as the bridge between the FR24 screenshot processor and the PR Intel
 integration pipeline.
 """
 
-import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
+from fr24.manual_review_queue import ManualReviewQueue
+from fr24.route_extractor import RouteCandidate, RouteExtractor
 from fr24.screenshot_inventory import ScreenshotInventory, _ensure_schema
 from fr24.ui_segmenter import FR24UISegmenter
-from fr24.route_extractor import RouteExtractor, RouteCandidate
-from fr24.manual_review_queue import ManualReviewQueue
 
 
 class FR24EventExporter:
@@ -34,15 +33,15 @@ class FR24EventExporter:
 
     def __init__(self,
                  db_path: str,
-                 review_dir: Optional[str] = None,
-                 segmenter: Optional[FR24UISegmenter] = None,
-                 extractor: Optional[RouteExtractor] = None):
+                 review_dir: str | None = None,
+                 segmenter: FR24UISegmenter | None = None,
+                 extractor: RouteExtractor | None = None):
         self.db_path = db_path
         self._review_dir = review_dir or str(Path(db_path).parent / "review")
         self._review_queue = ManualReviewQueue(self._review_dir)
         self._segmenter = segmenter or FR24UISegmenter(mode="geometric")
         self._extractor = extractor or RouteExtractor(segmenter=self._segmenter)
-        self._stats: Dict[str, int] = {
+        self._stats: dict[str, int] = {
             "screenshots_upserted": 0,
             "track_points_inserted": 0,
             "review_items_added": 0,
@@ -56,7 +55,7 @@ class FR24EventExporter:
 
     # ----------------------------------------------------------------- inventory
 
-    def export_inventory_to_db(self, manifest: List[dict]) -> int:
+    def export_inventory_to_db(self, manifest: list[dict]) -> int:
         """
         Upsert screenshot records from an inventory manifest into the
         screenshots table. Returns count of newly inserted rows.
@@ -105,9 +104,9 @@ class FR24EventExporter:
 
     def export_route_events(self,
                             image_path: str,
-                            routes: List[RouteCandidate],
-                            flight_id: Optional[str] = None,
-                            screenshot_id: Optional[str] = None) -> int:
+                            routes: list[RouteCandidate],
+                            flight_id: str | None = None,
+                            screenshot_id: str | None = None) -> int:
         """
         Convert extracted route candidates to track_point rows.
         Only high-confidence routes (>= MIN_ROUTE_CONFIDENCE) are exported.
@@ -161,7 +160,7 @@ class FR24EventExporter:
 
     def export_batch(self,
                      images_dir: str,
-                     max_images: Optional[int] = None) -> Dict[str, Any]:
+                     max_images: int | None = None) -> dict[str, Any]:
         """
         Full pipeline over a directory:
           1. inventory.scan()
@@ -203,7 +202,7 @@ class FR24EventExporter:
 
     # ----------------------------------------------------------------- report
 
-    def get_export_report(self, **extra) -> Dict[str, Any]:
+    def get_export_report(self, **extra) -> dict[str, Any]:
         report = {
             "generated_at": datetime.utcnow().isoformat() + "Z",
             "db_path": self.db_path,
@@ -230,7 +229,7 @@ def _ensure_track_points_schema(conn: sqlite3.Connection):
     conn.commit()
 
 
-def _sample_points(pts: List, max_pts: int) -> List:
+def _sample_points(pts: list, max_pts: int) -> list:
     """Evenly sample up to max_pts from pts list."""
     if len(pts) <= max_pts:
         return pts

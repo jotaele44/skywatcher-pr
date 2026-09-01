@@ -2,7 +2,6 @@ from pathlib import Path
 
 from scripts.validate_airspace_export import validate_package
 
-
 PACKAGE_DIR = Path("exports/examples/synthetic_airspace_package")
 
 
