@@ -35,6 +35,8 @@
     "lineage_id": {"type": "string", "minLength": 1},
     "synthetic": {"type": "boolean"},
     "review_status": {"type": "string", "enum": ["draft", "needs_review", "reviewed", "promoted", "rejected"]},
+    "identity_state": {"type": "string", "enum": ["CERTIFIED", "CANDIDATE_NOT_IDENTITY", "UNRESOLVED"]},
+    "association_state": {"type": "string", "enum": ["LANDING_SURFACE_ASSOCIATED", "LANDING_SURFACE_CANDIDATE", "DISCOVERY_ONLY", "UNRESOLVED"]},
     "notes": {"type": ["string", "null"]}
   }
 }
