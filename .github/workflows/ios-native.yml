@@ -67,6 +67,15 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             clean build
 
+      - name: Verify built share extension metadata
+        run: |
+          set -euo pipefail
+          PLIST="$(find "$HOME/Library/Developer/Xcode/DerivedData" -path '*/Build/Products/Debug-iphonesimulator/SkywatcherShare.appex/Info.plist' -print -quit)"
+          test -n "$PLIST"
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPointIdentifier' "$PLIST" | grep -Fx 'com.apple.share-services'
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPrincipalClass' "$PLIST" | grep -Fx 'SkywatcherShare.ShareViewController'
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionAttributes:NSExtensionActivationRule:NSExtensionActivationSupportsImageWithMaxCount' "$PLIST" | grep -Fx '1'
+
       - name: Run unit tests
         run: |
           set -euo pipefail
