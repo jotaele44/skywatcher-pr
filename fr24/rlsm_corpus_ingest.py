@@ -36,6 +36,7 @@ try:
 
     pillow_heif.register_heif_opener()
 except ImportError:
+    # HEIF decoding remains unavailable; other image and archive formats still ingest.
     pass
 
 REPO = Path(__file__).resolve().parents[1]
