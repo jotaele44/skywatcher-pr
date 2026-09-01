@@ -1,8 +1,10 @@
 """Certified stage policy layered over the screenshot-intelligence pipeline."""
+
 from __future__ import annotations
 
 import json
 import sqlite3
+from dataclasses import dataclass
 
 from fr24 import rlsm_intelligence_pipeline as pipeline
 
@@ -10,30 +12,35 @@ REPO = pipeline.REPO
 DB = pipeline.DB
 BASELINE = pipeline.BASELINE
 _BASE_COLLECT_STATUS = pipeline.collect_status
-_REFRESH_REQUESTED = False
-_REFRESH_DONE = False
+
+
+@dataclass
+class RefreshState:
+    requested: bool = False
+    done: bool = False
+
+
+_REFRESH_STATE = RefreshState()
 
 
 def defer_refresh() -> dict[str, int]:
     """Record the request; destructive refresh runs only after preflight passes."""
-    global _REFRESH_REQUESTED
-    _REFRESH_REQUESTED = True
+    _REFRESH_STATE.requested = True
     return {"deferred_until_after_preflight": 1}
 
 
 def stage_preflight(ctx: dict) -> None:
-    global _REFRESH_DONE
     pipeline.stage_preflight(ctx)
     has_mutating_stage = any(stage != "preflight" for stage in ctx.get("stages", []))
     should_refresh = (
-        _REFRESH_REQUESTED
+        _REFRESH_STATE.requested
         and has_mutating_stage
         and not ctx.get("dry_run", False)
-        and not _REFRESH_DONE
+        and not _REFRESH_STATE.done
     )
     if should_refresh:
         deleted = refresh_derived()
-        _REFRESH_DONE = True
+        _REFRESH_STATE.done = True
         print(
             f"    · refreshed derived rows after preflight: {json.dumps(deleted, sort_keys=True)}",
             flush=True,
@@ -300,9 +307,8 @@ def install_policy() -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    global _REFRESH_REQUESTED, _REFRESH_DONE
-    _REFRESH_REQUESTED = False
-    _REFRESH_DONE = False
+    _REFRESH_STATE.requested = False
+    _REFRESH_STATE.done = False
     install_policy()
     result = pipeline.main(argv)
     if result != 0:

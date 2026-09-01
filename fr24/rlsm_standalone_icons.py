@@ -4,6 +4,7 @@ This pass is deliberately review-first: candidates are stored with ``pin_id``
 NULL, an explicit provisional class, and ``review_status='needs_review'``.
 They are not promoted to confirmed POIs or geographic features.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -22,8 +23,10 @@ except ImportError:  # pragma: no cover
 
 try:
     import pillow_heif
+
     pillow_heif.register_heif_opener()
 except ImportError:
+    # HEIF input remains unsupported; other Pillow formats can still be scanned.
     pass
 
 REPO = Path(__file__).resolve().parents[1]
@@ -59,6 +62,7 @@ def _iso_now() -> str:
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
     from fr24.rlsm_icons import ensure_schema as ensure_icon_schema
+
     ensure_icon_schema(conn)
     conn.executescript(RECEIPT_SCHEMA)
     conn.commit()
@@ -68,7 +72,7 @@ def _grid(image: Any, box: tuple[int, int, int, int]) -> list[list[tuple[int, in
     crop = image.crop(box)
     width, height = crop.size
     pixels = list(crop.getdata())
-    return [pixels[y * width:(y + 1) * width] for y in range(height)]
+    return [pixels[y * width : (y + 1) * width] for y in range(height)]
 
 
 def _regions(width: int, height: int) -> list[tuple[str, tuple[int, int, int, int]]]:
@@ -116,7 +120,9 @@ def _overlap_ratio(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -
     return intersection / smaller if smaller else 0.0
 
 
-def _near_existing(candidate: tuple[int, int, int, int], existing: list[tuple[int, int, int, int]]) -> bool:
+def _near_existing(
+    candidate: tuple[int, int, int, int], existing: list[tuple[int, int, int, int]]
+) -> bool:
     cx, cy = candidate[0] + candidate[2] / 2, candidate[1] + candidate[3] / 2
     for box in existing:
         bx, by = box[0] + box[2] / 2, box[1] + box[3] / 2
@@ -137,7 +143,17 @@ def _existing_boxes(conn: sqlite3.Connection, sid: int) -> list[tuple[int, int, 
     return [tuple(map(int, row)) for row in rows]
 
 
-def _receipt(conn: sqlite3.Connection, *, sid: int, run_id: int, status: str, regions: int, windows: int, candidates: int, error: str | None) -> None:
+def _receipt(
+    conn: sqlite3.Connection,
+    *,
+    sid: int,
+    run_id: int,
+    status: str,
+    regions: int,
+    windows: int,
+    candidates: int,
+    error: str | None,
+) -> None:
     conn.execute(
         """INSERT INTO icon_scan_receipts
            (screenshot_id, run_id, method, scan_status, regions_scanned,
@@ -153,16 +169,36 @@ def _receipt(conn: sqlite3.Connection, *, sid: int, run_id: int, status: str, re
     )
 
 
-def scan_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str, run_id: int) -> dict[str, Any]:
+def scan_screenshot(
+    conn: sqlite3.Connection, sid: int, rel_path: str, run_id: int
+) -> dict[str, Any]:
     from fr24.rlsm_icons import detect_in_window
 
     if Image is None or ImageOps is None:
-        _receipt(conn, sid=sid, run_id=run_id, status="failed", regions=0, windows=0, candidates=0, error="pillow_not_installed")
+        _receipt(
+            conn,
+            sid=sid,
+            run_id=run_id,
+            status="failed",
+            regions=0,
+            windows=0,
+            candidates=0,
+            error="pillow_not_installed",
+        )
         conn.commit()
         return {"ok": False, "windows": 0, "candidates": 0}
     source = REPO / rel_path
     if not source.exists():
-        _receipt(conn, sid=sid, run_id=run_id, status="failed", regions=0, windows=0, candidates=0, error="source_image_missing")
+        _receipt(
+            conn,
+            sid=sid,
+            run_id=run_id,
+            status="failed",
+            regions=0,
+            windows=0,
+            candidates=0,
+            error="source_image_missing",
+        )
         conn.commit()
         return {"ok": False, "windows": 0, "candidates": 0}
     try:
@@ -185,8 +221,12 @@ def scan_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str, run_id: i
                     box = (x, y, int(feature["w"]), int(feature["h"]))
                     if _near_existing(box, existing + accepted):
                         continue
-                    confidence = round(min(0.68, MIN_CONFIDENCE + float(feature["fill_ratio"]) * 0.25), 3)
-                    icon_class = "unclassified_map_icon" if region_type == "map" else "unclassified_gui_icon"
+                    confidence = round(
+                        min(0.68, MIN_CONFIDENCE + float(feature["fill_ratio"]) * 0.25), 3
+                    )
+                    icon_class = (
+                        "unclassified_map_icon" if region_type == "map" else "unclassified_gui_icon"
+                    )
                     conn.execute(
                         """INSERT INTO icon_observations
                            (screenshot_id, pin_id, run_id, bbox_x, bbox_y,
@@ -196,11 +236,26 @@ def scan_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str, run_id: i
                             review_status, observed_at)
                            VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                                    ?, ?, NULL, ?, ?, 'needs_review', ?)""",
-                        (sid, run_id, x, y, feature["w"], feature["h"],
-                         x + feature["w"] // 2, y + feature["h"] // 2,
-                         feature["area"], feature["aspect"], feature["fill_ratio"],
-                         feature["hue_deg"], feature["saturation"], feature["value"],
-                         feature["ahash"], icon_class, confidence, _iso_now()),
+                        (
+                            sid,
+                            run_id,
+                            x,
+                            y,
+                            feature["w"],
+                            feature["h"],
+                            x + feature["w"] // 2,
+                            y + feature["h"] // 2,
+                            feature["area"],
+                            feature["aspect"],
+                            feature["fill_ratio"],
+                            feature["hue_deg"],
+                            feature["saturation"],
+                            feature["value"],
+                            feature["ahash"],
+                            icon_class,
+                            confidence,
+                            _iso_now(),
+                        ),
                     )
                     accepted.append(box)
                     inserted += 1
@@ -208,11 +263,29 @@ def scan_screenshot(conn: sqlite3.Connection, sid: int, rel_path: str, run_id: i
                         break
                 if inserted >= MAX_CANDIDATES_PER_SCREENSHOT:
                     break
-        _receipt(conn, sid=sid, run_id=run_id, status="ok", regions=len(regions), windows=window_count, candidates=inserted, error=None)
+        _receipt(
+            conn,
+            sid=sid,
+            run_id=run_id,
+            status="ok",
+            regions=len(regions),
+            windows=window_count,
+            candidates=inserted,
+            error=None,
+        )
         conn.commit()
         return {"ok": True, "windows": window_count, "candidates": inserted}
     except Exception as exc:
-        _receipt(conn, sid=sid, run_id=run_id, status="failed", regions=0, windows=0, candidates=0, error=f"{type(exc).__name__}: {exc}"[:500])
+        _receipt(
+            conn,
+            sid=sid,
+            run_id=run_id,
+            status="failed",
+            regions=0,
+            windows=0,
+            candidates=0,
+            error=f"{type(exc).__name__}: {exc}"[:500],
+        )
         conn.commit()
         return {"ok": False, "windows": 0, "candidates": 0}
 
@@ -256,12 +329,35 @@ def run(budget_sec: float = 86400.0, limit: int = 0) -> dict[str, Any]:
         """UPDATE processing_runs
            SET ended_at=?, status=?, n_processed=?, n_failed=?, notes=?
            WHERE run_id=?""",
-        (_iso_now(), status, processed, failed + unprocessed,
-         json.dumps({"method": METHOD, "windows": windows, "candidates": candidates, "unprocessed": unprocessed}, sort_keys=True), run_id),
+        (
+            _iso_now(),
+            status,
+            processed,
+            failed + unprocessed,
+            json.dumps(
+                {
+                    "method": METHOD,
+                    "windows": windows,
+                    "candidates": candidates,
+                    "unprocessed": unprocessed,
+                },
+                sort_keys=True,
+            ),
+            run_id,
+        ),
     )
     conn.commit()
     conn.close()
-    return {"run_id": run_id, "targets": len(rows), "processed": processed, "failed": failed, "unprocessed": unprocessed, "windows": windows, "candidates": candidates, "status": status}
+    return {
+        "run_id": run_id,
+        "targets": len(rows),
+        "processed": processed,
+        "failed": failed,
+        "unprocessed": unprocessed,
+        "windows": windows,
+        "candidates": candidates,
+        "status": status,
+    }
 
 
 def main(argv: list[str] | None = None) -> int:

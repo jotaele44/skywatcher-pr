@@ -5,6 +5,7 @@ failure receipt. Screenshot status is aggregated as ``ok``, ``partial``, or
 ``failed``; an empty but successful OCR result remains ``empty`` at zone level.
 Raw OCR observations are append-only.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -30,6 +31,7 @@ try:
 
     pillow_heif.register_heif_opener()
 except ImportError:
+    # HEIF input remains unsupported; other Pillow formats still produce receipts.
     pass
 
 try:

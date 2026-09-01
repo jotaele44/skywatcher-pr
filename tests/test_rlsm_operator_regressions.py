@@ -107,9 +107,7 @@ def test_failed_ocr_frames_fail_the_processing_run() -> None:
                notes TEXT
            )"""
     )
-    conn.execute(
-        "INSERT INTO processing_runs (run_id, status) VALUES (1, 'in_progress')"
-    )
+    conn.execute("INSERT INTO processing_runs (run_id, status) VALUES (1, 'in_progress')")
     result = rlsm_ocr_certified._finish_run(
         conn,
         run_id=1,
@@ -139,8 +137,11 @@ def test_refresh_derived_remains_deferred_during_dry_run(monkeypatch) -> None:
         "refresh_derived",
         lambda: calls.append("refresh") or {},
     )
-    monkeypatch.setattr(rlsm_intelligence_pipeline_v2, "_REFRESH_REQUESTED", True)
-    monkeypatch.setattr(rlsm_intelligence_pipeline_v2, "_REFRESH_DONE", False)
+    monkeypatch.setattr(
+        rlsm_intelligence_pipeline_v2,
+        "_REFRESH_STATE",
+        rlsm_intelligence_pipeline_v2.RefreshState(requested=True),
+    )
 
     rlsm_intelligence_pipeline_v2.stage_preflight(
         {
@@ -150,6 +151,32 @@ def test_refresh_derived_remains_deferred_during_dry_run(monkeypatch) -> None:
     )
 
     assert calls == ["preflight"]
+
+
+def test_refresh_derived_runs_once_after_successful_preflight(monkeypatch) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr(
+        rlsm_intelligence_pipeline_v2.pipeline,
+        "stage_preflight",
+        lambda ctx: calls.append("preflight"),
+    )
+    monkeypatch.setattr(
+        rlsm_intelligence_pipeline_v2,
+        "refresh_derived",
+        lambda: calls.append("refresh") or {"rows": 1},
+    )
+    monkeypatch.setattr(
+        rlsm_intelligence_pipeline_v2,
+        "_REFRESH_STATE",
+        rlsm_intelligence_pipeline_v2.RefreshState(requested=True),
+    )
+    context = {"dry_run": False, "stages": ["preflight", "ocr"]}
+
+    rlsm_intelligence_pipeline_v2.stage_preflight(context)
+    rlsm_intelligence_pipeline_v2.stage_preflight(context)
+
+    assert calls == ["preflight", "refresh", "preflight"]
+    assert rlsm_intelligence_pipeline_v2._REFRESH_STATE.done is True
 
 
 def test_standalone_icon_filter_rejects_saturated_texture() -> None:

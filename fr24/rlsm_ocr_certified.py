@@ -6,6 +6,7 @@ exception, failed frame, budget cutoff, or unprocessed target always leaves an
 explicit failed processing run; the pool is never joined while it is still
 accepting work.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -154,7 +155,6 @@ def run(
             pool.close()
     except Exception as exc:
         unexpected_error = f"{type(exc).__name__}: {exc}"[:500]
-        terminated = True
         pool.terminate()
     finally:
         pool.join()
