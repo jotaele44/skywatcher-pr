@@ -5,11 +5,11 @@ wave's first/last observed positions against configs/airport_registry.yaml by
 haversine distance and emits schema-conformant endpoint events
 (schemas/flight_endpoint_event.schema.json).
 
-Contract discipline (docs/FR24_NON_SYNTHETIC_EXPORT_PLAN.md check #3): every
-match exposes match_method, distance_m, matched_facility_id, confidence, and
-review_status. Matches are candidate signals — review_status='needs_review',
-never auto-promoted; endpoint_type describes the *track* endpoint (first/last
-frame), not a confirmed takeoff or landing.
+Contract discipline: distance matches are discovery candidates only. They expose
+match_method, distance_m, matched_facility_id, confidence, review_status,
+identity_state, and association_state. The matched facility field is a candidate
+reference, not airport identity or a takeoff/landing claim. Route promotion must
+be explicit downstream.
 """
 from __future__ import annotations
 
@@ -22,9 +22,6 @@ REPO = Path(__file__).resolve().parents[1]
 AIRPORT_REGISTRY_YAML = REPO / "configs" / "airport_registry.yaml"
 
 EARTH_RADIUS_M = 6_371_000.0
-
-# Distance banding: a track endpoint within 3 km of a facility is a solid
-# candidate match; 3-10 km is a weak one; beyond 10 km is no match.
 NEAR_THRESHOLD_M = 3_000.0
 FAR_THRESHOLD_M = 10_000.0
 NEAR_CONFIDENCE = 0.7
@@ -32,6 +29,8 @@ FAR_CONFIDENCE = 0.4
 
 MATCH_METHOD = "track_endpoint_distance"
 REVIEW_STATUS = "needs_review"
+IDENTITY_STATE = "CANDIDATE_NOT_IDENTITY"
+ASSOCIATION_STATE = "DISCOVERY_ONLY"
 
 
 def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -39,8 +38,10 @@ def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
     dlambda = math.radians(lon2 - lon1)
-    a = (math.sin(dphi / 2.0) ** 2
-         + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2.0) ** 2)
+    a = (
+        math.sin(dphi / 2.0) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2.0) ** 2
+    )
     return 2.0 * EARTH_RADIUS_M * math.asin(math.sqrt(a))
 
 
@@ -62,8 +63,9 @@ def facility_code(airport: dict) -> str:
     return str(airport.get("iata") or airport.get("icao") or airport.get("airport_id") or "")
 
 
-def nearest_airport(lat: float, lon: float,
-                    airports: list[dict]) -> tuple[dict, float] | None:
+def nearest_airport(
+    lat: float, lon: float, airports: list[dict]
+) -> tuple[dict, float] | None:
     """(airport, distance_m) of the closest registry facility, or None."""
     best: tuple[dict, float] | None = None
     for airport in airports:
@@ -73,9 +75,10 @@ def nearest_airport(lat: float, lon: float,
     return best
 
 
-def match_endpoint(lat: float, lon: float,
-                   airports: list[dict]) -> tuple[dict, float, float] | None:
-    """(airport, distance_m, confidence) within the 10 km band, else None."""
+def match_endpoint(
+    lat: float, lon: float, airports: list[dict]
+) -> tuple[dict, float, float] | None:
+    """Return a distance-band candidate; never an identity or landing binding."""
     best = nearest_airport(lat, lon, airports)
     if best is None:
         return None
@@ -87,19 +90,26 @@ def match_endpoint(lat: float, lon: float,
     return None
 
 
-def endpoint_events_for_wave(fused: dict, airports: list[dict], *,
-                             observation_id: str, source_id: str,
-                             lineage_id: str, synthetic: bool) -> list[dict]:
-    """Schema-conformant flight_endpoint_event dicts for a fused wave.
+def endpoint_events_for_wave(
+    fused: dict,
+    airports: list[dict],
+    *,
+    observation_id: str,
+    source_id: str,
+    lineage_id: str,
+    synthetic: bool,
+) -> list[dict]:
+    """Schema-conformant candidate endpoint events for a fused wave.
 
-    Matches the first point ('start') and last point ('end') that carry both
-    coordinates and a timestamp; a single-frame wave yields at most one
-    'overflight_near_facility' event. Points without coordinates or without a
-    timestamp are skipped (event_datetime is schema-required — never invented).
+    ``endpoint_type`` describes the observed track endpoint only. The emitted
+    ``matched_facility_id`` is the nearest registry candidate within the band;
+    identity_state and association_state block its use as route truth.
     """
     points = [
-        p for p in fused.get("points", [])
-        if p.get("lat") is not None and p.get("lon") is not None
+        p
+        for p in fused.get("points", [])
+        if p.get("lat") is not None
+        and p.get("lon") is not None
         and p.get("timestamp_iso")
     ]
     if not points:
@@ -116,35 +126,36 @@ def endpoint_events_for_wave(fused: dict, airports: list[dict], *,
         if match is None:
             continue
         airport, distance, confidence = match
-        events.append({
-            "endpoint_event_id": f"ep-{observation_id}-{endpoint_type}",
-            "observation_id": observation_id,
-            "event_datetime": point["timestamp_iso"],
-            "endpoint_type": endpoint_type,
-            "aircraft_registration": fused.get("registration") or None,
-            "callsign": fused.get("callsign") or None,
-            "matched_facility_id": str(airport["airport_id"]),
-            "matched_zone_id": None,
-            "match_method": MATCH_METHOD,
-            "distance_m": round(distance, 1),
-            "bearing": None,
-            "confidence": confidence,
-            "source_id": source_id,
-            "lineage_id": lineage_id,
-            "synthetic": bool(synthetic),
-            "review_status": REVIEW_STATUS,
-            "notes": (
-                f"nearest registry facility {facility_code(airport)}"
-                f" at {distance:.0f} m (bands: <={NEAR_THRESHOLD_M:.0f} m ->"
-                f" {NEAR_CONFIDENCE}, <={FAR_THRESHOLD_M:.0f} m -> {FAR_CONFIDENCE})"
-            ),
-            # Convenience for to_adapter_row (not part of the schema; strip
-            # with schema_fields() before schema validation/export).
-            "matched_facility_code": facility_code(airport),
-        })
+        events.append(
+            {
+                "endpoint_event_id": f"ep-{observation_id}-{endpoint_type}",
+                "observation_id": observation_id,
+                "event_datetime": point["timestamp_iso"],
+                "endpoint_type": endpoint_type,
+                "aircraft_registration": fused.get("registration") or None,
+                "callsign": fused.get("callsign") or None,
+                "matched_facility_id": str(airport["airport_id"]),
+                "matched_zone_id": None,
+                "match_method": MATCH_METHOD,
+                "distance_m": round(distance, 1),
+                "bearing": None,
+                "confidence": confidence,
+                "source_id": source_id,
+                "lineage_id": lineage_id,
+                "synthetic": bool(synthetic),
+                "review_status": REVIEW_STATUS,
+                "identity_state": IDENTITY_STATE,
+                "association_state": ASSOCIATION_STATE,
+                "notes": (
+                    f"nearest registry facility {facility_code(airport)}"
+                    f" at {distance:.0f} m; discovery only, not identity/landing"
+                ),
+                "matched_facility_code": facility_code(airport),
+            }
+        )
     return events
 
 
 def schema_fields(event: dict) -> dict:
-    """The event without convenience extras — exactly the schema's properties."""
+    """Return the event without adapter-only convenience fields."""
     return {k: v for k, v in event.items() if k != "matched_facility_code"}

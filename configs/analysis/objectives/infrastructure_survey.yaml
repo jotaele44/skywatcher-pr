@@ -1,0 +1,18 @@
+profile_id: infrastructure_survey
+name: Infrastructure survey - full lens set
+version: 1.0.0
+status: experimental
+description: The objective that motivated the lens registry. Every named lens must run, and the run is not complete until each reports SATISFIED. Requiring the interpretive lenses is the point, because a survey that silently skipped subsurface or hydrogeography for want of an input would look identical to one that ran them and found nothing.
+stages:
+  - flight_data_collection
+  - satellite_image_processing
+  - cross_domain
+required_lenses:
+  - rlsm.source_inventory
+  - satim.image_artifacts
+  - satim.hydrogeography
+  - satim.subsurface_infrastructure
+  - satim.dual_use_function
+optional_lenses:
+  - fpim.endpoint_candidates
+  - corrim.association

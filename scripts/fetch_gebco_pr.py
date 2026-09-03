@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fetch real GEBCO bathymetry for the Puerto Rico extent via OpenTopography.
 
-GEBCO is the OPTIONAL terrain-enrichment layer (see requirements-geo.txt and
+GEBCO is the OPTIONAL terrain-enrichment layer (see pyproject.toml's geo extra and
 federation.json's optional_terrain_layer) — it does not gate the federation
 export contract. This script makes the layer available without the operator
 manually downloading the full multi-GB global GEBCO grid:

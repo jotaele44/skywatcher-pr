@@ -1,0 +1,114 @@
+{
+  "repo": "skywatcher-pr",
+  "generatedAt": "2026-08-24",
+  "federationPackage": {
+    "spec": "https://github.com/jotaele44/thehub-pr/releases/download/federation-design-v0.3.0/pr-federation-react-0.3.0.tgz",
+    "resolvedVersion": "0.3.0",
+    "shipsTestHarnessContract": false,
+    "versionSkewFinding": "Pinned to a github-release tarball for v0.3.0, which predates the federation-wide test-harness contract. The `test-harness.contract.json` subpath export was only added starting v0.4.0-rc.1, so `@pr-federation/react/test-harness.contract.json` (or any consumer that tries to resolve it) cannot resolve in this checkout -- the package.json `exports` map on the installed 0.3.0 tarball only declares '.', './styles.css', './tokens.json', and './package.json'. This is a real, load-bearing version-skew gap, not just a stale version number: any federation-wide tooling that assumes every producer frontend can resolve the contract file (e.g. a cross-repo conformance check) will fail specifically on this repo until it is bumped past 0.4.0-rc.1. Additionally the 0.3.0 export surface itself is much narrower than the full Federation* component catalog documented for the design system: v0.3.0's src/index.jsx exports only FederationThemeProvider, useFederationTheme, FederationButton, FederationPanel, FEDERATION_STATUS_ROLES, federationStatusRole, federationTone, FederationStatusBadge, FederationEmptyState, and FederationStatCard -- none of FederationIconButton, FederationSemanticBadge, FederationEvidenceTierBadge, FederationConfidenceBadge, FederationProvenanceBadge, FederationFreshnessBadge, FederationSourceBadge, FederationLoadingState, FederationErrorState, FederationFilteredEmptyState, FederationOfflineState, FederationDegradedState, FederationPartialDataState, FederationStaleDataState, or FederationAsyncState exist in this pinned version, so this repo cannot adopt any of them without an upgrade.",
+    "importedSymbols": {
+      "FederationEmptyState": {
+        "count": 1,
+        "importedBy": ["frontend/src/components/skywatcher/EmptyState.jsx"],
+        "note": "Wrapped by a local EmptyState.jsx used across 9 pages (FR24Intake, SpatialTruth, Aircraft, Routes, Airports, Infrastructure, Calibration, Observations, AnalysisLenses); pages never import FederationEmptyState directly."
+      },
+      "federationTone": {
+        "count": 1,
+        "importedBy": ["frontend/src/components/skywatcher/StatusChip.jsx"],
+        "note": "Not a component -- a helper that returns className + data-attributes for the federation.css `.fd-status` tokens. Wrapped by a local StatusChip.jsx used 21 times across the app; StatusChip is the app's de facto badge/status-chip primitive."
+      }
+    },
+    "unusedExports": [
+      "FederationThemeProvider", "useFederationTheme", "FederationButton", "FederationPanel",
+      "FEDERATION_STATUS_ROLES", "federationStatusRole", "FederationStatusBadge", "FederationStatCard"
+    ],
+    "cssImport": {
+      "path": "@pr-federation/react/styles.css",
+      "resolvesTo": "dist/federation.css",
+      "importedFrom": "frontend/src/main.jsx",
+      "note": "Global stylesheet import resolves fine under the exports map even at 0.3.0 -- only the newer test-harness.contract.json subpath is the resolution gap."
+    }
+  },
+  "shadcn": {
+    "componentsJsonPresent": true,
+    "style": "new-york",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "rsc": false,
+    "tsx": false,
+    "iconLibrary": "lucide",
+    "localUiPrimitivesCount": 48,
+    "localUiPrimitives": [
+      "accordion", "alert-dialog", "alert", "aspect-ratio", "avatar", "badge", "breadcrumb",
+      "button", "calendar", "card", "carousel", "chart", "checkbox", "collapsible", "command",
+      "context-menu", "dialog", "drawer", "dropdown-menu", "form", "hover-card", "input-otp",
+      "input", "label", "menubar", "navigation-menu", "pagination", "popover", "progress",
+      "radio-group", "resizable", "scroll-area", "select", "separator", "sheet", "sidebar",
+      "skeleton", "slider", "switch", "table", "tabs", "textarea", "toast", "toaster",
+      "toggle-group", "toggle", "tooltip", "use-toast"
+    ],
+    "notablyUnusedPrimitives": {
+      "badge": "ui/badge.jsx exists (near-full shadcn set) but is never imported by any page or component -- all status/badge rendering goes through the local StatusChip wrapper (see controlSourceMap.statusBadge), not shadcn Badge.",
+      "switch": "ui/switch.jsx exists but has zero import sites anywhere in src/.",
+      "dialog": "ui/dialog.jsx has exactly one consumer, and it's internal: ui/command.jsx (the cmdk command-palette primitive) uses Dialog as its own wrapper. The command palette itself is never mounted by App.jsx/Layout.jsx or any page, so Dialog never actually renders for a real user in this build.",
+      "sheet": "ui/sheet.jsx has exactly one consumer, and it's internal: ui/sidebar.jsx's own mobile-sheet variant. But the app's actual mobile nav drawer (Layout.jsx) does not use Sidebar's built-in sheet support at all -- it hand-rolls its own overlay (`fixed inset-0` backdrop + absolutely-positioned Sidebar), so shadcn's accessible Sheet/Dialog (Radix focus-trap, aria-modal, Escape-to-close) never actually backs the mobile nav. See A11Y_AUDIT.md finding on the custom overlay."
+    }
+  },
+  "controlSourceMap": {
+    "button": "shadcn ui/button.jsx (`@/components/ui/button`), imported directly in 10 files. FederationButton (exported by @pr-federation/react even at 0.3.0) is never imported anywhere -- 0 usages.",
+    "dialog": "No true modal dialog is reachable by a user in this build. shadcn ui/dialog.jsx is only reached transitively through ui/command.jsx (cmdk), and the command palette is never mounted. The closest thing to a 'dialog' a real user encounters is the hand-rolled mobile nav overlay in Layout.jsx (see 'sheet' below), which is not built on Radix Dialog/Sheet primitives at all -- it is three lines of custom `fixed`/`absolute` divs with a backdrop onClick, no role=\"dialog\", no aria-modal, no focus trap, and no Escape-key handler.",
+    "sheet": "Same custom overlay as above (frontend/src/components/skywatcher/Layout.jsx, lines ~15-24), toggled by an unlabeled hamburger `<button>` (h-8 w-8, no text/aria-label -- flagged live, see A11Y_AUDIT.md). shadcn's ui/sheet.jsx exists in the repo and is Radix-backed, but it backs only Sidebar's own unused built-in mobile variant, not this actual overlay.",
+    "statusBadge": "Local StatusChip.jsx (frontend/src/components/skywatcher/StatusChip.jsx), used 21 times across pages. It wraps `federationTone()` from @pr-federation/react (a className/data-attribute generator, not a component) rather than shadcn's ui/badge.jsx or the package's own FederationStatusBadge component -- neither of those two badge implementations is used anywhere.",
+    "emptyState": "Local EmptyState.jsx (frontend/src/components/skywatcher/EmptyState.jsx), used across 9 pages. It thinly wraps @pr-federation/react's FederationEmptyState (adds a dashed-card container + default Inbox icon)."
+  },
+  "themeSupport": {
+    "light": false,
+    "dark": true,
+    "toggleFound": false,
+    "note": "This app is dark-only by explicit design choice, not a light theme with an unreachable dark mode. frontend/src/index.css defines identical HSL values under `:root` and `.dark` (both are the same dark radar-panel palette) and sets `html { color-scheme: dark }`. frontend/src/main.jsx hardcodes `document.documentElement.dataset.theme = 'dark'` with a comment: 'This app commits to its dark radar/command identity.' There is no light palette anywhere in the CSS to switch to, no toggle control in the UI, and @pr-federation/react's own FederationThemeProvider/useFederationTheme (available even at the 0.3.0 pin) are imported nowhere -- theming is fully bypassed in favor of the hardcoded attribute."
+  },
+  "screenshots": [
+    {
+      "file": "docs/a11y-evidence/button-bulkaction-desktop.png",
+      "route": "/observations",
+      "viewport": "1280x800",
+      "theme": "dark (only theme available)",
+      "shows": "shadcn Button (`Approve` / `Flag for review` / `Clear`) in the bulk-action bar, plus a StatusChip badge (`SYNTHETIC`)"
+    },
+    {
+      "file": "docs/a11y-evidence/button-bulkaction-mobile.png",
+      "route": "/observations",
+      "viewport": "390x844",
+      "theme": "dark (only theme available)",
+      "shows": "Same Button bar at mobile width, with two checked shadcn Checkbox controls visible above it"
+    },
+    {
+      "file": "docs/a11y-evidence/badge-statuschip-desktop.png",
+      "route": "/observations",
+      "viewport": "1280x800",
+      "theme": "dark (only theme available)",
+      "shows": "StatusChip/badge instances in the top status strip, the diagnostic notice banner, and the map legend corner tag"
+    },
+    {
+      "file": "docs/a11y-evidence/badge-statuschip-mobile.png",
+      "route": "/observations",
+      "viewport": "390x844",
+      "theme": "dark (only theme available)",
+      "shows": "Same badges at mobile width; also shows the unlabeled 32x32px hamburger button top-left"
+    },
+    {
+      "file": "docs/a11y-evidence/mobile-sheet-nav-open.png",
+      "route": "/",
+      "viewport": "390x844",
+      "theme": "dark (only theme available)",
+      "shows": "The hand-rolled mobile nav overlay (the closest thing to a 'sheet' in this app) opened via the hamburger button, listing all 13 sidebar nav destinations"
+    },
+    {
+      "file": "docs/a11y-evidence/dashboard-desktop.png",
+      "route": "/",
+      "viewport": "1280x800",
+      "theme": "dark (only theme available)",
+      "shows": "Full dashboard for general reference"
+    }
+  ]
+}

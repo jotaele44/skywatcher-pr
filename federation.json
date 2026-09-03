@@ -25,7 +25,7 @@
     ],
     "fr24_ingest": "fr24/ package (FlightRadar24 screenshot inventory, ensemble OCR, RLSM/route extraction, manual-review queue, event export). The legacy direct-provider CLI at scripts/fr24_vision_ingest.py is deprecated for production under TheHub ADR 0006; its aviation extraction schema and RLSM adapter remain retained capabilities.",
     "rlsm_analysis_suite": "scripts/rlsm_*.py (route-line-segment mining: OCR retry, tail recovery, unlabeled POI clustering, route inference, network graph) backed by pipeline/ normalization+ontology modules (normalize_locations/missions/operators, rlsm_ontology_gate, db_utils) and configs/*.yaml registries; data/rlsm/schema.sql.",
-    "optional_terrain_layer": "gebco/ (requires requirements-geo.txt: numpy/scipy/xarray/netCDF4)",
+    "optional_terrain_layer": "gebco/ (requires pyproject.toml's geo extra: numpy/scipy/xarray/netCDF4)",
     "export_contract": "scripts/validate_airspace_export.py + schemas/airspace_observation.schema.json + schemas/airspace_export_manifest.schema.json",
     "primary_inputs": "FlightRadar24 screenshots/tracks (ingested in-tree via fr24/), aircraft registry, GEBCO bathymetry (optional)",
     "provenance": "Airspace engine extracted from spiderweb-pr branch claude/pr-airspace-intelligence-v7Mbh; FR24 ingest/OCR pipeline migrated from spiderweb-pr into fr24/ (38 modules); export contract salvaged from Puerto-Rico-Airspace-Intelligence-Tool PR #1.",
@@ -33,7 +33,7 @@
     "ai_imagery_boundary": "TheHub ADR 0006 is authoritative. Skywatcher owns aviation-domain schemas, normalization, matching, SATIM analysis, review rules and producer-package construction. TheHub owns external imagery acquisition, model execution, credentials, policy, audit, certified evidence and assistant workflows. Skywatcher does not host semantic RAG or an independent production model service."
   },
   "hub_callable_commands": {
-    "setup": "[ -d ../thehub-pr ] || git clone --depth 1 https://github.com/jotaele44/thehub-pr.git ../thehub-pr; python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt",
+    "setup": "python3 -m pip install Pillow PyMuPDF httpx jsonschema openpyxl pytest -r server/backend/requirements.txt 'prii-maintenance @ git+https://github.com/jotaele44/thehub-pr.git@f2b81769924689b4d959554928810b1d7b7ef3d6#subdirectory=packages/prii_maintenance' 'prii-export-utils @ git+https://github.com/jotaele44/thehub-pr.git@f2b81769924689b4d959554928810b1d7b7ef3d6#subdirectory=packages/prii_export_utils' && python3 scripts/federation_setup_smoke.py",
     "validate_export": "python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test",
     "test_suite": "python -m pytest -q",
     "export_canonical": "python3 scripts/federation_export.py --mode test",
@@ -57,8 +57,8 @@
     "ready_for_hub_discovery": true,
     "ready_for_hub_live_execution": false,
     "blocking_conditions": [
-      "no live observation export yet — only the synthetic_airspace_package example is present",
-      "canonical export adapter (scripts/federation_export.py) projects observations->entities/sources/relationships; production blocked until non-synthetic observations load",
+      "scaled bounded non-synthetic bbox/icon proof package exists (3 reviewed visible-icon screenshots with approximate capture geometry), but full live observation export remains blocked pending media identity reconciliation and completed capture-geometry review",
+      "canonical export adapter (scripts/federation_export.py) projects observations->entities/sources/relationships; production live readiness remains blocked until the reviewed non-synthetic corpus is materially complete and unresolved media identities are adjudicated",
       "external imagery acquisition and production model execution are pending migration to TheHub under ADR 0006; the existing local imagery MCP and direct-provider vision path are deprecated but retained until parity, dual-run, rollback, GUI and retirement gates pass",
       "FR24 ingest pipeline is now in-tree (fr24/); ILAP intake still requires FlightRadar24 screenshot/track inputs supplied locally (external data gap)"
     ]

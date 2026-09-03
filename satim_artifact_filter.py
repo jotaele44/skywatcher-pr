@@ -20,6 +20,7 @@ class ArtifactClass(str, Enum):
     IMAGERY_ARTIFACT = "IMAGERY_ARTIFACT"
     TRUE_SURFACE_FEATURE = "TRUE_SURFACE_FEATURE"
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
+    UNRESOLVED = "UNRESOLVED"
 
 
 class ArtifactLink(str, Enum):
@@ -30,6 +31,9 @@ class ArtifactLink(str, Enum):
 
 NON_DESTRUCTIVE_CONFIDENCE_PATCH_STATUS = "NON_DESTRUCTIVE_CONFIDENCE_PATCH"
 
+# Legacy detector/calibration values. Vector 1 explicitly keeps unvalidated
+# numerical values calibration-required; these weights/bands are therefore
+# implementation compatibility values, not universal epistemic thresholds.
 SIGNAL_WEIGHTS: dict[ArtifactSignal, float] = {
     ArtifactSignal.TILE_SEAM: 0.25,
     ArtifactSignal.ORTHO_MOSAIC_BOUNDARY: 0.20,
@@ -159,11 +163,18 @@ def confidence_band(score: float) -> str:
 
 
 def recommended_class(score: float) -> ArtifactClass:
+    """Return only an artifact-side recommendation.
+
+    Low artifact evidence is *absence of artifact support*, not affirmative
+    evidence that a physical surface feature exists. TRUE_SURFACE_FEATURE is
+    retained as a compatibility enum for independently supplied/adjudicated
+    classes, but this scorer never auto-promotes to it.
+    """
     if score >= 0.70:
         return ArtifactClass.IMAGERY_ARTIFACT
     if score >= 0.40:
         return ArtifactClass.REVIEW_REQUIRED
-    return ArtifactClass.TRUE_SURFACE_FEATURE
+    return ArtifactClass.UNRESOLVED
 
 
 def score_artifact_signals(signals: dict[ArtifactSignal | str, float]) -> tuple[float, dict[str, float]]:
@@ -303,4 +314,6 @@ def artifact_filter_schema() -> dict[str, Any]:
         "signal_weights": {signal.value: weight for signal, weight in SIGNAL_WEIGHTS.items()},
         "link_weights": {link.value: weight for link, weight in LINK_WEIGHTS.items()},
         "adjustment_rule": "adjusted score is advisory; original score is preserved",
+        "auto_promotion_policy": "low artifact evidence => UNRESOLVED, never TRUE_SURFACE_FEATURE",
+        "threshold_status": "CALIBRATION_REQUIRED",
     }
