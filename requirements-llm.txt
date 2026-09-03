@@ -1,0 +1,7 @@
+# Optional LLM query layer (src/skywatcher/query/llm.py + scripts/skywatcher_query.py).
+# Kept out of core requirements so offline/CI installs stay lean — the query
+# engine is fully deterministic and works without this. Install to enable the
+# natural-language wrapper:
+#     pip install -r requirements-llm.txt
+# and set ANTHROPIC_API_KEY (see .env.example).
+anthropic>=0.39

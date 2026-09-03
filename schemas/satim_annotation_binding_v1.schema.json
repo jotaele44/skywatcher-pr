@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://satim.local/schemas/satim_annotation_binding_v1.schema.json",
+  "title": "SATIM Human Annotation Binding v1",
+  "type": "object",
+  "required": [
+    "annotation_id",
+    "annotation_sha256",
+    "unmarked_policy",
+    "source_images",
+    "rois",
+    "arithmetic"
+  ],
+  "properties": {
+    "annotation_id": {"type": "string", "minLength": 1},
+    "annotation_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "unmarked_policy": {"const": "UNKNOWN"},
+    "source_images": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["image_id", "pristine_sha256", "measurement_sha256"],
+        "properties": {
+          "image_id": {"type": "string", "minLength": 1},
+          "pristine_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "measurement_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "rois": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "roi_id",
+          "image_id",
+          "color",
+          "annotation_pixels",
+          "candidate_classes",
+          "machine_state"
+        ],
+        "properties": {
+          "roi_id": {"type": "string", "minLength": 1},
+          "image_id": {"type": "string", "minLength": 1},
+          "color": {"enum": ["RED", "BLUE", "YELLOW"]},
+          "annotation_pixels": {"type": "integer", "minimum": 1},
+          "geometry": {"type": "object"},
+          "candidate_classes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string"},
+            "uniqueItems": true
+          },
+          "machine_state": {
+            "enum": ["SUPPORTED", "PARTIAL", "UNRESOLVED", "CONTRADICTED"]
+          },
+          "measurements": {"type": "object"},
+          "contradictions": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "arithmetic": {
+      "type": "object",
+      "required": ["denominator", "supported", "partial", "unresolved", "contradicted"],
+      "properties": {
+        "denominator": {"type": "integer", "minimum": 0},
+        "supported": {"type": "integer", "minimum": 0},
+        "partial": {"type": "integer", "minimum": 0},
+        "unresolved": {"type": "integer", "minimum": 0},
+        "contradicted": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": "priis.airspace_export.v0.1",
+  "producer": "skywatcher-pr",
+  "package_id": "fr24_bbox_icon_scaled_20260827",
+  "created_at": "2026-08-28T00:11:40Z",
+  "mode": "production",
+  "description": "Airspace producer package built from the FR24 screenshot pipeline DB.",
+  "files": {
+    "observations_geojson": "observations.geojson",
+    "observations_csv": "observations.csv",
+    "sources": "sources.json",
+    "lineage": "lineage.json",
+    "confidence": "confidence.json"
+  },
+  "record_counts": {
+    "observations": 3,
+    "sources": 3,
+    "lineage": 3,
+    "confidence": 3
+  }
+}

@@ -1,0 +1,202 @@
+{
+  "arithmetic": {
+    "found": 6,
+    "missing_files": 0,
+    "total": 6
+  },
+  "generated_at": "2026-08-27T19:55:14Z",
+  "lumen_status": "unavailable_in_session",
+  "producer": "skywatcher-pr",
+  "records": [
+    {
+      "absolute_source_path": "/Users/jotaele/Documents/FR24/FR24_DataBank/Media_Canonical/freeze_final/final_active_media_index.csv",
+      "blocker_classification_note": "Real FR24 media inventory found; geometry still must be proven per observation.",
+      "byte_size": 697268,
+      "classification": "FOUND",
+      "exists": true,
+      "format": "csv",
+      "header": [
+        "path",
+        "kind",
+        "date_bucket",
+        "size",
+        "sha256",
+        "aircraft_or_callsign",
+        "identity_confidence",
+        "identity_basis"
+      ],
+      "inclusion_decision": "load_into_runtime_fr24_db",
+      "logical_rows": 2856,
+      "raw_normalized_canonical_policy": "Preserve raw source strings; no mission or intent inference from labels, proximity, geometry, or gaps.",
+      "sha256": "77352b02fc5fefc3ba866206a825d8bdf9324eb455332a8cd752cb64fe8d745a",
+      "source_id": "fr24_exports"
+    },
+    {
+      "absolute_source_path": "/Users/jotaele/Documents/Financials/Consolidated/entities/aircraft_observations.csv",
+      "blocker_classification_note": "Aircraft identity/kinematic OCR rows found; no lat/lon fields present.",
+      "byte_size": 4325702,
+      "classification": "FOUND",
+      "exists": true,
+      "format": "csv",
+      "header": [
+        "aircraft_obs_id",
+        "screenshot_id",
+        "filename",
+        "filename_ts",
+        "registration",
+        "callsign",
+        "aircraft_type",
+        "altitude_ft",
+        "speed_kt",
+        "heading_deg",
+        "operator_text",
+        "identity_status",
+        "confidence",
+        "source_zone",
+        "raw_excerpt",
+        "observed_at"
+      ],
+      "inclusion_decision": "load_into_runtime_fr24_db",
+      "logical_rows": 9963,
+      "raw_normalized_canonical_policy": "Preserve raw source strings; no mission or intent inference from labels, proximity, geometry, or gaps.",
+      "sha256": "8e2afbc45c2521cb78a299d6c0b0859ff1d5ab1868b10f272b45350d9196e9d3",
+      "source_id": "fr24_aircraft_observations"
+    },
+    {
+      "absolute_source_path": "/Users/jotaele/Documents/Financials/Consolidated/entities/manual_review_aircraft_identity.csv",
+      "blocker_classification_note": "Manual review ledger found; unresolved identities remain review-bound.",
+      "byte_size": 763269,
+      "classification": "FOUND",
+      "exists": true,
+      "format": "csv",
+      "header": [
+        "review_id",
+        "screenshot_id",
+        "filename",
+        "item_kind",
+        "item_ref_table",
+        "item_ref_id",
+        "reason",
+        "severity",
+        "review_status",
+        "created_at"
+      ],
+      "inclusion_decision": "manifest_and_review_accounting",
+      "logical_rows": 3685,
+      "raw_normalized_canonical_policy": "Preserve raw source strings; no mission or intent inference from labels, proximity, geometry, or gaps.",
+      "sha256": "844b03ef45c2cfc4016a6759f7be1a2a81fc9efb0a1252c7a8a21153126c130c",
+      "source_id": "fr24_manual_review"
+    },
+    {
+      "absolute_source_path": "/Users/jotaele/Documents/FR24/FR24_DataBank/Media_Canonical/freeze_final/final_certification_summary.json",
+      "blocker_classification_note": "FR24 media certification receipt found.",
+      "byte_size": 970,
+      "classification": "FOUND",
+      "exists": true,
+      "format": "json",
+      "inclusion_decision": "manifest_certification_receipt",
+      "raw_normalized_canonical_policy": "Preserve raw source strings; no mission or intent inference from labels, proximity, geometry, or gaps.",
+      "sha256": "471ce093d8876206414df32f1f5d93357d162e3a808c33ac00c6b0004ba4fd36",
+      "source_id": "fr24_certification_summary",
+      "top_level_keys": [
+        "by_identity_confidence",
+        "by_kind",
+        "certification",
+        "deep_certified_rows",
+        "deep_rows_with_tokens",
+        "final_identity_rows",
+        "final_index_rows",
+        "final_missing_identity_rows",
+        "final_missing_paths",
+        "final_unique_sha",
+        "input_active_rows",
+        "input_missing_identity_visual_rows",
+        "mode",
+        "rename_status_counts",
+        "reviewer_bundle",
+        "run_utc"
+      ]
+    },
+    {
+      "absolute_source_path": "/Users/jotaele/Documents/FR24/FR24_DataBank/Media_Canonical/freeze_final/ocr_identity_certification.json",
+      "blocker_classification_note": "OCR identity certification receipt found.",
+      "byte_size": 2069,
+      "classification": "FOUND",
+      "exists": true,
+      "format": "json",
+      "inclusion_decision": "manifest_certification_receipt",
+      "raw_normalized_canonical_policy": "Preserve raw source strings; no mission or intent inference from labels, proximity, geometry, or gaps.",
+      "sha256": "d795c964ff27c8c3f898a41645d96c1bba40447c1f5683904ee34c1fef642675",
+      "source_id": "fr24_ocr_identity_certification",
+      "top_level_keys": [
+        "blocked_or_failed_renames",
+        "certification",
+        "final_index",
+        "freeze",
+        "mode",
+        "ocr_certified_rows",
+        "ocr_rows_with_tokens",
+        "preexisting_binding_rows",
+        "rename_status_counts",
+        "run_utc",
+        "total_certified_rename_rows",
+        "unresolved_rows_ocr_attempted"
+      ]
+    },
+    {
+      "absolute_source_path": "/Users/jotaele/Documents/FR24/FR24_DataBank/Media_Canonical/reviewer_bundle/FR24_reviewer_bundle.zip",
+      "blocker_classification_note": "Reviewer bundle found; not a promoted observation source by itself.",
+      "byte_size": 2190479,
+      "classification": "FOUND",
+      "exists": true,
+      "format": "zip",
+      "inclusion_decision": "manifest_review_bundle",
+      "member_count": 10,
+      "members": [
+        {
+          "path": "contact_sheets/",
+          "uncompressed_size": 0
+        },
+        {
+          "path": "final_active_media_index.html",
+          "uncompressed_size": 222673
+        },
+        {
+          "path": "final_active_media_index.csv",
+          "uncompressed_size": 697268
+        },
+        {
+          "path": "deep_final_certification.json",
+          "uncompressed_size": 697
+        },
+        {
+          "path": "deep_unresolved_adjudication.csv",
+          "uncompressed_size": 410016
+        },
+        {
+          "path": "deep_certified_rename_manifest.csv",
+          "uncompressed_size": 26274
+        },
+        {
+          "path": "contact_sheets/FR24_VISUAL_AUDIT_screenshots_02.jpg",
+          "uncompressed_size": 446568
+        },
+        {
+          "path": "contact_sheets/FR24_VISUAL_AUDIT_screenshots_01.jpg",
+          "uncompressed_size": 1005959
+        },
+        {
+          "path": "contact_sheets/FR24_VISUAL_AUDIT_screenshot_pdfs_01.jpg",
+          "uncompressed_size": 228487
+        },
+        {
+          "path": "contact_sheets/FR24_VISUAL_AUDIT_recordings_01.jpg",
+          "uncompressed_size": 367906
+        }
+      ],
+      "raw_normalized_canonical_policy": "Preserve raw source strings; no mission or intent inference from labels, proximity, geometry, or gaps.",
+      "sha256": "729fc4060b6726e3db1c032b5dbdb010845474b5fe9c116744a4722885483422",
+      "source_id": "fr24_reviewer_bundle"
+    }
+  ]
+}

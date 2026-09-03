@@ -1,0 +1,26 @@
+[
+  {
+    "source_id": "src-1",
+    "source_type": "screenshot",
+    "source_path": "FR24_DataBank/Media_Canonical/active/screenshots/20260706/FR24_SCREENSHOT_20260706_screenshots_0001_17330dea3f4c.jpg",
+    "sha256": "17330dea3f4c42b5d64f1221917f875291c4e5891b39eb762f3857d891fbf7ee",
+    "retrieved_at": "2026-07-06T22:50:00Z",
+    "provenance_status": "operator_capture"
+  },
+  {
+    "source_id": "src-2",
+    "source_type": "screenshot",
+    "source_path": "FR24_DataBank/Media_Canonical/active/screenshots/20260706/FR24_SCREENSHOT_20260706_screenshots_0002_68f298bae21a.jpg",
+    "sha256": "68f298bae21a80d201b800df27ab9da9bcbdcbb7c8fa3508fbe175d32f51d631",
+    "retrieved_at": "2026-07-06T22:50:00Z",
+    "provenance_status": "operator_capture"
+  },
+  {
+    "source_id": "src-3",
+    "source_type": "screenshot",
+    "source_path": "FR24_DataBank/Media_Canonical/active/screenshots/20260706/FR24_SCREENSHOT_20260706_screenshots_0004_85de70132fc0.jpg",
+    "sha256": "85de70132fc0feae66e30597b9aba2543d3c9d3897d0de9166f72e306bfd04c3",
+    "retrieved_at": "2026-07-06T22:50:00Z",
+    "provenance_status": "operator_capture"
+  }
+]
