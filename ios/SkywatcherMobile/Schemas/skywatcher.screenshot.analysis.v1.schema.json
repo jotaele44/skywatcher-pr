@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher.local/schemas/skywatcher.screenshot.analysis.v1.schema.json",
+  "title": "Skywatcher source-agnostic screenshot analysis",
+  "type": "object",
+  "required": ["schemaVersion", "runID", "createdAt", "analyzerVersion", "source", "observations", "confidence", "contradictions", "unresolvedFields", "networkAccess"],
+  "properties": {
+    "schemaVersion": {"const": "skywatcher.screenshot.analysis.v1"},
+    "runID": {"type": "string", "format": "uuid"},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "analyzerVersion": {"type": "string"},
+    "source": {
+      "type": "object",
+      "required": ["filename", "sha256", "byteCount", "width", "height", "captureMethod"],
+      "properties": {
+        "filename": {"const": "source.bin"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "byteCount": {"type": "integer", "minimum": 1, "maximum": 41943040},
+        "width": {"type": "integer", "minimum": 1, "maximum": 20000},
+        "height": {"type": "integer", "minimum": 1, "maximum": 20000},
+        "captureMethod": {"const": "manual_screenshot"},
+        "sourceLabel": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "observations": {"type": "array"},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "contradictions": {"type": "array", "items": {"type": "string"}},
+    "unresolvedFields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "networkAccess": {"const": false}
+  },
+  "additionalProperties": false
+}
