@@ -10,6 +10,22 @@ const getStoredToken = () => {
   return window.localStorage.getItem(TOKEN_STORAGE_KEY) || window.localStorage.getItem('access_token') || null;
 };
 
+const WRITE_TOKEN_STORAGE_KEY = 'federation_write_token';
+
+// PRII_WRITE_TOKEN, kept in its own slot. AuthContext clears the *access* token
+// whenever /api/auth/me 401s — which it always does in diagnostic mode — so a
+// write token stored alongside it would be discarded before the first request.
+export const getWriteToken = () => {
+  if (typeof window === 'undefined') return null;
+  return window.localStorage.getItem(WRITE_TOKEN_STORAGE_KEY) || null;
+};
+
+export const setWriteToken = (token) => {
+  if (typeof window === 'undefined') return;
+  if (token) window.localStorage.setItem(WRITE_TOKEN_STORAGE_KEY, token);
+  else window.localStorage.removeItem(WRITE_TOKEN_STORAGE_KEY);
+};
+
 const setStoredToken = (token) => {
   if (typeof window === 'undefined') return;
   if (token) {
@@ -44,7 +60,10 @@ const normalizeError = async (response) => {
 
 async function request(path, options = {}) {
   const baseUrl = trimSlash(options.baseUrl || appParams.apiBaseUrl || '/api');
-  const token = options.token ?? appParams.token ?? getStoredToken();
+  // Write token last: it only applies once no session token is in play, which is
+  // exactly the diagnostic-mode case the write guard exists for.
+  const token = options.token ?? appParams.token ?? getStoredToken()
+    ?? appParams.writeToken ?? getWriteToken();
   const headers = new Headers(options.headers || {});
 
   if (!(options.body instanceof FormData) && !headers.has('Content-Type')) {

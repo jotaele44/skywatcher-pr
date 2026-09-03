@@ -1,5 +1,7 @@
-from satim_engine.inventory import classify
 from pathlib import Path
+
+from satim_engine.inventory import classify
+
 
 def test_classify_track():
     assert classify(Path("x.csv")) == "track_candidate"

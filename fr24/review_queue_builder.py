@@ -22,7 +22,6 @@ import argparse
 import csv
 import json
 from pathlib import Path
-from typing import List
 
 DISALLOWED_REVIEW_STATUSES = {
     "confirmed",
@@ -69,7 +68,7 @@ def _priority_score(row: dict) -> float:
 
 
 def build_review_queue(fused_csv: Path, review_csv: Path) -> dict:
-    rows: List[dict] = []
+    rows: list[dict] = []
     if fused_csv.exists():
         with fused_csv.open(encoding="utf-8") as f:
             rows = list(csv.DictReader(f))
@@ -84,7 +83,7 @@ def build_review_queue(fused_csv: Path, review_csv: Path) -> dict:
     review_rows.sort(key=lambda r: -float(r.get("priority_score", 0)))
 
     fallback_fields = ["image_path", "image_name", "review_status", "priority_score", "conflict_count"]
-    fieldnames: List[str] = fallback_fields
+    fieldnames: list[str] = fallback_fields
     if rows:
         fieldnames = list(rows[0].keys())
         for col in ("priority_score", "conflict_count"):

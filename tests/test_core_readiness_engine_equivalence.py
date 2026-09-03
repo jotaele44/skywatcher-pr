@@ -4,10 +4,10 @@ docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md."""
 
 import json
 
-from prii_readiness_engine import PRIIReadinessEngine as OldEngine
 from prii_readiness_engine import READINESS_STATUS_READY as OLD_READY
-from skywatcher.core.readiness_engine import PRIIReadinessEngine as NewEngine
+from prii_readiness_engine import PRIIReadinessEngine as OldEngine
 from skywatcher.core.readiness_engine import READINESS_STATUS_READY as NEW_READY
+from skywatcher.core.readiness_engine import PRIIReadinessEngine as NewEngine
 
 
 def test_shim_reexports_identical_symbols():

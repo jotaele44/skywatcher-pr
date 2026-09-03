@@ -1,0 +1,43 @@
+spec_version: 0.2.0
+state_machine:
+  states: [OBSERVED, DISCOVERY_CANDIDATE, VISUAL_CANDIDATE, SUPPORTED, AMBIGUOUS, UNRESOLVED, CONTRADICTED, REJECTED, EXTERNALLY_BOUND, CERTIFIED, SUPERSEDED, CANDIDATE_NOT_IDENTITY]
+  normal_path: [OBSERVED, DISCOVERY_CANDIDATE, VISUAL_CANDIDATE, SUPPORTED, EXTERNALLY_BOUND, CERTIFIED]
+  prohibited_direct_promotions: [OBSERVED_TO_CERTIFIED, DISCOVERY_TO_CERTIFIED, VISUAL_CANDIDATE_TO_CERTIFIED, HEURISTIC_TO_IDENTITY, CANDIDATE_NOT_IDENTITY_TO_CERTIFIED]
+  demotions: [SUPPORTED_TO_VISUAL_CANDIDATE, VISUAL_CANDIDATE_TO_UNRESOLVED, SUPPORTED_TO_UNRESOLVED, ANY_TO_SUPERSEDED_WITH_PROVENANCE]
+precedence: [HARD_FALSIFIER, HARD_CONTRADICTION, AUTHORITATIVE_BINDING, CERTIFIED_GEOMETRIC_MATCH, MULTIFRAME_CONVERGENCE, MULTISCALE_CONVERGENCE, SINGLE_FRAME_VISUAL_SUPPORT, HEURISTIC_DISCOVERY]
+null_policy:
+  missing_input_is_zero: false
+  missing_input_is_false: false
+  missing_input_is_negative_evidence: false
+  default_missing_required: UNRESOLVED
+  default_missing_optional: DEGRADED_WITH_REASON_CODE
+  empty_geometry_is_outside: false
+  unknown_is_valid_output: true
+tie_policy:
+  deterministic_order_is_evidence: false
+  tied_top_evidence: UNRESOLVED_OR_REVIEW
+  location_runner_up_must_be_preserved: true
+duplicate_policy:
+  preserve_full_candidate_sets: true
+  deduplicate_only_with: [stable_identity, declared_exact_equivalence]
+  prefer_whole_record_selection: true
+contradiction_policy:
+  preserve_conflicting_observations: true
+  classes: [BYTE, SCHEMA, GEOMETRY, NAME, COUNT, CLASS, IDENTITY, TIME, SCOPE]
+  displaced_result: SUPERSEDED_WHEN_APPROPRIATE
+intermodule_conflicts:
+  shadow_vs_water: darkness alone supports neither; geometry/context adjudicates; unresolved on tie
+  seam_vs_real_object: cross-seam continuity required; seam may demote appearance but cannot erase coherent geometry
+  artifact_vs_locator: artifact-classified regions prohibited as landmarks
+  quarry_vs_natural: natural scarp/landslide/road-cut/karst/construction alternatives required before quarry promotion
+  excavation_vs_construction: preserve both candidates until temporal/system context separates them
+  portal_vs_culvert_shadow: negative controls can block portal-like promotion
+  text_vs_geometry: hard road/hydro/terrain contradiction overrides text match
+  proximity_vs_identity: proximity is discovery only
+ownership:
+  Core: [contracts, provenance, geometry_time, evidence_axes, registries, validation]
+  RLSM: [inventory, hashing, segmentation, OCR, visible labels_icons, pixel_geometry, observation_localization]
+  SATIM: [image_quality, registration, artifacts, terrain_landcover, palms, water, infrastructure, quarry_excavation, scene_locator]
+  FPIM: [track_reconstruction, trajectory_measurement, endpoint_candidates, neutral_POI_proximity]
+  CORRIM: [SATIM_FPIM_association, contradiction_reconciliation, review_context]
+forbidden_claims: [mission_from_visual_form, intent_from_visual_form, wrongdoing_from_visual_form, legal_identity_from_visual_similarity, exact_location_from_single_text_or_proximity, manipulation_from_seam_alone]

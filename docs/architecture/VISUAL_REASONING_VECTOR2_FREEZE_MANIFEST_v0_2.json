@@ -1,0 +1,62 @@
+{
+  "spec_version": "0.2.0",
+  "vector": "2/3_EXISTING_BASELINE_AUDIT_AND_NORMALIZATION",
+  "state": "PASS_BOUNDED_NORMALIZATION",
+  "implementation_baseline": "c32c68abce2a281fd13d9632687a7cdc10412d0b",
+  "canonical_spec_parent": "f4cd10fe0ded17ce03c431cea4bfc05f0bbca82f",
+  "branch": "refactor/visual-baseline-normalization-v0-1",
+  "pre_freeze_validated_head": "d7b3cd16dec23a441f865389b64592b89ac5061c",
+  "validation": {
+    "skywatcher_ci_run": 818,
+    "skywatcher_ci_conclusion": "success",
+    "satim_runtime_smoke_run": 350,
+    "satim_runtime_smoke_conclusion": "success",
+    "satim_phase2_contracts_run": 154,
+    "satim_phase2_contracts_conclusion": "success",
+    "federation_template_drift_run": 991,
+    "federation_template_drift_conclusion": "success"
+  },
+  "artifacts": {
+    "configs/visual_reasoning/baseline_conformance_v0_2.yaml": "gitblob:064aa6f13173fd3db767700f2289972f0b7291ba",
+    "configs/visual_reasoning/legacy_parameter_debt_v0_2.yaml": "gitblob:b7b6088460b16648686772e55d57dc7833053b49",
+    "configs/visual_reasoning/legacy_rule_conflicts_v0_2.yaml": "gitblob:8420dea54338f7ae4471a5c0cbb4f20d355cecd1",
+    "docs/MODULE_SPEC_SATIM.md": "gitblob:2cc33eb53989ac58667935716ea516325628b395",
+    "docs/architecture/VISUAL_REASONING_VECTOR2_ACCEPTANCE_v0_2.md": "gitblob:462528cce1afc7b208b08eeb5172f3214827a138",
+    "docs/architecture/VISUAL_REASONING_VECTOR2_CONFORMANCE_LEDGER_v0_2.csv": "gitblob:1b01e910004aeaa8cc0316bdb6a0c88d0cc2dced",
+    "satim_artifact_filter.py": "gitblob:204113cc062172fcc715a79af3677e9638463c86",
+    "scripts/audit_visual_reasoning_baseline.py": "gitblob:3494632b6eab1eb17dca5ecec328a0503fbfbaaa",
+    "src/skywatcher/core/module_boundaries.py": "gitblob:f042caf20bb44fa2fb954154551f88b90dccf47f",
+    "tests/test_satim_artifact_filter.py": "gitblob:4220c7733b3e72ae72d5fc93eb873a0a2aedbac1",
+    "tests/test_visual_reasoning_baseline_v0_2.py": "gitblob:ed3d0d25b2915d9690fd6af27f020dd6c22657d7"
+  },
+  "arithmetic": {
+    "root_satim_implementation_denominator": 16,
+    "canonical_satim_root_files": 15,
+    "legacy_mixed_domain_root_files": 1,
+    "unclassified_root_satim_files": 0,
+    "equation": "15 + 1 + 0 = 16"
+  },
+  "repairs": [
+    "low artifact evidence no longer auto-promotes TRUE_SURFACE_FEATURE",
+    "all root SATIM implementation files explicitly classified",
+    "fr24/rlsm_unlabeled.py explicitly quarantined as legacy semantic compatibility",
+    "satim_visual_route_gap.py explicitly quarantined as legacy mixed-domain compatibility",
+    "legacy output-affecting parameter values preserved as debt rather than silently validated",
+    "legacy rule conflicts preserved with explicit dispositions",
+    "standalone static audit exposes bounded numeric-literal and mixed-domain marker surface"
+  ],
+  "remaining_outside_vector_2": [
+    "new canonical visual-reasoning runtime implementation",
+    "full shadow photometric analyzer",
+    "palm morphology detector",
+    "canonical hydrographic-form adjudicator",
+    "quarry-vs-natural-landform adjudicator",
+    "portal-like surface-feature adjudicator",
+    "multiscale scene graph integration",
+    "multi-channel scene locator",
+    "numeric calibration and sensitivity certification",
+    "corpus-wide shadow-mode differential replay",
+    "production promotion"
+  ],
+  "identity_note": "Git blob identities certify repository object bytes. The manifest itself is excluded from its own artifact multiset to avoid recursive self-identity."
+}

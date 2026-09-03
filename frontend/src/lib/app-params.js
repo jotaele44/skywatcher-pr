@@ -33,6 +33,9 @@ const getAppParams = () => {
     storage.removeItem('access_token');
     storage.removeItem('token');
   }
+  if (getParamValue('clear_write_token') === 'true') {
+    storage.removeItem('federation_write_token');
+  }
 
   const programId = import.meta.env.VITE_FEDERATION_PROGRAM_ID || 'skywatcher-pr';
   const scopedApiBaseUrl = import.meta.env.VITE_SKYWATCHER_API_BASE_URL;
@@ -44,6 +47,13 @@ const getAppParams = () => {
       defaultValue: scopedApiBaseUrl || import.meta.env.VITE_FEDERATION_API_BASE_URL || '/api',
     }),
     token: getParamValue('access_token', { removeFromUrl: true }),
+    // PRII_WRITE_TOKEN, supplied as ?write_token=… and stripped from the URL.
+    // Deliberately a separate slot from `token`: in diagnostic mode
+    // `/api/auth/me` always 401s, and AuthContext responds by clearing the
+    // access token so a stale one cannot trap the session in a login redirect
+    // (lib/AuthContext.jsx). That cleanup would wipe a write token too, which is
+    // why supplying one as ?access_token= never survived to the first request.
+    writeToken: getParamValue('write_token', { removeFromUrl: true }),
     fromUrl: getParamValue('from_url', { defaultValue: window.location.href }),
     mode: import.meta.env.VITE_FEDERATION_MODE || 'diagnostic',
     requireAuth: import.meta.env.VITE_FEDERATION_REQUIRE_AUTH === 'true',

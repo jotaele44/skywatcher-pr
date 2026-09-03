@@ -2,12 +2,14 @@
 
 import pytest
 
-from fr24.ui_segmenter import FR24UISegmenter, FR24Segments, BBox
 from fr24.route_extractor import (
-    RouteExtractor, RouteCandidate, COLOR_RANGES,
-    _bbox_of_points, _polyline_length,
+    COLOR_RANGES,
+    RouteCandidate,
+    RouteExtractor,
+    _bbox_of_points,
+    _polyline_length,
 )
-
+from fr24.ui_segmenter import BBox, FR24Segments, FR24UISegmenter
 
 # ------------------------------------------------------------------ segmenter
 
@@ -58,7 +60,7 @@ def test_label_regions_returned():
     seg = FR24UISegmenter()
     result = seg.segment_from_size(1024, 768)
     assert len(result.labels) > 0
-    types = {l.region_type for l in result.labels}
+    types = {lbl.region_type for lbl in result.labels}
     assert "callsign" in types
 
 
@@ -119,7 +121,6 @@ def test_polyline_length_zero():
 
 
 def test_polyline_length_known():
-    import math
     pts = [(0, 0), (3, 4)]  # hypotenuse = 5
     assert abs(_polyline_length(pts) - 5.0) < 1e-6
 

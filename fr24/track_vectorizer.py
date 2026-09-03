@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 from fr24.route_extractor import RouteCandidate, RouteExtractor
 
@@ -50,12 +49,13 @@ class TrackFeatures:
     has_orbit: int
     has_gap: int
     track_length_px: float
-    bbox: Tuple[int, int, int, int]
+    bbox: tuple[int, int, int, int]
     confidence: float
     component_count: int
+    sampled_points: list[tuple[int, int]]
 
 
-def _component_geometry(points: List[Tuple[int, int]]) -> dict:
+def _component_geometry(points: list[tuple[int, int]]) -> dict:
     """Shape statistics for one connected component's pixel set."""
     import numpy as np
 
@@ -113,7 +113,7 @@ def _component_length(shape: str, geometry: dict) -> float:
     return geometry["principal_extent"]
 
 
-def vectorize_candidates(candidates: List[RouteCandidate]) -> Optional[TrackFeatures]:
+def vectorize_candidates(candidates: list[RouteCandidate]) -> TrackFeatures | None:
     """Derive TrackFeatures from extracted route components, or None when no
     track-colored component is substantial enough to trust."""
     tracks = [
@@ -150,11 +150,12 @@ def vectorize_candidates(candidates: List[RouteCandidate]) -> Optional[TrackFeat
         bbox=(int(x0), int(y0), int(x1 - x0), int(y1 - y0)),
         confidence=CV_CONFIDENCE,
         component_count=len(tracks),
+        sampled_points=main.points[:500],
     )
 
 
 def vectorize_image(image_path: str,
-                    extractor: Optional[RouteExtractor] = None) -> Optional[TrackFeatures]:
+                    extractor: RouteExtractor | None = None) -> TrackFeatures | None:
     """Extract + vectorize one screenshot file. None on any failure — callers
     fall back to the speed/heading heuristic."""
     if extractor is None:

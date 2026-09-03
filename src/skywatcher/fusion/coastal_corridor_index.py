@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from math import asin, cos, radians, sin, sqrt
-from typing import Mapping, Sequence
 
 DEFAULT_CORRIDORS: tuple[dict[str, object], ...] = (
     {"corridor_id": "sj_corridor", "name": "San Juan regional corridor", "domain": "air_maritime", "center_lat": 18.456, "center_lon": -66.098, "radius_km": 25.0},

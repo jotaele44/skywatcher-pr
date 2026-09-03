@@ -12,12 +12,13 @@ Distances are planar degree approximations (no projection), adequate for coarse
 from __future__ import annotations
 
 import math
-from typing import Any, Mapping, Optional, Sequence, Tuple
+from collections.abc import Mapping, Sequence
+from typing import Any
 
-BBox = Tuple[float, float, float, float]
+BBox = tuple[float, float, float, float]
 
 
-def layer_bbox(layer: Any) -> Optional[BBox]:
+def layer_bbox(layer: Any) -> BBox | None:
     """Return a normalized bbox for *layer*, or ``None`` if it has no geometry.
 
     Recognized shapes (all pure data, no I/O):
@@ -57,7 +58,7 @@ def bbox_distance_deg(lat: float, lon: float, bbox: BBox) -> float:
     return math.hypot(dx, dy)
 
 
-def resolve_geometry_layers(layers: Optional[Mapping[str, Any]]) -> list[tuple[str, BBox]]:
+def resolve_geometry_layers(layers: Mapping[str, Any] | None) -> list[tuple[str, BBox]]:
     """Return ``[(name, bbox), ...]`` for every layer with usable geometry."""
     if not layers:
         return []
@@ -69,7 +70,7 @@ def resolve_geometry_layers(layers: Optional[Mapping[str, Any]]) -> list[tuple[s
     return resolved
 
 
-def as_float(value: Any) -> Optional[float]:
+def as_float(value: Any) -> float | None:
     """Coerce *value* to a finite float, or ``None`` if it isn't numeric."""
     try:
         f = float(value)
@@ -81,7 +82,7 @@ def as_float(value: Any) -> Optional[float]:
 
 
 def _is_bbox_like(value: Any) -> bool:
-    if isinstance(value, Mapping) or isinstance(value, (str, bytes)):
+    if isinstance(value, (Mapping, str, bytes)):
         return False
     if not isinstance(value, Sequence):
         return False
@@ -99,7 +100,7 @@ def _coerce_bbox(value: Sequence[Any]) -> BBox:
     return (min_lon, min_lat, max_lon, max_lat)
 
 
-def _bbox_from_points(points: Any) -> Optional[BBox]:
+def _bbox_from_points(points: Any) -> BBox | None:
     lons: list[float] = []
     lats: list[float] = []
     for pair in points:

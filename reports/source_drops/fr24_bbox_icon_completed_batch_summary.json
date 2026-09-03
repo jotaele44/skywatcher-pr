@@ -1,0 +1,11 @@
+{
+  "batch_id": "fr24_bbox_icon_completed_batch_0001",
+  "certification_note": "First bounded mechanics proof for visible-icon approximate aircraft point; not a full corpus certification.",
+  "completed_review_rows": 1,
+  "geometry_state": "PARTIAL",
+  "identity_state": "PARTIAL",
+  "observation_rows": 1,
+  "position_precision": "APPROXIMATE",
+  "source_media_path": "/Users/jotaele/Documents/FR24/FR24_DataBank/Media_Canonical/active/screenshots/20260706/FR24_SCREENSHOT_20260706_screenshots_0001_17330dea3f4c.jpg",
+  "source_media_sha256": "17330dea3f4c42b5d64f1221917f875291c4e5891b39eb762f3857d891fbf7ee"
+}

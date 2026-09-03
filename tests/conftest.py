@@ -3,9 +3,7 @@ Shared pytest fixtures for the PR Airspace Intelligence test suite.
 """
 
 import sqlite3
-import tempfile
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import pytest
 
@@ -210,11 +208,23 @@ def _insert_data(conn: sqlite3.Connection):
         conn.execute(
             "INSERT INTO flights VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
-                f["flight_id"], f["callsign"], f["aircraft_type"], f["operator"],
-                f["origin_airport"], f["destination_airport"],
-                f["origin_lat"], f["origin_lon"], f["dest_lat"], f["dest_lon"],
-                f["takeoff_time"], f["landing_time"], f["flight_duration_minutes"],
-                f["max_altitude_ft"], f["avg_speed_mph"], f["mission_type"], f["num_screenshots"],
+                f["flight_id"],
+                f["callsign"],
+                f["aircraft_type"],
+                f["operator"],
+                f["origin_airport"],
+                f["destination_airport"],
+                f["origin_lat"],
+                f["origin_lon"],
+                f["dest_lat"],
+                f["dest_lon"],
+                f["takeoff_time"],
+                f["landing_time"],
+                f["flight_duration_minutes"],
+                f["max_altitude_ft"],
+                f["avg_speed_mph"],
+                f["mission_type"],
+                f["num_screenshots"],
             ),
         )
 
@@ -225,7 +235,8 @@ def _insert_data(conn: sqlite3.Connection):
                 "INSERT INTO track_points (flight_id, timestamp, latitude, longitude, altitude_ft, ground_speed_mph) "
                 "VALUES (?,?,?,?,?,?)",
                 (
-                    f["flight_id"], ts,
+                    f["flight_id"],
+                    ts,
                     round(f["origin_lat"] + i * 0.01, 5),
                     round(f["origin_lon"] + i * 0.01, 5),
                     f["max_altitude_ft"],
@@ -240,12 +251,23 @@ def _insert_data(conn: sqlite3.Connection):
             conn.execute(
                 "INSERT INTO screenshots VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
-                    ss_id, f"/tmp/img_{ss_id}.jpg", f["flight_id"],
+                    ss_id,
+                    f"/tmp/img_{ss_id}.jpg",
+                    f["flight_id"],
                     datetime.utcnow().isoformat(),
-                    f["callsign"], f["max_altitude_ft"], int(f["avg_speed_mph"]),
-                    f["origin_lat"], f["origin_lon"], ts,
-                    f"OCR text for {f['callsign']}", 0.85,
-                    None, "fixed_pr_bounds", 0.65, 1500.0, "pending",
+                    f["callsign"],
+                    f["max_altitude_ft"],
+                    int(f["avg_speed_mph"]),
+                    f["origin_lat"],
+                    f["origin_lon"],
+                    ts,
+                    f"OCR text for {f['callsign']}",
+                    0.85,
+                    None,
+                    "fixed_pr_bounds",
+                    0.65,
+                    1500.0,
+                    "pending",
                 ),
             )
 
@@ -254,12 +276,20 @@ def _insert_data(conn: sqlite3.Connection):
         conn.execute(
             "INSERT INTO alerts VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
-                alert_id, f["flight_id"], f["callsign"],
-                "FLIGHT_PATTERN", "MEDIUM",
+                alert_id,
+                f["flight_id"],
+                f["callsign"],
+                "FLIGHT_PATTERN",
+                "MEDIUM",
                 f"Pattern alert for {f['callsign']}",
-                "Recurring route detected", "[]",
-                base_time.isoformat(), "Monitor",
-                0, 0, None, base_time.isoformat(),
+                "Recurring route detected",
+                "[]",
+                base_time.isoformat(),
+                "Monitor",
+                0,
+                0,
+                None,
+                base_time.isoformat(),
             ),
         )
 
@@ -268,7 +298,10 @@ def _insert_data(conn: sqlite3.Connection):
             "INSERT INTO mission_scores (flight_id, mission_type, total_score, confidence_level, signal_scores, explanation, scored_at) "
             "VALUES (?,?,?,?,?,?,?)",
             (
-                f["flight_id"], f["mission_type"], 0.75, 0.80,
+                f["flight_id"],
+                f["mission_type"],
+                0.75,
+                0.80,
                 '{"speed": 0.8, "altitude": 0.7}',
                 f"Mission inference for {f['callsign']}",
                 base_time.isoformat(),
@@ -279,14 +312,22 @@ def _insert_data(conn: sqlite3.Connection):
         conn.execute(
             "INSERT OR REPLACE INTO aircraft_profiles VALUES (?,?,?,?,?,?,?,?,?,?)",
             (
-                f["callsign"], f["aircraft_type"], f["operator"], f["operator"],
-                f["mission_type"], 0.80, 1,
-                f["takeoff_time"], f["landing_time"], "[]",
+                f["callsign"],
+                f["aircraft_type"],
+                f["operator"],
+                f["operator"],
+                f["mission_type"],
+                0.80,
+                1,
+                f["takeoff_time"],
+                f["landing_time"],
+                "[]",
             ),
         )
 
 
 # ── Task 39: shared pr_fixture_db fixture ────────────────────────────────────
+
 
 @pytest.fixture
 def pr_fixture_db(tmp_path):
@@ -294,7 +335,6 @@ def pr_fixture_db(tmp_path):
 
     Reusable across test files via conftest.
     """
-    import sqlite3, json
     db_path = str(tmp_path / "pr_fixture.db")
     conn = sqlite3.connect(db_path)
     conn.execute("""
@@ -312,11 +352,66 @@ def pr_fixture_db(tmp_path):
         )
     """)
     synthetic_flights = [
-        ("FLT-PR-001", "N5854Z",  "Cessna 172",    "Private",    "2024-03-14T10:00:00Z", "2024-03-14T11:30:00Z", 18.44, -66.00, 18.25, -65.90),
-        ("FLT-PR-002", "N767PD",  "Bell 407",      "PR Police",  "2024-03-14T08:00:00Z", "2024-03-14T09:00:00Z", 18.50, -67.10, 18.48, -67.05),
-        ("FLT-PR-003", "N684JB",  "Beech King Air","Charter",    "2024-03-14T14:00:00Z", "2024-03-14T15:00:00Z", 18.43, -66.00, 17.99, -66.56),
-        ("FLT-PR-004", "N911PR",  "H145",          "EMS",        "2024-03-14T12:00:00Z", "2024-03-14T12:45:00Z", 18.44, -66.07, 18.40, -66.02),
-        ("FLT-PR-005", "C6062",   "Unknown",       "Unknown",    "2024-03-14T22:00:00Z", "2024-03-14T23:30:00Z", 18.30, -65.80, 18.45, -65.70),
+        (
+            "FLT-PR-001",
+            "N5854Z",
+            "Cessna 172",
+            "Private",
+            "2024-03-14T10:00:00Z",
+            "2024-03-14T11:30:00Z",
+            18.44,
+            -66.00,
+            18.25,
+            -65.90,
+        ),
+        (
+            "FLT-PR-002",
+            "N767PD",
+            "Bell 407",
+            "PR Police",
+            "2024-03-14T08:00:00Z",
+            "2024-03-14T09:00:00Z",
+            18.50,
+            -67.10,
+            18.48,
+            -67.05,
+        ),
+        (
+            "FLT-PR-003",
+            "N684JB",
+            "Beech King Air",
+            "Charter",
+            "2024-03-14T14:00:00Z",
+            "2024-03-14T15:00:00Z",
+            18.43,
+            -66.00,
+            17.99,
+            -66.56,
+        ),
+        (
+            "FLT-PR-004",
+            "N911PR",
+            "H145",
+            "EMS",
+            "2024-03-14T12:00:00Z",
+            "2024-03-14T12:45:00Z",
+            18.44,
+            -66.07,
+            18.40,
+            -66.02,
+        ),
+        (
+            "FLT-PR-005",
+            "C6062",
+            "Unknown",
+            "Unknown",
+            "2024-03-14T22:00:00Z",
+            "2024-03-14T23:30:00Z",
+            18.30,
+            -65.80,
+            18.45,
+            -65.70,
+        ),
     ]
     conn.executemany(
         "INSERT OR IGNORE INTO flights VALUES (?,?,?,?,?,?,?,?,?,?)",
@@ -327,11 +422,93 @@ def pr_fixture_db(tmp_path):
     return db_path
 
 
+# ── RLSM fixture for the craft-profile builder / query layer ──────────────────
+# NB: distinct from `populated_db` above, which uses the legacy flights/track_points
+# schema. This seeds the *RLSM* schema (data/rlsm/schema.sql) plus the optional
+# later-migration columns the builder probes for, with hand-verifiable data:
+#   N5854Z (PREPA, known_db): 5 consecutive Mondays, 2 obs/day, recurring SJU -> PSE,
+#                             a genuine weekly cadence, has georef
+#   N999XY (deduced/FAA):     2 flight-days, BQN -> SIG, no georef
+
+
+@pytest.fixture
+def rlsm_db(tmp_path):
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[1]
+    db_path = str(tmp_path / "rlsm_test.sqlite")
+    conn = sqlite3.connect(db_path)
+    conn.executescript((repo / "data" / "rlsm" / "schema.sql").read_text())
+    conn.executescript(
+        """
+        ALTER TABLE aircraft_observations ADD COLUMN origin_iata TEXT;
+        ALTER TABLE aircraft_observations ADD COLUMN destination_iata TEXT;
+        ALTER TABLE aircraft_observations ADD COLUMN operator_text_manual TEXT;
+        ALTER TABLE screenshots ADD COLUMN true_flight_ts TEXT;
+        """
+    )
+
+    def add_screot(sid, ts):
+        conn.execute(
+            "INSERT INTO screenshots (screenshot_id, sha256, filename, rel_path, ext, "
+            "size_bytes, ingest_status, ocr_status, ingested_at, filename_ts, true_flight_ts) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (sid, f"sha{sid}", f"f{sid}.jpg", f"p/f{sid}.jpg", "jpg", 1000, "ok", "ok", ts, ts, ts),
+        )
+
+    def add_obs(sid, reg, atype, op, oia, dia):
+        conn.execute(
+            "INSERT INTO aircraft_observations (screenshot_id, registration, callsign, "
+            "aircraft_type, operator_text, identity_status, observed_at, origin_iata, "
+            "destination_iata, operator_text_manual) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (sid, reg, reg, atype, op, "confirmed", "2025-06-01T10:00:00", oia, dia, op),
+        )
+
+    def add_pin(sid, label):
+        conn.execute(
+            "INSERT INTO labeled_pins (screenshot_id, raw_label, normalized_label, "
+            "pin_type_guess, review_status, observed_at) VALUES (?,?,?,?,?,?)",
+            (sid, label, label, "airport", "unreviewed", "2025-06-01T10:00:00"),
+        )
+
+    sid = 1
+    mondays = ["2025-06-02", "2025-06-09", "2025-06-16", "2025-06-23", "2025-06-30"]
+    for d in mondays:
+        add_screot(sid, f"{d}T08:00:00")
+        add_obs(sid, "N5854Z", "H125", "PREPA", "SJU", "PSE")
+        add_pin(sid, "SJU")
+        sid += 1
+        add_screot(sid, f"{d}T08:30:00")
+        add_obs(sid, "N5854Z", "H125", "PREPA", "SJU", "PSE")
+        add_pin(sid, "PSE")
+        sid += 1
+    for d in ["2025-06-03", "2025-06-10"]:
+        add_screot(sid, f"{d}T14:00:00")
+        add_obs(sid, "N999XY", "R44", "Unknown", "BQN", "SIG")
+        sid += 1
+
+    conn.execute(
+        "INSERT INTO aircraft_registry (n_number, name, manufacturer, model, fetched_at, source) "
+        "VALUES (?,?,?,?,?,?)",
+        ("N999XY", "SOME OWNER LLC", "ROBINSON", "R44", "2025-01-01", "FAA"),
+    )
+    conn.execute(
+        "INSERT INTO geo_anchors (screenshot_id, anchor_kind, lat, lon, observed_at) "
+        "VALUES (?,?,?,?,?)",
+        (1, "static", 18.44, -66.0, "2025-06-01T08:00:00"),
+    )
+    conn.commit()
+    conn.close()
+    return db_path
+
+
 # ── Task 3: CONFIDENCE_WEIGHTS integrity assertion ────────────────────────────
+
 
 def test_confidence_weights_sum_to_one():
     """CONFIDENCE_WEIGHTS in ilap_airspace_bridge must sum to exactly 1.0 (Task 3)."""
     from ilap_airspace_bridge import CONFIDENCE_WEIGHTS
+
     total = sum(CONFIDENCE_WEIGHTS.values())
     assert abs(total - 1.0) < 1e-9, (
         f"CONFIDENCE_WEIGHTS sum to {total}, expected 1.0. Weights: {CONFIDENCE_WEIGHTS}"

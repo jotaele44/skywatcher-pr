@@ -28,7 +28,7 @@ other spatial records).
 ```bash
 pip install -e ".[imagery]"      # spiderweb-pr (extra)
 # or
-pip install -r requirements-imagery.txt
+uv sync --extra imagery
 ```
 
 ## Configuration (environment variables)

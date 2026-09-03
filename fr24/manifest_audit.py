@@ -19,9 +19,9 @@ import subprocess
 import sys
 import time
 from collections import Counter
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
 
 FR24_ROOT = "/Users/jotaele/Documents/GitHub/Raw Flight Logs/Takeout-9/Google Photos/FR24"
 RAW_ROOT = "/Users/jotaele/Documents/GitHub/Raw Flight Logs"
@@ -38,7 +38,7 @@ def _utc_now() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
-def _sha256(path: Path) -> Optional[str]:
+def _sha256(path: Path) -> str | None:
     try:
         h = hashlib.sha256()
         with open(path, "rb") as f:
@@ -49,7 +49,7 @@ def _sha256(path: Path) -> Optional[str]:
         return None
 
 
-def _image_dims(path: Path) -> Tuple[Optional[int], Optional[int], bool]:
+def _image_dims(path: Path) -> tuple[int | None, int | None, bool]:
     try:
         from PIL import Image
         with Image.open(path) as img:
@@ -80,7 +80,7 @@ def _norm_name(name: str) -> str:
     return lowered.replace(" ", "").replace("_", "").replace("-", "")
 
 
-def _sidecar_candidates(image_path: Path) -> List[str]:
+def _sidecar_candidates(image_path: Path) -> list[str]:
     stem = image_path.stem
     name = image_path.name
     return [
@@ -93,16 +93,16 @@ def _sidecar_candidates(image_path: Path) -> List[str]:
     ]
 
 
-def _build_sidecar_index(sidecar_files: Iterable[Path]) -> Dict[Path, Dict[str, Path]]:
-    by_dir_exact: Dict[Path, Dict[str, Path]] = {}
-    by_dir_norm: Dict[Path, Dict[str, Path]] = {}
+def _build_sidecar_index(sidecar_files: Iterable[Path]) -> dict[Path, dict[str, Path]]:
+    by_dir_exact: dict[Path, dict[str, Path]] = {}
+    by_dir_norm: dict[Path, dict[str, Path]] = {}
     for p in sidecar_files:
         by_dir_exact.setdefault(p.parent, {})[p.name.lower()] = p
         by_dir_norm.setdefault(p.parent, {})[_norm_name(p.name)] = p
     return {"exact": by_dir_exact, "norm": by_dir_norm}  # type: ignore[return-value]
 
 
-def _find_sidecar(image_path: Path, sidecar_index: Dict[str, Dict[Path, Dict[str, Path]]]) -> Optional[Path]:
+def _find_sidecar(image_path: Path, sidecar_index: dict[str, dict[Path, dict[str, Path]]]) -> Path | None:
     exact = sidecar_index.get("exact", {}).get(image_path.parent, {})
     for candidate in _sidecar_candidates(image_path):
         hit = exact.get(candidate.lower())
@@ -112,20 +112,20 @@ def _find_sidecar(image_path: Path, sidecar_index: Dict[str, Dict[Path, Dict[str
     return norm.get(_norm_name(image_path.name))
 
 
-def _discover_fr24_folders(root: Path) -> List[Path]:
+def _discover_fr24_folders(root: Path) -> list[Path]:
     if root.name == "FR24" and root.is_dir():
         return [root]
     return sorted(p for p in root.rglob("FR24") if p.is_dir() and p.parent.name == "Google Photos")
 
 
-def _collect_files(roots: List[Path]) -> List[Path]:
-    files: List[Path] = []
+def _collect_files(roots: list[Path]) -> list[Path]:
+    files: list[Path] = []
     for r in roots:
         files.extend(p for p in r.rglob("*") if p.is_file())
     return sorted(files)
 
 
-def _common_base(roots: List[Path]) -> Path:
+def _common_base(roots: list[Path]) -> Path:
     if len(roots) == 1:
         return roots[0]
     try:
@@ -134,7 +134,7 @@ def _common_base(roots: List[Path]) -> Path:
         return roots[0].parent
 
 
-def _find_git_tracked_raw(root: Path) -> List[str]:
+def _find_git_tracked_raw(root: Path) -> list[str]:
     try:
         probe = subprocess.run(["git", "-C", str(root), "rev-parse", "--show-toplevel"], capture_output=True, text=True)
         if probe.returncode != 0:
@@ -169,7 +169,7 @@ def discover(root: str, json_only: bool = False) -> dict:
     return report
 
 
-def audit(fr24_dir: str, output_dir: Optional[str] = None, max_images: Optional[int] = None, no_hash: bool = False, json_only: bool = False, combined: bool = False) -> dict:
+def audit(fr24_dir: str, output_dir: str | None = None, max_images: int | None = None, no_hash: bool = False, json_only: bool = False, combined: bool = False) -> dict:
     started = time.perf_counter()
     root = Path(fr24_dir).expanduser().resolve()
     if not root.exists() or not root.is_dir():
@@ -207,9 +207,9 @@ def audit(fr24_dir: str, output_dir: Optional[str] = None, max_images: Optional[
     ext_counts = Counter(p.suffix.lower() for p in image_files)
     sidecar_index = _build_sidecar_index(sidecar_files)
 
-    images_with_sidecar: List[Path] = []
-    images_without_sidecar: List[Path] = []
-    sidecar_lookup: Dict[Path, Optional[Path]] = {}
+    images_with_sidecar: list[Path] = []
+    images_without_sidecar: list[Path] = []
+    sidecar_lookup: dict[Path, Path | None] = {}
     for p in image_files:
         hit = _find_sidecar(p, sidecar_index)
         sidecar_lookup[p] = hit
@@ -231,8 +231,8 @@ def audit(fr24_dir: str, output_dir: Optional[str] = None, max_images: Optional[
         print(f"  No sidecar:     {len(images_without_sidecar)}")
         print(f"\n  Scanning {total_images} images ({'dimensions' if no_hash else 'SHA-256 + dimensions'}) …")
 
-    records: List[dict] = []
-    hash_index: Dict[str, str] = {}
+    records: list[dict] = []
+    hash_index: dict[str, str] = {}
     corrupt_count = 0
     dupe_count = 0
     base_for_rel = _common_base(roots)
@@ -273,7 +273,7 @@ def audit(fr24_dir: str, output_dir: Optional[str] = None, max_images: Optional[
         })
 
     valid = total_images - corrupt_count - dupe_count
-    git_tracked_raw: List[str] = []
+    git_tracked_raw: list[str] = []
     for r in roots:
         git_tracked_raw.extend(_find_git_tracked_raw(r))
     git_tracked_raw = sorted(set(git_tracked_raw))

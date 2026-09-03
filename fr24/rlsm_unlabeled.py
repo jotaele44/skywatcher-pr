@@ -33,7 +33,6 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
-from typing import Optional, Tuple
 
 os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
@@ -43,9 +42,11 @@ try:
     import pillow_heif
     pillow_heif.register_heif_opener()
 except ImportError:
-    pass
+    pass  # HEIC files unsupported if pillow_heif absent
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import contextlib
+
 from fr24.rlsm_zones import zones_for  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
@@ -111,10 +112,14 @@ def _connected_components_threshold(crop: Image.Image, thr: int = CANDIDATE_BRIG
                 visited[x][y] = True
                 area += 1
                 lum_sum += pixels[x, y]
-                if x < min_x: min_x = x
-                if y < min_y: min_y = y
-                if x > max_x: max_x = x
-                if y > max_y: max_y = y
+                if x < min_x:
+                    min_x = x
+                if y < min_y:
+                    min_y = y
+                if x > max_x:
+                    max_x = x
+                if y > max_y:
+                    max_y = y
                 stack.extend([(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)])
             if area < PAD_AREA_MIN_PX:
                 continue  # noise
@@ -255,7 +260,7 @@ def run(budget_sec: float, limit: int = 0):
 # ── Parallel runner (N5) — mirrors fr24.rlsm_ocr_parallel ──────────────────
 
 # Set per-worker via _worker_init().
-_worker_db_path: Optional[str] = None
+_worker_db_path: str | None = None
 
 
 def _worker_init(db_path: str) -> None:
@@ -265,7 +270,7 @@ def _worker_init(db_path: str) -> None:
     os.environ["OMP_THREAD_LIMIT"] = "1"
 
 
-def _worker_process_one(args: Tuple[int, str, int]) -> dict:
+def _worker_process_one(args: tuple[int, str, int]) -> dict:
     """Worker function. Returns the same result dict shape as detect_for_screenshot,
     plus screenshot_id + elapsed_sec for the aggregator."""
     sid, rel_path, run_id = args
@@ -279,10 +284,8 @@ def _worker_process_one(args: Tuple[int, str, int]) -> dict:
         res = detect_for_screenshot(conn, sid, rel_path, run_id)
         conn.commit()
     except Exception as exc:
-        try:
+        with contextlib.suppress(Exception):
             conn.rollback()
-        except Exception:
-            pass
         res = {"ok": False, "reason": f"{type(exc).__name__}: {exc}"[:120]}
     finally:
         conn.close()

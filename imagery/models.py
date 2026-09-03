@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import base64
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -19,11 +19,11 @@ class SceneMetadata:
 
     provider: str
     scene_id: str
-    datetime: Optional[str] = None
-    collection: Optional[str] = None
-    cloud_cover_pct: Optional[float] = None
-    bbox: Optional[list[float]] = None  # (west, south, east, north)
-    thumbnail_url: Optional[str] = None
+    datetime: str | None = None
+    collection: str | None = None
+    cloud_cover_pct: float | None = None
+    bbox: list[float] | None = None  # (west, south, east, north)
+    thumbnail_url: str | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -47,15 +47,15 @@ class ImageryResult:
     image_bytes: bytes
     media_type: str
     bbox: list[float]  # (west, south, east, north), EPSG:4326
-    acquired_at: Optional[str] = None
-    collection: Optional[str] = None
-    platform: Optional[str] = None
-    instrument: Optional[str] = None
-    cloud_cover_pct: Optional[float] = None
-    resolution_m: Optional[float] = None
-    scene_id: Optional[str] = None
-    source_uri: Optional[str] = None
-    cache_path: Optional[str] = None
+    acquired_at: str | None = None
+    collection: str | None = None
+    platform: str | None = None
+    instrument: str | None = None
+    cloud_cover_pct: float | None = None
+    resolution_m: float | None = None
+    scene_id: str | None = None
+    source_uri: str | None = None
+    cache_path: str | None = None
 
     def to_dict(self, include_image: bool = True) -> dict[str, Any]:
         """JSON-safe dict for MCP responses. Image is base64-encoded."""

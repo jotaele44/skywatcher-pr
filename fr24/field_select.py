@@ -12,7 +12,6 @@ import csv
 import json
 from collections import Counter
 from pathlib import Path
-from typing import List
 
 FIELD_SELECT_VERSION = "fr24_field_select_v0.1.0"
 SELECT_FIELDS = [
@@ -50,13 +49,13 @@ TIMELINE_PREFERRED_FIELDS = {
 }
 
 
-def read_csv(path: Path) -> List[dict]:
+def read_csv(path: Path) -> list[dict]:
     if not path.exists() or path.stat().st_size == 0:
         return []
     return list(csv.DictReader(path.open(encoding="utf-8")))
 
 
-def write_csv(path: Path, rows: List[dict]) -> None:
+def write_csv(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not rows:
         path.write_text("", encoding="utf-8")

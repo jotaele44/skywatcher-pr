@@ -1,6 +1,9 @@
 from __future__ import annotations
+
 import pandas as pd
+
 from .config import load_config
+
 
 def confidence(row: pd.Series) -> float:
     score = 0.0

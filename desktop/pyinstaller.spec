@@ -5,10 +5,19 @@
 # committed artifacts (data/reference, exports, reports) at their normal paths.
 
 import os
+import sys
 from pathlib import Path
 
 REPO_ROOT = Path(SPECPATH).resolve().parent
 APP_NAME = "PRII-SKYWATCHER"
+
+# Branding is generated from assets/branding/icon.png by
+# thehub-pr/tools/build_program_icons.py, so the frozen build, the committed
+# PRII-*.app bundle and the web favicons all trace back to one master.
+BRANDING = REPO_ROOT / "assets" / "branding"
+# PyInstaller wants .ico on Windows and .icns on macOS; it warns and ignores the
+# argument on other platforms, so leave it unset there.
+EXE_ICON = str(BRANDING / "icon.ico") if sys.platform == "win32" else None
 
 # Windowed by default (no console window for double-click users). CI sets
 # PRII_CONSOLE=1 to build a console binary it can smoke-test with visible stdio.
@@ -17,6 +26,7 @@ CONSOLE = os.environ.get("PRII_CONSOLE") == "1"
 datas = [
     (str(REPO_ROOT / "frontend" / "dist"), "frontend/dist"),
     (str(REPO_ROOT / "data" / "reference"), "data/reference"),
+    (str(BRANDING / "icon-256.png"), "assets/branding"),
 ]
 for extra in ("exports", "reports"):
     d = REPO_ROOT / extra
@@ -35,6 +45,13 @@ a = Analysis(
         "uvicorn.lifespan.on",
         "desktop.app_server",
         "server.backend.main",
+        # Shared desktop-wrapper runtime (thehub-pr/packages/prii_desktop),
+        # imported by the desktop/ shims — bundle it into the frozen build.
+        "prii_desktop",
+        "prii_desktop.launcher",
+        "prii_desktop.appserver",
+        "prii_desktop.config",
+        "prii_desktop.setup_center",
     ],
     noarchive=False,
 )
@@ -46,6 +63,7 @@ exe = EXE(
     exclude_binaries=True,
     name=APP_NAME,
     console=CONSOLE,
+    icon=EXE_ICON,
 )
 
 coll = COLLECT(
@@ -55,11 +73,14 @@ coll = COLLECT(
     name=APP_NAME,
 )
 
-import sys
-
 if sys.platform == "darwin":
     app = BUNDLE(
         coll,
         name=f"{APP_NAME}.app",
+        icon=str(BRANDING / "AppIcon.icns"),
         bundle_identifier="pr.prii.skywatcher",
+        info_plist={
+            "CFBundleDisplayName": "Skywatcher",
+            "CFBundleName": "Skywatcher",
+        },
     )

@@ -32,7 +32,6 @@ import json
 import sqlite3
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
@@ -46,7 +45,7 @@ from integration.geo_calibration import (  # noqa: E402
 UPDATABLE_METHODS = {None, "", "unknown", "fixed_pr_bounds"}
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Refit operational screenshot coordinates from RLSM per-image anchors."
     )
@@ -55,7 +54,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--max-residual-deg", type=float, default=0.05,
                     help="Skip fits whose median anchor residual exceeds this (default 0.05)")
     ap.add_argument("--places-geojson", default=None,
-                    help="Override data/places.geojson for the label vocabulary")
+                    help="Optional legacy supplement to the tracked GNIS label vocabulary")
     ap.add_argument("--dry-run", action="store_true",
                     help="Report what would change without writing")
     args = ap.parse_args(argv)
