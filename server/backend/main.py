@@ -29,6 +29,8 @@ from typing import Any
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from server.backend.console import router as console_router
+
 ROOT = Path(__file__).resolve().parents[2]
 # Make the src-layout package importable when uvicorn starts from the repo root.
 if str(ROOT / "src") not in sys.path:
@@ -57,6 +59,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(console_router)
 
 # Session-scoped mutations from the review UI; never written to disk.
 _overlay: dict[str, dict[str, dict[str, Any]]] = {}
