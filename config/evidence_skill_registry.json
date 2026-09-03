@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "registry_id": "SKYWATCHER_FEDERATED_EVIDENCE_SKILLS",
+  "source_skillpack_sha256": "3a93c42bbc6d6c2aca9a80ebb703c4f614f64f8cab1e91a44d382bbbaf898d4b",
+  "routing_rule": "capability_match_not_filename_only",
+  "skills": [
+    {"skill_id":"task-scope-guard","capabilities":["scope_guard","provenance"],"target":"router_preflight","state":"PASS"},
+    {"skill_id":"fr24-screenshot-inventory","capabilities":["visual_evidence","provenance","duplicate_detection"],"target":"fr24/screenshot_inventory.py","state":"PASS"},
+    {"skill_id":"fr24-route-extractor","capabilities":["visual_evidence","trajectory"],"target":"fr24/route_extractor.py","state":"PASS"},
+    {"skill_id":"aircraft-registry-enricher","capabilities":["aircraft_identity","source_identity"],"target":"aircraft_intelligence.py","state":"PASS"},
+    {"skill_id":"aircraft-intelligence-profiler","capabilities":["aircraft_identity","behavior","mission_classification"],"target":"aircraft_intelligence.py","state":"PASS"},
+    {"skill_id":"aasb-spatial-bridge","capabilities":["spatial_truth","site_association"],"target":"aasb_airspace_bridge.py","state":"PASS"},
+    {"skill_id":"ilap-airspace-bridge","capabilities":["spatial_truth","infrastructure_alignment","site_association"],"target":"ilap_airspace_bridge.py","state":"PASS"},
+    {"skill_id":"satim-engine","capabilities":["visual_evidence","spatial_truth","calibration"],"target":"src/skywatcher/satim","state":"PASS"},
+    {"skill_id":"satim-engine-operator","capabilities":["calibration","orchestration"],"target":"fr24.satim_engine","state":"PASS"},
+    {"skill_id":"satim-flight-gis-evidence","capabilities":["spatial_truth","calibration","trajectory"],"target":"src/skywatcher/satim","state":"PASS"},
+    {"skill_id":"track-termination-event-classifier","capabilities":["trajectory","landing_takeoff"],"target":"fr24/event_export.py","state":"PASS"},
+    {"skill_id":"terrain-access-candidate","capabilities":["terrain_access","landing_takeoff","spatial_truth"],"target":"gis_intelligence.py","state":"PROVISIONAL"},
+    {"skill_id":"skywatcher-airspace-evidence","capabilities":["evidence_aggregation","provenance"],"target":"airspace_export","state":"PASS"},
+    {"skill_id":"airspace-export-validator","capabilities":["export_validation","certification"],"target":"scripts/validate_airspace_export.py","state":"PASS"},
+    {"skill_id":"skywatcher-readiness-auditor","capabilities":["readiness","certification"],"target":"skywatcher.core.readiness_engine","state":"PASS"},
+    {"skill_id":"skywatcher-operator","capabilities":["orchestration","readiness"],"target":"federated_router","state":"PASS"}
+  ],
+  "downstream_propagation": {
+    "RLSM": ["visual_evidence","label_extraction","map_context"],
+    "FPIM": ["aircraft_identity","spatial_truth","site_association"],
+    "CORRIM": ["spatial_truth","infrastructure_alignment","site_association"],
+    "SATIM": ["visual_evidence","spatial_truth","calibration"],
+    "TIMELINE": ["temporal_reconstruction"],
+    "PATTERN": ["trajectory","behavior","mission_classification"]
+  },
+  "forbidden_identity_shortcuts": ["NAME_ONLY","NORMALIZED_NAME_ONLY","COUNT_EQUALITY","NEAREST_ONLY","PROXIMITY_ONLY","SAME_CATEGORY","SOURCE_ABSENCE"]
+}

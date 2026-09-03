@@ -5,7 +5,7 @@
 PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;
 
--- One row per image in the baseline.
+-- One logical row per unique screenshot payload SHA-256.
 CREATE TABLE IF NOT EXISTS screenshots (
     screenshot_id      INTEGER PRIMARY KEY AUTOINCREMENT,
     sha256             TEXT UNIQUE NOT NULL,
@@ -38,6 +38,35 @@ CREATE INDEX IF NOT EXISTS ix_screenshots_phash        ON screenshots(phash);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_screenshots_rel_path ON screenshots(rel_path);
 CREATE INDEX IF NOT EXISTS ix_screenshots_source_availability ON screenshots(source_availability);
 
+-- Physical source manifestations are distinct from logical screenshot payloads.
+-- Multiple rel_paths may map N:1 to one screenshots row when their SHA-256
+-- payloads are identical. This preserves every source manifestation without
+-- duplicating OCR/derived logical state.
+CREATE TABLE IF NOT EXISTS source_manifestations (
+    manifestation_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    rel_path             TEXT UNIQUE NOT NULL,
+    sha256               TEXT NOT NULL,
+    screenshot_id        INTEGER NOT NULL REFERENCES screenshots(screenshot_id),
+    filename             TEXT NOT NULL,
+    ext                  TEXT NOT NULL,
+    size_bytes           INTEGER NOT NULL,
+    manifestation_role   TEXT NOT NULL CHECK (
+        manifestation_role IN ('canonical_payload','duplicate_payload')
+    ),
+    source_availability  TEXT NOT NULL DEFAULT 'present' CHECK (
+        source_availability IN (
+            'present','missing_on_disk','restored','archived'
+        )
+    ),
+    observed_at          TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_source_manifestations_sha256
+    ON source_manifestations(sha256);
+CREATE INDEX IF NOT EXISTS ix_source_manifestations_screenshot
+    ON source_manifestations(screenshot_id);
+CREATE INDEX IF NOT EXISTS ix_source_manifestations_availability
+    ON source_manifestations(source_availability);
+
 -- Bookkeeping for each run.
 CREATE TABLE IF NOT EXISTS processing_runs (
     run_id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,6 +93,7 @@ CREATE TABLE IF NOT EXISTS ocr_observations (
     bbox_h           INTEGER,
     raw_text         TEXT NOT NULL,
     raw_lines_json   TEXT,
+    word_boxes_version TEXT,
     confidence_mean  REAL,
     confidence_min   REAL,
     n_words          INTEGER,

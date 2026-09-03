@@ -1,0 +1,87 @@
+{
+  "audit_id": "SATIM_IMAGERY_SEAM_4645A79A_CURRENT_EVIDENCE_AUDIT_V0_2",
+  "immutable_baseline_sha256": "4645a79a391dcd3508e4024cd8ec234caf6871e085df8badc8524f42219fef3c",
+  "scope": "Currently available baseline screenshot plus Library candidates IMG_4369, IMG_4370, IMG_4373, IMG_4374. This is bounded exhaustion of these candidates, not universal exhaustion of all possible pan/zoom captures.",
+  "registration_gate": {
+    "method": "SIFT ratio-match + RANSAC homography, supplemented by multi-scale edge-template search",
+    "minimum_for_same_ground_binding": {
+      "good_feature_matches": 12,
+      "homography_inliers": 8,
+      "note": "A four-point exact homography is degenerate for identity purposes and cannot establish same-ground identity."
+    }
+  },
+  "candidates": [
+    {
+      "filename": "IMG_4369.jpeg",
+      "sha256": "7ad85614ad4e0965f92e3ad1c7b6f0bdf97a0a4065597ce4274733500ca4b62f",
+      "dimensions_px": [1170, 2532],
+      "sift_good_matches": 4,
+      "ransac_inliers": 4,
+      "best_multiscale_edge_template_ncc": 0.129011482,
+      "same_ground_binding": "FAIL"
+    },
+    {
+      "filename": "IMG_4370.jpeg",
+      "sha256": "fc7232fe54e5d8cff6083850dc3f82c47d2b85e7467766e6949705231394aa5d",
+      "dimensions_px": [1170, 2532],
+      "sift_good_matches": 6,
+      "ransac_inliers": 4,
+      "best_multiscale_edge_template_ncc": 0.1409824491,
+      "same_ground_binding": "FAIL"
+    },
+    {
+      "filename": "IMG_4373.jpeg",
+      "sha256": "d4928905154a58030c7b87b44c7351c97822896a1aa975482804ed5007464b25",
+      "dimensions_px": [1170, 2532],
+      "sift_good_matches": 3,
+      "ransac_inliers": 0,
+      "best_multiscale_edge_template_ncc": 0.1336837411,
+      "same_ground_binding": "FAIL"
+    },
+    {
+      "filename": "IMG_4374.jpeg",
+      "sha256": "1cae36f3b20ae1d2ee46f9735c040de98d67ba901148203740e327887976142a",
+      "dimensions_px": [1170, 2532],
+      "sift_good_matches": 0,
+      "ransac_inliers": 0,
+      "best_multiscale_edge_template_ncc": 0.133859545,
+      "same_ground_binding": "FAIL"
+    }
+  ],
+  "coordinate_behavior_result": {
+    "pan_test": "BLOCKED",
+    "zoom_minus_1_test": "BLOCKED",
+    "zoom_plus_1_test": "BLOCKED",
+    "reason": "No currently available candidate passed the same-ground registration gate against the immutable baseline."
+  },
+  "independent_source_result": {
+    "status": "BLOCKED_AT_GROUND_BINDING",
+    "candidate_authoritative_sources_identified": [
+      {
+        "source": "USDA-FPAC Puerto Rico/USVI 2009-2010 30 cm orthophotography ImageServer",
+        "role": "independent historical orthophoto candidate"
+      },
+      {
+        "source": "NAIP/NAIP_plus including Puerto Rico 2021/2022",
+        "role": "independent later orthophoto candidate"
+      }
+    ],
+    "reason": "Exact baseline ground footprint is not yet authoritatively bound. Source-family difference alone is not canonical source independence and cannot be used to compare the boundary."
+  },
+  "origin_candidates": {
+    "SOURCE_MOSAIC_CUTLINE": "BLOCKED",
+    "DISPLAY_TILE_EDGE": "BLOCKED",
+    "VIEWPORT_COMPOSITING_ARTIFACT": "BLOCKED",
+    "NATURAL_SHADOW_BOUNDARY": "UNRESOLVED",
+    "PHYSICAL_GROUND_FEATURE": "UNRESOLVED",
+    "COMPRESSION_OR_RESAMPLING_ARTIFACT": "OPEN"
+  },
+  "resolved_origin": "UNRESOLVED",
+  "invariants": [
+    "No NAME_ONLY, NEAREST_ONLY, temporal-neighbor image, or same-flight context is promoted to same-ground identity.",
+    "A degenerate four-point homography cannot establish same-ground identity.",
+    "Source taxonomy is not source identity.",
+    "Pan/zoom and independent-basemap gates remain blocked until the exact ground footprint is bound.",
+    "All competing causal origins remain preserved until an origin-specific falsification or promotion gate passes."
+  ]
+}

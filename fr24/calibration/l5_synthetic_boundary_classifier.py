@@ -11,6 +11,10 @@ L5 weighted synthetic-boundary classification
 The classifier treats infrastructure as a weighted alignment penalty rather than
 as a hard rejection layer. This prevents brittle rule-heavy behavior in airports,
 ports, industrial zones, and urban grids.
+
+All outputs remain observation/candidate level. Neither a seam score nor
+infrastructure alignment establishes causal seam origin or physical-ground
+identity; origin-specific binding is handled by the imagery-seam firewall.
 """
 
 from __future__ import annotations
@@ -50,9 +54,18 @@ ALIGNMENT_FIELDS = {
     "parcel_alignment",
 }
 
+SEAM_ORIGIN_CANDIDATES = (
+    "SOURCE_MOSAIC_CUTLINE",
+    "DISPLAY_TILE_EDGE",
+    "VIEWPORT_COMPOSITING_ARTIFACT",
+    "NATURAL_SHADOW_BOUNDARY",
+    "PHYSICAL_GROUND_FEATURE",
+    "COMPRESSION_OR_RESAMPLING_ARTIFACT",
+)
+
 DECISIONS = {
     "probable_tile_seam",
-    "probable_ground_feature",
+    "persistent_ground_feature_candidate",
     "probable_cloud_shadow",
     "probable_terrain_shadow",
     "indeterminate",
@@ -88,7 +101,7 @@ def infrastructure_explanation_penalty(features: Mapping[str, float]) -> float:
 
 
 def classify_synthetic_boundary(features: Mapping[str, float]) -> dict[str, Any]:
-    """Classify using weighted features without hard infrastructure rejection."""
+    """Classify a boundary while keeping causal identity unresolved."""
     straightness = clamp01(float(features.get("straightness", 0.0) or 0.0))
     radiometric_delta = clamp01(float(features.get("radiometric_delta", 0.0) or 0.0))
     terrain_crossing = clamp01(float(features.get("terrain_crossing", 0.0) or 0.0))
@@ -138,13 +151,13 @@ def classify_synthetic_boundary(features: Mapping[str, float]) -> dict[str, Any]
     elif best_key == "tile_seam_likelihood":
         decision = "probable_tile_seam"
     elif best_key == "persistent_ground_feature_likelihood":
-        decision = "probable_ground_feature"
+        decision = "persistent_ground_feature_candidate"
     elif best_key == "cloud_shadow_likelihood":
         decision = "probable_cloud_shadow"
     else:
         decision = "probable_terrain_shadow"
 
-    return {
+    result = {
         **scores,
         "classification": decision,
         "decision": decision,
@@ -152,6 +165,15 @@ def classify_synthetic_boundary(features: Mapping[str, float]) -> dict[str, Any]
         "infrastructure_penalty": round(penalty, 4),
         "feature_weights": WEIGHTS,
     }
+    if decision in {"probable_tile_seam", "persistent_ground_feature_candidate"}:
+        result.update(
+            {
+                "resolved_origin": "UNRESOLVED",
+                "origin_status": "UNRESOLVED",
+                "origin_candidates": list(SEAM_ORIGIN_CANDIDATES),
+            }
+        )
+    return result
 
 
 def classify_candidate(row: Mapping[str, Any]) -> dict[str, Any]:
@@ -188,7 +210,7 @@ def calibrate(candidates_csv: str) -> dict[str, Any]:
             "promotion_min_likelihood": PROMOTION_THRESHOLD,
             "weights": WEIGHTS,
             "infrastructure_model": "weighted alignment penalty; no hard rejection",
-            "tile_seam_rule": "straight + radiometric + terrain/landcover/coastal persistence - infrastructure alignment",
+            "tile_seam_rule": "observation-level: straight + radiometric + terrain/landcover/coastal persistence - infrastructure alignment; causal origin unresolved",
         },
         findings=findings,
     ).to_dict()

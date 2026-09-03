@@ -1,0 +1,29 @@
+{
+  "blockers": [
+    "specificity is unmeasured because calibration set has no negative controls"
+  ],
+  "calibration_fixture_ids": [
+    "SATIM-LANDSCAPE-C654-001"
+  ],
+  "calibration_sha256s": [
+    "a8b08e249f6ede4048563c892aba9b1ae6edb5e6d1c2f849421a3d8c285a9030"
+  ],
+  "candidate_count": 0,
+  "holdout_fixture_ids": [],
+  "holdout_sha256s": [],
+  "method_version": "satim.landscape.calibration.v0.1.0",
+  "min_evidence_families": 5,
+  "objective": [],
+  "profile_id": "SATIM-AGRI-C654-POSITIVE-SEED-v0.1",
+  "schema_version": "satim.landscape.calibration_profile.v0.1",
+  "status": "PROVISIONAL_POSITIVE_ONLY",
+  "thresholds": {
+    "bright_cover_fraction": 0.04629166666666667,
+    "directional_texture_score": 0.3024666558472601,
+    "exposed_soil_fraction": 0.06870833333333333,
+    "forest_matrix_fraction": 0.6983333333333334,
+    "open_surface_fraction": 0.2740416666666667,
+    "patch_mosaic_score": 0.29652621917366534
+  },
+  "tied_best_count": 0
+}

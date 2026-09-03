@@ -61,12 +61,13 @@ def test_single_still_seam_claim_is_blocked():
     assert "single_still_seam_claim" in row["contradiction_flags"]
 
 
-def test_persistent_cross_epoch_is_probable_ground_feature():
+def test_persistent_cross_epoch_is_ground_feature_candidate_not_identity():
     row = _rows_by_image(run_driver(load_fixture(FIXTURE)))["IMG_BQN_APRON_2024_03"]
     # gis_metrics (raw) normalized through the metric adapter.
     assert row["feature_scores"]["airport_alignment"] == 0.95
-    assert row["multidate_classification_hint"] == "probable_ground_feature"
+    assert row["multidate_classification_hint"] == "persistent_ground_feature_candidate"
     assert row["multidate_persistence"] >= 0.65
+    assert row["multidate_decision"] == "cross_source_required"
     # AOI-level provenance is carried onto the row.
     assert row["municipality"] == "Aguadilla"
 

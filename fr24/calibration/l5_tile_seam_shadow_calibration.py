@@ -1,4 +1,11 @@
-"""L5 SATIM calibration: tile seam vs cloud/shadow/terrain artifact scoring."""
+"""L5 SATIM calibration: imagery-seam observation and causal-origin controls.
+
+The legacy weighted ``tile_seam_likelihood`` score is retained for calibration
+continuity, but it is an observation/artifact heuristic only. Causal origin is
+adjudicated by explicit coordinate-behavior and binding gates so a source
+mosaic cutline, renderer tile edge, viewport artifact, shadow, or physical
+ground feature cannot be silently collapsed into one class.
+"""
 from __future__ import annotations
 
 import argparse
@@ -10,11 +17,18 @@ from typing import Any
 from .models import LayerCalibrationResult, write_json
 
 DECISIONS = {
-    "probable_tile_seam",
+    "probable_tile_seam",  # legacy weighted observation label only
+    "probable_imagery_seam_unresolved_origin",
+    "probable_source_mosaic_cutline",
+    "probable_display_tile_edge",
+    "probable_viewport_artifact",
     "probable_cloud_shadow",
     "probable_terrain_shadow",
     "probable_ground_feature",
+    "ground_feature_candidate",
     "explainable_infrastructure",
+    "probable_track_line",
+    "probable_ui_overlay",
     "indeterminate",
 }
 
@@ -34,12 +48,7 @@ def score(row: Mapping[str, Any], *names: str) -> float:
 
 
 def context_suppression_score(row: Mapping[str, Any]) -> float:
-    """Return how strongly visible context explains orthogonal geometry.
-
-    Right angles are weak evidence by themselves. Roads, runways, reservoirs,
-    treatment plants, quarries, parcels, and buildings can all create true
-    orthogonal geometry, so these context signals suppress tile-seam promotion.
-    """
+    """Return how strongly visible context explains orthogonal geometry."""
     return score(
         row,
         "context_suppression_score",
@@ -65,7 +74,7 @@ def corroborating_tile_signal_count(
     persistence: float,
     terrain: float,
 ) -> int:
-    """Count tile-seam signals excluding the weak right-angle prior."""
+    """Count visual seam signals excluding the weak right-angle prior."""
     signals = [
         straight >= 0.55,
         radiometric >= 0.55,
@@ -78,22 +87,11 @@ def corroborating_tile_signal_count(
 
 
 def classify_candidate(row: Mapping[str, Any]) -> dict[str, Any]:
-    """Classify one candidate from normalized feature scores.
+    """Legacy weighted visual-artifact classifier.
 
-    Existing columns remain supported:
-    straight_boundary_score, radiometric_discontinuity_score,
-    cloud_mask_intersection, shadow_mask_intersection, dem_hillshade_alignment,
-    multi_date_persistence, infrastructure_alignment.
-
-    Additional L5 orthogonal-artifact columns:
-    right_angle_score, orthogonal_corner_score, straight_edge_score,
-    rectangular_patch_score, color_discontinuity_score,
-    texture_discontinuity_score, context_suppression_score.
-
-    Rule:
-    - 90-degree/orthogonal geometry is a weak prior.
-    - Candidate tile seam requires at least two corroborating non-angle signals.
-    - Visible infrastructure/land-use context suppresses tile-seam promotion.
+    ``probable_tile_seam`` is retained for backwards compatibility but is not a
+    causal renderer-tile identity. ``resolved_origin`` is always UNRESOLVED in
+    this weighted path; use :func:`classify_candidate_strict` for origin gates.
     """
     straight = score(row, "straight_boundary_score", "straight_edge_score")
     radiometric = score(row, "radiometric_discontinuity_score", "color_discontinuity_score")
@@ -126,7 +124,6 @@ def classify_candidate(row: Mapping[str, Any]) -> dict[str, Any]:
         + (0.15 * (1.0 - terrain))
     )
 
-    # Orthogonal geometry alone must not promote a seam.
     if right_angle >= 0.55 and corroborating < 2:
         tile_base = min(tile_base, 0.49)
 
@@ -159,7 +156,12 @@ def classify_candidate(row: Mapping[str, Any]) -> dict[str, Any]:
         if decision_scores[decision] < 0.55:
             decision = "indeterminate"
 
-    return {**scores, "decision": decision}
+    return {
+        **scores,
+        "decision": decision,
+        "decision_semantics": "LEGACY_VISUAL_HEURISTIC_ONLY",
+        "resolved_origin": "UNRESOLVED",
+    }
 
 
 def load_candidates(path: str | Path) -> list[dict[str, str]]:
@@ -182,7 +184,7 @@ def calibrate(candidates_csv: str) -> dict[str, Any]:
     metrics = summarize(scored)
     findings = []
     if not candidates:
-        findings.append({"severity": "warning", "detail": "no tile seam/shadow calibration candidates found"})
+        findings.append({"severity": "warning", "detail": "no imagery-seam/shadow calibration candidates found"})
     status = "READY" if candidates else "MISSING"
     return LayerCalibrationResult(
         layer="L5_tile_seam_shadow",
@@ -190,8 +192,9 @@ def calibrate(candidates_csv: str) -> dict[str, Any]:
         metrics=metrics,
         thresholds={
             "promotion_min_likelihood": 0.55,
+            "weighted_path_semantics": "visual seam/artifact heuristic only; never causal origin identity",
             "orthogonal_artifact_rule": "right angles are weak priors requiring at least two corroborating seam signals",
-            "tile_seam_rule": "straight/rectangular boundary + radiometric or texture discontinuity + non-persistence + no terrain alignment",
+            "legacy_tile_seam_rule": "straight/rectangular boundary + radiometric or texture discontinuity + non-persistence + no terrain alignment",
             "context_suppressors": "roads, runways, reservoirs, utility plants, quarries, parcels, and buildings suppress seam promotion",
             "ground_feature_rule": "multi-date persistence + infrastructure/landcover alignment + low cloud/shadow intersection",
         },
@@ -200,102 +203,189 @@ def calibrate(candidates_csv: str) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Strict tile-seam AND-gate (docs/SATIM_TRACK_LINE_VS_TILE_SEAM_RULES.md)
+# Strict origin firewall (docs/SATIM_TRACK_LINE_VS_TILE_SEAM_RULES.md)
 # ---------------------------------------------------------------------------
-# The spec's conjunctive rule, stricter than the default weighted classifier.
 STRICT_STRAIGHTNESS_MIN = 0.85
 STRICT_RADIOMETRIC_MIN = 0.55
 STRICT_SCREEN_LOCKED_MIN = 0.70
-STRICT_PERSISTENCE_MAX = 0.35
+STRICT_SCREEN_LOCKED_MAX_FOR_TILE = 0.55
+STRICT_GROUND_FIXED_MIN = 0.70
+STRICT_GROUND_FIXED_MAX_FOR_VIEWPORT = 0.35
+STRICT_PROVIDER_TILE_GRID_MIN = 0.80
+STRICT_PROVIDER_TILE_GRID_MAX_FOR_MOSAIC = 0.35
+STRICT_ADJACENT_ZOOM_PERSISTENCE_MIN = 0.65
+STRICT_SOURCE_MOSAIC_METADATA_MIN = 0.90
+STRICT_INDEPENDENT_GROUND_BINDING_MIN = 0.90
 STRICT_TERRAIN_SHADOW_MAX = 0.55
 STRICT_GROUND_FEATURE_MAX = 0.55
 STRICT_OVERLAP_SUPPRESS = 0.55
 
 
 def classify_candidate_strict(row: Mapping[str, Any]) -> dict[str, Any]:
-    """Spec-faithful conjunctive tile-seam gate.
+    """Origin-aware conjunctive gate.
 
-    A candidate is ``probable_tile_seam`` only if ALL hold:
-      straightness >= 0.85, radiometric_delta >= 0.55, screen_locked_score >= 0.70,
-      multi_date_persistence < 0.35, terrain_shadow_likelihood < 0.55,
-      persistent_ground_feature_likelihood < 0.55,
-    and neither track_line_overlap nor ui_overlay_overlap is high (>= 0.55).
+    The strict path first establishes a visual imagery-seam observation, then
+    adjudicates coordinate behavior and causal origin. Screen lock is a
+    viewport-artifact signal, not renderer-tile identity.
 
-    NOTE: ``screen_locked_score`` has no feature extractor yet (candidate rows
-    default it to 0.0), so in production this gate promotes nothing until that
-    feature is produced — the honest, spec-faithful behaviour. The derived
-    likelihoods reuse :func:`classify_candidate`.
+    Required origin-specific evidence:
+    - DISPLAY_TILE_EDGE: provider tile-grid binding;
+    - SOURCE_MOSAIC_CUTLINE: ground-fixed + adjacent-zoom persistence + not
+      provider-grid-bound, with PASS reserved for source-mosaic metadata;
+    - PHYSICAL_GROUND_FEATURE: independent physical-ground binding.
     """
     base = classify_candidate(row)
     straightness = score(row, "straightness", "straight_boundary_score", "straight_edge_score")
     radiometric = score(row, "radiometric_delta", "radiometric_discontinuity_score", "color_discontinuity_score")
     screen_locked = score(row, "screen_locked_score")
-    persistence = score(row, "multi_date_persistence")
+    ground_fixed = score(row, "ground_fixed_score", "ground_fixed_under_pan_score")
+    provider_grid = score(row, "provider_tile_grid_binding_score", "tile_grid_binding_score")
+    adjacent_zoom = score(row, "adjacent_zoom_ground_persistence_score", "persists_across_adjacent_zoom_levels_score")
+    mosaic_metadata = score(row, "source_mosaic_metadata_binding_score")
+    independent_ground_binding = score(row, "independent_ground_feature_binding_score")
     track_line_overlap = score(row, "track_line_overlap")
     ui_overlay_overlap = score(row, "ui_overlay_overlap")
     terrain_shadow = float(base["terrain_shadow_likelihood"])
-    ground = float(base["persistent_ground_feature_likelihood"])
+    ground_likelihood = float(base["persistent_ground_feature_likelihood"])
 
-    clauses = {
+    observation_clauses = {
         "straightness": straightness >= STRICT_STRAIGHTNESS_MIN,
         "radiometric": radiometric >= STRICT_RADIOMETRIC_MIN,
-        "screen_locked": screen_locked >= STRICT_SCREEN_LOCKED_MIN,
-        "non_persistent": persistence < STRICT_PERSISTENCE_MAX,
         "not_terrain_shadow": terrain_shadow < STRICT_TERRAIN_SHADOW_MAX,
-        "not_ground_feature": ground < STRICT_GROUND_FEATURE_MAX,
         "no_track_line_overlap": track_line_overlap < STRICT_OVERLAP_SUPPRESS,
         "no_ui_overlay_overlap": ui_overlay_overlap < STRICT_OVERLAP_SUPPRESS,
     }
+    imagery_seam_observed = all(observation_clauses.values())
 
-    if all(clauses.values()):
-        decision = "probable_tile_seam"
-    elif track_line_overlap >= STRICT_OVERLAP_SUPPRESS:
+    origin_state = "UNRESOLVED"
+    origin = "UNRESOLVED"
+    origin_gates: dict[str, bool] = {}
+
+    if track_line_overlap >= STRICT_OVERLAP_SUPPRESS:
         decision = "probable_track_line"
     elif ui_overlay_overlap >= STRICT_OVERLAP_SUPPRESS:
         decision = "probable_ui_overlay"
-    else:
+    elif independent_ground_binding >= STRICT_INDEPENDENT_GROUND_BINDING_MIN:
+        decision = "probable_ground_feature"
+        origin = "PHYSICAL_GROUND_FEATURE"
+        origin_state = "PASS"
+        origin_gates = {"independent_ground_feature_binding": True}
+    elif not imagery_seam_observed:
         decision = "indeterminate"
+    elif (
+        screen_locked >= STRICT_SCREEN_LOCKED_MIN
+        and ground_fixed <= STRICT_GROUND_FIXED_MAX_FOR_VIEWPORT
+    ):
+        decision = "probable_viewport_artifact"
+        origin = "VIEWPORT_COMPOSITING_ARTIFACT"
+        origin_state = "PASS"
+        origin_gates = {
+            "screen_fixed_under_pan": True,
+            "not_ground_fixed_under_pan": True,
+        }
+    elif (
+        provider_grid >= STRICT_PROVIDER_TILE_GRID_MIN
+        and screen_locked < STRICT_SCREEN_LOCKED_MAX_FOR_TILE
+        and ground_likelihood < STRICT_GROUND_FEATURE_MAX
+    ):
+        decision = "probable_display_tile_edge"
+        origin = "DISPLAY_TILE_EDGE"
+        origin_state = "PASS"
+        origin_gates = {
+            "provider_tile_grid_binding": True,
+            "not_screen_fixed": True,
+            "not_ground_feature": True,
+        }
+    elif (
+        ground_fixed >= STRICT_GROUND_FIXED_MIN
+        and adjacent_zoom >= STRICT_ADJACENT_ZOOM_PERSISTENCE_MIN
+        and provider_grid <= STRICT_PROVIDER_TILE_GRID_MAX_FOR_MOSAIC
+        and ground_likelihood < STRICT_GROUND_FEATURE_MAX
+    ):
+        decision = "probable_source_mosaic_cutline"
+        origin = "SOURCE_MOSAIC_CUTLINE"
+        origin_state = "PASS" if mosaic_metadata >= STRICT_SOURCE_MOSAIC_METADATA_MIN else "PROVISIONAL"
+        origin_gates = {
+            "ground_fixed_under_pan": True,
+            "adjacent_zoom_ground_persistence": True,
+            "not_provider_tile_grid_bound": True,
+            "not_ground_feature": True,
+            "source_mosaic_metadata_binding": mosaic_metadata >= STRICT_SOURCE_MOSAIC_METADATA_MIN,
+        }
+    else:
+        decision = "probable_imagery_seam_unresolved_origin"
+        origin_gates = {
+            "provider_tile_grid_binding": provider_grid >= STRICT_PROVIDER_TILE_GRID_MIN,
+            "screen_fixed_under_pan": screen_locked >= STRICT_SCREEN_LOCKED_MIN,
+            "ground_fixed_under_pan": ground_fixed >= STRICT_GROUND_FIXED_MIN,
+            "adjacent_zoom_ground_persistence": adjacent_zoom >= STRICT_ADJACENT_ZOOM_PERSISTENCE_MIN,
+            "independent_ground_feature_binding": independent_ground_binding >= STRICT_INDEPENDENT_GROUND_BINDING_MIN,
+        }
 
-    return {**base, "decision": decision, "strict_clauses": clauses, "screen_locked_score": round(screen_locked, 4)}
+    return {
+        **base,
+        "decision": decision,
+        "decision_semantics": "ORIGIN_AWARE_STRICT_GATE",
+        "imagery_seam_observed": imagery_seam_observed,
+        "observation_clauses": observation_clauses,
+        "resolved_origin": origin if origin_state == "PASS" else "UNRESOLVED",
+        "leading_origin_candidate": origin,
+        "origin_state": origin_state,
+        "origin_gates": origin_gates,
+        "screen_locked_score": round(screen_locked, 4),
+        "ground_fixed_score": round(ground_fixed, 4),
+        "provider_tile_grid_binding_score": round(provider_grid, 4),
+        "adjacent_zoom_ground_persistence_score": round(adjacent_zoom, 4),
+        "source_mosaic_metadata_binding_score": round(mosaic_metadata, 4),
+        "independent_ground_feature_binding_score": round(independent_ground_binding, 4),
+    }
 
 
 def calibrate_strict(candidates_csv: str) -> dict[str, Any]:
-    """L5 calibration using the strict AND-gate. Emits an explicit finding when
-    screen_locked_score is absent/zero across all candidates (the gate is then
-    inert pending a screen-lock feature extractor)."""
+    """L5 calibration using the origin-aware strict gate."""
     candidates = load_candidates(candidates_csv)
     scored = [classify_candidate_strict(row) for row in candidates]
     metrics = summarize(scored)
     findings: list[dict[str, Any]] = []
     if not candidates:
-        findings.append({"severity": "warning", "detail": "no tile seam/shadow calibration candidates found"})
-    elif all(row.get("screen_locked_score", 0.0) <= 0.0 for row in scored):
+        findings.append({"severity": "warning", "detail": "no imagery-seam/shadow calibration candidates found"})
+    elif all(
+        row.get("screen_locked_score", 0.0) <= 0.0
+        and row.get("ground_fixed_score", 0.0) <= 0.0
+        and row.get("provider_tile_grid_binding_score", 0.0) <= 0.0
+        and row.get("independent_ground_feature_binding_score", 0.0) <= 0.0
+        for row in scored
+    ):
         findings.append({
             "severity": "warning",
-            "detail": "strict L5 gate is inert: screen_locked_score is 0.0 for all candidates "
-                      "(no screen-lock feature extractor yet); no tile seams can be promoted under strict rules",
+            "detail": "strict origin firewall lacks coordinate-behavior/binding features; imagery seams may be observed but causal origin remains unresolved",
         })
     return LayerCalibrationResult(
         layer="L5_tile_seam_shadow",
         status="READY" if candidates else "MISSING",
         metrics=metrics,
         thresholds={
-            "mode": "strict_and_gate",
+            "mode": "origin_aware_strict_gate",
             "straightness_min": STRICT_STRAIGHTNESS_MIN,
             "radiometric_delta_min": STRICT_RADIOMETRIC_MIN,
-            "screen_locked_score_min": STRICT_SCREEN_LOCKED_MIN,
-            "multi_date_persistence_max": STRICT_PERSISTENCE_MAX,
+            "screen_locked_viewport_min": STRICT_SCREEN_LOCKED_MIN,
+            "screen_locked_tile_max": STRICT_SCREEN_LOCKED_MAX_FOR_TILE,
+            "ground_fixed_min": STRICT_GROUND_FIXED_MIN,
+            "provider_tile_grid_binding_min": STRICT_PROVIDER_TILE_GRID_MIN,
+            "adjacent_zoom_ground_persistence_min": STRICT_ADJACENT_ZOOM_PERSISTENCE_MIN,
+            "source_mosaic_metadata_binding_min": STRICT_SOURCE_MOSAIC_METADATA_MIN,
+            "independent_ground_feature_binding_min": STRICT_INDEPENDENT_GROUND_BINDING_MIN,
             "terrain_shadow_max": STRICT_TERRAIN_SHADOW_MAX,
             "ground_feature_max": STRICT_GROUND_FEATURE_MAX,
             "overlap_suppress": STRICT_OVERLAP_SUPPRESS,
-            "note": "conjunctive spec gate; inert until a screen_locked_score feature extractor exists",
+            "note": "screen lock identifies viewport-relative behavior; provider tile-grid binding is required for DISPLAY_TILE_EDGE",
         },
         findings=findings,
     ).to_dict()
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Calibrate SATIM L5 tile seam/cloud-shadow discrimination")
+    parser = argparse.ArgumentParser(description="Calibrate SATIM L5 imagery-seam/cloud-shadow discrimination")
     parser.add_argument("--candidates-csv", required=True)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()

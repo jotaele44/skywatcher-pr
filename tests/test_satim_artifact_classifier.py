@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from scripts.classify_satim_artifacts import classify_csv, classify_text
+from scripts.classify_satim_artifacts import classify_csv, classify_row, classify_text
 
 
 def test_unknown_defaults_to_hold_review() -> None:
@@ -14,8 +14,16 @@ def test_track_line_classification() -> None:
     assert classify_text("FR24 playback diagonal track line") == ("TRACK_LINE", "high")
 
 
-def test_tile_seam_classification() -> None:
+def test_tile_seam_classification_is_legacy_observation_label() -> None:
     assert classify_text("rectilinear tile seam and mixed epoch boundary") == ("TILE_SEAM", "medium")
+    row = classify_row({"description": "rectilinear tile seam and mixed epoch boundary"})
+    assert row["artifact_class"] == "TILE_SEAM"
+    assert row["observation_class"] == "IMAGERY_SEAM"
+    assert row["resolved_origin"] == "UNRESOLVED"
+    assert row["origin_status"] == "UNRESOLVED"
+    assert "SOURCE_MOSAIC_CUTLINE" in row["origin_candidates"]
+    assert "DISPLAY_TILE_EDGE" in row["origin_candidates"]
+    assert "PHYSICAL_GROUND_FEATURE" in row["origin_candidates"]
 
 
 def test_csv_classifier_does_not_preserve_structural_signal(tmp_path: Path) -> None:
