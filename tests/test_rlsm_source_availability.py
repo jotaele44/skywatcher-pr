@@ -428,6 +428,41 @@ def test_parallel_reocr_boxes_excludes_unavailable(tmp_path: Path):
     conn.close()
 
 
+def test_parallel_reocr_boxes_accepts_legacy_wordbox_schema(tmp_path: Path):
+    conn = sqlite3.connect(tmp_path / "legacy-reocr.sqlite")
+    conn.executescript("""
+        CREATE TABLE screenshots (
+            screenshot_id INTEGER PRIMARY KEY,
+            rel_path TEXT NOT NULL,
+            ingest_status TEXT NOT NULL,
+            source_availability TEXT NOT NULL,
+            month_bucket TEXT,
+            ocr_status TEXT NOT NULL
+        );
+        CREATE TABLE ocr_observations (
+            obs_id INTEGER PRIMARY KEY,
+            screenshot_id INTEGER NOT NULL,
+            zone TEXT NOT NULL,
+            raw_text TEXT NOT NULL,
+            raw_lines_json TEXT,
+            n_words INTEGER
+        );
+        INSERT INTO screenshots VALUES
+            (1, 'legacy.png', 'ok', 'present', '2026-03', 'done');
+        INSERT INTO ocr_observations VALUES
+            (1, 1, 'label_layer', 'San Juan', '[]', 2);
+    """)
+
+    sql, params = rlsm_ocr_parallel._build_target_query(
+        retry_failed=False,
+        reocr_boxes=True,
+        filter_month=None,
+    )
+
+    assert conn.execute(sql, params).fetchall() == [(1, "legacy.png")]
+    conn.close()
+
+
 def test_serial_midrun_disappearance_preserves_pending_and_observations(
     tmp_path: Path, monkeypatch
 ):

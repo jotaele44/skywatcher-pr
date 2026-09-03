@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher.local/schemas/replay/time-v1.schema.json",
+  "title": "Skywatcher replay time v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "time_basis", "time_uncertainty_ms"],
+  "properties": {
+    "schema": {"const": "skywatcher.time.v1"},
+    "source_timestamp_raw": {"type": ["string", "null"]},
+    "source_timezone": {"type": ["string", "null"]},
+    "observed_at_utc": {"type": ["string", "null"], "format": "date-time"},
+    "time_start_utc": {"type": ["string", "null"], "format": "date-time"},
+    "time_end_utc": {"type": ["string", "null"], "format": "date-time"},
+    "time_basis": {"type": "string", "minLength": 1},
+    "time_precision": {"type": ["string", "null"]},
+    "time_uncertainty_ms": {"type": ["integer", "null"], "minimum": 0},
+    "clock_correction_ms": {"type": "integer"},
+    "clock_correction_method": {"type": ["string", "null"]}
+  },
+  "anyOf": [
+    {"required": ["observed_at_utc"]},
+    {"required": ["time_start_utc", "time_end_utc"]}
+  ]
+}

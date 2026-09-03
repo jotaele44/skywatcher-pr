@@ -1,0 +1,15 @@
+{
+  "baseline_id": "SKYWATCHER_RLSM_R2_f745db5f",
+  "generation": "NEW_GENERATION_R2",
+  "state": "CANONICAL",
+  "certification": "PASS_ZERO_UNEXPLAINED_RESIDUE",
+  "sqlite_sha256": "f745db5fecddd282e1774eb48255c91a281b00851a840d489b46a877df5ad59c",
+  "source_manifestations": 7170,
+  "logical_screenshots": 5469,
+  "ocr_pending": 0,
+  "ocr_terminal_failed": 2,
+  "aircraft_frames": 4313,
+  "marker_frames": 4313,
+  "georeference_frames": 4313,
+  "mutation_policy": "IMMUTABLE_SUCCESSOR_ONLY"
+}
