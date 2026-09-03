@@ -1,0 +1,163 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "craft_profile",
+  "title": "Skywatcher Craft Profile",
+  "description": "Consolidated, continuously-enrichable per-aircraft profile aggregating identity, home base, preferred landing zones, empirical schedule, recurring routes, and newly-surfaced patterns from the FR24/RLSM corpus. Every derived aggregate is a review-gated candidate carrying a confidence grade, evidence tier, and eligible-period denominator. Contains no intent/mission inference: primary_mission is authoritative only for known_db profiles.",
+  "type": "object",
+  "required": [
+    "registration",
+    "data_source",
+    "confidence_level",
+    "profile_confidence_grade",
+    "generated_at",
+    "source_baseline"
+  ],
+  "definitions": {
+    "confidence_grade": {
+      "type": "string",
+      "enum": ["VERIFIED", "HIGH", "MODERATE", "LOW", "INSUFFICIENT"]
+    },
+    "evidence_tier": {
+      "type": "string",
+      "enum": ["T1", "T2", "T3", "T4"]
+    },
+    "review_status": {
+      "type": "string",
+      "enum": ["candidate", "needs_review", "reviewed", "confirmed"]
+    },
+    "graded": {
+      "type": "object",
+      "properties": {
+        "confidence_grade": {"$ref": "#/definitions/confidence_grade"},
+        "evidence_tier": {"$ref": "#/definitions/evidence_tier"},
+        "review_status": {"$ref": "#/definitions/review_status"},
+        "caps_applied": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  },
+  "properties": {
+    "registration": {"type": "string", "minLength": 1},
+    "callsign": {"type": ["string", "null"]},
+    "aircraft_type": {"type": ["string", "null"]},
+    "owner": {"type": ["string", "null"]},
+    "operator": {"type": ["string", "null"]},
+    "country": {"type": ["string", "null"]},
+    "data_source": {
+      "type": "string",
+      "enum": ["known_db", "deduced", "db_history", "unknown"]
+    },
+    "primary_mission": {"type": ["string", "null"]},
+    "mission_is_authoritative": {
+      "type": "boolean",
+      "description": "True only when data_source == known_db (operator-declared). Never infer intent otherwise."
+    },
+    "secondary_missions": {"type": "array", "items": {"type": "string"}},
+
+    "home_base": {
+      "type": ["object", "null"],
+      "description": "Most-frequent origin/destination facility (candidate). Spatial claims without georeferencing are capped <= MODERATE.",
+      "properties": {
+        "facility_id": {"type": ["string", "null"]},
+        "name": {"type": ["string", "null"]},
+        "iata": {"type": ["string", "null"]},
+        "origin_count": {"type": "integer", "minimum": 0},
+        "destination_count": {"type": "integer", "minimum": 0},
+        "eligible_periods_denominator": {"type": ["integer", "null"], "minimum": 0},
+        "confidence_grade": {"$ref": "#/definitions/confidence_grade"},
+        "evidence_tier": {"$ref": "#/definitions/evidence_tier"},
+        "review_status": {"$ref": "#/definitions/review_status"},
+        "caps_applied": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+
+    "preferred_lzs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "facility_id": {"type": ["string", "null"]},
+          "lz_class": {"type": ["string", "null"]},
+          "name": {"type": ["string", "null"]},
+          "hit_count": {"type": "integer", "minimum": 0},
+          "eligible_periods_denominator": {"type": ["integer", "null"], "minimum": 0},
+          "confidence_grade": {"$ref": "#/definitions/confidence_grade"},
+          "evidence_tier": {"$ref": "#/definitions/evidence_tier"},
+          "review_status": {"$ref": "#/definitions/review_status"},
+          "caps_applied": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+
+    "schedule": {
+      "type": ["object", "null"],
+      "properties": {
+        "dow_hour_cells": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "dow": {"type": "string"},
+              "hour_bucket": {"type": "string"},
+              "expected_per_week": {"type": "number"},
+              "based_on_hits": {"type": "integer"}
+            }
+          }
+        },
+        "operating_hours_summary": {"type": "string"},
+        "lookback_weeks": {"type": "integer"},
+        "denominator": {"type": ["integer", "null"]},
+        "confidence_grade": {"$ref": "#/definitions/confidence_grade"},
+        "evidence_tier": {"$ref": "#/definitions/evidence_tier"},
+        "review_status": {"$ref": "#/definitions/review_status"},
+        "caps_applied": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+
+    "recurring_routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["route_pattern", "n_observed"],
+        "properties": {
+          "route_pattern": {"type": "string"},
+          "shape": {"type": "string"},
+          "n_observed": {"type": "integer", "minimum": 1},
+          "denominator": {
+            "type": ["integer", "null"],
+            "description": "Eligible flight-days. Required for a HIGH grade; absent => capped <= MODERATE."
+          },
+          "confidence_grade": {"$ref": "#/definitions/confidence_grade"},
+          "evidence_tier": {"$ref": "#/definitions/evidence_tier"},
+          "review_status": {"$ref": "#/definitions/review_status"},
+          "caps_applied": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+
+    "recurring_events": {
+      "type": "array",
+      "items": {"allOf": [{"$ref": "#/definitions/graded"}], "type": "object"}
+    },
+    "new_patterns": {
+      "type": "array",
+      "items": {"allOf": [{"$ref": "#/definitions/graded"}], "type": "object"}
+    },
+
+    "first_seen": {"type": ["string", "null"]},
+    "last_seen": {"type": ["string", "null"]},
+    "total_observations": {"type": "integer", "minimum": 0},
+    "is_stale": {"type": "boolean"},
+
+    "confidence_level": {"type": "number", "minimum": 0, "maximum": 1},
+    "profile_confidence_grade": {"$ref": "#/definitions/confidence_grade"},
+    "coverage_gaps": {"type": "array", "items": {"type": "string"}},
+    "caps_applied": {"type": "array", "items": {"type": "string"}},
+
+    "source_baseline": {
+      "type": "string",
+      "description": "Provenance anchor: input DB fingerprint / max corpus timestamp for reproducibility."
+    },
+    "generated_at": {"type": "string"}
+  },
+  "additionalProperties": true
+}

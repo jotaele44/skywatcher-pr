@@ -1,0 +1,11 @@
+{
+  "aircraft_observation_rows": 9963,
+  "media_filename_matches": 0,
+  "media_filename_unresolved": 9963,
+  "media_index": "/Users/jotaele/Documents/FR24/FR24_DataBank/Media_Canonical/freeze_final/final_active_media_index.csv",
+  "media_rows": 2856,
+  "observations": "/Users/jotaele/Documents/Financials/Consolidated/entities/aircraft_observations.csv",
+  "review_rule": "Fill bbox and aircraft icon pixel only when the aircraft icon is visible; otherwise leave coordinates blank and set visibility to not_visible, ambiguous, or occluded.",
+  "worklist": "/Users/jotaele/fed-repos/skywatcher-pr/reports/source_drops/fr24_capture_review_worklist.csv",
+  "worklist_rows": 9963
+}
