@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from ..source_taxonomy import DATA_RIGHTS, OPERATIONAL_MODES, SOURCE_FAMILIES, SOURCE_METHODS
 from ..time import UTCValidationError, normalize_utc

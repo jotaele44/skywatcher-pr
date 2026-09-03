@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from .pagination import CursorError, decode_cursor, encode_cursor
 from .repositories.base import RepositorySnapshot

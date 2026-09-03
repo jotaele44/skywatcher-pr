@@ -7,10 +7,11 @@ import hashlib
 import json
 import os
 import sqlite3
+from collections.abc import Iterable
 from functools import lru_cache
-from urllib.parse import quote
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
+from urllib.parse import quote
 
 from .base import ArtifactRef
 
