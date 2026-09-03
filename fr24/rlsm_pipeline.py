@@ -160,7 +160,7 @@ def preflight(ctx: dict) -> dict:
         try:
             import PIL  # noqa: F401
         except ImportError:
-            problems.append("Pillow not installed — `pip install -r requirements.txt`")
+            problems.append("Pillow not installed — `uv sync`")
         try:
             import pytesseract  # noqa: F401
         except ImportError:

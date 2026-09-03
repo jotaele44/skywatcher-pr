@@ -1,3 +1,6 @@
 # ADR 0006 Skywatcher AI-imagery schema freeze manifest.
 # Regenerate only through an explicit schema-version change.
 ca8c878d2263b8e685e7ee58daeb0384dc2e92fa8149230929156592332683f3  legacy_shadow_export.v1.schema.json
+0852dac25d5237444c9e72507dbbaf2ac89450fa1407a6ba526539dba17c3f65  s07_h08_handoff_manifest.v1.schema.json
+4e00281bfc1074c8dd3c52672d94c079f27e69a9d96f03c15ed06f07bc5c80cb  s07_operator_handoff_authorization.v1.schema.json
+b36c9103ec5913957114312cf7f2f0af3c0f68cd492e8ba8b784f244b5126abf  s07_trial_admission_receipt.v1.schema.json

@@ -1,0 +1,91 @@
+lens_id: satim.agricultural_mosaic
+name: Agricultural mosaic candidate recognition
+owner: SATIM
+stage: satellite_image_processing
+status: experimental
+version: 0.2.0
+objective: Identify agricultural-style field mosaics from convergent morphology using a frozen empirical calibration profile, while preserving competing land-use classes and failing closed on missing negative controls.
+
+required_inputs:
+  - source_frame
+  - landscape_morphology_observation
+
+required_parameters:
+  - parameter_id: artifact_exclusion_complete
+    name: Artifact exclusion complete
+    kind: boolean
+    description: Artifact assessment must precede terrain interpretation.
+  - parameter_id: landscape_morphology_complete
+    name: Landscape morphology complete
+    kind: boolean
+    description: Generic landscape morphology must be extracted before this specialized classifier can run.
+  - parameter_id: calibration_profile
+    name: Frozen calibration profile
+    kind: path
+    description: Numeric promotion thresholds must come from an explicit frozen calibration artifact. No numeric fallback is allowed.
+
+optional_parameters:
+  - parameter_id: temporal_recurrence
+    name: Temporal cultivation recurrence
+    kind: boolean
+    required: false
+    default: false
+    degraded_behavior: Single-epoch evidence only. Temporal recurrence cannot enter the minimum independent-evidence gate and its absence is never negative evidence.
+  - parameter_id: benchmark_manifest
+    name: Benchmark manifest
+    kind: path
+    required: false
+    degraded_behavior: Candidate recognition may run, but production promotion remains fail-closed and unauthorized.
+  - parameter_id: field_segmentation
+    name: Field-level segmentation annotation
+    kind: path
+    required: false
+    degraded_behavior: Scene-level candidate recognition only; individual field geometry and per-field surface classes remain unresolved.
+
+measurements:
+  - forest_matrix_fraction
+  - open_surface_fraction
+  - exposed_soil_fraction
+  - bright_cover_fraction
+  - directional_texture_score
+  - patch_mosaic_score
+  - independent_positive_evidence_count
+  - competing_class_scores
+
+emits:
+  - AGRICULTURAL_MOSAIC_CANDIDATE
+  - CANDIDATE_NOT_IDENTITY
+  - REVIEW_UNRESOLVED
+  - UNRESOLVED
+
+interpretation_restriction_minimum: NONE
+
+contradiction_tests:
+  - agriculture_vs_landslide
+  - agriculture_vs_construction_grading
+  - agriculture_vs_utility_corridor
+  - agriculture_vs_road_cut
+  - agriculture_vs_quarry_or_borrow
+  - agriculture_vs_exposed_river_sediment
+  - agriculture_vs_hurricane_blowdown
+  - agriculture_vs_solar_array
+  - agriculture_vs_logging_clearing
+  - agriculture_vs_abandoned_building_pad
+  - agriculture_vs_pasture_or_lawn
+  - agriculture_vs_natural_sparse_vegetation
+
+evidence_axes_required:
+  - evidence_tier
+  - visibility_class
+  - provenance_status
+  - temporal_status
+  - review_status
+  - confidence_score
+
+prohibited_claims:
+  - COLOR_ONLY, CLEARING_ONLY, and RECTANGLE_ONLY evidence can never promote AGRICULTURAL_MOSAIC_CANDIDATE.
+  - Numeric thresholds may not execute from literals, library defaults, or the global threshold registry; they must be frozen in the supplied calibration profile.
+  - Temporal recurrence is supplementary and never participates in the minimum independent-evidence gate or proves identity.
+  - Crop identity, parcel identity, ownership, operator, purpose, mission, and legal land use are out of scope.
+  - Unevaluated competing classes remain UNKNOWN with null scores; source absence is not negative evidence.
+  - No production promotion until calibration status is VALIDATED and the independent benchmark is PASS with zero unresolved holdout residue.

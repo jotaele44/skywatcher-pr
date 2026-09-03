@@ -29,11 +29,12 @@ jobs:
         run: test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
       - name: Install dev deps
         run: |
-          python -m pip install -r requirements-dev.txt httpx -r server/backend/requirements.txt
-          test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
+          command -v uv >/dev/null 2>&1 || python -m pip install -q uv
+          uv sync --extra dev
+          uv pip install httpx -r server/backend/requirements.txt
       - name: Federation manifest gate
         run: |
-          python - <<'PY'
+          uv run python - <<'PY'
           import json
           from pathlib import Path
           manifest = json.loads(Path("federation.json").read_text())
@@ -57,16 +58,16 @@ jobs:
           PY
       - name: Validate airspace export contract
         run: |
-          python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
-          if python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode production; then
+          uv run python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
+          if uv run python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode production; then
             echo "ERROR: production mode should reject synthetic rows" && exit 1
           else
             echo "OK: production mode correctly rejected synthetic rows"
           fi
       - name: Validate SATIM calibration sets
-        run: python scripts/validate_satim_calibration.py data/satim_calibration
+        run: uv run python scripts/validate_satim_calibration.py data/satim_calibration
       - name: Tests
-        run: pytest -q --cov --cov-report=term-missing:skip-covered
+        run: uv run pytest -q --cov --cov-report=term-missing:skip-covered
 
   test-imagery:
     runs-on: ubuntu-latest
@@ -84,10 +85,10 @@ jobs:
         run: test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
       - name: Install imagery deps
         run: |
-          python -m pip install -r requirements-imagery.txt pytest
-          test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
+          command -v uv >/dev/null 2>&1 || python -m pip install -q uv
+          uv sync --extra imagery
       - name: Imagery tests
-        run: pytest tests/test_imagery_*.py -q
+        run: uv run pytest tests/test_imagery_*.py -q
 
   test-adsb:
     runs-on: ubuntu-latest
@@ -105,10 +106,10 @@ jobs:
         run: test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
       - name: Install adsb deps
         run: |
-          python -m pip install -r requirements-adsb.txt pytest
-          test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
+          command -v uv >/dev/null 2>&1 || python -m pip install -q uv
+          uv sync --extra adsb
       - name: ADS-B tests
-        run: pytest tests/test_adsb_*.py -q
+        run: uv run pytest tests/test_adsb_*.py -q
 
   frontend:
     runs-on: ubuntu-latest
@@ -124,6 +125,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install
         run: npm ci
+      - name: Console runtime tests
+        run: npm run test:console
       - name: Lint
         run: npm run lint
       - name: Tests
@@ -138,16 +141,8 @@ jobs:
       - name: Assert isolated checkout
         run: test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
-      - name: Recompile the lockfile
-        run: |
-          uv pip compile requirements.txt --universal --python-version 3.12 -o requirements.lock
-          test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
-      - name: Assert no drift
-        run: |
-          if ! git diff --exit-code requirements.lock; then
-            echo "::error::requirements.lock is out of date with requirements.txt. Run: uv pip compile requirements.txt --universal --python-version 3.12 -o requirements.lock"
-            exit 1
-          fi
+      - name: Lock file is up to date
+        run: uv lock --check
 
   lint:
     runs-on: ubuntu-latest
@@ -161,10 +156,11 @@ jobs:
         run: test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
       - name: Install lint deps
         run: |
-          python -m pip install ruff mypy -r requirements-dev.txt
-          test ! -e "$GITHUB_WORKSPACE/../thehub-pr"
+          command -v uv >/dev/null 2>&1 || python -m pip install -q uv
+          uv sync --extra dev
+          uv pip install ruff mypy
       - name: Ruff
-        run: ruff check .
+        run: uv run ruff check .
       - name: Mypy (report-only)
         continue-on-error: true
-        run: python -m mypy
+        run: uv run python -m mypy
