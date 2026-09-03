@@ -1,0 +1,64 @@
+{
+  "case_id": "SATIM_IMAGERY_SEAM_4645A79A_V0_1",
+  "fixture_type": "DERIVED_REGRESSION_ONLY",
+  "source_image_committed": false,
+  "source_sha256": "4645a79a391dcd3508e4024cd8ec234caf6871e085df8badc8524f42219fef3c",
+  "source_dimensions_px": {
+    "width": 709,
+    "height": 1536
+  },
+  "observation": {
+    "class": "RADIOMETRIC_DISCONTINUITY",
+    "state": "PASS",
+    "median_right_minus_left_luma": -8.5708,
+    "block_bootstrap_95pct_ci_median_luma": [
+      -10.5682,
+      -7.4252
+    ],
+    "fraction_rows_right_darker": 0.926,
+    "block_bootstrap_95pct_ci_fraction_right_darker": [
+      0.8573,
+      0.9762
+    ],
+    "parallel_shift_sign_coherence_rank": {
+      "rank": 1,
+      "denominator": 61
+    },
+    "median_left_rgb": [47, 52, 59],
+    "median_right_rgb": [38, 44, 52],
+    "delta_e00": 2.684,
+    "apparent_10_90_transition_width_px": 25.65
+  },
+  "coordinate_behavior": {
+    "ground_fixed_under_pan": null,
+    "screen_fixed_under_pan": null,
+    "provider_tile_grid_binding": null,
+    "persists_across_adjacent_zoom_levels": null,
+    "state": "BLOCKED"
+  },
+  "origin_candidates": {
+    "SOURCE_MOSAIC_CUTLINE": "BLOCKED",
+    "DISPLAY_TILE_EDGE": "BLOCKED",
+    "VIEWPORT_COMPOSITING_ARTIFACT": "BLOCKED",
+    "NATURAL_SHADOW_BOUNDARY": "UNRESOLVED",
+    "PHYSICAL_GROUND_FEATURE": "UNRESOLVED",
+    "COMPRESSION_OR_RESAMPLING_ARTIFACT": "OPEN"
+  },
+  "resolved_origin": "UNRESOLVED",
+  "required_next_evidence": [
+    "same-ground slight-pan observation",
+    "adjacent zoom minus one",
+    "adjacent zoom plus one",
+    "provider tile-grid binding if renderer-edge identity is proposed",
+    "independent basemap or GIS binding if physical-ground identity is proposed",
+    "source mosaic metadata if SOURCE_MOSAIC_CUTLINE PASS is proposed"
+  ],
+  "invariants": [
+    "single-still radiometric PASS must not resolve causal origin",
+    "screen lock must not promote DISPLAY_TILE_EDGE",
+    "provider tile-grid binding is required for DISPLAY_TILE_EDGE PASS",
+    "independent physical-ground binding is required for PHYSICAL_GROUND_FEATURE PASS",
+    "competing origin candidates remain preserved until their specific falsification gates are satisfied"
+  ],
+  "notes": "Derived metrics only. Raw screenshot, coordinates, and identifiable map imagery are intentionally not committed. The source SHA-256 is the immutable baseline key."
+}

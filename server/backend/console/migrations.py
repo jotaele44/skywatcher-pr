@@ -1,7 +1,7 @@
 """Reversible SQLite migrations for console contracts.
 
-Phase 1 creates only producer-owned normalized tables. Source artifacts remain
-immutable. Rollback refuses to drop populated tables unless ``allow_data_loss``
+Phase 1 creates producer-owned normalized tables. Phase 2 adds artifact and
+repository-sync ledgers. Source artifacts remain immutable. Rollback refuses to drop populated tables unless ``allow_data_loss``
 is explicitly enabled.
 """
 
@@ -37,6 +37,11 @@ PHASE1_TABLES = (
     "console_track_points",
     "console_flight_sessions",
     "console_airport_operational_states",
+)
+
+PHASE2_TABLES = (
+    "console_source_artifacts",
+    "console_repository_sync_runs",
 )
 
 _UP_V1 = (
@@ -184,6 +189,57 @@ def _down_v1(conn: sqlite3.Connection, allow_data_loss: bool) -> None:
         conn.execute(f'DROP TABLE IF EXISTS "{table}"')
 
 
+_UP_V2 = (
+    """
+    CREATE TABLE IF NOT EXISTS console_source_artifacts (
+        artifact_id TEXT PRIMARY KEY,
+        repository_name TEXT NOT NULL,
+        artifact_kind TEXT NOT NULL,
+        artifact_path TEXT NOT NULL,
+        artifact_sha256 TEXT,
+        size_bytes INTEGER CHECK(size_bytes IS NULL OR size_bytes >= 0),
+        modified_at_utc TEXT,
+        discovered_at_utc TEXT NOT NULL,
+        availability_status TEXT NOT NULL,
+        record_count INTEGER CHECK(record_count IS NULL OR record_count >= 0),
+        synthetic INTEGER NOT NULL CHECK(synthetic IN (0, 1)),
+        provenance_json TEXT NOT NULL
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_console_artifacts_repo ON console_source_artifacts(repository_name, availability_status)",
+    "CREATE INDEX IF NOT EXISTS idx_console_artifacts_sha ON console_source_artifacts(artifact_sha256)",
+    """
+    CREATE TABLE IF NOT EXISTS console_repository_sync_runs (
+        run_id TEXT PRIMARY KEY,
+        repository_name TEXT NOT NULL,
+        started_at_utc TEXT NOT NULL,
+        completed_at_utc TEXT,
+        status TEXT NOT NULL,
+        input_count INTEGER NOT NULL DEFAULT 0 CHECK(input_count >= 0),
+        output_count INTEGER NOT NULL DEFAULT 0 CHECK(output_count >= 0),
+        skipped_count INTEGER NOT NULL DEFAULT 0 CHECK(skipped_count >= 0),
+        error_count INTEGER NOT NULL DEFAULT 0 CHECK(error_count >= 0),
+        details_json TEXT NOT NULL DEFAULT '{}'
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_console_sync_repo_time ON console_repository_sync_runs(repository_name, started_at_utc)",
+)
+
+
+def _up_v2(conn: sqlite3.Connection) -> None:
+    _execute_many(conn, _UP_V2)
+
+
+def _down_v2(conn: sqlite3.Connection, allow_data_loss: bool) -> None:
+    populated = {table: _table_row_count(conn, table) for table in PHASE2_TABLES if _table_exists(conn, table)}
+    populated = {table: count for table, count in populated.items() if count}
+    if populated and not allow_data_loss:
+        detail = ", ".join(f"{name}={count}" for name, count in sorted(populated.items()))
+        raise RuntimeError(f"rollback would discard phase 2 console data: {detail}")
+    for table in reversed(PHASE2_TABLES):
+        conn.execute(f'DROP TABLE IF EXISTS "{table}"')
+
+
 def _checksum(statements: tuple[str, ...]) -> str:
     text = "\n".join(statement.strip() for statement in statements)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -191,6 +247,7 @@ def _checksum(statements: tuple[str, ...]) -> str:
 
 MIGRATIONS = (
     Migration(1, "phase1_console_contract_tables", _up_v1, _down_v1, _checksum(_UP_V1)),
+    Migration(2, "phase2_repository_artifact_ledgers", _up_v2, _down_v2, _checksum(_UP_V2)),
 )
 LATEST_VERSION = MIGRATIONS[-1].version
 

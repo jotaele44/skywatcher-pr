@@ -80,6 +80,10 @@ def validate_candidate_across_dates(
     - `capture_datetime_utc`
     - `geometry_match_score`
     - `radiometric_match_score`
+
+    Multi-date persistence is corroborating evidence only. It may create a
+    persistent-ground-feature *candidate*, but cannot establish physical-ground
+    identity without the independent binding required by the origin firewall.
     """
     cfg = config or MultiDateValidationConfig()
     current_epoch = candidate.get("imagery_epoch")
@@ -128,7 +132,7 @@ def validate_candidate_across_dates(
     persistence = sum(match_scores) / len(match_scores) if match_scores else 0.0
 
     if persistence >= cfg.persistence_min:
-        classification_hint = "probable_ground_feature"
+        classification_hint = "persistent_ground_feature_candidate"
         decision = "cross_source_required"
     elif persistence <= cfg.disappearance_max:
         classification_hint = "mixed_epoch_artifact"

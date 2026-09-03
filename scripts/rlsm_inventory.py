@@ -38,6 +38,10 @@ MANIFEST_CSV = REPO / "data" / "_manifests" / "fr24_baseline" / "baseline_manife
 SCHEMA_SQL = REPO / "data" / "rlsm" / "schema.sql"
 OUTPUTS = REPO / "outputs"
 
+SUPPORTED_IMAGE_SUFFIXES = {
+    ".png", ".jpg", ".jpeg", ".heic", ".webp"
+}
+
 V1_PAT = re.compile(
     r"^(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})_([0-9a-f]{8})\.(png|jpg|jpeg|heic|webp)$",
     re.IGNORECASE,
@@ -58,7 +62,11 @@ def sha256_of(path: Path, chunk: int = 4 * 1024 * 1024) -> str:
 def ahash_8x8(img: Image.Image) -> str:
     """8×8 average-hash — returns 64-char hex string."""
     gray = img.convert("L").resize((8, 8), Image.LANCZOS)
-    pixels = list(gray.getdata())
+    pixels = list(
+        gray.get_flattened_data()
+        if hasattr(gray, "get_flattened_data")
+        else gray.getdata()
+    )
     avg = sum(pixels) / 64
     bits = "".join("1" if p >= avg else "0" for p in pixels)
     h = int(bits, 2)
@@ -111,8 +119,19 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
 
 
 def _already_ingested(conn: sqlite3.Connection) -> set:
-    """Return set of rel_paths already in the screenshots table."""
-    rows = conn.execute("SELECT rel_path FROM screenshots").fetchall()
+    """Return physical source rel_paths already inventoried."""
+    has_manifestations = conn.execute(
+        "SELECT 1 FROM sqlite_master "
+        "WHERE type='table' AND name='source_manifestations'"
+    ).fetchone()
+    if has_manifestations:
+        rows = conn.execute(
+            "SELECT rel_path FROM source_manifestations"
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT rel_path FROM screenshots"
+        ).fetchall()
     return {r[0] for r in rows}
 
 
@@ -195,6 +214,62 @@ def _ingest_file(conn: sqlite3.Connection, path: Path, rel_path: str,
         return {"ok": True, "dup_sha": sha}
 
     return {"ok": True, "sha": sha, "ingest_status": ingest_status}
+
+
+
+def _record_source_manifestation(
+    conn: sqlite3.Connection,
+    path: Path,
+    rel_path: str,
+    result: dict,
+) -> None:
+    """Bind one physical source path to exactly one logical screenshot payload."""
+    row = conn.execute(
+        "SELECT screenshot_id, sha256 FROM screenshots WHERE rel_path=?",
+        (rel_path,),
+    ).fetchone()
+
+    role = "canonical_payload"
+
+    if row is None:
+        sha = result.get("dup_sha")
+        if not sha:
+            raise RuntimeError(
+                f"inventory produced no logical binding for {rel_path}"
+            )
+        row = conn.execute(
+            "SELECT screenshot_id, sha256 FROM screenshots WHERE sha256=?",
+            (sha,),
+        ).fetchone()
+        role = "duplicate_payload"
+
+    if row is None:
+        raise RuntimeError(
+            f"cannot resolve source manifestation to screenshots: {rel_path}"
+        )
+
+    screenshot_id, sha = row
+
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO source_manifestations
+            (rel_path, sha256, screenshot_id, filename, ext,
+             size_bytes, manifestation_role,
+             source_availability, observed_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'present', ?)
+        """,
+        (
+            rel_path,
+            sha,
+            screenshot_id,
+            path.name,
+            path.suffix.lower().lstrip("."),
+            path.stat().st_size,
+            role,
+            time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        ),
+    )
+    conn.commit()
 
 
 def _assign_dup_groups(conn: sqlite3.Connection) -> int:
@@ -282,6 +357,30 @@ def _write_outputs(conn: sqlite3.Connection) -> None:
                     "availability_detail", "availability_source", "ingested_at"])
         w.writerows(rows)
 
+    # rlsm_source_manifestations.csv — every physical supported-image path
+    manifestation_rows = conn.execute(
+        """
+        SELECT manifestation_id, rel_path, sha256, screenshot_id,
+               filename, ext, size_bytes, manifestation_role,
+               source_availability, observed_at
+        FROM source_manifestations
+        ORDER BY manifestation_id
+        """
+    ).fetchall()
+    with open(
+        OUTPUTS / "rlsm_source_manifestations.csv",
+        "w",
+        newline="",
+    ) as f:
+        w = csv.writer(f)
+        w.writerow([
+            "manifestation_id", "rel_path", "sha256",
+            "screenshot_id", "filename", "ext", "size_bytes",
+            "manifestation_role", "source_availability",
+            "observed_at",
+        ])
+        w.writerows(manifestation_rows)
+
     # rlsm_duplicate_report.csv — screenshots with dup_group_id
     dup_rows = conn.execute(
         "SELECT dup_group_id, sha256, GROUP_CONCAT(screenshot_id), GROUP_CONCAT(filename, '|') "
@@ -330,7 +429,9 @@ def run(budget_sec: float) -> None:
             break
         if not path.is_file():
             continue
-        if path.name.startswith(".") or path.suffix.lower() == ".json":
+        if path.name.startswith("."):
+            continue
+        if path.suffix.lower() not in SUPPORTED_IMAGE_SUFFIXES:
             continue
         rel = str(path.relative_to(REPO))
         if rel in already:
@@ -338,8 +439,14 @@ def run(budget_sec: float) -> None:
             continue
         result = _ingest_file(conn, path, rel, run_id)
         if result.get("ok"):
+            _record_source_manifestation(
+                conn, path, rel, result
+            )
             n_ok += 1
         else:
+            # _ingest_file records stat/read failures in screenshots when
+            # possible. A physical path without a stable SHA cannot be bound
+            # into source_manifestations and remains an explicit failure.
             n_fail += 1
 
     # Dedup groups

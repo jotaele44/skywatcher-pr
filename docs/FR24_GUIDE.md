@@ -27,6 +27,11 @@ with a table of contents grouped by stage (T12-98).
 ## 5. Dashboard
 - [FR24_DASHBOARD_UI.md](FR24_DASHBOARD_UI.md)
 
+## Craft profiles & querying
+- [CRAFT_PROFILES_AND_QUERY.md](CRAFT_PROFILES_AND_QUERY.md) — per-craft profile
+  builder (identity, home base, preferred LZs, schedule, recurring routes) and the
+  grounded query layer (`scripts/build_craft_profiles.py`, `scripts/skywatcher_query.py`).
+
 ## Canonical model
 - [RLSM_OPERATIONAL_ONTOLOGY_V0_1.md](RLSM_OPERATIONAL_ONTOLOGY_V0_1.md) — the
   canonical RLSM schema and vocabulary (`data/rlsm/schema.sql`).

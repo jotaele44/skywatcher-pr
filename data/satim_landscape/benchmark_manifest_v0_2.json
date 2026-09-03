@@ -1,0 +1,36 @@
+{
+  "schema_version": "satim.landscape.benchmark.v0.2",
+  "method_version": "satim.agricultural_mosaic_classifier.v0.2.0",
+  "claim_scope": "Bounded benchmark denominator for agricultural-mosaic candidate recognition. Source-registry entries do not count as fixtures until exact raw bytes, hashes, ROI/scene labels, and independent verification are frozen.",
+  "required_label_status_for_promotion": "VERIFIED_GROUND_TRUTH",
+  "required_positive_classes": [
+    {"class": "AGRICULTURAL_MOSAIC", "minimum_verified_fixtures": 1}
+  ],
+  "required_negative_classes": [
+    {"class": "LANDSLIDE_OR_SCARP", "minimum_verified_fixtures": 1},
+    {"class": "CONSTRUCTION_GRADING", "minimum_verified_fixtures": 1},
+    {"class": "UTILITY_CORRIDOR", "minimum_verified_fixtures": 1},
+    {"class": "ROAD_CUT", "minimum_verified_fixtures": 1},
+    {"class": "QUARRY_OR_BORROW", "minimum_verified_fixtures": 1},
+    {"class": "EXPOSED_RIVER_SEDIMENT", "minimum_verified_fixtures": 1},
+    {"class": "HURRICANE_BLOWDOWN", "minimum_verified_fixtures": 1},
+    {"class": "SOLAR_ARRAY", "minimum_verified_fixtures": 1},
+    {"class": "LOGGING_CLEARING", "minimum_verified_fixtures": 1},
+    {"class": "ABANDONED_BUILDING_PAD", "minimum_verified_fixtures": 1},
+    {"class": "PASTURE_OR_LAWN", "minimum_verified_fixtures": 1},
+    {"class": "NATURAL_SPARSE_VEGETATION", "minimum_verified_fixtures": 1}
+  ],
+  "fixtures": [
+    {
+      "fixture_id": "SATIM-LANDSCAPE-C654-001",
+      "role": "POSITIVE_REGRESSION",
+      "split": "CALIBRATION",
+      "class": "AGRICULTURAL_MOSAIC",
+      "label_status": "PROVISIONAL_HUMAN_ANNOTATION",
+      "raw_path": "data/satim_landscape/fixtures/C654/raw/Flight_C654.jpeg",
+      "annotation_path": "data/satim_landscape/fixtures/C654/annotation.json",
+      "segmentation_path": "data/satim_landscape/fixtures/C654/segmentation.v0.1.geojson",
+      "sha256": "a8b08e249f6ede4048563c892aba9b1ae6edb5e6d1c2f849421a3d8c285a9030"
+    }
+  ]
+}

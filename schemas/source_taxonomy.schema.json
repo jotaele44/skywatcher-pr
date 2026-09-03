@@ -46,6 +46,12 @@
         "official_feed",
         "derived_fusion",
         "secondary_report",
+        "screenshot_inventory",
+        "review_queue",
+        "aircraft_registry",
+        "track_extraction",
+        "airport_operations",
+        "database_import",
         "unknown"
       ]
     },
@@ -98,6 +104,21 @@
         "string",
         "null"
       ]
+    },
+    "artifact_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifact_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "ingest_adapter": {
+      "type": "string",
+      "minLength": 1
     }
   }
 }

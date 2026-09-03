@@ -97,6 +97,6 @@ def test_multidate_validation_marks_persistent_ground_feature_candidate():
         ],
     )
 
-    assert result["classification_hint"] == "probable_ground_feature"
+    assert result["classification_hint"] == "persistent_ground_feature_candidate"
     assert result["decision"] == "cross_source_required"
     assert result["multi_date_persistence"] >= 0.65

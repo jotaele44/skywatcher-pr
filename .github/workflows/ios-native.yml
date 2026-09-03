@@ -1,0 +1,127 @@
+name: iOS Native Analyzer
+
+on:
+  push:
+    branches:
+      - "agent/native-ios-screenshot-analyzer"
+    paths:
+      - "ios/SkywatcherMobile/**"
+      - ".github/workflows/ios-native.yml"
+  pull_request:
+    paths:
+      - "ios/SkywatcherMobile/**"
+      - ".github/workflows/ios-native.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ios/SkywatcherMobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain inventory
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          swift --version
+          xcrun simctl list devices available
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: |
+          set -euo pipefail
+          ./scripts/generate.sh
+          test -d SkywatcherMobile.xcodeproj
+          xcodebuild -project SkywatcherMobile.xcodeproj -list
+
+      - name: Select simulator
+        id: simulator
+        run: |
+          set -euo pipefail
+          UDID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; candidates=[x for runtime in d.values() for x in runtime if x.get("isAvailable") and x.get("name", "").startswith("iPhone")]; print(candidates[0]["udid"] if candidates else "")')"
+          test -n "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Build application and extension without signing
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project SkywatcherMobile.xcodeproj \
+            -scheme SkywatcherMobile \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            clean build
+
+      - name: Verify built share extension metadata
+        run: |
+          set -euo pipefail
+          PLIST="$(find "$HOME/Library/Developer/Xcode/DerivedData" -path '*/Build/Products/Debug-iphonesimulator/SkywatcherShare.appex/Info.plist' -print -quit)"
+          test -n "$PLIST"
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPointIdentifier' "$PLIST" | grep -Fx 'com.apple.share-services'
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPrincipalClass' "$PLIST" | grep -Fx 'SkywatcherShare.ShareViewController'
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionAttributes:NSExtensionActivationRule:NSExtensionActivationSupportsImageWithMaxCount' "$PLIST" | grep -Fx '1'
+
+      - name: Run unit tests
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project SkywatcherMobile.xcodeproj \
+            -scheme SkywatcherMobile \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            test
+
+      - name: Static analyzer
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project SkywatcherMobile.xcodeproj \
+            -scheme SkywatcherMobile \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            analyze
+
+      - name: Build unsigned archive
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          xcodebuild \
+            -project SkywatcherMobile.xcodeproj \
+            -scheme SkywatcherMobile \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$PWD/build/SkywatcherMobile.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            archive
+          ditto -c -k --sequesterRsrc --keepParent build/SkywatcherMobile.xcarchive build/SkywatcherMobile-unsigned-xcarchive.zip
+          shasum -a 256 build/SkywatcherMobile-unsigned-xcarchive.zip | tee build/SHA256SUMS.txt
+
+      - name: Upload unsigned archive evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: skywatcher-ios-unsigned-archive
+          path: |
+            ios/SkywatcherMobile/build/SkywatcherMobile-unsigned-xcarchive.zip
+            ios/SkywatcherMobile/build/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14

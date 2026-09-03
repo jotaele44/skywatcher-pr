@@ -17,13 +17,14 @@ Scope: this repository only. Cross-repo comparisons live in
 | D2 | Data reality | **1** | Self-declared `NON_PRODUCTION_DIAGNOSTIC`; the only export package is `synthetic_airspace_package`. Real asset: 19 FAA-sourced PR airports. |
 | D3 | UI craft | **4** | 15 pages, 8.8k LOC; the richest component library in the federation — 8 detail drawers, `LoadingState`, `EmptyState`, `SyntheticDataBadge`, `SourceProvenanceBadge`. 45 `aria-*` usages, highest of any node. |
 | D4 | Test coverage | **3** | `807 passed, 13 skipped` (13.6s) — 101 test files, second-largest suite. But **zero frontend tests** for 8.8k LOC of UI. |
-| D5 | Engineering hygiene | **1** | **No ruff and no mypy in any workflow.** `ruff check .` → 247 findings; `npm run typecheck` → 229 errors, run by nothing. |
+| D5 | Engineering hygiene | **2** | `ruff` is now configured (`pyproject.toml`) and **gated** in `ci.yml`'s `lint` job (`uv run ruff check .`, currently clean); `mypy` is configured too but wired as report-only (`continue-on-error: true`). `npm run typecheck` → 229 errors, still run by nothing. |
 | D6 | Doc accuracy | **4** | 148 markdown files including per-module specs and ADRs; `federation.json` blockers are honest and specific |
 
-**Overall: strong engine, excellent UI, and almost no automated quality gate holding either
-in place.** This repo's `federation.json` is candid about its data gap — that honesty is a
-genuine strength and the audit takes it at face value. The unguarded lint/type surface is
-the real risk: 51.5k LOC of Python and 8.8k of JSX with nothing enforcing consistency.
+**Overall: strong engine, excellent UI, and a partly-gated quality surface.** This repo's
+`federation.json` is candid about its data gap — that honesty is a genuine strength and the
+audit takes it at face value. Python linting is now gated (`ruff check .` in `ci.yml`); what
+remains unguarded is type checking on both sides — `mypy` is report-only and `npm run
+typecheck` is wired to nothing — plus 8.8k LOC of JSX with no type gate at all.
 
 ---
 
@@ -131,7 +132,7 @@ errors **before and after** (identical — these changes add none), `pytest` unc
 
 | # | Item | Effort | Why it matters |
 |---|---|---|---|
-| 1 | Add ruff + mypy to CI | **M** | The largest gap here. 247 ruff findings and 51.5k LOC with no enforced standard. Start by gating new/changed files so the backlog does not block the build. |
+| 1 | Promote the `mypy` CI step from report-only to gating (see item 4 for the separate `npm run typecheck` gap) | **M** | `ruff` is already configured and gated (`ci.yml`'s `lint` job, currently clean). The remaining Python-side gap is that the `mypy` step is `continue-on-error: true`, so type regressions don't block merges yet. |
 | 2 | `_ocr_regions` crashes when `pytesseract` is installed but the `tesseract` binary is absent | **S** | `fr24_image_skill/orchestrator.py:188-190` catches `ImportError` for the Python package but not `pytesseract.TesseractNotFoundError` for the binary. Proven: with `pytesseract` present and no binary, 6 tests in `tests/test_fr24_image_skill.py` fail instead of degrading to the `dependency_unavailable` row the code clearly intends. CI does not install `pytesseract`, so CI stays green and this only bites real users. |
 | 3 | Add a frontend test runner and smoke tests | **M** | 8.8k LOC of UI, 15 pages, zero tests. `thehub-pr` has a working vitest + Testing Library + `vitest-axe` setup to copy. |
 | 4 | Run `npm run typecheck` in CI, or drop the script | **M** | 229 errors, enforced by nothing. |
@@ -141,7 +142,7 @@ errors **before and after** (identical — these changes add none), `pytest` unc
 
 ---
 
-## Maturity score — 61%
+## Maturity score — 63%
 
 Measured 2026-07-27 against 20 explicit criteria (5 points each, 100 total). Every
 lost point is a specific, verifiable work item, so this doubles as the roadmap.
@@ -152,9 +153,9 @@ lost point is a specific, verifiable work item, so this doubles as the roadmap.
 | Data reality | **6/20** | real non-synthetic dataset · refresh automated · offline bundle populated · live-exec gate open |
 | UI craft | **17/20** | pages proportionate to backend · loading+empty+error everywhere · a11y markup **and** automated gate · single consolidated frontend |
 | Tests | **5/15** | suite green · coverage gate enforced · frontend tests run in CI |
-| Hygiene | **5.5/15** | linters gated in CI · type checking gated in CI · write surface secured *and* client can use it |
+| Hygiene | **8/15** | linters gated in CI · type checking gated in CI · write surface secured *and* client can use it |
 | Docs | **10/10** | docs match code · declared status matches observed maturity |
-| **Total** | **60.5/100** | |
+| **Total** | **63/100** | |
 
 ### How the score is computed
 
@@ -163,7 +164,7 @@ splits cleanly into independent halves — for example "linters gated in CI" sco
 Python and 2.5 for JavaScript, so a repo that gates one and not the other scores 2.5. That
 is why dimension totals are not always multiples of five.
 
-Components here sum to **60.5** (17 + 6 + 17 + 5 + 5.5 + 10), reported as **61%**. Half-points are
+Components here sum to **63** (17 + 6 + 17 + 5 + 8 + 10), reported as **63%**. Half-points are
 rounded **half up** to the nearest whole percent for the cross-repo table; the exact figure is the one
 above.
 

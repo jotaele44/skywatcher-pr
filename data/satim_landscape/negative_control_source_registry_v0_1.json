@@ -1,0 +1,130 @@
+{
+  "schema_version": "satim.landscape.negative_control_source_registry.v0.1",
+  "retrieval_date": "2026-08-24",
+  "claim_scope": "Public source discovery and source-description/license verification only. No entry counts toward the benchmark denominator until exact bytes, SHA256, annotation, and independent class/ROI verification are frozen.",
+  "benchmark_counting_entries": 0,
+  "required_class_count": 12,
+  "source_entry_count": 12,
+  "entries": [
+    {
+      "class": "LANDSLIDE_OR_SCARP",
+      "source_title": "2018 Hokkaido Eastern Iburi earthquake-Atsuma town Landslide-Aerial 20180906.jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:2018_Hokkaido_Eastern_Iburi_earthquake-Atsuma_town_Landslide-Aerial_20180906.jpg",
+      "source_authority": "Geospatial Information Authority of Japan",
+      "license": "Government of Japan Standard Terms of Use 2.0 / CC BY 4.0 compatible",
+      "source_description_binding": "Explicit aerial landslide photograph",
+      "class_mapping_status": "SOURCE_DESCRIPTION_VERIFIED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    },
+    {
+      "class": "CONSTRUCTION_GRADING",
+      "source_title": "Aerial view of the ELT construction site (DJI 0911).jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:Aerial_view_of_the_ELT_construction_site_(DJI_0911).jpg",
+      "source_authority": "European Southern Observatory",
+      "license": "CC BY 4.0",
+      "source_description_binding": "Explicit aerial construction-site image",
+      "class_mapping_status": "SOURCE_VERIFIED_CANDIDATE_MAPPING_GRADING_ROI_UNVERIFIED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    },
+    {
+      "class": "UTILITY_CORRIDOR",
+      "source_title": "Powerline corridor through National Forest Land (53157425106).jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:Powerline_corridor_through_National_Forest_Land_(53157425106).jpg",
+      "source_authority": "USDA Forest Service - Northern Region",
+      "license": "Public domain / U.S. federal government",
+      "source_description_binding": "Explicit powerline corridor",
+      "class_mapping_status": "SOURCE_DESCRIPTION_VERIFIED_VIEW_GEOMETRY_REVIEW_REQUIRED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    },
+    {
+      "class": "ROAD_CUT",
+      "source_title": "Sideling Hill airphoto.jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:Sideling_Hill_airphoto.jpg",
+      "source_authority": "Jstuby",
+      "license": "Public domain dedication",
+      "source_description_binding": "Oblique air photo explicitly identifying Interstate 68 roadcut",
+      "class_mapping_status": "SOURCE_DESCRIPTION_VERIFIED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    },
+    {
+      "class": "QUARRY_OR_BORROW",
+      "source_title": "Cave Hill Quarry Aerial View.jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:Cave_Hill_Quarry_Aerial_View.jpg",
+      "source_authority": "Tim Sabo",
+      "license": "CC BY-SA 4.0",
+      "source_description_binding": "Explicit aerial view of quarry, mining machinery, and buildings",
+      "class_mapping_status": "SOURCE_DESCRIPTION_VERIFIED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    },
+    {
+      "class": "EXPOSED_RIVER_SEDIMENT",
+      "source_title": "Salcha River-Tanana River confluence (near Salcha, Alaska, USA) 1 (27923088459).jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:Salcha_River-Tanana_River_confluence_(near_Salcha,_Alaska,_USA)_1_(27923088459).jpg",
+      "source_authority": "James St. John",
+      "license": "Wikimedia Commons licensed source; license must be rechecked at raw freeze",
+      "source_description_binding": "Oblique aerial view explicitly describes numerous mid-river sediment bars",
+      "class_mapping_status": "SOURCE_DESCRIPTION_VERIFIED_ROI_REQUIRED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    },
+    {
+      "class": "HURRICANE_BLOWDOWN",
+      "source_title": "Aerial shot of downed trees post Hurricane Fiona, Hartlin Settlement.jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:Aerial_shot_of_downed_trees_post_Hurricane_Fiona,_Hartlin_Settlement.jpg",
+      "source_authority": "NSEasternShoreChemist",
+      "license": "CC BY-SA 4.0",
+      "source_description_binding": "Aerial image explicitly described as trees blown over by Hurricane Fiona",
+      "class_mapping_status": "SOURCE_DESCRIPTION_VERIFIED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    },
+    {
+      "class": "SOLAR_ARRAY",
+      "source_title": "Aerial view of the Uranquinty Solar Farm 01.jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:Aerial_view_of_the_Uranquinty_Solar_Farm_01.jpg",
+      "source_authority": "Robert Myers / Bidgee",
+      "license": "CC BY-SA 3.0 AU",
+      "source_description_binding": "Explicit aerial view of solar farm",
+      "class_mapping_status": "SOURCE_DESCRIPTION_VERIFIED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    },
+    {
+      "class": "LOGGING_CLEARING",
+      "source_title": "BC forestry (6998035791).jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:BC_forestry_(6998035791).jpg",
+      "source_authority": "Sam Beebe",
+      "license": "CC BY 2.0",
+      "source_description_binding": "Explicit aerial view of forestry clear cut in British Columbia",
+      "class_mapping_status": "SOURCE_DESCRIPTION_VERIFIED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    },
+    {
+      "class": "ABANDONED_BUILDING_PAD",
+      "source_title": "Former ROF Bishopton site from the air - geograph.org.uk - 4648558.jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:Former_ROF_Bishopton_site_from_the_air_-_geograph.org.uk_-_4648558.jpg",
+      "source_authority": "Thomas Nugent / Geograph Britain and Ireland",
+      "license": "CC BY-SA 2.0",
+      "source_description_binding": "Aerial former industrial site; structured description includes derelict building and construction site",
+      "class_mapping_status": "SOURCE_VERIFIED_CANDIDATE_MAPPING_PAD_ROI_UNVERIFIED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    },
+    {
+      "class": "PASTURE_OR_LAWN",
+      "source_title": "Pasture with stream and enclosure boundaries SW of Walcot, aerial 2026 (2)",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:Pasture_with_stream_and_enclosure_boundaries_SW_of_Walcot,_aerial_2026_(2)_-_geograph.org.uk_-_8299185.jpg",
+      "source_authority": "Simon Tomson / Geograph Britain and Ireland",
+      "license": "CC BY-SA 2.0",
+      "source_description_binding": "Explicit aerial pasture; depicts grassland",
+      "class_mapping_status": "SOURCE_DESCRIPTION_VERIFIED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    },
+    {
+      "class": "NATURAL_SPARSE_VEGETATION",
+      "source_title": "Aerial view of Joshua Tree National Park (51194113851).jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:Aerial_view_of_Joshua_Tree_National_Park_(51194113851).jpg",
+      "source_authority": "Joshua Tree National Park / NPS",
+      "license": "Public domain / U.S. National Park Service",
+      "source_description_binding": "Official NPS aerial desert landscape",
+      "class_mapping_status": "SOURCE_VERIFIED_CANDIDATE_MAPPING_SPARSE_VEGETATION_ROI_UNVERIFIED",
+      "raw_fixture_status": "RAW_BYTES_NOT_FROZEN"
+    }
+  ]
+}

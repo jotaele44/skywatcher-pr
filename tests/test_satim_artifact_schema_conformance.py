@@ -39,17 +39,38 @@ def _assessment(**overrides):
     return payload
 
 
-def test_raw_source_compared_is_schema_valid_and_lifts_the_cap():
+def test_unresolved_origin_stays_zero_even_when_raw_source_is_compared():
     validator = ArtifactSchemaValidator(SCHEMAS / "satim_artifact_assessment_v1.schema.json")
     engine = ArtifactAssessmentEngine()
 
-    without_flag = _assessment()
+    without_flag = _assessment(origin_layer="unresolved")
     validator.require_valid(without_flag)
-    assert engine.assess(without_flag).origin_confidence == 0.74
+    without_result = engine.assess(without_flag)
+    assert without_result.origin_confidence == 0.0
+    assert "UNRESOLVED_ORIGIN_ZERO_CONFIDENCE" in without_result.rules_triggered
 
-    with_flag = _assessment(raw_source_compared=True)
-    validator.require_valid(with_flag)  # rejected before the schema fix
-    assert engine.assess(with_flag).origin_confidence == 0.9
+    with_flag = _assessment(origin_layer="unresolved", raw_source_compared=True)
+    validator.require_valid(with_flag)
+    with_result = engine.assess(with_flag)
+    assert with_result.origin_confidence == 0.0
+    assert "UNRESOLVED_ORIGIN_ZERO_CONFIDENCE" in with_result.rules_triggered
+
+
+def test_raw_source_compared_lifts_screenshot_cap_only_for_resolved_origin():
+    validator = ArtifactSchemaValidator(SCHEMAS / "satim_artifact_assessment_v1.schema.json")
+    engine = ArtifactAssessmentEngine()
+
+    without_flag = _assessment(origin_layer="mosaic")
+    validator.require_valid(without_flag)
+    without_result = engine.assess(without_flag)
+    assert without_result.origin_confidence == 0.74
+    assert "SCREENSHOT_ORIGIN_CAP_0_74" in without_result.rules_triggered
+
+    with_flag = _assessment(origin_layer="mosaic", raw_source_compared=True)
+    validator.require_valid(with_flag)
+    with_result = engine.assess(with_flag)
+    assert with_result.origin_confidence == 0.9
+    assert "SCREENSHOT_ORIGIN_CAP_0_74" not in with_result.rules_triggered
 
 
 def test_committed_provider_profile_enforces_source_types():

@@ -43,6 +43,7 @@ for (const route of routes) {
     const runtimeFailures = [];
     page.on("pageerror", (error) => {
       runtimeFailures.push(`page error: ${error.message}`);
+      console.error(`page error: ${error.message}`);
     });
     page.on("response", (response) => {
       if (response.status() >= 500) {

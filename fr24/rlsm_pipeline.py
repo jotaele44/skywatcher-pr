@@ -271,7 +271,11 @@ def preflight(ctx: dict) -> dict:
             SELECT COUNT(*) FROM ocr_observations o
             WHERE o.obs_id IN (SELECT MAX(obs_id) FROM ocr_observations
                                WHERE zone='label_layer' GROUP BY screenshot_id)
-              AND COALESCE(o.raw_lines_json,'') IN ('','[]')""")
+              AND (
+                    COALESCE(TRIM(o.raw_text), '') != ''
+                    OR COALESCE(o.n_words, 0) > 0
+                  )
+              AND COALESCE(o.raw_lines_json, '') IN ('', '[]')""")
         info["screenshots_needing_word_boxes"] = stale
         if stale:
             warnings.append(

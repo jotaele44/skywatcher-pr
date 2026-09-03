@@ -4,7 +4,7 @@ from fr24.calibration.l5_synthetic_boundary_classifier import (
 )
 
 
-def test_strong_synthetic_boundary_classifies_as_probable_tile_seam() -> None:
+def test_strong_synthetic_boundary_classifies_as_probable_tile_seam_observation() -> None:
     result = classify_synthetic_boundary(
         {
             "straightness": 0.98,
@@ -23,9 +23,12 @@ def test_strong_synthetic_boundary_classifies_as_probable_tile_seam() -> None:
 
     assert result["classification"] == "probable_tile_seam"
     assert result["confidence"] >= 0.55
+    assert result["resolved_origin"] == "UNRESOLVED"
+    assert "SOURCE_MOSAIC_CUTLINE" in result["origin_candidates"]
+    assert "DISPLAY_TILE_EDGE" in result["origin_candidates"]
 
 
-def test_infrastructure_alignment_pushes_candidate_to_ground_feature() -> None:
+def test_infrastructure_alignment_pushes_candidate_to_ground_feature_candidate() -> None:
     result = classify_synthetic_boundary(
         {
             "straightness": 0.98,
@@ -41,7 +44,8 @@ def test_infrastructure_alignment_pushes_candidate_to_ground_feature() -> None:
         }
     )
 
-    assert result["classification"] == "probable_ground_feature"
+    assert result["classification"] == "persistent_ground_feature_candidate"
+    assert result["resolved_origin"] == "UNRESOLVED"
 
 
 def test_orthogonality_alone_is_not_enough_for_tile_seam() -> None:
@@ -59,7 +63,7 @@ def test_orthogonality_alone_is_not_enough_for_tile_seam() -> None:
     assert result["classification"] == "indeterminate"
 
 
-def test_legacy_candidate_columns_are_supported() -> None:
+def test_legacy_candidate_columns_are_supported_without_origin_promotion() -> None:
     result = classify_candidate(
         {
             "straight_boundary_score": "0.99",
@@ -71,3 +75,4 @@ def test_legacy_candidate_columns_are_supported() -> None:
     )
 
     assert result["classification"] == "probable_tile_seam"
+    assert result["resolved_origin"] == "UNRESOLVED"

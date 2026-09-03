@@ -20,7 +20,7 @@ def table_names(conn):
 def test_migration_apply_rollback_reapply():
     conn = sqlite3.connect(":memory:")
     ledger = migrate(conn)
-    assert applied_versions(conn) == [LATEST_VERSION]
+    assert applied_versions(conn) == list(range(1, LATEST_VERSION + 1))
     assert set(PHASE1_TABLES).issubset(table_names(conn))
     checksum = ledger[0]["checksum"]
 

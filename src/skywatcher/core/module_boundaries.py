@@ -91,6 +91,12 @@ MODULE_BOUNDARIES: dict[str, list[str]] = {
         "fr24/rlsm_unlabeled.py",
         "satim_visual_route_gap.py",
     ],
+    # Top-of-stack read-only consumer layer: reads persisted CraftProfiles and
+    # answers grounded queries. It may consume every analytical domain but must
+    # not import the quarantined legacy mission-inference code.
+    "query": [
+        "src/skywatcher/query/**/*.py",
+    ],
 }
 
 # tools/satim_engine/ and tools/satim_route_findings/ are SATIM-family
@@ -109,6 +115,8 @@ ALLOWED_IMPORTS: dict[str, set[str]] = {
     # integration tier, but for ingestion rather than correlation scoring.
     "fr24_ingest": {"core", "satim", "fpim", "fr24_ingest"},
     "legacy": {"core", "satim", "fpim", "corrim", "legacy"},
+    # query consumes analytical outputs from any domain but not legacy.
+    "query": {"core", "satim", "fpim", "corrim", "query"},
 }
 
 MODULE_IMPORT_EXCEPTIONS: dict[str, set[str]] = {

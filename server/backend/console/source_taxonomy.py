@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-SOURCE_TAXONOMY_VERSION = "0.1.0"
+SOURCE_TAXONOMY_VERSION = "0.2.0"
 
 SOURCE_FAMILIES = (
     "operational_position",
@@ -34,6 +34,12 @@ SOURCE_METHODS = (
     "official_feed",
     "derived_fusion",
     "secondary_report",
+    "screenshot_inventory",
+    "review_queue",
+    "aircraft_registry",
+    "track_extraction",
+    "airport_operations",
+    "database_import",
     "unknown",
 )
 DATA_RIGHTS = (
@@ -174,6 +180,9 @@ def build_provenance(row: Mapping[str, Any]) -> tuple[dict[str, str | None], lis
         "retrieved_at_utc": row.get("retrieved_at_utc"),
         "license_or_terms_ref": row.get("license_or_terms_ref"),
         "attribution": row.get("attribution"),
+        "artifact_path": str(row.get("artifact_path") or "legacy://unknown"),
+        "artifact_sha256": row.get("artifact_sha256"),
+        "ingest_adapter": str(row.get("ingest_adapter") or "source_taxonomy_v0_2_legacy_mapper"),
     }
     return provenance, qa_flags
 
