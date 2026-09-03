@@ -1,0 +1,305 @@
+{
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/ai_imagery/s07_h08_handoff_manifest.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active_snapshot_promoted": {
+      "const": false
+    },
+    "campaign_id": {
+      "pattern": "^dual-run-campaign-sha256-[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "campaign_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "certified_state_created": {
+      "const": false
+    },
+    "created_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "dual_run_executed": {
+      "const": false
+    },
+    "equivalence_policy_id": {
+      "pattern": "^model-equivalence-policy-sha256-[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "equivalence_policy_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "execution_receipt_references": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "receipt_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "run_id": {
+            "pattern": "^[0-9a-f]{32}$",
+            "type": "string"
+          },
+          "signature_verified": {
+            "const": true
+          }
+        },
+        "required": [
+          "run_id",
+          "receipt_sha256",
+          "signature_verified"
+        ],
+        "type": "object"
+      },
+      "minItems": 4,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "file_manifest": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "relative_path": {
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?![A-Za-z]:)[^\\\\]+$",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "relative_path",
+          "sha256",
+          "bytes"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "file_set_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "h08_evaluation_executed": {
+      "const": false
+    },
+    "h09_verification_receipt_references": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "verification_receipt_id": {
+            "pattern": "^receipt-verification-sha256-[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "verification_receipt_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "verification_receipt_id",
+          "verification_receipt_sha256"
+        ],
+        "type": "object"
+      },
+      "minItems": 5,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "handoff_id": {
+      "pattern": "^s07-h08-handoff-sha256-[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "handoff_request_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "lane_accounting": {
+      "additionalProperties": false,
+      "properties": {
+        "blocked": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "not_evaluated": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "required": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "verified": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "required",
+        "verified",
+        "blocked",
+        "not_evaluated"
+      ],
+      "type": "object"
+    },
+    "lane_evidence_ids": {
+      "items": {
+        "pattern": "^dual-run-lane-sha256-[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "minItems": 4,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "lane_evidence_sha256s": {
+      "items": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "minItems": 4,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "operator_authorization_id": {
+      "pattern": "^s07-operator-authorization-sha256-[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "operator_authorization_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "production_mutation_allowed": {
+      "const": false
+    },
+    "receipt_accounting": {
+      "additionalProperties": false,
+      "properties": {
+        "rejected": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "required": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "unresolved": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "verified": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "required",
+        "verified",
+        "rejected",
+        "unresolved"
+      ],
+      "type": "object"
+    },
+    "retirement_authorized": {
+      "const": false
+    },
+    "rollback_evidence_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "s07_h08_handoff_manifest.v1"
+    },
+    "status": {
+      "const": "RELEASED_TO_H08"
+    },
+    "trial_accounting": {
+      "additionalProperties": false,
+      "properties": {
+        "aborted": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "admitted": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "blocked": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "required": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "required",
+        "admitted",
+        "blocked",
+        "aborted"
+      ],
+      "type": "object"
+    },
+    "trial_admission_ids": {
+      "items": {
+        "pattern": "^s07-trial-admission-sha256-[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "minItems": 2,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "trial_package_sha256s": {
+      "items": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "minItems": 2,
+      "type": "array",
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "schema_version",
+    "handoff_id",
+    "campaign_id",
+    "campaign_sha256",
+    "equivalence_policy_id",
+    "equivalence_policy_sha256",
+    "trial_admission_ids",
+    "trial_package_sha256s",
+    "lane_evidence_ids",
+    "lane_evidence_sha256s",
+    "execution_receipt_references",
+    "h09_verification_receipt_references",
+    "rollback_evidence_sha256",
+    "operator_authorization_id",
+    "operator_authorization_sha256",
+    "handoff_request_sha256",
+    "file_manifest",
+    "file_set_sha256",
+    "trial_accounting",
+    "lane_accounting",
+    "receipt_accounting",
+    "created_at",
+    "status",
+    "production_mutation_allowed",
+    "dual_run_executed",
+    "h08_evaluation_executed",
+    "certified_state_created",
+    "active_snapshot_promoted",
+    "retirement_authorized"
+  ],
+  "type": "object"
+}
