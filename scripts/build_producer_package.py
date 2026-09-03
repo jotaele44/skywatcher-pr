@@ -80,7 +80,7 @@ def _blend_confidence(ocr: float | None, coord: float | None) -> float:
 
 
 def _row_value(row: sqlite3.Row, key: str, default: Any = None) -> Any:
-    return row[key] if key in row.keys() else default
+    return row[key] if key in row.keys() else default  # noqa: SIM118 -- sqlite3.Row's `in` checks values, not column names
 
 
 class RlsmEnricher:

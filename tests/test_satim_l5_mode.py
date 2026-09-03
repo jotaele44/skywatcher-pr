@@ -57,20 +57,23 @@ def test_unknown_mode_raises(tmp_path):
         satim_engine.run_l5("nonesuch", _write_candidates(tmp_path / "c.csv"))
 
 
-def test_strict_mode_promotes_when_all_clauses_met(tmp_path):
-    # screen_locked_score high → the strict AND-gate promotes a tile seam.
+def test_strict_mode_screen_lock_promotes_viewport_artifact_not_tile_edge(tmp_path):
+    # A screen-locked discontinuity is viewport-relative evidence. It must not
+    # be promoted to provider tile-edge identity without a provider-grid bind.
     out = satim_engine.run_l5("strict", _write_strict_candidates(tmp_path / "c.csv", screen_locked=0.9))
     assert out["layer"] == "L5_tile_seam_shadow"
     assert out["metrics"]["l5_mode"] == "strict"
-    assert out["metrics"]["decision_counts"]["probable_tile_seam"] == 1
+    assert out["metrics"]["decision_counts"]["probable_tile_seam"] == 0
+    assert out["metrics"]["decision_counts"]["probable_viewport_artifact"] == 1
 
 
-def test_strict_mode_is_inert_without_screen_lock(tmp_path):
-    # screen_locked_score 0.0 (production default: no extractor) → nothing promoted,
-    # and an explicit finding is emitted.
+def test_strict_mode_preserves_unresolved_origin_without_behavior_bindings(tmp_path):
+    # With no pan/grid/ground bindings, the visual seam can remain observed but
+    # causal origin must fail closed as unresolved.
     out = satim_engine.run_l5("strict", _write_strict_candidates(tmp_path / "c.csv", screen_locked=0.0))
     assert out["metrics"]["decision_counts"]["probable_tile_seam"] == 0
-    assert any("inert" in f["detail"] for f in out["findings"])
+    assert out["metrics"]["decision_counts"]["probable_imagery_seam_unresolved_origin"] == 1
+    assert any("causal origin remains unresolved" in f["detail"] for f in out["findings"])
 
 
 def test_both_modes_share_result_shape(tmp_path):
