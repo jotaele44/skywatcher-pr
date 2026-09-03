@@ -1,6 +1,5 @@
 from fr24.calibration.l5_tile_seam_shadow_calibration import classify_candidate_strict
 
-
 BASE = {
     "straightness": 0.95,
     "radiometric_delta": 0.90,
