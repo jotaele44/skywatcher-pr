@@ -16,7 +16,7 @@ export const DISCLAIMER =
   "Skywatcher maps aircraft activity, missions, and airspace–infrastructure relationships. It does not allege wrongdoing.";
 
 export const REPO_COMMANDS = [
-  "python -m pip install -r requirements-dev.txt",
+  "uv sync --extra dev",
   "python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test",
   "python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode production",
   "python -m pytest -q",
