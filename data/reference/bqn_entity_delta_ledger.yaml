@@ -1,0 +1,110 @@
+version: bqn_entity_delta_ledger_v1
+airport:
+  airport_id: airport_bqn_tjbq
+  iata: BQN
+  icao: TJBQ
+  canonical_name: Rafael Hernandez International Airport
+  municipality: Aguadilla
+  jurisdiction: Puerto Rico
+
+observation:
+  observation_id: bqn_fr24_2026_07_19_1126_ast
+  observed_at: "2026-07-19T11:26:00-04:00"
+  source_type: FR24_SCREENSHOT
+  evidence_tier: T3
+  provenance_note: User-provided Flightradar24 replay screenshot showing the west apron area and aircraft N440TT arriving from SIG.
+  limitations:
+    - Screenshot labels establish mapped presence, not leasehold, tenancy, ownership, or permanent basing.
+    - One arrival event does not establish recurrence.
+    - Exact hangar or parcel boundaries were not resolved from this frame.
+
+entities:
+  - entity_id: bqn_entity_aviacion_del_oeste
+    canonical_name: Aviacion del Oeste
+    display_name: Aviación del Oeste
+    entity_type: AVIATION_TENANT_CANDIDATE
+    status: candidate
+    confidence: 0.72
+    evidence_tier: T3
+    observed_labels:
+      - Aviación del Oeste
+    spatial_context: West-side BQN apron / Wing Road commercial cluster
+    verification:
+      business_registry: unresolved
+      faa_registry: not_applicable
+      prpa_lease: unresolved
+      hangar_location: probable_apron_adjacency_only
+      recurring_bqn_events: not_applicable
+    analytic_judgment: Aviation-linked business label is visible inside the airport commercial/apron context, but no authoritative lease or tenant record was located in the completed search.
+
+  - entity_id: bqn_entity_charlie_car_rental
+    canonical_name: Charlie Car Rental
+    entity_type: AIRPORT_SUPPORT_CANDIDATE
+    status: candidate
+    confidence: 0.78
+    evidence_tier: T3
+    observed_labels:
+      - Charlie Car Rental
+    spatial_context: Wing Road / west-side BQN commercial cluster
+    verification:
+      business_registry: unresolved
+      faa_registry: not_applicable
+      prpa_lease: unresolved
+      hangar_location: not_applicable
+      recurring_bqn_events: not_applicable
+    analytic_judgment: The mapped business label supports airport-adjacent commercial presence; it does not support aviation tenancy or apron access.
+
+  - entity_id: aircraft_n440tt
+    canonical_name: N440TT
+    entity_type: TRANSIENT_AIRCRAFT
+    aircraft_type_observed: Robinson R44 Raven II
+    status: observed_once
+    confidence: 0.91
+    evidence_tier: T3
+    observation_context:
+      origin: SIG
+      destination: BQN
+      displayed_barometric_altitude_ft: 965
+      displayed_ground_speed_mph: 130
+    verification:
+      business_registry: not_applicable
+      faa_registry: unresolved_exact_record
+      prpa_lease: not_applicable
+      hangar_location: unresolved
+      recurring_bqn_events: unresolved
+    analytic_judgment: The screenshot supports a dated BQN arrival event. It does not establish BQN basing, ownership, operator identity, tenancy, or recurrence.
+    promotion_gate:
+      target_status: recurring_aircraft_candidate
+      requirements:
+        - At least two additional independently dated BQN arrival, departure, or ground-presence observations.
+        - Registration and aircraft-model confirmation from an authoritative or structured aviation source.
+        - No conflicting registration or replay-date evidence.
+
+  - entity_id: bqn_entity_air_puerto_rico_corp
+    canonical_name: Air Puerto Rico Corp
+    entity_type: AVIATION_OPERATOR_EXISTING
+    status: preserved_existing
+    confidence: 0.90
+    evidence_tier: T2
+    observed_labels:
+      - Air Puerto Rico Corp
+    spatial_context: West-side BQN aviation commercial cluster
+    verification:
+      repository_presence: confirmed
+      business_registry: not_rechecked_in_this_delta
+      prpa_lease: unresolved
+      hangar_location: unresolved
+    analytic_judgment: Preserved as an existing repository entity; no new tenant or lease conclusion is introduced by this observation.
+
+verification_summary:
+  authoritative_findings:
+    - PRPA identifies BQN as supporting passenger and cargo operations, federal agencies, air-rescue training, airline maintenance, and commercial-asset development.
+  unresolved:
+    - Corporate registry records for Aviacion del Oeste and Charlie Car Rental.
+    - PRPA lease, concession, or tenant records linking either business to a specific parcel or hangar.
+    - Exact FAA registration record for N440TT.
+    - Recurring BQN presence for N440TT.
+  guardrails:
+    - No entity is classified as a confirmed hangar tenant.
+    - No aircraft is classified as BQN-based from a single event.
+    - Map labels are treated as locational clues, not authoritative corporate or lease records.

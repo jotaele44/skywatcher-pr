@@ -1,0 +1,29 @@
+[
+  {
+    "lineage_id": "lin-1",
+    "observation_id": "fr24-1",
+    "source_id": "src-1",
+    "pipeline_stage": "fr24_screenshot_ocr",
+    "extraction_method": "ensemble_ocr",
+    "coordinate_method": "screenshot_icon_georeference",
+    "notes": "review_status=pending; aircraft_point_status=ICON_DERIVED_APPROX; screenshot-derived points are approximate, not ADS-B exact positions"
+  },
+  {
+    "lineage_id": "lin-2",
+    "observation_id": "fr24-2",
+    "source_id": "src-2",
+    "pipeline_stage": "fr24_screenshot_ocr",
+    "extraction_method": "ensemble_ocr",
+    "coordinate_method": "screenshot_icon_georeference",
+    "notes": "review_status=pending; aircraft_point_status=ICON_DERIVED_APPROX; screenshot-derived points are approximate, not ADS-B exact positions"
+  },
+  {
+    "lineage_id": "lin-3",
+    "observation_id": "fr24-3",
+    "source_id": "src-3",
+    "pipeline_stage": "fr24_screenshot_ocr",
+    "extraction_method": "ensemble_ocr",
+    "coordinate_method": "screenshot_icon_georeference",
+    "notes": "review_status=pending; aircraft_point_status=ICON_DERIVED_APPROX; screenshot-derived points are approximate, not ADS-B exact positions"
+  }
+]

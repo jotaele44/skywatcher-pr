@@ -1,0 +1,8 @@
+node_id,node_type,label,confidence,source
+track:alpha,TRACK,alpha route,92,alpha.csv
+vertex:a1,VERTEX,alpha point 1,95,alpha.csv
+vertex:a2,VERTEX,alpha point 2,91,alpha.csv
+track:beta,TRACK,beta route,80,beta.csv
+vertex:b1,VERTEX,beta point 1,80,beta.csv
+track:visual,TRACK,visual route,70,visual_frame.jpg
+vertex:v1,VERTEX,visual point 1,70,visual_frame.jpg

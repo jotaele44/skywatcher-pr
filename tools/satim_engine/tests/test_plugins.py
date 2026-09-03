@@ -1,6 +1,7 @@
 import pandas as pd
-from satim_engine.plugins.visual_ocr import extract_visual_metadata
 from satim_engine.plugins.gis_join import bbox_context_join
+from satim_engine.plugins.visual_ocr import extract_visual_metadata
+
 
 def test_extract_visual_metadata_uses_filename_fallback():
     meta = extract_visual_metadata("/tmp/screenshots/FR24_TEST1_2026-01-01.jpg")
@@ -22,6 +23,15 @@ def test_bbox_context_join_stamps_status_with_no_layers():
     out = bbox_context_join(df)
     assert out.loc[0, "gis_join_status"] == "BBOX_CONTEXT_ONLY"
     assert out.loc[0, "gis_layer_count"] == 0
+
+def test_bbox_context_join_preserves_baseline_column_order():
+    # The context-only path feeds the committed production baseline SHA, so its
+    # header must stay source,latitude,longitude,gis_join_status,gis_layer_count.
+    df = pd.DataFrame([{"source": "track.csv", "latitude": 18.1, "longitude": -66.1}])
+    out = bbox_context_join(df)
+    assert list(out.columns) == [
+        "source", "latitude", "longitude", "gis_join_status", "gis_layer_count"
+    ]
 
 def test_bbox_context_join_counts_supplied_layers():
     df = pd.DataFrame([{"source": "track.csv", "latitude": 18.1, "longitude": -66.1}])

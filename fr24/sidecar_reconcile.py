@@ -25,7 +25,6 @@ import re
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
 
 try:
     from zoneinfo import ZoneInfo
@@ -47,7 +46,7 @@ def _tz(name: str):
     return ZoneInfo(name)
 
 
-def image_dt_from_name(path: Path, tz_name: str = DEFAULT_TZ) -> Optional[datetime]:
+def image_dt_from_name(path: Path, tz_name: str = DEFAULT_TZ) -> datetime | None:
     m = DATE_NAME_RE.search(path.stem)
     if not m:
         return None
@@ -55,7 +54,7 @@ def image_dt_from_name(path: Path, tz_name: str = DEFAULT_TZ) -> Optional[dateti
     return datetime(g["y"], g["m"], g["d"], g["h"], g["mi"], g["s"], tzinfo=_tz(tz_name))
 
 
-def parse_google_time(obj: object, tz_name: str = DEFAULT_TZ) -> Optional[datetime]:
+def parse_google_time(obj: object, tz_name: str = DEFAULT_TZ) -> datetime | None:
     if not isinstance(obj, dict):
         return None
     ts = obj.get("timestamp")
@@ -84,11 +83,11 @@ def load_sidecar(path: Path, tz_name: str = DEFAULT_TZ) -> dict:
     }
 
 
-def iter_images(root: Path) -> List[Path]:
+def iter_images(root: Path) -> list[Path]:
     return sorted(p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in IMAGE_EXTS)
 
 
-def iter_sidecars(root: Path) -> List[Path]:
+def iter_sidecars(root: Path) -> list[Path]:
     return sorted(p for p in root.rglob("*.json") if p.is_file())
 
 
@@ -111,13 +110,13 @@ def _pair_sort_key(pair: dict) -> tuple:
     )
 
 
-def _best_pair_for_sidecar(existing: Optional[dict], candidate: dict) -> dict:
+def _best_pair_for_sidecar(existing: dict | None, candidate: dict) -> dict:
     if existing is None:
         return candidate
     return candidate if _pair_sort_key(candidate) < _pair_sort_key(existing) else existing
 
 
-def build_candidate_rows(root: Path, max_delta_seconds: int = 300, tz_name: str = DEFAULT_TZ) -> Tuple[List[dict], dict]:
+def build_candidate_rows(root: Path, max_delta_seconds: int = 300, tz_name: str = DEFAULT_TZ) -> tuple[list[dict], dict]:
     """Build sidecar candidate rows with global one-to-one assignment.
 
     A naive nearest-neighbor pass can collapse many screenshots onto the first
@@ -134,7 +133,7 @@ def build_candidate_rows(root: Path, max_delta_seconds: int = 300, tz_name: str 
     ]
     sidecars = [load_sidecar(p, tz_name) for p in iter_sidecars(root)]
 
-    sidecar_times: List[Tuple[float, str, dict, str]] = []
+    sidecar_times: list[tuple[float, str, dict, str]] = []
     for sidecar in sidecars:
         for kind in ("photo_dt", "creation_dt"):
             dt = sidecar.get(kind)
@@ -143,8 +142,8 @@ def build_candidate_rows(root: Path, max_delta_seconds: int = 300, tz_name: str 
     sidecar_times.sort(key=lambda x: (x[0], _kind_priority(x[1]), str(x[2].get("path", ""))))
     time_values = [x[0] for x in sidecar_times]
 
-    all_pairs: List[dict] = []
-    best_rejected_by_image: Dict[int, dict] = {}
+    all_pairs: list[dict] = []
+    best_rejected_by_image: dict[int, dict] = {}
 
     for image_index, image in enumerate(images):
         img_dt = image["dt_name"]
@@ -155,7 +154,7 @@ def build_candidate_rows(root: Path, max_delta_seconds: int = 300, tz_name: str 
         hi = bisect.bisect_right(time_values, img_ts + max_delta_seconds)
 
         # Keep only the best time-kind candidate per sidecar for this image.
-        best_by_sidecar: Dict[str, dict] = {}
+        best_by_sidecar: dict[str, dict] = {}
         for side_ts, kind, sidecar, side_iso in sidecar_times[lo:hi]:
             sidecar_path = str(sidecar["path"])
             pair = {
@@ -175,7 +174,7 @@ def build_candidate_rows(root: Path, max_delta_seconds: int = 300, tz_name: str 
             if existing is None or _pair_sort_key(pair) < _pair_sort_key(existing):
                 best_rejected_by_image[image_index] = pair
 
-    selected_by_image: Dict[int, dict] = {}
+    selected_by_image: dict[int, dict] = {}
     used_sidecars = set()
     for pair in sorted(all_pairs, key=_pair_sort_key):
         image_index = pair["image_index"]
@@ -185,7 +184,7 @@ def build_candidate_rows(root: Path, max_delta_seconds: int = 300, tz_name: str 
         selected_by_image[image_index] = pair
         used_sidecars.add(sidecar_path)
 
-    rows: List[dict] = []
+    rows: list[dict] = []
     for image_index, image in enumerate(images):
         img_dt = image["dt_name"]
         pair = selected_by_image.get(image_index)
@@ -248,8 +247,8 @@ def match_band(delta: float) -> str:
     return "unmatched"
 
 
-def resolve_one_to_one(rows: List[dict]) -> Tuple[List[dict], dict]:
-    resolved_rows: List[dict] = []
+def resolve_one_to_one(rows: list[dict]) -> tuple[list[dict], dict]:
+    resolved_rows: list[dict] = []
     for row in rows:
         out = dict(row)
         if row.get("match_status") == "candidate_match" and row.get("sidecar_path"):
@@ -287,7 +286,7 @@ def resolve_one_to_one(rows: List[dict]) -> Tuple[List[dict], dict]:
     return resolved_rows, summary
 
 
-def _write_csv(path: Path, rows: List[dict]) -> None:
+def _write_csv(path: Path, rows: list[dict]) -> None:
     if not rows:
         path.write_text("", encoding="utf-8")
         return

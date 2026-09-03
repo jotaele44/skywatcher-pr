@@ -31,7 +31,6 @@ CLI:
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import math
 import sqlite3
@@ -56,7 +55,8 @@ def detect_arrow_angle(crop_array):
     except ImportError:
         return None
 
-    if crop_array.size == 0: return None
+    if crop_array.size == 0:
+        return None
     # Convert to grayscale and threshold
     if len(crop_array.shape) == 3:
         gray = cv2.cvtColor(crop_array, cv2.COLOR_RGB2GRAY)
@@ -92,8 +92,13 @@ def process_one(args):
     obs_id, sid, file_path, sw, sh, debug, debug_dir = args
     try:
         from PIL import Image
-        try: import pillow_heif; pillow_heif.register_heif_opener()
-        except ImportError: pass
+
+        try:
+            import pillow_heif
+
+            pillow_heif.register_heif_opener()
+        except ImportError:
+            pass  # HEIC files unsupported if pillow_heif absent
         import numpy as np
         x0 = int(sw * COMPASS_ROI_PCT[0])
         y0 = int(sh * COMPASS_ROI_PCT[1])
@@ -159,7 +164,8 @@ def main():
         for obs_id, angle, err in results:
             n_done += 1
             if err:
-                n_fail += 1; continue
+                n_fail += 1
+                continue
             if angle is not None:
                 n_with_angle += 1
                 cur.execute("UPDATE aircraft_observations SET heading_deg_vision=? WHERE aircraft_obs_id=?",
@@ -178,7 +184,8 @@ def main():
             for f in as_completed(ex.submit(process_one, w) for w in work_args):
                 batch.append(f.result())
                 if len(batch) >= 50:
-                    handle(batch); batch = []
+                    handle(batch)
+                    batch = []
             if batch:
                 handle(batch)
     conn.commit()

@@ -24,11 +24,11 @@ Outputs
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
 
 ADAPTER_VERSION = "fr24_spiderweb_adapter_v0.1.0"
 
@@ -87,7 +87,7 @@ PROVENANCE_FIELDS = (
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def _as_int(value: object) -> Optional[int]:
+def _as_int(value: object) -> int | None:
     try:
         v = int(str(value).strip())
         return v if v >= 0 else None
@@ -95,7 +95,7 @@ def _as_int(value: object) -> Optional[int]:
         return None
 
 
-def _as_float(value: object) -> Optional[float]:
+def _as_float(value: object) -> float | None:
     try:
         v = float(str(value).strip())
         return v if v >= 0 else None
@@ -103,7 +103,7 @@ def _as_float(value: object) -> Optional[float]:
         return None
 
 
-def _make_takeoff_time(row: dict) -> Optional[str]:
+def _make_takeoff_time(row: dict) -> str | None:
     """Combine playback_date + playback_time + playback_timezone into ISO-8601."""
     date = (row.get("playback_date") or "").strip()
     time = (row.get("playback_time") or "").strip()
@@ -123,7 +123,7 @@ def _flight_id(row: dict) -> str:
     if cid:
         return cid
     name = (row.get("image_name") or "").strip()
-    return f"fr24::{name}" if name else f"fr24::unknown"
+    return f"fr24::{name}" if name else "fr24::unknown"
 
 
 def is_intake_eligible(row: dict) -> bool:
@@ -148,7 +148,9 @@ def map_to_flight_event(row: dict) -> dict:
     out["max_altitude_ft"] = _as_int(row.get("barometric_altitude_ft"))
     out["avg_speed_mph"] = _as_float(row.get("ground_speed_mph"))
     out["takeoff_time"] = _make_takeoff_time(row)
-    out["num_screenshots"] = 1
+    # Fused multi-frame records (fr24/flight_fusion.py) carry their own frame
+    # count; plain single-frame export rows keep the historical default of 1.
+    out["num_screenshots"] = _as_int(row.get("num_screenshots")) or 1
 
     # ── Provenance ────────────────────────────────────────────────────────────
     out["confirmation_status"] = "not_confirmed"
@@ -173,13 +175,10 @@ def map_to_flight_event(row: dict) -> dict:
 
 
 def _has_prohibited_label(record: dict) -> bool:
-    for value in record.values():
-        if str(value) in PROHIBITED_LABELS:
-            return True
-    return False
+    return any(str(value) in PROHIBITED_LABELS for value in record.values())
 
 
-def _validate_flight_event(record: dict) -> Optional[str]:
+def _validate_flight_event(record: dict) -> str | None:
     """Return an error message if required fields are missing, else None."""
     if not record.get("flight_id"):
         return "missing flight_id"
@@ -190,7 +189,7 @@ def _validate_flight_event(record: dict) -> Optional[str]:
 
 # ── main pipeline ─────────────────────────────────────────────────────────────
 
-def read_jsonl(path: Path) -> List[dict]:
+def read_jsonl(path: Path) -> list[dict]:
     if not path.exists() or path.stat().st_size == 0:
         return []
     records = []
@@ -198,14 +197,12 @@ def read_jsonl(path: Path) -> List[dict]:
         for line in f:
             line = line.strip()
             if line:
-                try:
+                with contextlib.suppress(json.JSONDecodeError):
                     records.append(json.loads(line))
-                except json.JSONDecodeError:
-                    pass
     return records
 
 
-def write_jsonl(path: Path, records: List[dict]) -> None:
+def write_jsonl(path: Path, records: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         for rec in records:
@@ -220,10 +217,10 @@ def run(
 ) -> dict:
     records = read_jsonl(export_jsonl)
 
-    intake: List[dict] = []
-    hold: List[dict] = []
+    intake: list[dict] = []
+    hold: list[dict] = []
     prohibited_dropped = 0
-    validation_errors: List[str] = []
+    validation_errors: list[str] = []
 
     for row in records:
         if _has_prohibited_label(row):

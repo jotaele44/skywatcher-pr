@@ -5,13 +5,14 @@ from __future__ import annotations
 import argparse
 import csv
 from collections import Counter
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Sequence
+from typing import Any
 
 from .models import LayerCalibrationResult, write_json
 
 try:  # pragma: no cover
-    from aircraft_intelligence import KNOWN_OPERATORS  # type: ignore
+    from skywatcher.core.known_operators import KNOWN_OPERATORS
 except Exception:
     KNOWN_OPERATORS = {}
 
@@ -24,17 +25,14 @@ ONBOARDING_THRESHOLD = {
 KNOWN_GAP_KEYWORDS = ("CBP", "CUSTOMS", "BORDER", "NOAA", "P-3", "DHC-8", "DOD", "SOCOM")
 
 
-def load_csv(path: str | Path) -> List[Dict[str, str]]:
+def load_csv(path: str | Path) -> list[dict[str, str]]:
     with Path(path).open(newline="", encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
 
 
 def registry_tokens(registry: Any = KNOWN_OPERATORS) -> set[str]:
     tokens: set[str] = set()
-    if isinstance(registry, Mapping):
-        iterable = registry.items()
-    else:
-        iterable = enumerate(registry or [])
+    iterable = registry.items() if isinstance(registry, Mapping) else enumerate(registry or [])
     for key, value in iterable:
         tokens.add(str(key).upper())
         if isinstance(value, Mapping):
@@ -51,7 +49,7 @@ def row_matches_registry(row: Mapping[str, Any], tokens: set[str]) -> bool:
     return any(token in haystack for token in tokens)
 
 
-def audit_rows(rows: Sequence[Mapping[str, Any]], registry: Any = KNOWN_OPERATORS) -> Dict[str, Any]:
+def audit_rows(rows: Sequence[Mapping[str, Any]], registry: Any = KNOWN_OPERATORS) -> dict[str, Any]:
     tokens = registry_tokens(registry)
     total = len(rows)
     matched = [row for row in rows if row_matches_registry(row, tokens)]
@@ -73,7 +71,7 @@ def audit_rows(rows: Sequence[Mapping[str, Any]], registry: Any = KNOWN_OPERATOR
     }
 
 
-def calibrate(fr24_csv: str) -> Dict[str, Any]:
+def calibrate(fr24_csv: str) -> dict[str, Any]:
     rows = load_csv(fr24_csv)
     metrics = audit_rows(rows)
     findings = []

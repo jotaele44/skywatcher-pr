@@ -18,7 +18,6 @@ import json
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 VECTOR_VERSION = "fr24_ocr_analysis_vector_v0.1.0"
 
@@ -40,7 +39,7 @@ SELECT_FIELDS = [
 ]
 
 # Maps SELECT_FIELDS entry → binary vector column name
-FIELD_VECTOR_MAP: Dict[str, str] = {
+FIELD_VECTOR_MAP: dict[str, str] = {
     "callsign_or_label": "vector_has_callsign",
     "operator": "vector_has_operator",
     "aircraft_type": "vector_has_aircraft_type",
@@ -95,7 +94,7 @@ def _as_int(value: object) -> int:
         return 0
 
 
-def _parse_playback_dt(row: dict) -> Optional[datetime]:
+def _parse_playback_dt(row: dict) -> datetime | None:
     date_str = (row.get("playback_date") or "").strip()
     time_str = (row.get("playback_time") or "").strip()
     if not date_str:
@@ -191,7 +190,7 @@ def compute_vector(row: dict) -> dict:
 
 # ── wave grouping ──────────────────────────────────────────────────────────────
 
-def _avg(values: List[float]) -> float:
+def _avg(values: list[float]) -> float:
     return round(sum(values) / len(values), 4) if values else 0.0
 
 
@@ -206,18 +205,18 @@ def _duration_minutes(earliest: str, latest: str) -> float:
         return 0.0
 
 
-def _wave_sort_key(row: dict) -> Tuple:
+def _wave_sort_key(row: dict) -> tuple:
     has_ts = 0 if row.get("vector_playback_iso") else 1
     return (has_ts, row.get("vector_playback_iso") or "", row.get("image_name") or "")
 
 
-def build_waves(vectored_rows: List[dict]) -> List[dict]:
+def build_waves(vectored_rows: list[dict]) -> list[dict]:
     """Group vectored rows by aircraft identity and produce one wave per group."""
-    groups: Dict[str, List[dict]] = defaultdict(list)
+    groups: dict[str, list[dict]] = defaultdict(list)
     for row in vectored_rows:
         groups[row.get("vector_aircraft_identity", "unknown")].append(row)
 
-    waves: List[dict] = []
+    waves: list[dict] = []
     for wave_idx, (identity, obs) in enumerate(sorted(groups.items()), 1):
         sorted_obs = sorted(obs, key=_wave_sort_key)
         iso_values = [r["vector_playback_iso"] for r in sorted_obs if r.get("vector_playback_iso")]
@@ -243,13 +242,13 @@ def build_waves(vectored_rows: List[dict]) -> List[dict]:
 
 # ── IO ─────────────────────────────────────────────────────────────────────────
 
-def read_csv(path: Path) -> List[dict]:
+def read_csv(path: Path) -> list[dict]:
     if not path.exists() or path.stat().st_size == 0:
         return []
     return list(csv.DictReader(path.open(encoding="utf-8")))
 
 
-def write_csv(path: Path, rows: List[dict]) -> None:
+def write_csv(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not rows:
         path.write_text("", encoding="utf-8")
@@ -267,7 +266,7 @@ def write_csv(path: Path, rows: List[dict]) -> None:
 def run(input_csv: Path, output_dir: Path) -> dict:
     rows = read_csv(input_csv)
 
-    vectored: List[dict] = []
+    vectored: list[dict] = []
     tier_counter: Counter = Counter()
     for row in rows:
         merged = dict(row)

@@ -1,0 +1,2 @@
+aircraft_obs_id,screenshot_id,filename,filename_ts,registration,callsign,aircraft_type,altitude_ft,speed_kt,heading_deg,operator_text,identity_status,confidence,source_zone,raw_excerpt,observed_at
+bbox-icon-0001,fr24-media-17330dea3f4c,FR24_SCREENSHOT_20260706_screenshots_0001_17330dea3f4c.jpg,2026-07-06T18:50:00-04:00,,C6062,Sikorsky MH-60T Jayhawk,2800,126,,,partial,55,manual_bbox_icon_review,"Visible FR24 aircraft card text: C6062 H60; Sikorsky MH-60T Jayhawk; barometric altitude 2,800 ft; ground speed 145 mph. Identity remains partial.",2026-08-27T21:15:00Z

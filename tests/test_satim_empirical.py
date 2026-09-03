@@ -24,7 +24,11 @@ from satim_fit import (  # noqa: E402
     fit_promotion_thresholds,
     fit_scoring_adjustments,
 )
-from satim_ground_truth import append_ground_truth, normalize_fp_class, read_ground_truth  # noqa: E402
+from satim_ground_truth import (  # noqa: E402
+    append_ground_truth,
+    normalize_fp_class,
+    read_ground_truth,
+)
 from satim_render_diff import autolabel_render_diff, classify_render_diff  # noqa: E402
 
 MOCA_SET = REPO_ROOT / "data" / "satim_calibration" / "moca_fr24_2025"
@@ -164,7 +168,7 @@ class TestCrossSource:
         cs = load_calibration_set(MOCA_SET)
         aliases = cs.false_positive_aliases
         # Pick a label whose fp class resolves (TREE_CROWN -> PALM).
-        label = next(l for l in cs.labels if l.false_positive_class == "TREE_CROWN")
+        label = next(lbl for lbl in cs.labels if lbl.false_positive_class == "TREE_CROWN")
         verdicts = {(label.image_id, "PALM"): {"verdict": "confirmed", "source": "esri"}}
         rows = xsrc.build_ground_truth_rows([label], verdicts, aliases)
         assert rows and rows[0]["false_positive_class"] == "PALM"
@@ -173,7 +177,7 @@ class TestCrossSource:
 
     def test_refuted_marks_false_positive(self):
         cs = load_calibration_set(MOCA_SET)
-        label = next(l for l in cs.labels if l.false_positive_class == "FR24_3D_RENDER")
+        label = next(lbl for lbl in cs.labels if lbl.false_positive_class == "FR24_3D_RENDER")
         verdicts = {(label.image_id, "FR24_3D_RENDER"): {"verdict": "fr24_only", "source": "s2"}}
         rows = xsrc.build_ground_truth_rows([label], verdicts, cs.false_positive_aliases)
         assert rows[0]["is_false_positive"] == "1"

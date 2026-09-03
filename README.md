@@ -4,6 +4,12 @@
 
 > Skywatcher maps aircraft activity, missions, and airspace-infrastructure relationships. It does not allege wrongdoing.
 
+> **Diagnostic-only surface (ADR 0001, Phase 2).** This repo's dashboard is a
+> development and diagnostic tool for this producer only. The supported product
+> surface for the PRII federation is the hub app
+> (`thehub-pr/server/frontend`), which renders this producer's data alongside
+> the other engines. See `thehub-pr/docs/adr/0001-federated-engines-single-hub.md`.
+
 ## Federation role
 
 | Field | Value |
@@ -47,6 +53,23 @@ Drive the pipeline with:
 python scripts/fr24_vision_ingest.py
 ```
 
+### RLSM screenshot extraction
+
+The screenshot corpus (OCR → aircraft → place labels → map icons → exports) runs from a
+single resumable command:
+
+```bash
+./run-rlsm.sh              # everything; --dry-run first to check preflight
+./run-rlsm.sh --status     # what is done, what is pending
+```
+
+Point `data/FR24_baseline` at the corpus first (a symlink is fine — preflight prints the
+exact command if it is missing). Full runbook: `data/rlsm/HANDOFF.md`.
+
+Geocoding uses the tracked GNIS GeoPackage at
+`data/reference/Gazetteer_PR_GNIS.gpkg` plus any existing RLSM `geo_anchors`.
+The ignored legacy `data/places.geojson` file is not required.
+
 ## SATIM engine protocol interface
 
 SATIM can run against a new manifest, directory, or zip bundle through the repo-native protocol runner:
@@ -69,6 +92,12 @@ The protocol emits `resolved_manifest.json`, per-layer reports under `layers/`, 
 
 See `docs/SATIM_ENGINE_PROTOCOL_INTERFACE.md` for the manifest contract and run-bundle layout.
 
+> Note: the repo-native runner above (`python -m fr24.satim_engine`) is distinct
+> from the standalone packaged engine under `tools/satim_engine/` (installed with
+> `pip install -e '.[dev]'`, exposing the `satim` console script), which is what
+> `satim-engine-ci.yml` builds and exercises. Use the repo-native runner for
+> in-tree runs; the packaged `satim` CLI is the distributable interface.
+
 ## Federation export contract
 
 Skywatcher emits airspace observation packages validated against:
@@ -90,17 +119,30 @@ Production-mode validation rejects synthetic rows. Current live-execution blocke
 ## Optional GEBCO terrain layer
 
 ```bash
-pip install -r requirements-geo.txt
+uv sync --extra geo
 ```
 
 `gebco/` is optional and tests should self-skip when geospatial dependencies are absent.
 
 ## Develop
 
+Requires **Python 3.10+** (CI tests 3.10–3.12). This is a flat-layout
+application — modules run in place, nothing is pip-installed as a package.
+Dependencies live in `pyproject.toml` as extras (`adsb`, `dev`, `fr24`, `geo`,
+`imagery`), resolved and locked with `uv` (`uv.lock`). The double-click
+desktop wrapper's deps are the federation-templated `requirements-desktop.txt`
+instead (see `desktop/README.md`).
+
+Install the same dependency set CI uses (`.github/workflows/ci.yml`) — the dev
+extra plus `httpx` and the backend requirements the tests import. The shared
+prii-* libraries resolve via a pinned git+https reference in
+`[tool.uv.sources]` — no thehub-pr sibling checkout needed:
+
 ```bash
-python -m pip install -r requirements-dev.txt
-pytest -q
-python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
+uv sync --extra dev
+uv pip install httpx -r server/backend/requirements.txt
+uv run pytest -q
+uv run python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
 ```
 
 ## Provenance

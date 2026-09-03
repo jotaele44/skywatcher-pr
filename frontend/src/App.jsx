@@ -1,8 +1,9 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { SkywatcherDataProvider } from '@/lib/SkywatcherData';
@@ -19,12 +20,32 @@ import ManualReview from '@/pages/ManualReview';
 import ExportCenter from '@/pages/ExportCenter';
 import Readiness from '@/pages/Readiness';
 import Calibration from '@/pages/Calibration';
+import AnalysisLenses from '@/pages/AnalysisLenses';
+import SpatialTruth from '@/pages/SpatialTruth';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import LoadingState from '@/components/skywatcher/LoadingState';
+import { appParams } from '@/lib/app-params';
 
 const AuthenticatedApp = () => {
+  const { appPublicSettings, isLoadingPublicSettings } = useAuth();
+
+  // Wait for public settings before routing. appPublicSettings is null until
+  // AuthContext.checkAppState() resolves, so routing on it early would treat a
+  // backend that reports requires_auth=true as diagnostic mode for one render —
+  // long enough to redirect a direct visit to /login away to /, after which the
+  // login page is unreachable because the URL has already changed.
+  if (isLoadingPublicSettings) {
+    return <LoadingState />;
+  }
+
+  // Same signal AuthContext uses to decide whether authentication is required.
+  const authRequired = Boolean(
+    appPublicSettings?.public_settings?.requires_auth || appParams.requireAuth
+  );
+
   return (
     <SkywatcherDataProvider>
       <DrawerHubProvider>
@@ -41,11 +62,29 @@ const AuthenticatedApp = () => {
             <Route path="/export" element={<ExportCenter />} />
             <Route path="/readiness" element={<Readiness />} />
             <Route path="/calibration" element={<Calibration />} />
+            <Route path="/analysis" element={<AnalysisLenses />} />
+            <Route path="/spatial-truth" element={<SpatialTruth />} />
           </Route>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          {/* Auth routes render only when authentication is actually required.
+              In diagnostic mode the backend implements no /auth/login,
+              /auth/register, /auth/verify-otp or /auth/password/* endpoint (they
+              404) and /api/auth/me returns 401, so these forms could never
+              complete a sign-in. Gate them on the same signal AuthContext uses. */}
+          {authRequired ? (
+            <>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+            </>
+          ) : (
+            <>
+              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="/register" element={<Navigate to="/" replace />} />
+              <Route path="/forgot-password" element={<Navigate to="/" replace />} />
+              <Route path="/reset-password" element={<Navigate to="/" replace />} />
+            </>
+          )}
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </DrawerHubProvider>
@@ -55,14 +94,16 @@ const AuthenticatedApp = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/fpim_output_contract.schema.json",
+  "title": "FPIM Output Contract",
+  "description": "Abstract envelope for an FPIM (flight-path/behavior) analysis output. Trajectory/behavior fields only — no terrain-classification fields. label_independent documents that behavior_tags and pois_along_path are never gated by callsign/operator/mission label. See docs/MODULE_SPEC_FPIM.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fpim_output_id",
+    "flight_id",
+    "label_independent",
+    "behavior_tags",
+    "pois_along_path",
+    "evidence_tier",
+    "confidence"
+  ],
+  "properties": {
+    "fpim_output_id": {"type": "string", "minLength": 1},
+    "flight_id": {"type": "string", "minLength": 1},
+    "label_independent": {"const": true},
+    "behavior_tags": {"type": "array", "items": {"type": "string"}},
+    "pois_along_path": {
+      "type": "array",
+      "description": "Every POI (footprint/landmark, natural or manmade) along or near the path, populated unconditionally — empty array if none nearby, never gated by label.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["footprint_id", "facility_name", "facility_type", "distance_m", "match_type"],
+        "properties": {
+          "footprint_id": {"type": "string"},
+          "facility_name": {"type": "string"},
+          "facility_type": {"type": "string"},
+          "operator_class": {"type": "string"},
+          "distance_m": {"type": "number", "minimum": 0},
+          "radius_m": {"type": "integer"},
+          "match_type": {"type": "string"},
+          "score": {"type": "number", "minimum": 0, "maximum": 1},
+          "explanation": {"type": "string"}
+        }
+      }
+    },
+    "evidence_tier": {"type": "string", "enum": ["T1", "T2", "T3", "T4"]},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+  }
+}

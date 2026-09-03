@@ -6,15 +6,12 @@ import csv
 import json
 from pathlib import Path
 
-import pytest
-
 from fr24.temporal_wave_pipeline import (
     PIPELINE_VERSION,
     POLICY,
     _scan_rows_for_prohibited_labels,
     run,
 )
-
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -63,7 +60,7 @@ def test_empty_input_produces_all_outputs(tmp_path):
     empty = tmp_path / "empty.csv"
     empty.write_text("", encoding="utf-8")
 
-    result = run(empty, tmp_path / "out")
+    run(empty, tmp_path / "out")
 
     out = tmp_path / "out"
     expected_files = [

@@ -4,24 +4,40 @@ on:
   pull_request:
     paths:
       - 'fr24/calibration/satim_*.py'
+      - 'fr24/calibration/run_phase2.py'
       - 'schemas/*.json'
       - 'tests/test_satim_*.py'
+      - 'tests/fixtures/satim_phase2/**'
       - 'data/satim_fixtures/**'
       - 'docs/SATIM_*.md'
       - '.github/workflows/satim-phase2.yml'
   workflow_dispatch:
+
+# Least privilege: this workflow only reads the repo (and uploads artifacts,
+# which uses the runtime token, not GITHUB_TOKEN). Widen deliberately if a
+# step ever needs to write back.
+permissions:
+  contents: read
+
+# Serialise runs on the same ref without cancelling. This workflow can
+# publish, write data, or hand off to another repo, and killing it
+# mid-flight risks leaving that work half-done.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   satim-phase2-contracts:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.11'
+          cache: pip
 
       - name: Install test dependencies
         run: |
@@ -34,4 +50,5 @@ jobs:
             tests/test_satim_operationalization_phase1_contracts.py \
             tests/test_satim_phase2_raster_extraction.py \
             tests/test_satim_phase2_multidate_validation.py \
-            tests/test_satim_phase2_gis_overlay.py
+            tests/test_satim_phase2_gis_overlay.py \
+            tests/test_satim_phase2_run_phase2.py

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://satim.local/schemas/satim_confidence_ledger_entry_v1.schema.json",
+  "title": "SATIM Confidence Ledger Entry v1",
+  "type": "object",
+  "required": ["ledger_id", "assessment_id", "timestamp_utc", "engine_version", "ruleset_version", "input_sha256", "support", "contradictions", "caps", "class_score", "origin_score", "decision", "entry_hash"],
+  "properties": {
+    "ledger_id": {"type": "string", "minLength": 1},
+    "assessment_id": {"type": "string", "minLength": 1},
+    "timestamp_utc": {"type": "string", "format": "date-time"},
+    "engine_version": {"type": "string"},
+    "ruleset_version": {"type": "string"},
+    "input_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "taxonomy_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "schema_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "profile_id": {"type": ["string", "null"]},
+    "profile_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "support": {"type": "array", "items": {"type": "object"}},
+    "contradictions": {"type": "array", "items": {"type": "object"}},
+    "caps": {"type": "array", "items": {"type": "string"}},
+    "class_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "origin_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "decision": {"type": "object"},
+    "previous_entry_hash": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "entry_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "additionalProperties": false
+}

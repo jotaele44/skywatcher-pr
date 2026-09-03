@@ -1,0 +1,10 @@
+[
+  {
+    "source_id": "src-1",
+    "source_type": "screenshot",
+    "source_path": "FR24_DataBank/Media_Canonical/active/screenshots/20260706/FR24_SCREENSHOT_20260706_screenshots_0001_17330dea3f4c.jpg",
+    "sha256": "17330dea3f4c42b5d64f1221917f875291c4e5891b39eb762f3857d891fbf7ee",
+    "retrieved_at": "2026-08-27T21:15:00Z",
+    "provenance_status": "operator_capture"
+  }
+]

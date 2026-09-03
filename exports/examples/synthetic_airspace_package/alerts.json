@@ -1,0 +1,43 @@
+[
+  {
+    "alert_id": "syn-alrt-0001",
+    "source_id": "src-syn-0001",
+    "observation_id": "syn-air-0001",
+    "module": "AIRSPACE_OPS",
+    "alert_type": "loitering_pattern",
+    "anomaly_kind": "repeated_orbit_over_fixed_point",
+    "severity": 2,
+    "status": "draft",
+    "event_datetime": "2026-05-20T10:05:00Z",
+    "lat": 18.4394,
+    "lon": -66.0012,
+    "municipality": "San Juan",
+    "location_name": "Synthetic San Juan airspace point",
+    "evidence_tier": "T2",
+    "confidence": 0.71,
+    "description_summary": "Synthetic loitering-pattern anomaly for federation alert-stream validation.",
+    "review_status": "needs_review",
+    "synthetic": true
+  },
+  {
+    "alert_id": "syn-alrt-0002",
+    "source_id": "src-syn-0002",
+    "observation_id": "syn-air-0002",
+    "module": "AIRSPACE_OPS",
+    "alert_type": "restricted_zone_proximity",
+    "anomaly_kind": "transit_near_sensitive_footprint",
+    "severity": 1,
+    "status": "draft",
+    "gap_status": "minor",
+    "event_datetime": "2026-05-20T10:18:00Z",
+    "lat": 18.4949,
+    "lon": -67.1299,
+    "municipality": "Aguadilla",
+    "location_name": "Synthetic Aguadilla airspace point",
+    "evidence_tier": "T2",
+    "confidence": 0.66,
+    "description_summary": "Synthetic restricted-zone-proximity anomaly for federation alert-stream validation.",
+    "review_status": "needs_review",
+    "synthetic": true
+  }
+]

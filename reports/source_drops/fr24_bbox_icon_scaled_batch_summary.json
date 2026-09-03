@@ -1,0 +1,33 @@
+{
+  "accepted_rows": 3,
+  "arithmetic": "3=3+0+0",
+  "created_at": "2026-08-28T00:10:07Z",
+  "geometry_semantics": "Accepted rows are visible-icon screenshot-derived approximate points; they are not exact aircraft coordinates.",
+  "media_index": "/Users/jotaele/Documents/FR24/FR24_DataBank/Media_Canonical/freeze_final/final_active_media_index.csv",
+  "observations_out": "reports/source_drops/fr24_bbox_icon_scaled_observations.csv",
+  "rejected_rows": 0,
+  "review_in": "reports/source_drops/fr24_bbox_icon_scaled_review.csv",
+  "review_rows": 3,
+  "source_ref": "fr24_bbox_icon_scaled_20260827",
+  "unresolved_rows": 0,
+  "validation_rows": [
+    {
+      "filename": "FR24_SCREENSHOT_20260706_screenshots_0001_17330dea3f4c.jpg",
+      "problems": [],
+      "row": 1,
+      "status": "ACCEPTED"
+    },
+    {
+      "filename": "FR24_SCREENSHOT_20260706_screenshots_0002_68f298bae21a.jpg",
+      "problems": [],
+      "row": 2,
+      "status": "ACCEPTED"
+    },
+    {
+      "filename": "FR24_SCREENSHOT_20260706_screenshots_0004_85de70132fc0.jpg",
+      "problems": [],
+      "row": 3,
+      "status": "ACCEPTED"
+    }
+  ]
+}

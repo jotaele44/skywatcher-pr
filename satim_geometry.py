@@ -24,13 +24,22 @@ processed here:
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+
+# "src" is only on sys.path automatically under pytest (pyproject.toml's
+# pythonpath setting); bootstrap it here so this module resolves regardless
+# of the calling entry point (see docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md).
+_SRC_DIR = Path(__file__).resolve().parent / "src"
+if str(_SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(_SRC_DIR))
 
 # Reuse the repo's haversine so callers can convert lat/lon marks to a metric
 # shift without a second geodesy implementation.
-from skywatcher.correlation.footprint_proximity import haversine_m  # noqa: F401
+from skywatcher.core.geo_utils import haversine_m  # noqa: F401
 
 MPH_TO_M_S = 0.44704
 FT_TO_M = 0.3048
@@ -108,10 +117,7 @@ def is_geometry_coherent(
     """Combined coherence gate: parallax consistency and altitude plausibility."""
     if not parallax_coherence(observed_shift_m, ground_speed_mph, dt_s, tolerance=tolerance):
         return False
-    if altitude_ft is not None and altitude_envelope is not None:
-        if not within_envelope(altitude_ft, altitude_envelope, margin=altitude_margin_ft):
-            return False
-    return True
+    return not (altitude_ft is not None and altitude_envelope is not None and not within_envelope(altitude_ft, altitude_envelope, margin=altitude_margin_ft))
 
 
 # ---------------------------------------------------------------------------

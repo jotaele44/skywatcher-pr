@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ..models import MaintenanceFinding
+from prii_maintenance import MaintenanceFinding
 
 _SATIM_DIRS = ("exports/satim_calibration", "reports/satim")
 _THRESHOLD_ORDER = ("review", "cross_source_required", "promote_to_candidate")
@@ -91,7 +91,7 @@ def check_classifier_threshold_drift(
                     action="blocked",
                     message=f"classifier promotion thresholds out of order in {path.relative_to(root)}",
                     path=str(path.relative_to(root)),
-                    detail=dict(zip(_THRESHOLD_ORDER, values)),
+                    detail=dict(zip(_THRESHOLD_ORDER, values, strict=False)),
                 )
             )
     return findings

@@ -1,0 +1,9 @@
+version: v21
+pairing:
+  time_window_minutes: 30
+  spatial_threshold_meters: 1500
+  confidence_threshold_promote: 80
+scoring:
+  verified: 95
+  high_confidence: 80
+  approximate: 60

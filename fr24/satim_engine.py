@@ -13,9 +13,10 @@ import hashlib
 import json
 import shutil
 import zipfile
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from pipeline.normalize_locations import load_simple_yaml
 
@@ -24,6 +25,7 @@ from .calibration.l2_route_calibration import calibrate as calibrate_l2
 from .calibration.l3_ocr_scoring import calibrate as calibrate_l3
 from .calibration.l4_registry_audit import calibrate as calibrate_l4
 from .calibration.l5_tile_seam_shadow_calibration import calibrate as calibrate_l5
+from .calibration.l5_tile_seam_shadow_calibration import classify_candidate, load_candidates
 from .calibration.models import LayerCalibrationResult, merge_layer_reports, write_json
 from .calibration.readiness_adapter import satim_report_to_legacy_calibration
 
@@ -66,6 +68,7 @@ FILE_INPUT_NAMES = {
     "predictions_json": ("predictions.json", "l3_predictions.json"),
     "fr24_csv": ("fr24_export.csv", "fr24.csv", "observations.csv"),
     "l5_candidates_csv": ("l5_candidates.csv", "tile_seam_candidates.csv", "artifact_candidates.csv"),
+    "artifact_assessment_json": ("artifact_assessment.json", "satim_artifact_assessment.json"),
 }
 
 
@@ -235,7 +238,8 @@ def manifest_from_input(input_path: str | Path, output_dir: str | Path) -> SATIM
         run_id=run_id,
         input_profile="autodetected_fr24_screenshot_batch",
         inputs=autodetect_inputs(root),
-        options={"strict": False, "include_l5": True, "export_legacy_readiness": True},
+        options={"strict": False, "include_l5": True, "export_legacy_readiness": True,
+                 "l5_mode": "tile_seam_shadow", "l3_fuzzy": False},
         outputs={"run_dir": Path(output_dir).expanduser().resolve()},
         source_manifest=None,
     )
@@ -268,6 +272,41 @@ def degraded_layer(layer: str, reason: str, error: Exception) -> dict[str, Any]:
             }
         ],
     ).to_dict()
+
+
+L5_MODES = ("tile_seam_shadow", "synthetic_boundary", "strict")
+
+
+def run_l5(l5_mode: str, candidates_csv: str) -> dict[str, Any]:
+    """Run the selected L5 classifier and return a payload keyed to the canonical
+    ``L5_tile_seam_shadow`` layer slot (so readiness aggregation recognizes it).
+
+    - ``tile_seam_shadow`` (default): rule + corroboration classifier.
+    - ``synthetic_boundary``: explicit-weight feature classifier (soft infra penalty).
+    - ``strict``: spec-faithful conjunctive AND-gate
+      (docs/SATIM_TRACK_LINE_VS_TILE_SEAM_RULES.md). Honest caveat: it requires a
+      ``screen_locked_score`` feature the engine does not yet produce, so under
+      strict rules nothing is promoted in production until that extractor exists
+      (calibrate_strict emits a finding when screen_locked is all-zero).
+    """
+    if l5_mode not in L5_MODES:
+        raise ValueError(f"unknown l5_mode {l5_mode!r}; expected one of {L5_MODES}")
+    if l5_mode == "synthetic_boundary":
+        from .calibration.l5_synthetic_boundary_classifier import (
+            calibrate as calibrate_l5_synthetic,
+        )
+
+        payload = calibrate_l5_synthetic(candidates_csv)
+    elif l5_mode == "strict":
+        from .calibration.l5_tile_seam_shadow_calibration import calibrate_strict
+
+        payload = calibrate_strict(candidates_csv)
+    else:
+        payload = calibrate_l5(candidates_csv)
+    if isinstance(payload, dict):
+        payload["layer"] = "L5_tile_seam_shadow"
+        payload.setdefault("metrics", {})["l5_mode"] = l5_mode
+    return payload
 
 
 def _write_layer(layer: str, payload: Mapping[str, Any], layers_dir: Path) -> Path:
@@ -409,7 +448,8 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
         "L3_vision_ocr",
         {"ground_truth_csv": ground_truth, "predictions_json": predictions},
     )
-    l3_payload = missing_layer("L3_vision_ocr", missing) if missing else calibrate_l3(str(ground_truth), str(predictions))
+    l3_fuzzy = bool(manifest.options.get("l3_fuzzy", False))
+    l3_payload = missing_layer("L3_vision_ocr", missing) if missing else calibrate_l3(str(ground_truth), str(predictions), fuzzy=l3_fuzzy)
     layer_paths.append(_write_layer("L3_vision_ocr", l3_payload, layers_dir))
 
     fr24_csv = inputs.get("fr24_csv")
@@ -419,9 +459,16 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
 
     l5_candidates = inputs.get("l5_candidates_csv")
     include_l5 = bool(manifest.options.get("include_l5", True))
+    # L5 classifier selection (flag-gated; default preserves historical behaviour).
+    #   tile_seam_shadow (default) — rule + corroboration classifier
+    #   synthetic_boundary         — explicit-weight feature classifier (soft infra penalty)
+    # The `strict` documented AND-gate is intentionally NOT offered here: it
+    # requires a `screen_locked_score` feature that the feature engine does not
+    # yet produce (see docs/SATIM_TRACK_LINE_VS_TILE_SEAM_RULES.md — deferred).
+    l5_mode = str(manifest.options.get("l5_mode", "tile_seam_shadow"))
     if include_l5:
         missing = _require_or_missing(manifest, "L5_tile_seam_shadow", {"l5_candidates_csv": l5_candidates})
-        l5_payload = missing_layer("L5_tile_seam_shadow", missing) if missing else calibrate_l5(str(l5_candidates))
+        l5_payload = missing_layer("L5_tile_seam_shadow", missing) if missing else run_l5(l5_mode, str(l5_candidates))
     else:
         l5_payload = LayerCalibrationResult(
             layer="L5_tile_seam_shadow",
@@ -436,6 +483,82 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
             ],
         ).to_dict()
     layer_paths.append(_write_layer("L5_tile_seam_shadow", l5_payload, layers_dir))
+
+    artifact_input = inputs.get("artifact_assessment_json")
+    artifact_output: Path | None = None
+    artifact_auto_derived = False
+    ledger_output: Path | None = None
+    provider_compatibility: list[dict[str, Any]] | None = None
+    artifact_error: str | None = None
+    artifact_schema = (
+        Path(__file__).resolve().parents[1]
+        / "schemas"
+        / "satim_artifact_assessment_v1.schema.json"
+    )
+    if _is_present(artifact_input):
+        # Analyst-supplied assessment: fail-loud per the failure contract.
+        from skywatcher.satim.artifacts.engine import ArtifactAssessmentEngine
+        from skywatcher.satim.artifacts.schema_validator import ArtifactSchemaValidator
+
+        artifact_payload = json.loads(artifact_input.read_text(encoding="utf-8"))
+        ArtifactSchemaValidator(artifact_schema).require_valid(artifact_payload)
+        artifact_output = run_dir / "artifact_assessment_result.json"
+        write_json(
+            artifact_output,
+            ArtifactAssessmentEngine().assess(artifact_payload).to_dict(),
+        )
+    elif manifest.options.get("auto_artifact_assessment", True) and include_l5 and _is_present(
+        l5_candidates
+    ):
+        # Best-effort auto-derivation from L5 candidate classification. This
+        # path is purely additive: any failure is recorded but never breaks
+        # the run or changes its status.
+        try:
+            from skywatcher.satim.artifacts.confidence_ledger import ConfidenceLedger
+            from skywatcher.satim.artifacts.engine import ArtifactAssessmentEngine
+            from skywatcher.satim.artifacts.pipeline_chain import (
+                build_assessment_from_l5,
+                build_ledger_entry,
+            )
+            from skywatcher.satim.artifacts.provider_registry import ProviderProfileRegistry
+            from skywatcher.satim.artifacts.schema_validator import ArtifactSchemaValidator
+
+            scored = [classify_candidate(row) for row in load_candidates(l5_candidates)]
+            source_type = str(manifest.options.get("artifact_source_type", "screenshot"))
+            payload = build_assessment_from_l5(scored, source_type=source_type)
+            if payload is not None:
+                ArtifactSchemaValidator(artifact_schema).require_valid(payload)
+                result = ArtifactAssessmentEngine().assess(payload).to_dict()
+                artifact_output = run_dir / "artifact_assessment_result.json"
+                write_json(artifact_output, {"auto_derived": True, **result})
+                artifact_auto_derived = True
+
+                profiles_dir = Path(__file__).resolve().parents[1] / "profiles"
+                if profiles_dir.is_dir():
+                    registry = ProviderProfileRegistry()
+                    registry.load_dir(profiles_dir)
+                    provider_compatibility = [
+                        {
+                            "profile_id": profile_id,
+                            "compatible": registry.compatible(profile_id, payload["source"]),
+                        }
+                        for profile_id in registry.profile_ids()
+                    ]
+                    write_json(
+                        run_dir / "artifact_provider_compatibility.json",
+                        provider_compatibility,
+                    )
+
+                ledger_output = run_dir / "confidence_ledger.jsonl"
+                ConfidenceLedger(ledger_output).append(build_ledger_entry(payload, result))
+        except Exception as exc:
+            # Additive enrichment must never fail an otherwise-valid run.
+            artifact_error = f"{type(exc).__name__}: {exc}"
+            artifact_output = None
+            artifact_auto_derived = False
+            ledger_output = None
+            provider_compatibility = None
+            write_json(run_dir / "artifact_assessment_error.json", {"error": artifact_error})
 
     calibration_set_dir = inputs.get("calibration_set_dir")
     calibration_packet: dict[str, Any] | None = None
@@ -472,6 +595,11 @@ def run_satim_engine(manifest: SATIMEngineManifest, output_dir: str | Path | Non
             "legacy_readiness": str(legacy_path) if legacy_path else None,
             "provenance": str(run_dir / "provenance.json"),
             "calibration_set_validation": str(run_dir / "calibration_set_validation.json") if calibration_packet else None,
+            "artifact_assessment": str(artifact_output) if artifact_output else None,
+            "artifact_assessment_auto_derived": artifact_auto_derived,
+            "confidence_ledger": str(ledger_output) if ledger_output else None,
+            "artifact_provider_compatibility": provider_compatibility,
+            "artifact_assessment_error": artifact_error,
         },
     }
     write_json(run_dir / "run_summary.json", summary)

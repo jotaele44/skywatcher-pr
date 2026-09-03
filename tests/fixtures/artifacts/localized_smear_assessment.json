@@ -1,0 +1,36 @@
+{
+  "assessment_id": "IMG_8246-localized-smear-001",
+  "source": {
+    "source_type": "screenshot",
+    "provider": null,
+    "acquisition_date": null,
+    "zoom_level": null,
+    "tile_id": null,
+    "provenance_status": "partial"
+  },
+  "roi": {
+    "target": {"description": "Vertically dragged canopy-clearing boundary", "pixel_bounds": [0, 0, 100, 100], "geometry_wkt": null},
+    "local_control": {"description": "Adjacent coherent canopy", "pixel_bounds": [100, 0, 200, 100], "geometry_wkt": null},
+    "boundary_control": {"description": "Nearby canopy-clearing edge", "pixel_bounds": [0, 100, 100, 200], "geometry_wkt": null}
+  },
+  "candidate_artifacts": ["SATIM-A03", "SATIM-A05", "SATIM-A06"],
+  "measurements": {
+    "gradient_anisotropy_target": 1.73,
+    "gradient_anisotropy_control": 1.24,
+    "edge_orientation_coherence_target": 0.374,
+    "edge_orientation_coherence_control": 0.156,
+    "laplacian_variance_target": 2.23,
+    "laplacian_variance_boundary_control": 9.65
+  },
+  "contradictions": ["A real vegetation boundary may exist beneath the distortion"],
+  "final_classification": "SATIM-A03",
+  "origin_layer": "compound",
+  "confidence": {
+    "score": 0.86,
+    "level": "HIGH",
+    "rationale": "Directional anisotropy, detail collapse, and matched controls support localized smear."
+  },
+  "interpretation_restriction": "OBJECT_LEVEL_PROHIBITED",
+  "evidence_tiers": ["T1_TECHNICAL", "T2_OPERATIONAL"],
+  "analyst_notes": "Exact upstream origin remains unresolved; screenshot-only origin cap applies."
+}

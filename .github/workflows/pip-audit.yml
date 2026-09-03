@@ -1,0 +1,75 @@
+name: pip-audit
+
+# Rendered from thehub-pr/federation-templates/baseline/pip-audit.yml.
+# Edit the template there and re-render (tools/render_federation_templates.py);
+# do not hand-edit this file — template-drift.yml fails the build if you do.
+#
+# Audits the *locked* dependency set against the PyPI advisory database, so what
+# gets scanned is what actually installs. The federation settled on two lock
+# shapes — `uv.lock` where the repo has a real `[project]` table, and a
+# uv-compiled `requirements.lock` where the pyproject is config-only — so this
+# detects rather than assumes. Weekly matters more than per-push here: an
+# advisory is usually published long after the code stops changing.
+#
+# Report-only to start (continue-on-error), matching the convention already set
+# by moneysweep-pr: a newly disclosed CVE should surface as a visible signal,
+# not block unrelated work. Promote to gating once the baseline is clean.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  pull_request:
+    paths: # only when the dependency set itself moves
+      - "uv.lock"
+      - "requirements.lock"
+      - "constraints.txt"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pip-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # No `cache: pip` here on purpose. This job never runs pip install — it
+      # audits via `pipx run pip-audit` — so ~/.cache/pip is never created, and
+      # setup-python's post-job step fails hard when asked to save a cache
+      # directory that does not exist.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: Materialize the locked set as requirements
+        run: |
+          set -euo pipefail
+          if [ -f uv.lock ]; then
+            uv export --frozen --no-emit-project \
+              --format requirements-txt -o /tmp/locked.txt
+          elif [ -f requirements.lock ]; then
+            cp requirements.lock /tmp/locked.txt
+          elif [ -f constraints.txt ]; then
+            cp constraints.txt /tmp/locked.txt
+          else
+            echo "::error::no lock artifact (uv.lock / requirements.lock / constraints.txt)"
+            exit 1
+          fi
+          # Drop editable and local-path entries: these local federation
+          # packages have no PyPI advisories and would fail resolution outside
+          # their checkout context. Their own repo's audit covers them.
+          grep -vE '^\s*(-e |\.\./|/)' /tmp/locked.txt > /tmp/audit.txt
+          echo "auditing $(grep -cE '^[A-Za-z0-9]' /tmp/audit.txt || echo 0) pinned packages"
+
+      - name: Audit
+        continue-on-error: true
+        run: |
+          pipx run pip-audit --requirement /tmp/audit.txt --desc
