@@ -10,7 +10,7 @@ from typing import Any
 from .repositories import RepositoryRegistry
 from .source_taxonomy import SOURCE_TAXONOMY_VERSION, build_provenance
 
-API_VERSION = "0.2.0"
+API_VERSION = "0.3.0"
 VALID_STATUSES = {
     "available",
     "available_synthetic_only",
@@ -19,7 +19,6 @@ VALID_STATUSES = {
     "disabled_by_policy",
     "degraded",
 }
-
 CAPABILITY_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"id": "airport_detail", "label": "Airport detail", "phase": 1, "status": "available", "reason": "Puerto Rico airport registry is loaded by the diagnostic backend."},
     {"id": "airport_operations", "label": "Airport operations", "phase": 7, "status": "unavailable_no_adapter", "reason": "No owned, licensed, or public-official operational adapter is configured."},
@@ -27,16 +26,16 @@ CAPABILITY_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"id": "airport_weather", "label": "Airport weather", "phase": 7, "status": "unavailable_no_adapter", "reason": "No official METAR/TAF adapter is configured."},
     {"id": "bookmarks", "label": "Bookmarks", "phase": 4, "status": "unavailable_no_adapter", "reason": "Versioned diagnostic user-state repository is not implemented yet."},
     {"id": "recent_selections", "label": "Recent selections", "phase": 4, "status": "unavailable_no_adapter", "reason": "Console user-state repository is not implemented yet."},
-    {"id": "view_modes", "label": "Map/list/airport/fleet view modes", "phase": 4, "status": "degraded", "reason": "Separate pages and aircraft card/table views exist, but no synchronized console."},
+    {"id": "view_modes", "label": "Map/list/airport/fleet view modes", "phase": 4, "status": "degraded", "reason": "The map console exists, while synchronized list, airport, and fleet modes remain future work."},
     {"id": "aircraft_viewport_list", "label": "Viewport aircraft list", "phase": 4, "status": "unavailable_no_artifact", "reason": "No normalized aircraft-state collection is connected."},
     {"id": "configurable_columns", "label": "Configurable columns", "phase": 4, "status": "unavailable_no_adapter", "reason": "Column registry is not implemented yet."},
-    {"id": "map_navigation", "label": "Interactive map navigation", "phase": 3, "status": "unavailable_no_adapter", "reason": "The React surface currently uses a diagnostic SVG shell."},
-    {"id": "geolocation", "label": "Geolocation", "phase": 3, "status": "unavailable_no_adapter", "reason": "Browser geolocation control is not implemented yet."},
+    {"id": "map_navigation", "label": "Interactive map navigation", "phase": 3, "status": "available", "reason": "MapLibre GL JS navigation is available on /console with deterministic WebGL cleanup."},
+    {"id": "geolocation", "label": "Geolocation", "phase": 3, "status": "available", "reason": "The /console runtime exposes a browser-permission-gated MapLibre geolocation control."},
     {"id": "playback_datetime", "label": "Playback date/time selection", "phase": 5, "status": "unavailable_no_artifact", "reason": "No UTC-valid time-indexed state repository is connected."},
     {"id": "playback_timeline", "label": "Playback timeline", "phase": 5, "status": "unavailable_no_artifact", "reason": "No normalized time-indexed track repository is connected."},
     {"id": "widgets", "label": "Console widgets", "phase": 6, "status": "degraded", "reason": "Diagnostic dashboard panels exist but are not dockable console widgets."},
-    {"id": "basemap_controls", "label": "Basemap controls", "phase": 3, "status": "unavailable_no_adapter", "reason": "Interactive map runtime and basemap registry are not implemented yet."},
-    {"id": "map_brightness", "label": "Map brightness", "phase": 3, "status": "unavailable_no_adapter", "reason": "Interactive map style controls are not implemented yet."},
+    {"id": "basemap_controls", "label": "Basemap controls", "phase": 3, "status": "available", "reason": "The Phase 3 basemap registry includes a keyless local blank diagnostic style that requires no network."},
+    {"id": "map_brightness", "label": "Map brightness", "phase": 3, "status": "unavailable_no_adapter", "reason": "Interactive map style brightness controls are not implemented yet."},
     {"id": "day_night_overlay", "label": "Day/night overlay", "phase": 6, "status": "unavailable_no_adapter", "reason": "Solar terminator layer is not implemented yet."},
     {"id": "atc_overlays", "label": "ATC overlays", "phase": 6, "status": "unavailable_no_artifact", "reason": "Authoritative display-ready ATC boundary layers are not connected."},
     {"id": "oceanic_tracks", "label": "Oceanic tracks", "phase": 6, "status": "unavailable_no_adapter", "reason": "No official or licensed oceanic-track adapter is configured."},
@@ -44,7 +43,7 @@ CAPABILITY_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"id": "aircraft_labels", "label": "Aircraft labels", "phase": 6, "status": "unavailable_no_artifact", "reason": "Aircraft profile outputs are not connected."},
     {"id": "aircraft_styling", "label": "Aircraft styling", "phase": 6, "status": "unavailable_no_adapter", "reason": "Interactive aircraft symbol renderer is not implemented yet."},
     {"id": "source_visibility", "label": "Source visibility", "phase": 1, "status": "degraded", "reason": "Canonical taxonomy exists, but source-backed repositories are incomplete."},
-    {"id": "unit_preferences", "label": "Unit preferences", "phase": 4, "status": "unavailable_no_adapter", "reason": "Unit provider and preference repository are not implemented yet."},
+    {"id": "unit_preferences", "label": "Unit preferences", "phase": 4, "status": "unavailable_no_adapter", "reason": "Unit provider and preference repository is not implemented yet."},
 )
 
 if len(CAPABILITY_DEFINITIONS) != 24:
@@ -195,6 +194,15 @@ def build_capabilities(root: Path) -> dict[str, Any]:
         "source_families": source_families,
         "data_time_range": _time_range(all_rows),
         "data_planes": data_planes,
+        "map_runtime": {
+            "engine": "MapLibre GL JS",
+            "route": "/console",
+            "offline_basemap_id": "local-blank-diagnostic",
+            "network_required_for_blank_diagnostic": False,
+            "provider_keys_required": False,
+            "attribution_always_visible": True,
+            "webgl_cleanup_required": True,
+        },
         "policy": {
             "fr24_scraping": False,
             "proprietary_asset_copying": False,
