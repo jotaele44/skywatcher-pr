@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://satim.local/schemas/artifact_assessment_v2.schema.json",
+  "title": "SATIM Artifact Assessment v2",
+  "type": "object",
+  "required": [
+    "assessment_id",
+    "source",
+    "roi",
+    "candidate_artifacts",
+    "final_classification",
+    "confidence",
+    "interpretation_restriction"
+  ],
+  "properties": {
+    "assessment_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "source_type",
+        "provenance_status"
+      ],
+      "properties": {
+        "source_type": {
+          "enum": [
+            "raw_scene",
+            "orthophoto",
+            "web_tile",
+            "screenshot",
+            "pdf_frame",
+            "unknown"
+          ]
+        },
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "acquisition_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "zoom_level": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "tile_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provenance_status": {
+          "enum": [
+            "verified",
+            "partial",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "roi": {
+      "type": "object",
+      "required": [
+        "target"
+      ],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/roi"
+        },
+        "local_control": {
+          "$ref": "#/$defs/roi"
+        },
+        "boundary_control": {
+          "$ref": "#/$defs/roi"
+        },
+        "remote_control": {
+          "$ref": "#/$defs/roi"
+        }
+      }
+    },
+    "candidate_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^SATIM-A(0[1-9]|1[0-2])$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "measurements": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "number",
+          "string",
+          "boolean",
+          "null"
+        ]
+      }
+    },
+    "contradictions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "final_classification": {
+      "type": "string",
+      "pattern": "^SATIM-A(0[1-9]|1[0-2])$"
+    },
+    "origin_layer": {
+      "enum": [
+        "ground_scene",
+        "atmosphere",
+        "sensor_source",
+        "orthorectification",
+        "mosaic",
+        "temporal_composite",
+        "gap_fill",
+        "tile_renderer",
+        "client_display",
+        "screenshot_export",
+        "compound",
+        "unresolved"
+      ]
+    },
+    "confidence": {
+      "type": "object",
+      "required": [
+        "score",
+        "level"
+      ],
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "level": {
+          "enum": [
+            "CONFIRMED",
+            "HIGH",
+            "MODERATE",
+            "LOW",
+            "UNRESOLVED"
+          ]
+        },
+        "rationale": {
+          "type": "string"
+        }
+      }
+    },
+    "interpretation_restriction": {
+      "enum": [
+        "NONE",
+        "SPECTRAL_ONLY_DEGRADED",
+        "GEOMETRY_DEGRADED",
+        "OBJECT_LEVEL_PROHIBITED",
+        "ALL_INFERENCE_SUSPENDED"
+      ]
+    },
+    "evidence_tiers": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "T1_TECHNICAL",
+          "T2_OPERATIONAL",
+          "T3_EYEWITNESS",
+          "T4_SECONDARY"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "analyst_notes": {
+      "type": "string"
+    },
+    "raw_source_compared": {
+      "type": "boolean",
+      "description": "True when a screenshot/pdf_frame assessment was compared against the raw upstream source; lifts the screenshot-only origin-confidence cap."
+    },
+    "lens_parameters": {
+      "description": "Parameter values supplied per lens, keyed by lens_id. Drives the fail-closed coverage check: a required parameter absent here makes its lens MISSING.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "lens_inputs": {
+      "description": "Named inputs available per lens, keyed by lens_id. A required input absent here makes its lens MISSING.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "lens_produced": {
+      "description": "Whether each lens produced a result. False means it ran and produced nothing, which is DEGRADED - distinct from never having run.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "lens_applicable": {
+      "description": "Whether each lens applies to this run. Marking a REQUIRED lens inapplicable still blocks completion; it is not an escape hatch.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    }
+  },
+  "$defs": {
+    "roi": {
+      "type": "object",
+      "required": [
+        "description"
+      ],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "pixel_bounds": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "geometry_wkt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "description": "v1 plus the lens inputs the declarative lens registry needs. v1 stays immutable and readable (ADR v2.0 section 13); this version exists because v1 sets additionalProperties:false, so the lens keys cannot be added to it. Every new key is optional - a v1 payload is a valid v2 payload."
+}

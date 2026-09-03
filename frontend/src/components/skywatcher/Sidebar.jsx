@@ -1,18 +1,20 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Plane, IdCard, Camera, Route as RouteIcon,
+  LayoutDashboard, Map, Plane, IdCard, Camera, Route as RouteIcon,
   Building2, TowerControl, ClipboardCheck, Share2, GaugeCircle,
-  ScanSearch,
+  Crosshair, ScanSearch, ScanEye,
 } from "lucide-react";
 import { PROGRAM } from "@/lib/skywatcher";
 import brandMark from "@/assets/icon-64.png?inline";
 
 const NAV = [
   { to: "/", label: "Command Dashboard", icon: LayoutDashboard },
+  { to: "/console", label: "Interactive Console", icon: Map },
   { to: "/observations", label: "Airspace Observations", icon: Plane },
   { to: "/aircraft", label: "Aircraft Profiles", icon: IdCard },
   { to: "/fr24", label: "FR24 Intake", icon: Camera },
+  { to: "/spatial-truth", label: "Aircraft Spatial Truth", icon: Crosshair },
   { to: "/routes", label: "Route-Line Mining", icon: RouteIcon },
   { to: "/infrastructure", label: "Infrastructure Links", icon: Building2 },
   { to: "/airports", label: "PR Airports", icon: TowerControl },
@@ -20,6 +22,7 @@ const NAV = [
   { to: "/export", label: "Federation Export", icon: Share2 },
   { to: "/readiness", label: "Readiness / Blockers", icon: GaugeCircle },
   { to: "/calibration", label: "SATIM Calibration", icon: ScanSearch },
+  { to: "/analysis", label: "Analysis Lenses", icon: ScanEye },
 ];
 
 export default function Sidebar({ onNavigate }) {

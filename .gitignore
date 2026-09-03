@@ -33,11 +33,10 @@ tile_cache/
 exports/federation/
 
 # FR24 ingest data — large baseline corpus + run manifests.
-# Owned by skywatcher (relocated here from spiderweb-pr); large + machine-local,
-# so tracked out of git. The empty directory is tracked (.gitkeep) so the
-# operator has an obvious place to point the corpus at — see data/rlsm/HANDOFF.md.
-data/FR24_baseline/*
-!data/FR24_baseline/.gitkeep
+# Owned by skywatcher (relocated here from spiderweb-pr); large + machine-local.
+# Ignore the path itself so an operator may mount or symlink the private corpus
+# without `git reset --hard` replacing it with a tracked placeholder directory.
+data/FR24_baseline
 data/_manifests/
 data/.migration_trash/
 
@@ -84,11 +83,30 @@ Archive/
 _superseded/
 
 # RLSM corpus-derived artifacts. All regenerable — see data/rlsm/HANDOFF.md.
-# FR24_ocr_cache is ~13.7k per-screenshot .txt files; places.geojson is a 1.2 MB
-# gazetteer built by scripts/rlsm_build_places_geojson.py.
+# FR24_ocr_cache is ~13.7k per-screenshot .txt files. data/places.geojson is
+# ignored as a legacy local artifact; the pipeline's tracked place authority is
+# data/reference/Gazetteer_PR_GNIS.gpkg.
 data/FR24_ocr_cache/
 data/places.geojson
 
 # SQLite leaves these behind when a file is deleted while a handle is still open
 # (the rlsm.sqlite migration produced a pile of them).
 .fuse_hidden*
+
+# --- FR24 boundary correction: runtime artifact exclusions ---
+*.db-wal
+*.db-shm
+skywatcher.db
+data/skywatcher.db
+screenshots/
+!inputs/screenshots/
+inputs/screenshots/*
+!inputs/screenshots/.gitkeep
+# OCR caches / generated geospatial + columnar artifacts / operational exports
+ocr_cache/
+*.geojson
+*.parquet
+exports/spiderweb/
+# runtime logs, tokens, secrets
+*.log
+*.token

@@ -8,16 +8,33 @@ pipelines exist side by side and don't share their best components** — the leg
 lane — so the highest returns come from wiring what already works into the paths that need it,
 not from new extraction research.
 
-## 1. Promote the per-screenshot affine geocoder to the shared calibration (do first)
+## Current spatial-truth implementation
+
+Aircraft position is now a first-class RLSM output rather than the location of a nearby map
+label. `fr24/rlsm_aircraft_markers.py` preserves all plausible glyph candidates and binds a
+source-image pixel/rotation only when one candidate and one aircraft observation are
+unambiguous. `fr24/rlsm_georeference.py` persists accepted and rejected transforms, derives a
+relative power-of-two zoom ladder from accepted multi-anchor fits, and permits one-anchor
+recovery only with an independently evidenced near-duplicate source. Located aircraft errors
+are capped at 500 m; OCR `heading_deg` is never overwritten by glyph rotation.
+
+The exact data contract is `docs/RLSM_AIRCRAFT_SPATIAL_TRUTH.md`. Scale-bar OCR remains
+conditional on more than 15% unresolved otherwise-recoverable frames. Track-polyline work is
+outside this v0.1 change.
+
+## 1. Promote the per-screenshot affine geocoder to the shared calibration
+(RLSM path implemented; operator corpus run pending)
 
 Every legacy observation is stamped with a fixed guess — `fixed_pr_bounds`, confidence 0.65,
 estimated error 1,500 m (`fr24/screenshot_inventory.py:195-197`) — which means
 `build_producer_package.py` can never emit a `located` observation (its floor is
 coordinate confidence ≥0.8) and the production stream stays "approximate" forever.
-Meanwhile `scripts/rlsm_geocode_unlabeled.py` **already implements** a working per-screenshot
-4-parameter affine fit from ≥2 vocabulary-matched labeled pins.
+The shared 4-parameter fit lives in `integration/geo_calibration.py`.
+`fr24/rlsm_georeference.py` now fits it from ≥2 measured anchors, persists its
+scale and uncertainty, and `scripts/rlsm_geocode_unlabeled.py` consumes those
+accepted transforms instead of fitting and discarding a parallel model.
 
-**Action:** lift that transform into the shared calibration used by `fr24/event_export.py`
+**Remaining producer-bridge action:** use that shared transform in `fr24/event_export.py`
 (currently `GeoCalibration(mode="fixed_pr_bounds")`) and `scripts/build_producer_package.py`,
 writing real per-image `coordinate_confidence`/`estimated_error_m`. Expected effect: 10–50×
 error reduction on calibratable frames, observations crossing the `located` floor, and a real

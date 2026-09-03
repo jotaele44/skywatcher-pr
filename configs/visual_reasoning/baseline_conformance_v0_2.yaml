@@ -1,0 +1,223 @@
+spec_version: 0.2.0
+vector: 2/3_EXISTING_BASELINE_AUDIT_AND_NORMALIZATION
+baseline_commit: c32c68abce2a281fd13d9632687a7cdc10412d0b
+spec_parent_commit: f4cd10fe0ded17ce03c431cea4bfc05f0bbca82f
+claim_scope: >-
+  Bounded conformance audit of current Skywatcher visual-reasoning implementation
+  surfaces relevant to the v0.2.0 decision surface. This is not universal
+  exhaustion of every repository module.
+
+conformance_states:
+  - CONFORMS
+  - PARTIAL
+  - CONFLICTS
+  - DUPLICATES
+  - MISSING
+  - LEGACY_COMPATIBILITY
+  - DEAD
+  - UNRESOLVED
+
+global_policy:
+  canonical_visual_source_of_truth: docs/architecture/VISUAL_REASONING_CANONICAL_SPEC_v0_2.md
+  adapters_over_rewrite: true
+  preserve_existing_provenance: true
+  preserve_legacy_callers_until_accounted: true
+  unvalidated_numeric_values: CALIBRATION_REQUIRED
+  discovery_is_identity: false
+  proximity_is_identity: false
+  deterministic_tie_break_is_evidence: false
+
+components:
+  - id: CORE.MODULE_BOUNDARIES
+    paths:
+      - src/skywatcher/core/module_boundaries.py
+      - tests/test_module_boundaries.py
+    conformance: CONFORMS
+    action: KEEP_AND_HARDEN
+    note: Root SATIM coverage gap closed in Vector 2.
+
+  - id: RLSM.CUSTODY_OCR_LOCALIZATION
+    paths:
+      - fr24/rlsm_pipeline.py
+      - fr24/rlsm_ocr_parallel.py
+      - fr24/rlsm_preprocess.py
+      - fr24/rlsm_zones.py
+      - data/rlsm/schema.sql
+    conformance: CONFORMS
+    action: REUSE_AS_ADAPTER
+    note: RLSM remains extraction/localization only.
+
+  - id: RLSM.UNLABELED_GROUND_FEATURES
+    paths:
+      - fr24/rlsm_unlabeled.py
+      - fr24/rlsm_pipeline.py
+    conformance: CONFLICTS
+    action: QUARANTINE_FROM_CANONICAL_VISUAL_REASONING
+    reasons:
+      - Semantic classes pad/tank/quarry are terrain interpretation, not RLSM extraction.
+      - Detector uses unregistered hardcoded luminance/geometry/confidence values.
+    containment:
+      default_pipeline_stage: false
+      delete_now: false
+      canonical_consumer_allowed: false
+
+  - id: SATIM.ARTIFACT_FOUNDATION
+    paths:
+      - satim_artifact_filter.py
+      - satim_tile_seam_classifier.py
+      - fr24/calibration/l5_tile_seam_shadow_calibration.py
+      - src/skywatcher/satim/artifacts/pipeline_chain.py
+    conformance: PARTIAL
+    action: REUSE_AND_HARDEN
+    reasons:
+      - Existing seam/mosaic/artifact taxonomy is directly reusable.
+      - Legacy numeric weights and confidence bands remain calibration-required.
+      - Low artifact evidence previously auto-promoted TRUE_SURFACE_FEATURE; repaired fail-closed in Vector 2.
+
+  - id: SATIM.CUT_FILL
+    paths:
+      - satim_cut_fill.py
+      - tests/test_satim_cut_fill.py
+    conformance: CONFLICTS
+    action: SPLIT_VISUAL_FROM_CROSS_DOMAIN_COMPATIBILITY
+    reasons:
+      - Visible earthwork signals are reusable SATIM observations.
+      - FR24 route proximity, ADS-B gap and P_ROUTE confidence output are cross-domain and noncanonical for SATIM.
+      - Caller-supplied QUARRY class lacks required quarry-vs-natural negative-control adjudication.
+    canonical_consumer_allowed: false
+
+  - id: SATIM.WATER_FEATURE
+    paths:
+      - satim_water_feature.py
+      - tests/test_satim_water_feature.py
+    conformance: PARTIAL
+    action: REUSE_OBSERVATIONS_REPLACE_DECISION_LOGIC
+    reasons:
+      - Surface visibility, shoreline continuity and basin geometry are useful observations.
+      - Current class is caller supplied rather than derived through the canonical hydrographic-form rules.
+      - P_ROUTE confidence output is noncanonical cross-domain compatibility behavior.
+      - Numeric weights and artifact adjustment are calibration-required.
+
+  - id: SATIM.ROAD_END
+    paths:
+      - satim_road_end.py
+    conformance: CONFLICTS
+    action: SPLIT_VISUAL_FROM_CROSS_DOMAIN_COMPATIBILITY
+    reasons:
+      - Visible road-end geometry is reusable.
+      - Route proximity and ADS-B gap support cannot increase a SATIM visual identity score.
+      - P_ROUTE confidence output belongs outside canonical SATIM.
+
+  - id: SATIM.TEMPORAL_CHANGE
+    paths:
+      - satim_temporal_change.py
+    conformance: PARTIAL
+    action: REUSE_BEHIND_CANONICAL_REGISTRATION_AND_EPOCH_GATES
+
+  - id: SATIM.CONTRADICTION_RESOLVER
+    paths:
+      - satim_contradiction_resolver.py
+      - tests/test_satim_contradiction_resolver.py
+    conformance: PARTIAL
+    action: REUSE_CONTRADICTION_PRESERVATION_ADAPT_SCORE_SEMANTICS
+
+  - id: SATIM.ENSEMBLE_CALIBRATOR
+    paths:
+      - satim_ensemble_calibrator.py
+      - tests/test_satim_ensemble_calibrator.py
+    conformance: PARTIAL
+    action: REUSE_FOR_CALIBRATION_ONLY
+
+  - id: SATIM.GEOMETRY
+    paths:
+      - satim_geometry.py
+      - satim_fit.py
+      - satim_ground_truth.py
+    conformance: CONFORMS
+    action: REUSE_AS_PRIMITIVES
+
+  - id: SATIM.RENDER_DIFF
+    paths:
+      - satim_render_diff.py
+    conformance: PARTIAL
+    action: REUSE_AS_OBSERVATION_PRODUCER
+
+  - id: SATIM.PATCHWORK
+    paths:
+      - satim_patchwork.py
+    conformance: PARTIAL
+    action: REUSE_WITH_PROVENANCE_ADAPTER
+
+  - id: SATIM.LINEAR_CORRIDOR
+    paths:
+      - satim_linear_corridor.py
+    conformance: PARTIAL
+    action: REUSE_GEOMETRY_ONLY
+
+  - id: SATIM.VISUAL_ROUTE_GAP
+    paths:
+      - satim_visual_route_gap.py
+      - tests/test_satim_visual_route_gap.py
+    conformance: CONFLICTS
+    action: LEGACY_COMPATIBILITY_ONLY
+    reasons:
+      - Route/track gap interpretation is FPIM when it concerns flight-path behavior.
+      - Visual image-gap/artifact observations may be retained only after owner split.
+
+  - id: SATIM.CALIBRATION_STACK
+    paths:
+      - satim_calibration.py
+      - fr24/calibration/
+    conformance: PARTIAL
+    action: REUSE_CALIBRATION_INFRASTRUCTURE_NOT_UNVALIDATED_THRESHOLDS
+
+  - id: SCENE.PALM_DETECTOR
+    paths: []
+    conformance: MISSING
+    action: VECTOR_3_NEW_IMPLEMENTATION
+
+  - id: SCENE.FULL_HYDROGRAPHIC_FORM_DETECTOR
+    paths:
+      - satim_water_feature.py
+    conformance: MISSING
+    action: VECTOR_3_NEW_IMPLEMENTATION_USING_EXISTING_OBSERVATIONS
+
+  - id: SCENE.SHADOW_PHOTOMETRIC_ANALYZER
+    paths:
+      - fr24/calibration/l5_tile_seam_shadow_calibration.py
+    conformance: MISSING
+    action: VECTOR_3_NEW_IMPLEMENTATION
+    note: Existing L5 shadow logic is calibration input, not the required full local photometric model.
+
+  - id: SCENE.SCENE_LOCATOR
+    paths: []
+    conformance: MISSING
+    action: VECTOR_3_NEW_IMPLEMENTATION
+
+  - id: SCENE.QUARRY_ADJUDICATOR
+    paths:
+      - satim_cut_fill.py
+      - fr24/rlsm_unlabeled.py
+    conformance: MISSING
+    action: VECTOR_3_NEW_IMPLEMENTATION
+    note: Existing quarry labels are discovery/compatibility outputs, not canonical adjudication.
+
+  - id: SCENE.PORTAL_LIKE_ADJUDICATOR
+    paths: []
+    conformance: MISSING
+    action: VECTOR_3_NEW_IMPLEMENTATION
+
+legacy_noncanonical_outputs:
+  - satim_cut_fill.build_p_route_confidence_patch
+  - satim_road_end.build_p_route_confidence_patch
+  - satim_water_feature.build_p_route_confidence_patch
+  - fr24.rlsm_unlabeled semantic ground-feature classifications
+  - satim_visual_route_gap cross-domain route interpretation
+
+vector_2_normalization_actions:
+  - complete_root_satim_module_boundary_classification
+  - document_legacy_cross_domain_surfaces
+  - fail_closed_artifact_absence_logic
+  - freeze_parameter_debt_ledger
+  - freeze_rule_conflict_ledger
+  - add_regression_gates_for_boundary_coverage_and_quarantine

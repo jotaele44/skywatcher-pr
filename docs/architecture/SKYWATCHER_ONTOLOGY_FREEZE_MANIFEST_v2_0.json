@@ -1,0 +1,72 @@
+{
+  "authorized_branch": "agent/skywatcher-ontology-v2-g0-governance",
+  "authorized_commit_message": "docs(ontology): freeze Skywatcher analytical ontology v2.0",
+  "authorized_paths": [
+    "docs/architecture/ADR_SKYWATCHER_ANALYTICAL_ONTOLOGY_v2_0.md",
+    "docs/architecture/SKYWATCHER_LEGACY_ALIAS_REGISTRY_v2_0.csv",
+    "docs/architecture/SKYWATCHER_ONTOLOGY_FREEZE_MANIFEST_v2_0.json",
+    "docs/architecture/SKYWATCHER_ONTOLOGY_SOURCE_REGISTER_v2_0.csv",
+    "docs/architecture/SKYWATCHER_PATH_LEVEL_MIGRATION_PLAN_v2_0.csv",
+    "docs/architecture/SKYWATCHER_TERM_OWNERSHIP_MATRIX_v2_0.csv",
+    "docs/architecture/SKYWATCHER_THRESHOLD_REGISTRY_SEED_v2_0.csv",
+    "tests/test_skywatcher_ontology_governance_v2.py"
+  ],
+  "authorized_pull_request_title": "Governance: freeze Skywatcher analytical ontology v2.0",
+  "auto_merge_authorized": false,
+  "base_commit": "140b954b6faa9a50e26ad38fd56b0bc038ea6c25",
+  "force_push_authorized": false,
+  "freeze_date": "2026-08-03",
+  "frozen_baseline_records": [
+    {
+      "path": "docs/architecture/archive/v2_0/ADR_SKYWATCHER_ANALYTICAL_ONTOLOGY_v2_0.md",
+      "sha256": "15270fae63b8992ebb382f157d168b9436d07ab934e49c78cda6bc846e818d7a",
+      "size_bytes": 18734
+    },
+    {
+      "path": "docs/architecture/archive/v2_0/SKYWATCHER_LEGACY_ALIAS_REGISTRY_v2_0.csv",
+      "sha256": "d46308d2fa96bb20ce53a5c1b42b68a89bea9d5dd37c062d6cdda73a34752e32",
+      "size_bytes": 2962
+    },
+    {
+      "path": "docs/architecture/archive/v2_0/SKYWATCHER_ONTOLOGY_SOURCE_REGISTER_v2_0.csv",
+      "sha256": "90a0cac7fe0d5987aa920d9be0499dee1efa07a421e2362274ceeaefee41632e",
+      "size_bytes": 2819
+    },
+    {
+      "path": "docs/architecture/archive/v2_0/SKYWATCHER_PATH_LEVEL_MIGRATION_PLAN_v2_0.csv",
+      "sha256": "68231e0d31c90ec98be5047f17a5c404c3fa0ba95713e95437eb5cc1044dd78f",
+      "size_bytes": 23527
+    },
+    {
+      "path": "docs/architecture/archive/v2_0/SKYWATCHER_TERM_OWNERSHIP_MATRIX_v2_0.csv",
+      "sha256": "88edf5befb223a0d68a59c9f730aa74e54dd3fbcd338abbb2bf4369ef626085f",
+      "size_bytes": 4443
+    },
+    {
+      "path": "docs/architecture/archive/v2_0/SKYWATCHER_THRESHOLD_REGISTRY_SEED_v2_0.csv",
+      "sha256": "290e6e84d86260302abf872d40b7126a792d5393ec2f10e02a29e73a26982e0f",
+      "size_bytes": 3055
+    },
+    {
+      "path": "docs/architecture/archive/v2_0/test_skywatcher_ontology_governance_v2.py",
+      "sha256": "85cba324df6b40384f90fb307b68b3a402be771f46e07d8e2d02d5f47a01c530",
+      "size_bytes": 6187
+    }
+  ],
+  "g0_authorized_rows": 8,
+  "g1_plus_blocked_rows": 69,
+  "merge_authorized": true,
+  "migration_plan_rows": 77,
+  "mission_or_intent_inference_authorized": false,
+  "repository": "jotaele44/skywatcher-pr",
+  "runtime_change_authorized": true,
+  "schema_change_authorized": true,
+  "schema_version": "skywatcher.ontology_freeze_manifest.v2.1",
+  "status": "UNFROZEN_IMPLEMENTATION_AUTHORIZED",
+  "superseding_authority": "docs/architecture/ADR_SKYWATCHER_ANALYTICAL_ONTOLOGY_v2_1.md",
+  "threshold_execution_authorized": true,
+  "unfreeze_authority": "Human-authorized ontology unfreeze vector; see ADR v2.1 decision A0",
+  "unfreeze_base_commit": "f940dc1d4afae7740eaa2a94dbf4684d11ae156b",
+  "unfreeze_date": "2026-08-08",
+  "workflow_change_authorized": true
+}

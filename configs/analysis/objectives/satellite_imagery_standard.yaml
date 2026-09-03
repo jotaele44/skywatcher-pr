@@ -1,0 +1,13 @@
+profile_id: satellite_imagery_standard
+name: Satellite imagery - standard analysis
+version: 1.0.0
+status: active
+description: Default objective for a satellite image processing run. Artifact assessment is required because every other imagery lens depends on artifact exclusion having happened first. The interpretive lenses are optional so a run is not blocked for looking at imagery that contains none of their subjects.
+stages:
+  - satellite_image_processing
+required_lenses:
+  - satim.image_artifacts
+optional_lenses:
+  - satim.hydrogeography
+  - satim.subsurface_infrastructure
+  - satim.dual_use_function
