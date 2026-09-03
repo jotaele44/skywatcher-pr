@@ -92,7 +92,46 @@ def fit_screenshot(
     residual_m = float(median(residuals))
     x, y, w, h = viewport
     center_lat = lat0 + dlat_dy * (y + h / 2.0)
-    scale_x, scale_y, scale, disagreement = affine_scale_metrics(affine, center_lat)
+
+    # A map transform is physically invalid if extrapolating it to the viewport
+    # center leaves the terrestrial latitude domain. Reject before scale
+    # conversion so cos(latitude) can never turn metric x-scale negative.
+    if (
+        not math.isfinite(float(center_lat))
+        or float(center_lat) < -90.0
+        or float(center_lat) > 90.0
+    ):
+        return {
+            "status": "rejected_geometry",
+            "reason": (
+                "viewport-center latitude outside physical range: "
+                f"{center_lat!r}"
+            ),
+            "affine": affine,
+            "residual_m": residual_m,
+        }
+
+    scale_x, scale_y, scale, disagreement = affine_scale_metrics(
+        affine, center_lat
+    )
+
+    # Fail closed on numerically invalid scale geometry. The database contract
+    # requires every persisted scale to be finite and strictly positive.
+    scale_values = (scale_x, scale_y, scale)
+    if any(
+        not math.isfinite(float(value)) or float(value) <= 0.0
+        for value in scale_values
+    ):
+        return {
+            "status": "rejected_geometry",
+            "reason": (
+                "non-finite or non-positive affine scale: "
+                f"x={scale_x!r}, y={scale_y!r}, combined={scale!r}"
+            ),
+            "affine": affine,
+            "residual_m": residual_m,
+        }
+
     if disagreement > MAX_AXIS_DISAGREEMENT:
         return {
             "status": "rejected_geometry",
