@@ -21,6 +21,7 @@ import logging
 import os
 import secrets
 import sqlite3
+import sys
 import uuid
 from pathlib import Path
 from typing import Any
@@ -31,10 +32,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from server.backend.console import router as console_router
 
 ROOT = Path(__file__).resolve().parents[2]
+# Make the src-layout package importable when uvicorn starts from the repo root.
+if str(ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT / "src"))
+
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
 EXPORTS_DIR = ROOT / "exports"
 SYNTHETIC_PACKAGE = EXPORTS_DIR / "examples" / "synthetic_airspace_package"
 EVIDENCE_PATH = ROOT / "reports" / "federation" / "evidence_skywatcher-pr.jsonl"
+CRAFT_PROFILE_DIR = ROOT / "profiles" / "craft"
 RLSM_DB = ROOT / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 RLSM_MARKER_VERSION = "rlsm-aircraft-marker-v1"
 RLSM_GEOREF_VERSION = "rlsm-spatial-georef-v1"
@@ -102,9 +108,7 @@ def require_write_access(request: Request) -> None:
     """Authorize a mutating request, by bearer token or by local-network origin."""
     if _WRITE_TOKEN:
         scheme, _, presented = request.headers.get("authorization", "").partition(" ")
-        if scheme.lower() != "bearer" or not secrets.compare_digest(
-            presented, _WRITE_TOKEN
-        ):
+        if scheme.lower() != "bearer" or not secrets.compare_digest(presented, _WRITE_TOKEN):
             raise HTTPException(status_code=401, detail="Missing or invalid write token")
         return
 
@@ -132,9 +136,7 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     rows: list[dict[str, Any]] = []
-    for line_no, line in enumerate(
-        path.read_text(encoding="utf-8").splitlines(), start=1
-    ):
+    for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         line = line.strip()
         if not line:
             continue
@@ -169,10 +171,7 @@ def read_csv(path: Path) -> list[dict[str, Any]]:
         return []
     with path.open("r", encoding="utf-8", newline="") as handle:
         return [
-            {
-                key: coerce(value) if isinstance(value, str) else value
-                for key, value in row.items()
-            }
+            {key: coerce(value) if isinstance(value, str) else value for key, value in row.items()}
             for row in csv.DictReader(handle)
         ]
 
@@ -314,7 +313,7 @@ def load_observations() -> list[dict[str, Any]]:
     return rows + load_rlsm_spatial_observations()
 
 
-def load_aircraft_profiles() -> list[dict[str, Any]]:
+def load_rlsm_aircraft_profiles() -> list[dict[str, Any]]:
     """Expose one lightweight profile for each spatially located registration."""
     profiles: dict[str, dict[str, Any]] = {}
     for row in load_rlsm_spatial_observations():
@@ -337,11 +336,52 @@ def load_aircraft_profiles() -> list[dict[str, Any]]:
             },
         )
         profile["observation_count"] += 1
-        if str(row.get("observed_at") or "") > str(
-            profile.get("latest_observed_at") or ""
-        ):
+        if str(row.get("observed_at") or "") > str(profile.get("latest_observed_at") or ""):
             profile["latest_observed_at"] = row.get("observed_at")
     return sorted(profiles.values(), key=lambda row: str(row["tail_number"]))
+
+
+def load_craft_profiles() -> list[dict[str, Any]]:
+    """Load whole committed craft-profile rows without inferring mission fields."""
+    rows: list[dict[str, Any]] = []
+    if not CRAFT_PROFILE_DIR.exists():
+        return rows
+    for path in sorted(CRAFT_PROFILE_DIR.glob("*.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if not isinstance(data, dict) or not data.get("registration"):
+            continue
+        mission = data.get("primary_mission") if data.get("mission_is_authoritative") else None
+        data.setdefault("id", data["registration"])
+        data.setdefault("aircraft_id", data["registration"])
+        data.setdefault("tail_number", data["registration"])
+        data.setdefault("operator_category", data.get("operator"))
+        data.setdefault("mission_category", mission)
+        data.setdefault("profile_confidence", data.get("confidence_level"))
+        data.setdefault("synthetic_flag", False)
+        data.setdefault("last_seen_at", data.get("last_seen"))
+        data.setdefault("observation_count", data.get("total_observations"))
+        data.setdefault("registry_source", data.get("data_source"))
+        rows.append(data)
+    return rows
+
+
+def load_aircraft_profiles() -> list[dict[str, Any]]:
+    """Select one whole profile per stable registration.
+
+    A committed craft profile supersedes the lightweight RLSM row for the same
+    registration; unmatched rows from either source remain visible.
+    """
+    profiles = {
+        str(row["registration"]): row
+        for row in load_rlsm_aircraft_profiles()
+        if row.get("registration")
+    }
+    for row in load_craft_profiles():
+        profiles[str(row["registration"])] = row
+    return [profiles[key] for key in sorted(profiles)]
 
 
 def load_rlsm_spatial_frames() -> list[dict[str, Any]]:
@@ -373,10 +413,7 @@ def load_rlsm_spatial_frames() -> list[dict[str, Any]]:
     for row in rows:
         row["id"] = f"rlsm-frame-{row['screenshot_id']}"
         row["capture_id"] = row["id"]
-        row["created_date"] = (
-            row.get("filename_ts")
-            or row.get("marker_observed_at")
-        )
+        row["created_date"] = row.get("filename_ts") or row.get("marker_observed_at")
     return rows
 
 
@@ -392,9 +429,7 @@ def load_rlsm_zoom_rungs() -> list[dict[str, Any]]:
         (RLSM_GEOREF_VERSION,),
     )
     for row in rows:
-        row["id"] = (
-            f"{row['georef_version']}:{row['viewport_profile']}:{row['zoom_rung']}"
-        )
+        row["id"] = f"{row['georef_version']}:{row['viewport_profile']}:{row['zoom_rung']}"
         row["created_date"] = row.get("observed_at")
         row["eligible_for_transfer"] = bool(row.get("eligible_for_transfer"))
     return rows
@@ -600,6 +635,31 @@ def auth_me() -> dict[str, Any]:
     raise HTTPException(status_code=401, detail="No auth in local diagnostic mode")
 
 
+@app.post("/api/query")
+def query(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Answer only from persisted craft profiles, with deterministic fallback."""
+    payload = payload or {}
+    prompt = str(payload.get("prompt") or payload.get("q") or "").strip()
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Missing 'prompt'")
+
+    try:
+        from skywatcher.query.engine import QueryEngine
+    except ImportError as exc:  # pragma: no cover - import wiring
+        raise HTTPException(status_code=500, detail=f"query engine unavailable: {exc}") from exc
+
+    engine = QueryEngine(db_path=RLSM_DB, profile_dir=CRAFT_PROFILE_DIR)
+    answer = engine.answer(prompt)
+    result = answer.to_dict()
+    if payload.get("natural_language"):
+        from skywatcher.query.llm import ask
+
+        result["text"] = ask(prompt, engine=engine)
+    else:
+        result["text"] = answer.to_text()
+    return result
+
+
 @app.get("/api/entities/{entity_name}")
 def list_entities(
     entity_name: str,
@@ -640,13 +700,9 @@ def create_entity(entity_name: str, payload: dict[str, Any]) -> dict[str, Any]:
 
 
 @app.patch("/api/entities/{entity_name}/{entity_id}", dependencies=_WRITE_GUARD)
-def update_entity(
-    entity_name: str, entity_id: str, payload: dict[str, Any]
-) -> dict[str, Any]:
+def update_entity(entity_name: str, entity_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     for row in entity_rows(entity_name):
         if str(row.get("id")) == entity_id:
-            _overlay.setdefault(entity_name, {}).setdefault(entity_id, {}).update(
-                payload
-            )
+            _overlay.setdefault(entity_name, {}).setdefault(entity_id, {}).update(payload)
             return {**row, **payload}
     raise HTTPException(status_code=404, detail=f"{entity_name} not found: {entity_id}")
