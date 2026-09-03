@@ -2,10 +2,11 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Map, Plane, IdCard, Camera, Route as RouteIcon,
-  Building2, TowerControl, ClipboardCheck, Share2, GaugeCircle, Satellite,
-  ScanSearch,
+  Building2, TowerControl, ClipboardCheck, Share2, GaugeCircle,
+  Crosshair, ScanSearch, ScanEye,
 } from "lucide-react";
 import { PROGRAM } from "@/lib/skywatcher";
+import brandMark from "@/assets/icon-64.png?inline";
 
 const NAV = [
   { to: "/", label: "Command Dashboard", icon: LayoutDashboard },
@@ -13,6 +14,7 @@ const NAV = [
   { to: "/observations", label: "Airspace Observations", icon: Plane },
   { to: "/aircraft", label: "Aircraft Profiles", icon: IdCard },
   { to: "/fr24", label: "FR24 Intake", icon: Camera },
+  { to: "/spatial-truth", label: "Aircraft Spatial Truth", icon: Crosshair },
   { to: "/routes", label: "Route-Line Mining", icon: RouteIcon },
   { to: "/infrastructure", label: "Infrastructure Links", icon: Building2 },
   { to: "/airports", label: "PR Airports", icon: TowerControl },
@@ -20,6 +22,7 @@ const NAV = [
   { to: "/export", label: "Federation Export", icon: Share2 },
   { to: "/readiness", label: "Readiness / Blockers", icon: GaugeCircle },
   { to: "/calibration", label: "SATIM Calibration", icon: ScanSearch },
+  { to: "/analysis", label: "Analysis Lenses", icon: ScanEye },
 ];
 
 export default function Sidebar({ onNavigate }) {
@@ -27,9 +30,7 @@ export default function Sidebar({ onNavigate }) {
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-[hsl(220_34%_6%)]">
       <div className="flex items-center gap-2.5 border-b border-border px-4 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 ring-1 ring-primary/30">
-          <Satellite className="h-5 w-5 text-primary" />
-        </div>
+        <img src={brandMark} alt="" aria-hidden="true" className="h-9 w-9 rounded-lg" />
         <div className="min-w-0">
           <p className="truncate text-sm font-bold tracking-tight text-foreground">{PROGRAM.appName}</p>
           <p className="truncate font-mono text-[10px] text-muted-foreground">{PROGRAM.federationRole}</p>

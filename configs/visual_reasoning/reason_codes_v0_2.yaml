@@ -1,0 +1,57 @@
+spec_version: 0.2.0
+status: BINDING_STABLE_REASON_CODES
+codes:
+  RC_DISCOVERY_NOT_IDENTITY: discovery evidence cannot promote identity
+  RC_MISSING_NOT_NEGATIVE: missing evidence is not negative evidence
+  RC_EVIDENTIARY_TIE: tied top evidence remains unresolved or review
+  RC_HARD_FALSIFIER: hard falsifier rejected candidate
+  RC_GENERATED_PIXELS_NOT_OBSERVED: generated or inpainted pixels are not observed evidence
+  RC_UI_MASK_REQUIRED: UI segmentation must precede ground classification
+  RC_TEXT_DISCOVERY_ONLY: text match is discovery evidence until independently bound
+  RC_OVERZOOMED: additional digital zoom adds resampling damage without new information
+  RC_OVERZOOM_NO_NEW_EVIDENCE: overzoom cannot increase detail evidence
+  RC_DARKNESS_INSUFFICIENT_FOR_SHADOW: darkness alone does not establish shadow
+  RC_SHADOW_CONSISTENT: photometric and geometric shadow evidence converged
+  RC_SHADOW_INCONSISTENT: region conflicts with local shadow field or geometry
+  RC_SHADOW_CLIPPED: region is clipped black beyond declared threshold
+  RC_SEAM_CANDIDATE: image boundary discontinuity supports seam discovery
+  RC_SEAM_NOT_REAL_WORLD_BOUNDARY: seam lacks independent physical-boundary evidence
+  RC_CROSS_SEAM_CONTINUITY: real-world feature remains coherent across seam
+  RC_STITCHING_GHOST: ghost or duplicate behavior supports stitching artifact
+  RC_RENDER_SCALE_DEPENDENT: feature depends on map or render scale
+  RC_REAL_OBJECT_SUPPORT: real-scene geometry texture lighting and persistence converged
+  RC_MIXED_OBJECT_ARTIFACT: physical feature and image artifact evidence coexist
+  RC_ARTIFACT_EXCLUDED_FROM_LOCATOR: artifact-classified region cannot be locator landmark
+  RC_PALM_LIKE_CROWN: palm-like radial morphology detected
+  RC_PALM_SUPPORTED: palm morphology and persistence support palm class
+  RC_PALM_SPECIES_UNRESOLVED: evidence insufficient for palm species identity
+  RC_DARKNESS_INSUFFICIENT_FOR_WATER: darkness alone does not establish water
+  RC_WATER_SUPPORTED: surface and hydrographic geometry context converged
+  RC_HYDRO_CHANNEL_FORM: elongated connected water form supports river or stream class
+  RC_HYDRO_CLOSED_WATER_FORM: closed shoreline form supports lake pond or reservoir class
+  RC_HYDRO_CANAL_CANDIDATE: linear engineered channel morphology supports canal candidate
+  RC_INFRA_SUBTYPE_UNRESOLVED: infrastructure class supported but subtype unresolved
+  RC_BARE_GROUND_NOT_QUARRY: bare or exposed ground lacks extractive-system evidence
+  RC_QUARRY_CANDIDATE: multiple extractive feature families converge
+  RC_QUARRY_SUPPORTED: extractive geometry and system context converge after negative controls
+  RC_VISUAL_QUARRY_NOT_LEGAL_IDENTITY: visual quarry state does not bind legal mine or operator
+  RC_EXCAVATION_CANDIDATE: excavation or ground-disturbance morphology supported
+  RC_DEPTH_REQUIRES_GEOMETRY: excavation depth cannot be inferred from darkness or color only
+  RC_PORTAL_LIKE: visible opening morphology supports a portal-like candidate
+  RC_PORTAL_NOT_UNDERGROUND_IDENTITY: portal-like surface feature does not establish a subsurface facility
+  RC_BELOW_RESOLUTION_NOT_ABSENT: feature loss at scale is resolution loss not physical absence
+  RC_MULTISCALE_PERSISTENT: feature remains coherent across registered scales
+  RC_MULTIFRAME_CONSENSUS: independent registered frames support same scene feature
+  RC_RELATION_NOT_IDENTITY: scene relationship does not establish object identity
+  RC_LOCATION_TEXT_TOPOLOGY: text and independent topology converge on location candidate
+  RC_ONE_LABEL_NOT_EXACT: one label or POI cannot certify exact location
+  RC_PROXIMITY_NOT_IDENTITY: nearest or proximity-only candidate cannot bind identity
+  RC_LOCATION_HARD_GEOMETRIC_CONTRADICTION: stable scene geometry falsifies location candidate
+  RC_EXACT_PROVISIONAL: location converged but exact-registration gates remain incomplete
+  RC_EXACT_CERTIFIED: unique convergence and exact-registration validation gates passed
+  RC_LOCATION_TIE: location candidates remain evidentially tied
+  RC_LOCATION_ERROR_RADIUS_REQUIRED: emitted coordinate requires explicit error radius
+stability_policy:
+  - codes are append-only within v0.2.x unless explicitly SUPERSEDED
+  - changed semantics require a new code
+  - every promotion demotion rejection block or unresolved path emits at least one code

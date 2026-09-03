@@ -1,0 +1,103 @@
+{
+  "schema_version": "1.0",
+  "dataset_id": "SIG_TJIG_AUTHORITATIVE_GEOMETRY_SOURCE_MANIFEST_V1",
+  "freeze": {
+    "merged_main_commit": "651d335ed097d6dd017199d1745db931e0c116e9",
+    "tested_merge_tree": "6adf333ea6b842bc8098226a95e9524a571bcc6a",
+    "merged_main_tree": "6adf333ea6b842bc8098226a95e9524a571bcc6a",
+    "tree_equivalence": "PASS",
+    "basis": "The final tested PR merge tree and merged main commit resolve to the same Git tree SHA. Commit identity and tree identity are preserved separately."
+  },
+  "sources": [
+    {
+      "source_id": "FAA_SIG_FLIGHT_DECK_2026",
+      "authority": "FAA",
+      "url": "https://www.faa.gov/flight_deck/sig",
+      "source_manifestation_type": "AUTHORITATIVE_WEB_PAGE",
+      "geometry_evidence": "NONE",
+      "raw_name": "Fernando Luis Ribas Dominicci Airport (SIG) (TJIG)",
+      "normalized_name": "Fernando Luis Ribas Dominicci Airport (SIG) (TJIG)",
+      "canonical_name": "Fernando Luis Ribas Dominicci Airport",
+      "stable_id": "TJIG",
+      "assertions": [
+        "SIG/TJIG is Fernando Luis Ribas Dominicci Airport",
+        "airport has a single runway 9/27",
+        "FBO ramps, services and facilities are located on both sides of the runway",
+        "airport supports military helicopter operations"
+      ],
+      "does_not_prove": [
+        "individual hangar identity",
+        "individual apron polygon identity",
+        "marked helipad operator identity",
+        "event-to-surface association"
+      ]
+    },
+    {
+      "source_id": "FAA_SIG_APD_2604",
+      "authority": "FAA Aeronautical Information Services",
+      "url": "https://aeronav.faa.gov/d-tpp/2604/01019AD.PDF",
+      "source_manifestation_type": "AUTHORITATIVE_AIRPORT_DIAGRAM",
+      "geometry_evidence": "AUTHORITATIVE_CARTOGRAPHIC",
+      "raw_name": "FERNANDO LUIS RIBAS DOMINICCI (SIG) (TJIG)",
+      "normalized_name": "Fernando Luis Ribas Dominicci (SIG) (TJIG)",
+      "canonical_name": "Fernando Luis Ribas Dominicci Airport",
+      "stable_id": "TJIG",
+      "chart_cycle": "2604",
+      "feature_classes_visible": [
+        "RUNWAY_09_27",
+        "TAXIWAYS",
+        "APRONS",
+        "HANGARS",
+        "FBO",
+        "TERMINAL_US_CUSTOMS",
+        "PUERTO_RICO_ARNG",
+        "TOWER"
+      ],
+      "geometry_state": "AUTHORITATIVE_CARTOGRAPHIC_NOT_CERTIFIED_MACHINE_GEOMETRY",
+      "crs": null,
+      "geometry_type": null,
+      "sha256": null,
+      "does_not_prove": [
+        "survey-grade polygon coordinates for individual facilities",
+        "tenant-to-building identity",
+        "operator of a marked-H surface",
+        "point-in-polygon terminal-event association"
+      ]
+    },
+    {
+      "source_id": "FAA_AIRPORT_DIAGRAM_OPEN_DATA_NOTICE_2025",
+      "authority": "FAA Aeronautical Information Services",
+      "url": "https://www.faa.gov/air_traffic/flight_info/aeronav/safety_alerts/media/ADDS_25-01_DPN_Open_Data_Release.pdf",
+      "source_manifestation_type": "AUTHORITATIVE_PRODUCT_NOTICE",
+      "geometry_evidence": "NONE",
+      "assertions": [
+        "FAA began publishing airport-diagram GIS feature classes in August 2025",
+        "published feature classes can include taxiways, aprons, buildings, hot spots, special movement areas, and stopways"
+      ],
+      "scope_note": "The notice documents the product and initial-airport rollout. No publicly indexed SIG/TJIG airport-diagram feature-class package was located in the executed public search vector, so absence is not treated as proof that none exists."
+    },
+    {
+      "source_id": "FAA_AC_150_5300_18B",
+      "authority": "FAA",
+      "url": "https://www.faa.gov/documentLibrary/media/advisory_circular/150-5300-18B/150_5300_18b_part2.pdf",
+      "source_manifestation_type": "AUTHORITATIVE_STANDARD",
+      "geometry_evidence": "NONE",
+      "assertions": [
+        "FAA Airports GIS standards include apron polygon data capture rules",
+        "airport GIS submissions cover runways, taxiways, aprons and related airport features"
+      ]
+    }
+  ],
+  "adjudication": {
+    "airport_identity": "CERTIFIED",
+    "runway_09_27_existence": "CERTIFIED",
+    "airport_diagram_feature_class_presence": "CERTIFIED_WITHIN_FAA_DIAGRAM",
+    "individual_hangar_polygon_geometry": "OPEN",
+    "individual_apron_polygon_geometry": "OPEN",
+    "marked_helipad_polygon_geometry": "OPEN",
+    "marked_helipad_operator_identity": "UNRESOLVED",
+    "terminal_event_spatial_relations": "BLOCKED_PENDING_CERTIFIED_OR_EXPLICITLY_GEOREFERENCED_GEOMETRY"
+  },
+  "identity_rule": "NAME_ONLY, NORMALIZED_NAME_ONLY, ADDRESS_ONLY, PROXIMITY_ONLY, NEAREST_ONLY, SAME_CATEGORY and source absence cannot establish facility identity. Preserve RAW, NORMALIZED and CANONICAL separately.",
+  "certification": "PROVISIONAL_AUTHORITATIVE_SOURCE_VECTOR_EXHAUSTED_FOR_EXECUTED_SEARCHES; MACHINE_GEOMETRY_VECTOR_OPEN"
+}

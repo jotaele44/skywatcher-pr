@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 PLUGIN = "visual_ocr.filename_hint"
 
@@ -73,7 +73,7 @@ _CLOCK_ONLY_PATTERN = re.compile(_BEFORE + r"\d{2}:\d{2}(?::\d{2})?Z?" + _AFTER)
 _CALLSIGN_STOPWORDS = frozenset({"FR24", "FLIGHTRADAR24"})
 
 
-def _first_date_timestamp(stem: str) -> Optional[str]:
+def _first_date_timestamp(stem: str) -> str | None:
     for pat in _DATE_TIMESTAMP_PATTERNS:
         match = pat.search(stem)
         if match:
@@ -81,12 +81,12 @@ def _first_date_timestamp(stem: str) -> Optional[str]:
     return None
 
 
-def _first_clock_only(stem: str) -> Optional[str]:
+def _first_clock_only(stem: str) -> str | None:
     match = _CLOCK_ONLY_PATTERN.search(stem)
     return match.group(0) if match else None
 
 
-def parse_filename_hints(name: str) -> Dict[str, Optional[str]]:
+def parse_filename_hints(name: str) -> dict[str, str | None]:
     """Parse callsign / tail / timestamp hints out of a filename (or stem).
 
     Returns a mapping with exactly ``callsign_hint`` / ``tail_hint`` /
@@ -100,7 +100,7 @@ def parse_filename_hints(name: str) -> Dict[str, Optional[str]]:
     upper = stem.upper()
 
     timestamp_hint = _first_date_timestamp(stem)
-    hints: Dict[str, Optional[str]] = {
+    hints: dict[str, str | None] = {
         "callsign_hint": None,
         "tail_hint": None,
         "timestamp_hint": timestamp_hint,
@@ -121,7 +121,7 @@ def parse_filename_hints(name: str) -> Dict[str, Optional[str]]:
     return hints
 
 
-def filename_hint_backend(path: str) -> Dict[str, Any]:
+def filename_hint_backend(path: str) -> dict[str, Any]:
     """A ``VisualOcrBackend``: map an image path to filename-derived hints.
 
     Only the hint fields that were confidently parsed are returned (plus the
@@ -129,7 +129,7 @@ def filename_hint_backend(path: str) -> Dict[str, Any]:
     filename defaults for anything this parser could not resolve.
     """
     hints = parse_filename_hints(path)
-    result: Dict[str, Any] = {"plugin": PLUGIN, "ocr_status": "FILENAME_HINT"}
+    result: dict[str, Any] = {"plugin": PLUGIN, "ocr_status": "FILENAME_HINT"}
     for field, value in hints.items():
         if value is not None:
             result[field] = value

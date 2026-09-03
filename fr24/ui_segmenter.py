@@ -7,8 +7,13 @@ with optional edge-detection refinement when PIL/numpy are available.
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    # numpy is imported lazily inside the methods that need it, so it is not a
+    # runtime dependency of this module. This import exists only so the
+    # "np.ndarray" string annotation below resolves for type checkers.
+    import numpy as np
 
 # Known FR24 web-app layout proportions (validated against PR-region screenshots)
 MAP_TOP_FRAC    = 0.08   # top navigation bar height
@@ -28,10 +33,10 @@ class BBox:
     w: int
     h: int
 
-    def as_tuple(self) -> Tuple[int, int, int, int]:
+    def as_tuple(self) -> tuple[int, int, int, int]:
         return (self.x, self.y, self.w, self.h)
 
-    def crop_coords(self) -> Tuple[int, int, int, int]:
+    def crop_coords(self) -> tuple[int, int, int, int]:
         """PIL-style (left, upper, right, lower)."""
         return (self.x, self.y, self.x + self.w, self.y + self.h)
 
@@ -47,8 +52,8 @@ class LabelRegion:
 class FR24Segments:
     map_bbox: BBox
     panel_bbox: BBox
-    labels: List[LabelRegion] = field(default_factory=list)
-    ui_mask: Optional[object] = None   # np.ndarray when available
+    labels: list[LabelRegion] = field(default_factory=list)
+    ui_mask: object | None = None   # np.ndarray when available
     width: int = 0
     height: int = 0
     method: str = "geometric"
@@ -118,7 +123,7 @@ class FR24UISegmenter:
         except Exception:
             return None
 
-    def detect_label_regions(self, width: int, height: int) -> List[LabelRegion]:
+    def detect_label_regions(self, width: int, height: int) -> list[LabelRegion]:
         """
         Estimate label positions within the bottom panel based on FR24 layout.
         Returns approximate regions for callsign, altitude, speed, route.
@@ -151,7 +156,7 @@ class FR24UISegmenter:
 
     # ----------------------------------------------------------------- internal
 
-    def _get_dimensions(self, path: Path) -> Tuple[int, int]:
+    def _get_dimensions(self, path: Path) -> tuple[int, int]:
         try:
             from PIL import Image
             with Image.open(path) as img:
@@ -241,7 +246,7 @@ class FR24UISegmenter:
 
     # ----------------------------------------------------------------- batch
 
-    def batch_segment(self, image_paths: List[str]) -> List[FR24Segments]:
+    def batch_segment(self, image_paths: list[str]) -> list[FR24Segments]:
         results = []
         for p in image_paths:
             try:

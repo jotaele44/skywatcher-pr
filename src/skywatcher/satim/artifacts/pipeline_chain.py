@@ -13,45 +13,40 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
-from typing import Any, Mapping, Sequence
+from typing import Any
 
+from .crosswalk import auto_derivable
 from .engine import ENGINE_VERSION, RULESET_VERSION
 from .models import confidence_level
 
-# L5 tile-seam/shadow decisions that denote an *artifact* (per
-# artifact_taxonomy_v1.json). Other decisions -- terrain shadow, ground
-# feature, explainable infrastructure, indeterminate -- describe real or
-# unresolved content and produce no assessment.
+# These four tables are now views over artifact_crosswalk_v1.json, which holds one
+# `auto_derive` record per class covering decision, likelihood field, origin layer,
+# requested restriction, and the rationale for that restriction. They were four parallel
+# dicts that had to be edited in lockstep to add a single detector.
+#
+# Only decisions that denote an *artifact* appear. Other L5 decisions -- terrain shadow,
+# ground feature, explainable infrastructure, indeterminate -- describe real or
+# unresolved content and correctly produce no assessment.
+#
+# The restrictions are *requests* layered on the gate's mandatory minima; the gate only
+# rejects weaker-than-minimum requests. Each request's justification lives with it in the
+# crosswalk instead of in a comment that could drift from the value.
+_AUTO_DERIVE = auto_derivable()
+
 L5_DECISION_TO_CLASS = {
-    "probable_tile_seam": "SATIM-A01",
-    "probable_cloud_shadow": "SATIM-A09",
+    decision: record["artifact_class"] for decision, record in _AUTO_DERIVE.items()
 }
-
-# The per-candidate likelihood that scores each mapped decision.
 L5_DECISION_TO_LIKELIHOOD = {
-    "probable_tile_seam": "tile_seam_likelihood",
-    "probable_cloud_shadow": "cloud_shadow_likelihood",
+    decision: record["likelihood_field"] for decision, record in _AUTO_DERIVE.items()
 }
-
-# Origin layer recorded for each derived class (values from the assessment
-# schema's origin_layer enum).
 L5_CLASS_ORIGIN_LAYER = {
-    "SATIM-A01": "mosaic",
-    "SATIM-A09": "atmosphere",
+    record["artifact_class"]: record["origin_layer"] for record in _AUTO_DERIVE.values()
 }
-
-# Interpretation restriction requested for each auto-derived class, from the
-# taxonomy's restriction text. These are *requests* on top of the gate's
-# mandatory minima (the gate only rejects weaker-than-minimum requests):
-# - SATIM-A01: "Object interpretation allowed only if geometric continuity is
-#   verified" -- auto-derivation performs no such verification, so geometry is
-#   treated as degraded across the seam.
-# - SATIM-A09: "Feature absence cannot be inferred inside obscured/masked
-#   regions" -- object-level presence/absence claims are prohibited in the ROI.
 L5_CLASS_RESTRICTION = {
-    "SATIM-A01": "GEOMETRY_DEGRADED",
-    "SATIM-A09": "OBJECT_LEVEL_PROHIBITED",
+    record["artifact_class"]: record["requested_restriction"]
+    for record in _AUTO_DERIVE.values()
 }
 
 # Numeric fields copied from a scored L5 candidate into measurements.

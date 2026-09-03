@@ -61,8 +61,9 @@ import argparse
 import csv
 import json
 import sys
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 from .satim_candidate_extraction import SCHEMA_VERSION
 from .satim_gis_overlay import (
@@ -223,10 +224,7 @@ def load_fixture(path: Path) -> list[dict[str, Any]]:
     Accepts either ``{"aois": [...]}`` or a bare top-level list of AOI blocks.
     """
     data = json.loads(path.read_text(encoding="utf-8"))
-    if isinstance(data, Mapping):
-        aois = data.get("aois")
-    else:
-        aois = data
+    aois = data.get("aois") if isinstance(data, Mapping) else data
     if not isinstance(aois, list):
         raise ValueError(f"{path}: expected an 'aois' list or a top-level list of AOI blocks")
     return aois

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/ai_imagery/skywatcher_producer_package.v2.schema.json",
+  "title": "Skywatcher Producer Package v2",
+  "description": "Deterministic artifact-only package envelope for Skywatcher aviation extraction and provisional analysis.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "package_id", "producer_revision", "created_at", "source_artifact_ids", "aviation_extraction_ids", "model_field_provenance_ids", "provisional_signal_ids", "processing_receipt_ids", "accounting", "normalized_digest"],
+  "properties": {
+    "schema_version": {"const": "skywatcher_producer_package.v2"},
+    "package_id": {"type": "string", "minLength": 1},
+    "producer_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "source_artifact_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "aviation_extraction_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "model_field_provenance_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "provisional_signal_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "processing_receipt_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "accounting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inputs", "excluded", "failed", "outputs"],
+      "properties": {
+        "inputs": {"type": "integer", "minimum": 0},
+        "excluded": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "outputs": {"type": "integer", "minimum": 0}
+      }
+    },
+    "normalized_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "certified": {"const": false}
+  }
+}

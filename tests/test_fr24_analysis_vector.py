@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import csv
 import json
-from pathlib import Path
 
 import pytest
 
@@ -15,7 +14,6 @@ from fr24.ocr_analysis_vector import (
     compute_vector,
     run,
 )
-
 
 # ── fixtures ───────────────────────────────────────────────────────────────────
 

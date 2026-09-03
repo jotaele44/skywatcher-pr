@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from fr24 import satim_engine
-from fr24.calibration.models import LayerCalibrationResult, read_json, write_json
+from fr24.calibration.models import LayerCalibrationResult, read_json
 
 
 def _manifest(tmp_path: Path, inputs: dict, options: dict | None = None) -> satim_engine.SATIMEngineManifest:

@@ -32,7 +32,6 @@ import sqlite3
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
 
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_CSV = REPO / "outputs" / "fr24_selected_export.csv"
@@ -54,7 +53,7 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _int_or_none(value) -> Optional[int]:
+def _int_or_none(value) -> int | None:
     try:
         return int(float(value))
     except (TypeError, ValueError):
@@ -62,7 +61,7 @@ def _int_or_none(value) -> Optional[int]:
 
 
 def match_screenshot_id(image_path: str, month_dir: str,
-                        by_filename: dict) -> Optional[int]:
+                        by_filename: dict) -> int | None:
     """Resolve a CSV row to a screenshot_id by basename, then month_dir."""
     name = Path(image_path or "").name
     if not name:
@@ -77,7 +76,7 @@ def match_screenshot_id(image_path: str, month_dir: str,
     return None
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Ingest the Claude-vision extraction CSV into the RLSM store."
     )

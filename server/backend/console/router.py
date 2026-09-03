@@ -106,9 +106,7 @@ def list_captures(
             return False
         if not include_corrupt and row.get("is_corrupt"):
             return False
-        if synthetic is not None and bool(row.get("synthetic")) != synthetic:
-            return False
-        return True
+        return synthetic is None or bool(row.get("synthetic")) == synthetic
 
     return _simple_page(
         "fr24_captures",
@@ -191,7 +189,7 @@ def list_aircraft_profiles(
 def list_aircraft_states(
     bbox: str | None = None,
     at: str | None = None,
-    source_method: list[str] | None = Query(None),
+    source_method: list[str] | None = Query(None),  # noqa: B008 - FastAPI parameter marker
     synthetic: bool | None = None,
     cursor: str | None = None,
     limit: int = Query(1000, ge=1, le=5000),

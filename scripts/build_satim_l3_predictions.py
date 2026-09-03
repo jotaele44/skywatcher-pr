@@ -10,10 +10,10 @@ import argparse
 import csv
 import json
 import re
+from collections.abc import Iterable, Mapping
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Optional
-
+from typing import Any
 
 TIMESTAMP_RE = re.compile(
     r"(?P<date>\d{4}-\d{2}-\d{2})T(?P<time>\d{2}-\d{2}-\d{2})"
@@ -24,7 +24,7 @@ def clean(value: Any) -> str:
     return str(value or "").strip()
 
 
-def read_csv(path: str | Path) -> List[Dict[str, str]]:
+def read_csv(path: str | Path) -> list[dict[str, str]]:
     with Path(path).open(newline="", encoding="utf-8", errors="replace") as handle:
         return list(csv.DictReader(handle))
 
@@ -33,8 +33,8 @@ def parse_bool(value: Any) -> bool:
     return clean(value).lower() in {"1", "true", "yes", "y"}
 
 
-def index_registry(rows: Iterable[Mapping[str, Any]]) -> Dict[str, Mapping[str, Any]]:
-    out: Dict[str, Mapping[str, Any]] = {}
+def index_registry(rows: Iterable[Mapping[str, Any]]) -> dict[str, Mapping[str, Any]]:
+    out: dict[str, Mapping[str, Any]] = {}
     for row in rows:
         tail = clean(row.get("tail")).upper()
         if tail:
@@ -42,8 +42,8 @@ def index_registry(rows: Iterable[Mapping[str, Any]]) -> Dict[str, Mapping[str, 
     return out
 
 
-def index_panel_fields(rows: Iterable[Mapping[str, Any]]) -> Dict[str, Mapping[str, Any]]:
-    out: Dict[str, Mapping[str, Any]] = {}
+def index_panel_fields(rows: Iterable[Mapping[str, Any]]) -> dict[str, Mapping[str, Any]]:
+    out: dict[str, Mapping[str, Any]] = {}
     for row in rows:
         image_path = clean(row.get("image_path"))
         if image_path:
@@ -101,15 +101,15 @@ def select_image_paths(path: str | Path | None) -> set[str]:
 
 
 def build_records(
-    ocr_events: List[Mapping[str, Any]],
-    registry_rows: List[Mapping[str, Any]],
+    ocr_events: list[Mapping[str, Any]],
+    registry_rows: list[Mapping[str, Any]],
     baseline_root: Path,
     image_filter: set[str] | None = None,
     panel_rows: Iterable[Mapping[str, Any]] | None = None,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     registry = index_registry(registry_rows)
     panel_by_image = index_panel_fields(panel_rows or [])
-    records: List[Dict[str, Any]] = []
+    records: list[dict[str, Any]] = []
 
     for row in ocr_events:
         sample_image = clean(row.get("sample_image"))

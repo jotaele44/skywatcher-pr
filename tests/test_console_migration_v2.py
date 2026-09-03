@@ -3,7 +3,13 @@ import sqlite3
 
 import pytest
 
-from server.backend.console.migrations import PHASE1_TABLES, PHASE2_TABLES, applied_versions, migrate, rollback
+from server.backend.console.migrations import (
+    PHASE1_TABLES,
+    PHASE2_TABLES,
+    applied_versions,
+    migrate,
+    rollback,
+)
 
 
 def tables(connection):
