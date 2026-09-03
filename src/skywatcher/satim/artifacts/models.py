@@ -23,6 +23,21 @@ def confidence_level(score: float) -> str:
 
 @dataclass(frozen=True)
 class AssessmentResult:
+    """Outcome of one artifact assessment.
+
+    The trailing fields are additive (ADR v2.0 section 13.2) and all default to empty,
+    so a caller that supplies no lens registry gets byte-identical v1 behavior. They
+    exist to answer questions the v1 result could not:
+
+      * which lenses ran, and what each one's coverage state was;
+      * which requirements went unmet, so a skipped check is distinguishable from a
+        check that ran and found nothing;
+      * which thresholds were executed and at what governance status, per ADR v2.1 A2;
+      * whether the requested interpretation restriction was actually honored -
+        previously the gate's ``allowed``/``reason`` were computed and discarded, so a
+        rejected request silently degraded to the minimum.
+    """
+
     primary_class: str
     contributing_classes: tuple[str, ...]
     origin_layer: str
@@ -33,6 +48,12 @@ class AssessmentResult:
     contradictions: tuple[str, ...] = ()
     rules_triggered: tuple[str, ...] = ()
     measurements: Mapping[str, Any] = field(default_factory=dict)
+    lenses_applied: tuple[str, ...] = ()
+    lens_coverage: tuple[Mapping[str, Any], ...] = ()
+    unsatisfied_requirements: tuple[str, ...] = ()
+    thresholds_applied: tuple[Mapping[str, Any], ...] = ()
+    restriction_allowed: bool = True
+    restriction_reason: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -46,4 +67,10 @@ class AssessmentResult:
             "contradictions": list(self.contradictions),
             "rules_triggered": list(self.rules_triggered),
             "measurements": dict(self.measurements),
+            "lenses_applied": list(self.lenses_applied),
+            "lens_coverage": [dict(entry) for entry in self.lens_coverage],
+            "unsatisfied_requirements": list(self.unsatisfied_requirements),
+            "thresholds_applied": [dict(t) for t in self.thresholds_applied],
+            "restriction_allowed": self.restriction_allowed,
+            "restriction_reason": self.restriction_reason,
         }

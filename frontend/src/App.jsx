@@ -4,12 +4,12 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { AuthProvider } from '@/lib/AuthContext';
 import { SkywatcherDataProvider } from '@/lib/SkywatcherData';
 import { DrawerHubProvider } from '@/components/skywatcher/drawers/DrawerHub';
 import Layout from '@/components/skywatcher/Layout';
 import Dashboard from '@/pages/Dashboard';
+import Console from '@/pages/Console';
 import Observations from '@/pages/Observations';
 import Aircraft from '@/pages/Aircraft';
 import FR24Intake from '@/pages/FR24Intake';
@@ -20,6 +20,8 @@ import ManualReview from '@/pages/ManualReview';
 import ExportCenter from '@/pages/ExportCenter';
 import Readiness from '@/pages/Readiness';
 import Calibration from '@/pages/Calibration';
+import AnalysisLenses from '@/pages/AnalysisLenses';
+import SpatialTruth from '@/pages/SpatialTruth';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -50,6 +52,7 @@ const AuthenticatedApp = () => {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/console" element={<Console />} />
             <Route path="/observations" element={<Observations />} />
             <Route path="/aircraft" element={<Aircraft />} />
             <Route path="/fr24" element={<FR24Intake />} />
@@ -60,6 +63,8 @@ const AuthenticatedApp = () => {
             <Route path="/export" element={<ExportCenter />} />
             <Route path="/readiness" element={<Readiness />} />
             <Route path="/calibration" element={<Calibration />} />
+            <Route path="/analysis" element={<AnalysisLenses />} />
+            <Route path="/spatial-truth" element={<SpatialTruth />} />
           </Route>
           {/* Auth routes render only when authentication is actually required.
               In diagnostic mode the backend implements no /auth/login,

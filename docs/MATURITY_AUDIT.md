@@ -52,7 +52,7 @@ the real risk: 51.5k LOC of Python and 8.8k of JSX with nothing enforcing consis
 
 | Item | Why |
 |---|---|
-| `gebco/` terrain layer | requires `requirements-geo.txt` (numpy/scipy/xarray/netCDF4); optional, not in the default path |
+| `gebco/` terrain layer | requires the `geo` extra in `pyproject.toml` (numpy/scipy/xarray/netCDF4); optional, not in the default path |
 | Canonical export adapter | `scripts/federation_export.py` projects observations → entities/sources/relationships, but has only synthetic observations to project |
 | ILAP intake | needs FlightRadar24 screenshots supplied locally — an external data gap, correctly declared |
 
@@ -72,7 +72,18 @@ the real risk: 51.5k LOC of Python and 8.8k of JSX with nothing enforcing consis
 | Observations, Aircraft, Routes, Airports | entity API over committed artifacts | loading, empty | **Functional**; Airports is the only page on fully real data |
 | FR24Intake, ManualReview, Calibration | review queue + SATIM summaries | loading, empty, review actions | **Functional** (session-scoped edits) |
 | Infrastructure, ExportCenter, Readiness | export manifests, readiness reports | loading, empty | **Functional** |
+| AnalysisLenses | `/api/analysis/registry` + `AnalysisLenses`/`AnalysisObjectives`/`LensCoverage` | loading, empty, registry-unavailable, fetch failure | **Functional** — the only page whose vocabulary is fetched rather than hardcoded |
 | Login, Register, ForgotPassword, ResetPassword | none | — | **Dead**, now gated |
+
+`AnalysisLenses` is worth a note for a different reason: every other page in this table
+hardcodes its analytical vocabulary as JSX literals (`REVIEW_STATUS`, `INGEST_STATUS`, the
+per-page filter option lists), so a backend change needs a matching frontend edit or the
+two drift silently. That page fetches the registry instead, and
+`tests/test_analysis_registry_gui_parity.py` asserts no lens id appears in its source.
+That test also compares the backend `LOADERS` map against the frontend `ENTITIES` map,
+which closes a long-standing gap — the two are hand-maintained mirrors that nothing
+compared, and `Promise.allSettled` in `SkywatcherData.jsx` turns a missing entity into a
+silently empty table rather than an error.
 
 `SyntheticDataBadge` and `DiagnosticNoticeBanner` are worth calling out: the UI tells the
 operator when it is showing synthetic data. That is the correct behaviour and several

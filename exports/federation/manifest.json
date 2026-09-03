@@ -1,0 +1,42 @@
+{
+  "created_at": "2026-08-28T00:11:41Z",
+  "export_contract_version": "1.0.0",
+  "extracted_at": "2026-08-28T00:11:41Z",
+  "federation": {
+    "hub_parent": "thehub-pr",
+    "producer_repo": "skywatcher-pr"
+  },
+  "files": [
+    {
+      "filename": "sources.jsonl",
+      "record_count": 3,
+      "schema_id": "federation_source.schema.json",
+      "sha256": "df90929a36d2cc236f5a973f1c407170dff65727660f63dba6181d33f6012525",
+      "stream": "sources"
+    },
+    {
+      "filename": "entities.jsonl",
+      "record_count": 6,
+      "schema_id": "federation_entity.schema.json",
+      "sha256": "daab62c2580671321a77f3f9089f31a50d5cb26f241cb4a519d166632304e8f2",
+      "stream": "entities"
+    },
+    {
+      "filename": "relationships.jsonl",
+      "record_count": 3,
+      "schema_id": "federation_relationship.schema.json",
+      "sha256": "82f264dd92ad93fc1ee0950d17ed1ffe52dbdfba16a3dffb71492598f309a954",
+      "stream": "relationships"
+    },
+    {
+      "filename": "observations.jsonl",
+      "record_count": 3,
+      "schema_id": "federation_observation.schema.json",
+      "sha256": "f2f92bf9cdc6394f30adcc712b2d999fee2d2611c2031f2e9c6c0ed3a96140c4",
+      "stream": "observations"
+    }
+  ],
+  "mode": "production",
+  "package_id": "pkg_355d276915a11fcc0087b898321acfa5",
+  "producer": "skywatcher-pr"
+}

@@ -1,0 +1,62 @@
+spec_version: 0.2.0
+status: BINDING_MATERIAL_RULE_DENOMINATOR
+baseline: jotaele44/skywatcher-pr@c32c68abce2a281fd13d9632687a7cdc10412d0b
+global_null_behavior: MISSING_REQUIRED=>UNRESOLVED_OR_BLOCKED; MISSING_OPTIONAL=>DEGRADED_WITH_REASON
+global_tie_behavior: TIED_TOP_EVIDENCE=>UNRESOLVED_OR_REVIEW; deterministic_ordering_is_not_evidence
+global_precedence: [HARD_FALSIFIER, HARD_CONTRADICTION, AUTHORITATIVE_BINDING, CERTIFIED_GEOMETRIC_MATCH, MULTIFRAME_CONVERGENCE, MULTISCALE_CONVERGENCE, SINGLE_FRAME_VISUAL_SUPPORT, HEURISTIC_DISCOVERY]
+rules:
+  - {id: GLOBAL.DISCOVERY_NOT_IDENTITY, when: discovery_only, then: CANDIDATE_NOT_IDENTITY, reason: RC_DISCOVERY_NOT_IDENTITY}
+  - {id: GLOBAL.MISSING_NOT_NEGATIVE, when: required_observation_missing, then: UNRESOLVED, reason: RC_MISSING_NOT_NEGATIVE}
+  - {id: GLOBAL.TIE_NOT_IDENTITY, when: top_evidence_tied, then: UNRESOLVED, reason: RC_EVIDENTIARY_TIE}
+  - {id: GLOBAL.HARD_FALSIFIER_WINS, when: hard_falsifier_true, then: REJECTED, reason: RC_HARD_FALSIFIER}
+  - {id: GLOBAL.GENERATED_PIXELS_NOT_OBSERVED, when: evidence_only_in_generated_or_inpainted_pixels, then: REJECTED_AS_OBSERVED_EVIDENCE, reason: RC_GENERATED_PIXELS_NOT_OBSERVED}
+  - {id: UI.MASK_BEFORE_GROUND, when: ground_classification_requested, requires: [source_frame, ui_mask], then: CONTINUE_OR_BLOCK, reason: RC_UI_MASK_REQUIRED}
+  - {id: OCR.TEXT_IS_DISCOVERY, when: text_match_without_independent_geometry, then: DISCOVERY_CANDIDATE, reason: RC_TEXT_DISCOVERY_ONLY}
+  - {id: ZOOM.OVERZOOM, when: resampling_damage_high_and_no_edge_or_texture_gain, then: OVERZOOMED, reason: RC_OVERZOOMED}
+  - {id: ZOOM.NO_CONFIDENCE_GAIN, when: frame_OVERZOOMED, then: NO_DETAIL_CONFIDENCE_GAIN, reason: RC_OVERZOOM_NO_NEW_EVIDENCE}
+  - {id: SHADOW.DARKNESS_NOT_SHADOW, when: dark_without_geometric_photometric_support, then: UNRESOLVED, reason: RC_DARKNESS_INSUFFICIENT_FOR_SHADOW}
+  - {id: SHADOW.CONSISTENT, when: darkness_local_field_texture_edge_direction_converge, then: PHYSICALLY_PLAUSIBLE_SHADOW, reason: RC_SHADOW_CONSISTENT}
+  - {id: SHADOW.INCONSISTENT, when: local_shadow_field_or_geometry_conflict, then: INCONSISTENT_SHADOW, reason: RC_SHADOW_INCONSISTENT}
+  - {id: SHADOW.CLIPPED, when: clipped_black_ratio_exceeded, then: CLIPPED_BLACK, reason: RC_SHADOW_CLIPPED}
+  - {id: SEAM.DISCOVERY, when: cross_boundary_photometric_texture_compression_discontinuity, then: SEAM_CANDIDATE, reason: RC_SEAM_CANDIDATE}
+  - {id: SEAM.NOT_REAL_BOUNDARY, when: seam_without_independent_real_feature_binding, then: IMAGE_PRODUCTION_BOUNDARY, reason: RC_SEAM_NOT_REAL_WORLD_BOUNDARY}
+  - {id: SEAM.CROSS_FEATURE_CONTINUITY, when: feature_geometry_continues_across_seam, then: CONTINUOUS_WITH_IMAGE_DISCREPANCY, reason: RC_CROSS_SEAM_CONTINUITY}
+  - {id: STITCH.GHOST_OR_DUPLICATE, when: duplicate_or_ghost_aligns_with_mosaic_boundary, then: STITCHING_ARTIFACT_CANDIDATE, reason: RC_STITCHING_GHOST}
+  - {id: ARTIFACT.RENDER_SCALE_DEPENDENT, when: feature_only_one_render_scale_and_no_neighbor_persistence, then: RENDERING_ARTIFACT_CANDIDATE, reason: RC_RENDER_SCALE_DEPENDENT}
+  - {id: ARTIFACT.REAL_OBJECT_SUPPORT, when: geometry_texture_lighting_and_persistence_converge, then: REAL_WORLD_OBJECT_CANDIDATE, reason: RC_REAL_OBJECT_SUPPORT}
+  - {id: ARTIFACT.MIXED, when: real_and_artifact_scores_material_within_margin, then: MIXED_REAL_OBJECT_PLUS_ARTIFACT, reason: RC_MIXED_OBJECT_ARTIFACT}
+  - {id: ARTIFACT.NOT_LOCATOR_LANDMARK, when: region_artifact_classified, then: EXCLUDE_FROM_SCENE_LOCATOR, reason: RC_ARTIFACT_EXCLUDED_FROM_LOCATOR}
+  - {id: PALM.RADIAL_CROWN, when: radial_crown_morphology_supported, then: PALM_LIKE_CROWN, negatives: [star_roof, compression_pattern, nonpalm_rosette], reason: RC_PALM_LIKE_CROWN}
+  - {id: PALM.SUPPORTED, when: palm_morphology_plus_multiscale_context_converge, then: PALM_TREE, reason: RC_PALM_SUPPORTED}
+  - {id: PALM.NO_SPECIES_LOW_RES, when: species_evidence_insufficient, then: PALM_SPECIES_UNRESOLVED, reason: RC_PALM_SPECIES_UNRESOLVED}
+  - {id: WATER.DARK_NOT_WATER, when: dark_without_bank_shore_channel_context, then: UNRESOLVED, negatives: [tree_shadow, dark_canopy, asphalt, dark_roof, nodata_fill], reason: RC_DARKNESS_INSUFFICIENT_FOR_WATER}
+  - {id: WATER.SUPPORTED, when: surface_plus_geometry_plus_context_converge, then: WATER_SUPPORTED, reason: RC_WATER_SUPPORTED}
+  - {id: HYDRO.RIVER_STREAM, when: elongated_connected_water_with_bank_continuity, then: RIVER_OR_STREAM, reason: RC_HYDRO_CHANNEL_FORM}
+  - {id: HYDRO.CLOSED_WATER, when: closed_or_near_closed_water_polygon, then: LAKE_POND_OR_RESERVOIR, reason: RC_HYDRO_CLOSED_WATER_FORM}
+  - {id: HYDRO.CANAL, when: linear_engineered_channel_morphology_supported, then: CANAL_CANDIDATE, reason: RC_HYDRO_CANAL_CANDIDATE}
+  - {id: INFRA.HIERARCHICAL_ONLY, when: class_supported_but_subtype_not_supported, then: INFRASTRUCTURE_CLASS_ONLY, reason: RC_INFRA_SUBTYPE_UNRESOLVED}
+  - {id: QUARRY.BARE_GROUND_NOT_QUARRY, when: bare_or_rock_without_extractive_system, then: GROUND_DISTURBANCE_UNRESOLVED, reason: RC_BARE_GROUND_NOT_QUARRY}
+  - {id: QUARRY.CANDIDATE, when: multiple_extractive_feature_families_converge, then: QUARRY_CANDIDATE, negatives: [natural_scarp, landslide, road_cut, karst_exposure, construction], reason: RC_QUARRY_CANDIDATE}
+  - {id: QUARRY.SUPPORTED, when: pit_bench_highwall_plus_system_context_and_negatives_do_not_dominate, then: QUARRY_SUPPORTED, reason: RC_QUARRY_SUPPORTED}
+  - {id: QUARRY.NOT_LEGAL_IDENTITY, when: visual_quarry_without_authoritative_binding, then: CANDIDATE_NOT_IDENTITY, reason: RC_VISUAL_QUARRY_NOT_LEGAL_IDENTITY}
+  - {id: EXCAVATION.DISTURBANCE, when: fresh_soil_or_vegetation_removal_plus_cut_spoil_access_geometry, then: EXCAVATION_CANDIDATE, reason: RC_EXCAVATION_CANDIDATE}
+  - {id: EXCAVATION.NO_DEPTH_FROM_DARKNESS, when: depth_claim_relies_on_darkness_or_color_only, then: DEPTH_UNRESOLVED, reason: RC_DEPTH_REQUIRES_GEOMETRY}
+  - {id: PORTAL.LIKE, when: opening_geometry_plus_slope_access_structural_support, then: PORTAL_LIKE_FEATURE, negatives: [tree_shadow, canopy_gap, culvert, bridge_shadow, rock_overhang, artifact], reason: RC_PORTAL_LIKE}
+  - {id: PORTAL.NOT_UNDERGROUND_IDENTITY, when: portal_like_without_independent_subsurface_binding, then: CANDIDATE_NOT_IDENTITY, reason: RC_PORTAL_NOT_UNDERGROUND_IDENTITY}
+  - {id: MULTISCALE.DISAPPEARANCE_NOT_ABSENCE, when: feature_disappears_due_to_resolution, then: BELOW_RESOLUTION_NOT_ABSENT, reason: RC_BELOW_RESOLUTION_NOT_ABSENT}
+  - {id: MULTISCALE.PERSISTENCE, when: feature_geometry_coherent_across_registered_scales, then: MULTISCALE_SUPPORTED, reason: RC_MULTISCALE_PERSISTENT}
+  - {id: MULTIFRAME.CONSENSUS, when: registered_frames_independently_support_same_scene_feature, then: MULTIFRAME_SUPPORTED, reason: RC_MULTIFRAME_CONSENSUS}
+  - {id: SCENE.RELATION_NOT_IDENTITY, when: relation_edge_without_object_identity_binding, then: RELATION_SUPPORTED_IDENTITY_UNRESOLVED, reason: RC_RELATION_NOT_IDENTITY}
+  - {id: LOCATOR.TEXT_PLUS_TOPOLOGY, when: resolved_text_and_independent_topology_converge, then: LOCALIZATION_SUPPORTED, reason: RC_LOCATION_TEXT_TOPOLOGY}
+  - {id: LOCATOR.ONE_LABEL_NOT_EXACT, when: one_text_or_POI_cue_only, then: MULTIPLE_CANDIDATES, reason: RC_ONE_LABEL_NOT_EXACT}
+  - {id: LOCATOR.PROXIMITY_NOT_IDENTITY, when: candidate_selected_by_nearest_or_proximity_only, then: CANDIDATE_NOT_IDENTITY, reason: RC_PROXIMITY_NOT_IDENTITY}
+  - {id: LOCATOR.HARD_GEOMETRIC_CONTRADICTION, when: stable_road_hydro_terrain_geometry_conflicts, then: REJECTED, reason: RC_LOCATION_HARD_GEOMETRIC_CONTRADICTION}
+  - {id: LOCATOR.EXACT_PROVISIONAL, when: unique_convergence_but_registration_gates_incomplete, then: EXACT_PROVISIONAL, reason: RC_EXACT_PROVISIONAL}
+  - {id: LOCATOR.EXACT_CERTIFIED, when: unique_convergence_plus_control_points_RMSE_error_radius_leave_one_out_all_pass, then: EXACT_CERTIFIED, reason: RC_EXACT_CERTIFIED}
+  - {id: LOCATOR.TIE, when: top_location_candidates_within_tie_or_margin_not_met, then: MULTIPLE_CANDIDATES, reason: RC_LOCATION_TIE}
+  - {id: LOCATOR.ERROR_RADIUS_REQUIRED, when: any_coordinate_emitted, then: REQUIRE_ERROR_RADIUS, reason: RC_LOCATION_ERROR_RADIUS_REQUIRED}
+rule_record_requirements: [id, owner_module, inputs, required_inputs, optional_inputs, condition, output, precedence, null_behavior, tie_behavior, contradiction_behavior, negative_controls, falsifier, confidence_effect, reason_code, tests, version]
+release_gate:
+  - every material promotion/demotion/rejection/block path has a stable rule id
+  - every rule has positive and negative regression tests; null/boundary/tie tests where applicable
+  - zero rules may use deterministic ordering as evidentiary tie-break

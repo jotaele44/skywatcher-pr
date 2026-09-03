@@ -2,20 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-PRIORITY = (
-    "SATIM-A12",
-    "SATIM-A11",
-    "SATIM-A03",
-    "SATIM-A07",
-    "SATIM-A05",
-    "SATIM-A06",
-    "SATIM-A10",
-    "SATIM-A01",
-    "SATIM-A04",
-    "SATIM-A09",
-    "SATIM-A02",
-    "SATIM-A08",
-)
+from .crosswalk import class_ids
+
+# Sourced from artifact_crosswalk_v1.json rather than restated here. This ordering used
+# to sit alongside the taxonomy's per-class `priority` integer as if the two agreed;
+# they cannot, because that integer is non-unique (A02/A11 both 7, A04/A09 both 8) and
+# so cannot express a total order. The crosswalk's arbitration_rank is the real arbiter
+# and is validated unique and dense at load. Same ordering as before.
+PRIORITY = class_ids()
 
 
 def normalize_classes(classes: Iterable[str]) -> tuple[str, ...]:

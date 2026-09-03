@@ -42,13 +42,29 @@ def _conn() -> sqlite3.Connection:
     return c
 
 
+def test_preflight_accounts_for_geocode_coordinate_lookup(tmp_path, monkeypatch):
+    from fr24 import rlsm_pipeline
+
+    monkeypatch.setattr(rlsm_pipeline, "DB", tmp_path / "missing-rlsm.sqlite")
+    info = rlsm_pipeline.preflight({
+        "stages": ["preflight", "geocode"],
+        "dry_run": True,
+    })
+
+    assert info["gazetteer_keys"] >= 5000
+    assert info["gazetteer_coordinate_keys"] >= 5000
+    assert info["geocode_coordinate_keys"] >= 5000
+
+
 # ---- structural invariants ---------------------------------------------------
 
 def test_screema_tables_exist():
     c = _conn()
     expected = {"screenshots", "processing_runs", "ocr_observations",
                 "aircraft_observations", "flight_track_features", "labeled_pins",
-                "unlabeled_pin_candidates", "geo_anchors", "manual_review_queue"}
+                "unlabeled_pin_candidates", "geo_anchors", "manual_review_queue",
+                "aircraft_marker_frames", "aircraft_marker_detections",
+                "screenshot_georeferences", "zoom_ladder_rungs"}
     existing = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     missing = expected - existing
     assert not missing, f"missing tables: {missing}"
