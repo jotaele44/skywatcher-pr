@@ -1,0 +1,32 @@
+{
+  "dataset_id": "N400AH_STRUCTURED_TRACKS_2026Q2_Q3_v1",
+  "base_commit": "7dccd6c9a7e506a33aceae9c3e88466fdff47b35",
+  "source_archive_sha256": "fa64d13aa3fc32b36b70e84e591b1a3ededb89bb3335e35dda711bb0182b264e",
+  "source_file_count": 50,
+  "track_count": 25,
+  "point_count": 12455,
+  "analytical_segment_count": 50,
+  "continuity_edge_count": 3,
+  "existing_feature_intersection_rows": 95,
+  "rules": {
+    "segment_gap_seconds_gt": 300,
+    "continuity_max_time_gap_seconds": 60,
+    "continuity_max_endpoint_distance_km": 1.0,
+    "interpolate_across_unbounded_gaps": false,
+    "telemetry_discontinuities_are_aircraft_anomalies": false
+  },
+  "output_sha256": {
+    "N400AH_flight_data_analysis.md": "7ff589a97118de379c99cf98969e42e1bc21a4c3351f5afb406bbdc8d395e888",
+    "README.md": "cb52c9ff4f2338881d331b62cda678959c81c1bc0bbafc148b4fb84d83f90cc3",
+    "analysis_receipt.json": "f1a1fc3105b139c7c97cb6e5a7030d7643dc1bc57772f606399416cb1de70389",
+    "analytical_segments.csv": "337cf0113288fadc87b64129c3c4405337b95de382e51a9095b54b7100d7bcbf",
+    "analytical_segments.geojson": "28181e39209fd25ccd6b58f3ae1e4715c48bb98b7b419ccda55539f4aedec9a0",
+    "cross_export_continuity_edges.csv": "65ba983285497c23789042e1a9a0b70b41e8c8797e73d450533eba421d0fd852",
+    "data_quality_flag_summary.csv": "94e9aef2df3924c44283764121681ef8ee7e61b87a17715873762163199822bd",
+    "existing_feature_intersections.csv": "e1e63df931bd4e06cbd995d1afdbb656c77912e9452333ff170d9921407635f2",
+    "flight_track_summary.csv": "68742b4c2b2a5c77fe49565871a501d39e5f83013d7176c14942629401caed40",
+    "normalized_points_with_qa.csv": "d0dcd5042c456f897ad628968acf7b24c0bd36e12baa690823d64bc8afb7b1fc",
+    "source_manifest.json": "4ca501005d61750f31d34c073032164ef93a02960703f4b4bbdd33c882cdcb12",
+    "tracks.geojson": "f9092648bababfc80eeeca8bbf34d5309898876247573cec2873f8619bfca9e5"
+  }
+}
