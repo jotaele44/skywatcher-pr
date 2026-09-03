@@ -4,7 +4,7 @@
   "notes": {
     "arbitration_rank": "Authoritative compound-artifact ordering, lowest rank wins. This is the real arbiter, NOT the taxonomy's priority integer - that field is non-unique (A02/A11 both 7, A04/A09 both 8) and so cannot define a total order.",
     "restriction_minimum": "Mandatory floor enforced by the interpretation restriction gate. A request weaker than this is rejected unless a reviewer overrides with a reason.",
-    "auto_derive": "How an upstream layer decision becomes an assessment. null means no automated detector produces this class today and it must be hand-authored. Adding a detector is a data edit here, not a code change.",
+    "auto_derive": "How an upstream layer decision becomes an assessment. null means no automated detector produces this class today and it must be hand-authored. Adding a detector is a data edit here, not a code change. Legacy seam decisions describe observed artifact morphology only; their causal origin must remain unresolved unless an origin-specific binding is supplied elsewhere.",
     "vocabulary": "Equivalent terms in the other artifact vocabularies, canonically assigned so each term resolves to exactly one class. Absent key means the vocabulary has no equivalent - that is a real answer, not a gap to be filled.",
     "vocabulary_ambiguous": "Terms that could also denote this class but are canonically assigned elsewhere, because the older vocabularies are coarser than SATIM-A and conflate classes it separates. Recorded rather than dropped: a reviewer reading a legacy record needs to know the term under-specifies."
   },
@@ -16,9 +16,9 @@
       "auto_derive": {
         "decision": "probable_tile_seam",
         "likelihood_field": "tile_seam_likelihood",
-        "origin_layer": "mosaic",
+        "origin_layer": "unresolved",
         "requested_restriction": "GEOMETRY_DEGRADED",
-        "rationale": "Taxonomy allows object interpretation only if geometric continuity is verified. Auto-derivation performs no such verification, so geometry is treated as degraded across the seam."
+        "rationale": "The legacy probable_tile_seam decision records visible seam morphology only. It does not prove provider tile-grid identity, source-mosaic identity, viewport compositing, shadow causation, or a physical ground feature, so causal origin remains unresolved while geometry is treated as degraded across the observed boundary."
       },
       "vocabulary": {
         "observation_class": ["TILE_SEAM", "POSSIBLE_TILE_SEAM"],
