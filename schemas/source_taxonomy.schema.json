@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr.local/schemas/source_taxonomy.schema.json",
+  "title": "Skywatcher Source Provenance",
+  "description": "Canonical source classification separating high-level family, provider, collection method, data rights, and operating mode.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_family",
+    "source_provider",
+    "source_method",
+    "data_rights",
+    "operational_mode",
+    "source_record_id",
+    "lineage_id"
+  ],
+  "properties": {
+    "source_family": {
+      "type": "string",
+      "enum": [
+        "operational_position",
+        "screenshot_evidence",
+        "official_record",
+        "manual_field",
+        "secondary_reference",
+        "synthetic_test",
+        "unknown"
+      ]
+    },
+    "source_provider": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_method": {
+      "type": "string",
+      "enum": [
+        "adsb",
+        "mlat",
+        "satellite_adsb",
+        "radar",
+        "uat",
+        "flarm",
+        "screenshot_ocr",
+        "manual_entry",
+        "registry_match",
+        "official_feed",
+        "derived_fusion",
+        "secondary_report",
+        "unknown"
+      ]
+    },
+    "data_rights": {
+      "type": "string",
+      "enum": [
+        "owned",
+        "licensed",
+        "public_official",
+        "user_supplied",
+        "derived",
+        "synthetic",
+        "unknown"
+      ]
+    },
+    "operational_mode": {
+      "type": "string",
+      "enum": [
+        "live",
+        "delayed",
+        "historical",
+        "batch",
+        "evidence_only",
+        "unknown"
+      ]
+    },
+    "source_record_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lineage_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "retrieved_at_utc": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "license_or_terms_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "attribution": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}
