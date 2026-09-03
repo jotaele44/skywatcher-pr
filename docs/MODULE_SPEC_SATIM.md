@@ -26,12 +26,28 @@ reasoning decision surface is defined by
 | `fr24/calibration/**/*.py` | Legacy visual calibration stack. Ownership is determined per function: RLSM owns extraction/OCR primitives, SATIM owns imagery classification/artifact calibration, and FPIM owns route/flight-path interpretation. |
 | `fr24/satim_engine.py`, `fr24/satim_engine_core.py` | Legacy integrated visual calibration orchestrator/runner; the filename does not make cross-domain outputs SATIM findings. |
 | `src/skywatcher/satim/**/*.py` | Canonical SATIM package surfaces, including the artifact taxonomy/pipeline. |
+| `src/skywatcher/satim/landscape/` | Generic landscape morphology, empirically calibrated agricultural-mosaic candidates, complete competing-class vectors, benchmark gates, and provisional image-pixel field segmentation. This package is SATIM-only and may not consume flight behavior, route proximity, operator identity, or CORRIM findings. |
 
 Also SATIM-family, but excluded from the boundary AST walk because neither
 imports repository implementation code (only declared standalone dependencies):
 
 - `tools/satim_engine/` — standalone installable package, own CLI/tests.
 - `tools/satim_route_findings/` — standalone read-only report generator.
+
+## Landscape and agricultural guardrails
+
+- Surface appearance and land-use candidate classification are separate records.
+- `COLOR_ONLY`, `CLEARING_ONLY`, and `RECTANGLE_ONLY` never promote agriculture.
+- Numeric agricultural thresholds must come from a frozen empirical calibration
+  profile; absent calibration fails closed rather than using a literal/default.
+- Temporal recurrence is supplementary and never enters the minimum independent
+  evidence count.
+- Competing classes are retained in full. An unevaluated class has a `null` score,
+  not zero. Tied top evidence remains `REVIEW_UNRESOLVED`.
+- Field segmentation is visible image-pixel geometry. It is not cadastral parcel
+  identity, crop identity, ownership, operator identity, or legal land-use identity.
+- Production promotion requires both `VALIDATED` calibration and an independently
+  closed benchmark with zero unexplained holdout residue.
 
 ## Out of scope
 
@@ -44,6 +60,8 @@ imports repository implementation code (only declared standalone dependencies):
   support for a visual feature's physical identity.
 - Treating low artifact likelihood as affirmative proof that a candidate is a
   true surface feature.
+- Unbounded facility-purpose inference. The separately governed v2.1 bounded
+  `DUAL_USE_FUNCTION_CANDIDATE` channel is not expanded by the landscape classifier.
 
 ## Canonical visual-reasoning guardrails
 

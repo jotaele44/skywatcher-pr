@@ -1,0 +1,108 @@
+{
+  "$id": "https://github.com/jotaele44/skywatcher-pr/schemas/ai_imagery/s07_operator_handoff_authorization.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "audit_event_reference": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "authorization_id": {
+      "pattern": "^s07-operator-authorization-sha256-[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "authorization_reference": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "authorized_action": {
+      "const": "RELEASE_TO_H08_OFFLINE_EVALUATION"
+    },
+    "campaign_id": {
+      "pattern": "^dual-run-campaign-sha256-[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "campaign_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "APPROVE",
+        "REJECT",
+        "ABORT"
+      ]
+    },
+    "expires_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "handoff_request_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "issued_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "operator_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "reason": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "s07_operator_handoff_authorization.v1"
+    },
+    "signature": {
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "const": "Ed25519"
+        },
+        "key_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "payload_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "signature_verified": {
+          "const": true
+        },
+        "value": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "key_id",
+        "algorithm",
+        "value",
+        "payload_sha256",
+        "signature_verified"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "authorization_id",
+    "campaign_id",
+    "campaign_sha256",
+    "handoff_request_sha256",
+    "authorized_action",
+    "decision",
+    "operator_id",
+    "authorization_reference",
+    "audit_event_reference",
+    "issued_at",
+    "expires_at",
+    "reason",
+    "signature"
+  ],
+  "type": "object"
+}
