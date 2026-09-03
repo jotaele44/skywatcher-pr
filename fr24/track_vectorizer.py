@@ -52,6 +52,7 @@ class TrackFeatures:
     bbox: tuple[int, int, int, int]
     confidence: float
     component_count: int
+    sampled_points: list[tuple[int, int]]
 
 
 def _component_geometry(points: list[tuple[int, int]]) -> dict:
@@ -149,6 +150,7 @@ def vectorize_candidates(candidates: list[RouteCandidate]) -> TrackFeatures | No
         bbox=(int(x0), int(y0), int(x1 - x0), int(y1 - y0)),
         confidence=CV_CONFIDENCE,
         component_count=len(tracks),
+        sampled_points=main.points[:500],
     )
 
 

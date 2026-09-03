@@ -1,6 +1,8 @@
 """Read-only API projection of persisted RLSM aircraft spatial truth."""
+
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
 
@@ -129,9 +131,7 @@ def test_entity_api_reaches_spatial_diagnostics(
     with TestClient(backend.app) as client:
         frames = client.get("/api/entities/RLSMSpatialFrames")
         rungs = client.get("/api/entities/RLSMZoomRungs")
-        spatial_observations = client.get(
-            "/api/entities/RLSMSpatialObservations"
-        )
+        spatial_observations = client.get("/api/entities/RLSMSpatialObservations")
         observations = client.get("/api/entities/AirspaceObservations")
 
     assert (
@@ -144,6 +144,65 @@ def test_entity_api_reaches_spatial_diagnostics(
     assert frames.json()[0]["marker_status"] == "selected"
     assert rungs.json()[0]["eligible_for_transfer"] is True
     assert spatial_observations.json()[0]["observation_id"] == "rlsm-aircraft-1"
-    assert any(
-        row.get("observation_id") == "rlsm-aircraft-1" for row in observations.json()
-    )
+    assert any(row.get("observation_id") == "rlsm-aircraft-1" for row in observations.json())
+
+
+def test_committed_craft_profiles_replace_matching_whole_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db = tmp_path / "rlsm.sqlite"
+    profile_dir = tmp_path / "profiles"
+    profile_dir.mkdir()
+    _fixture_db(db)
+    committed = {
+        "registration": "N123AB",
+        "data_source": "known_db",
+        "confidence_level": 0.95,
+        "mission_is_authoritative": False,
+        "primary_mission": "must-not-surface",
+        "total_observations": 7,
+    }
+    (profile_dir / "N123AB.json").write_text(json.dumps(committed))
+    (profile_dir / "N999XY.json").write_text(json.dumps({**committed, "registration": "N999XY"}))
+    monkeypatch.setattr(backend, "RLSM_DB", db)
+    monkeypatch.setattr(backend, "CRAFT_PROFILE_DIR", profile_dir)
+
+    profiles = backend.load_aircraft_profiles()
+
+    assert [row["registration"] for row in profiles] == ["N123AB", "N999XY"]
+    assert profiles[0]["id"] == "N123AB"
+    assert profiles[0]["observation_count"] == 7
+    assert profiles[0]["mission_category"] is None
+
+
+def test_query_api_uses_configured_profiles_and_offline_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pytest.importorskip("httpx")
+    from starlette.testclient import TestClient
+
+    profile_dir = tmp_path / "profiles"
+    profile_dir.mkdir()
+    profile = {
+        "registration": "N123AB",
+        "data_source": "unknown",
+        "profile_confidence_grade": "LOW",
+        "coverage_gaps": ["fixture_gap"],
+        "schedule": None,
+    }
+    (profile_dir / "N123AB.json").write_text(json.dumps(profile))
+    monkeypatch.setattr(backend, "RLSM_DB", tmp_path / "missing.sqlite")
+    monkeypatch.setattr(backend, "CRAFT_PROFILE_DIR", profile_dir)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+    with TestClient(backend.app) as client:
+        missing = client.post("/api/query", json={})
+        answer = client.post(
+            "/api/query",
+            json={"prompt": "schedule for N123AB", "natural_language": True},
+        )
+
+    assert missing.status_code == 400
+    assert answer.status_code == 200
+    assert answer.json()["craft"] == "N123AB"
+    assert "Insufficient evidence" in answer.json()["text"]
