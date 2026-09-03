@@ -1,0 +1,12 @@
+{
+  "contract_version":"federation-spatial-manifest/1.0",
+  "producer_repo":"skywatcher-pr",
+  "authority":"aviation airspace terrain and 4D trajectory geography",
+  "frozen_base_sha":"6d7831c1cc665ad3080c9cab92a673cc5eb8e2e9",
+  "branch":"feat/federation-gis-max-v1",
+  "contracts":{"feature":"schemas/federation_spatial_feature_v1.schema.json","layer":"schemas/federation_spatial_layer_v1.schema.json","map_runtime":"schemas/maplibre_layer_runtime_v1.schema.json","offline_package":"schemas/fedgeopack_v1.schema.json","impact_report":"schemas/federation_spatial_impact_report_v1.schema.json"},
+  "storage":{"postgis_migration":"migrations/20260831_federation_spatial_v1.sql","mvt_migration":"migrations/20260831_federation_mvt_v1.sql","ownership":"REPO_LOCAL"},
+  "domain_extensions":["federation/spatial_core.py","federation/fedgeopack.py","tools/satim_engine/src/satim_engine/plugins/gis_geodesic.py","tools/satim_engine/src/satim_engine/plugins/gis_join.py","gebco/terrain.py"],
+  "cross_repo":{"identity_default":"CANDIDATE_NOT_IDENTITY","hub_correlation_authority":"thehub-pr","consumer_contract":"federation-spatial-contract/1.0"},
+  "gates":{"schema":"OPEN","geometry":"OPEN","tests":"OPEN","postgis":"OPEN","security":"OPEN","performance":"OPEN","desktop":"N/A","ios":"N/A","federation":"BLOCKED"}
+}

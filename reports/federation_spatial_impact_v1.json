@@ -1,0 +1,23 @@
+{
+  "contract_version":"federation-spatial-impact/1.0",
+  "producer_repo":"skywatcher-pr",
+  "branch":"feat/federation-gis-max-v1",
+  "base_sha":"6d7831c1cc665ad3080c9cab92a673cc5eb8e2e9",
+  "head_sha":null,
+  "changes":{
+    "contracts":["federation-spatial-contract/1.0","federation-map-runtime/1.0","fedgeopack/1.0","federation-spatial-manifest/1.0"],
+    "schemas":["feature","layer","map runtime","offline package","impact report","spatial sidecar"],
+    "geometry_semantics":["WGS84 geodesic nearest-layer meters promoted to production metric","legacy planar-degree metric retained for reproducibility","4D segment primitive","CANDIDATE_NOT_IDENTITY default"],
+    "crs":["OGC:CRS84 canonical interchange","EPSG:4326 PostGIS storage","EPSG:3857 MVT rendering"],
+    "api":["SATIM geometric join status changes to GIS_JOIN_OFFLINE_GEODESIC and adds gis_nearest_layer_m"]
+  },
+  "affected_consumers":[
+    {"repo":"spiderweb-pr","impact":"OPTIONAL","reason":"can consume geodesic aviation spatial evidence","migration":"prefer meter distance when both legacy degree and meter fields are present"},
+    {"repo":"moneysweep-pr","impact":"NONE","reason":"no capital-domain API changed","migration":null},
+    {"repo":"aguayluz-pr","impact":"OPTIONAL","reason":"infrastructure proximity consumers should prefer meter distance","migration":null},
+    {"repo":"skywatcher-pr","impact":"REQUIRED","reason":"SATIM geometric-join output status and production distance semantics change","migration":"accept GIS_JOIN_OFFLINE_GEODESIC; use gis_nearest_layer_m for decisions; preserve gis_nearest_layer_deg only for legacy comparisons"}
+  ],
+  "backward_compatible":false,
+  "rollback":"revert gis_join/geodesic branch commits; context-only baseline is unchanged and no database migration has been executed",
+  "gates":{"schema":"OPEN","geometry":"OPEN","tests":"OPEN","security":"OPEN","performance":"OPEN","desktop":"N/A","ios":"N/A","federation":"BLOCKED"}
+}
