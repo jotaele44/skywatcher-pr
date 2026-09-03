@@ -49,7 +49,10 @@ def test_aircraft_state_requires_provenance_and_synthetic_separation():
             "data_rights": "synthetic",
             "operational_mode": "batch",
             "source_record_id": "src-1",
-            "lineage_id": "lin-1"
+            "lineage_id": "lin-1",
+            "artifact_path": "fixture://aircraft-state",
+            "artifact_sha256": None,
+            "ingest_adapter": "test-fixture"
         },
         "synthetic": True
     }
