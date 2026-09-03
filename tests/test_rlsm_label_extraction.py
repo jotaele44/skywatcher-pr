@@ -30,8 +30,11 @@ from fr24.rlsm_icons import (  # noqa: E402
     detect_in_window,
     glyph_window,
     percentile,
+    search_sides,
 )
+from fr24.rlsm_pipeline import _orientation_breakdown  # noqa: E402
 from fr24.rlsm_wordboxes import load_words, union_box, words_from_tesseract_data  # noqa: E402
+from fr24.rlsm_zones import ORIENTATION_SQL, orientation_for, zones_for  # noqa: E402
 
 SCHEMA = REPO / "data" / "rlsm" / "schema.sql"
 
@@ -54,12 +57,19 @@ def conn() -> sqlite3.Connection:
     c.close()
 
 
-def _add_screenshot(c: sqlite3.Connection, tag: str) -> int:
+# iPhone FR24 frame sizes, both ways up.
+PORTRAIT_WH = (1170, 2532)
+LANDSCAPE_WH = (2532, 1170)
+
+
+def _add_screenshot(c: sqlite3.Connection, tag: str,
+                    size: tuple[int, int] = PORTRAIT_WH) -> int:
+    width, height = size
     c.execute(
         "INSERT INTO screenshots (sha256, filename, rel_path, ext, size_bytes, "
         "width, height, ingest_status, ocr_status, ingested_at) "
-        "VALUES (?,?,?,'png',1024,1170,2532,'ok','ok','2026-01-01')",
-        (f"sha-{tag}", f"{tag}.png", f"data/FR24_baseline/{tag}.png"),
+        "VALUES (?,?,?,'png',1024,?,?,'ok','ok','2026-01-01')",
+        (f"sha-{tag}", f"{tag}.png", f"data/FR24_baseline/{tag}.png", width, height),
     )
     return int(c.execute("SELECT last_insert_rowid()").fetchone()[0])
 
@@ -461,3 +471,153 @@ def test_glyph_window_is_clipped_to_the_image():
     box = glyph_window(bx=2, by=2, bw=40, bh=26, img_w=1170, img_h=2532)
     if box is not None:
         assert box[0] >= 0 and box[1] >= 0
+
+
+# --------------------------------------------------------------------------- #
+# portrait / landscape compatibility
+# --------------------------------------------------------------------------- #
+
+def test_orientation_is_derived_from_aspect():
+    assert orientation_for(*PORTRAIT_WH) == "portrait"
+    assert orientation_for(*LANDSCAPE_WH) == "landscape"
+    assert orientation_for(1000, 1000) == "portrait", "square counts as portrait"
+
+
+def test_sql_orientation_matches_the_python_rule(conn):
+    """The report groups by orientation in SQL. That second definition must not
+    drift from orientation_for()."""
+    sizes = [PORTRAIT_WH, LANDSCAPE_WH, (1000, 1000), (2532, 1170), (828, 1792)]
+    for i, size in enumerate(sizes):
+        _add_screenshot(conn, f"orient-{i}", size=size)
+    rows = conn.execute(
+        f"SELECT s.width, s.height, {ORIENTATION_SQL.format(t='s')} FROM screenshots s"
+    ).fetchall()
+    assert rows
+    for width, height, sql_answer in rows:
+        assert sql_answer == orientation_for(width, height), (width, height)
+
+
+@pytest.mark.parametrize("size", [PORTRAIT_WH, LANDSCAPE_WH])
+def test_both_orientations_expose_the_same_zone_names(size):
+    """Everything downstream keys on zone name, not geometry — the extractor's
+    confidence weights, the word-box offsets, the review queue."""
+    names = {z.name for z in zones_for(*size)}
+    assert names == {"status_bar", "label_layer", "aircraft_card"}
+
+
+@pytest.mark.parametrize("size", [PORTRAIT_WH, LANDSCAPE_WH])
+def test_zones_stay_inside_the_frame(size):
+    width, height = size
+    for z in zones_for(width, height):
+        assert z.x >= 0 and z.y >= 0
+        assert z.x + z.w <= width and z.y + z.h <= height
+        assert z.w > 0 and z.h > 0
+
+
+def test_landscape_card_zone_is_offset_in_x_not_y():
+    """In landscape the aircraft card is a right-hand strip, so its word boxes
+    need a non-zero x offset — the portrait path only ever needed y."""
+    card = next(z for z in zones_for(*LANDSCAPE_WH) if z.name == "aircraft_card")
+    assert card.x > 0, "landscape card must be offset horizontally"
+    portrait_card = next(z for z in zones_for(*PORTRAIT_WH) if z.name == "aircraft_card")
+    assert portrait_card.x == 0 and portrait_card.y > 0
+
+
+def test_word_boxes_land_in_frame_coordinates_for_a_landscape_card():
+    """Regression guard for the offset that only matters in landscape: a word
+    read from the card strip must come back at its true frame x, not at the
+    crop-relative x."""
+    card = next(z for z in zones_for(*LANDSCAPE_WH) if z.name == "aircraft_card")
+    data = {"text": ["Ponce"], "conf": [92], "left": [10], "top": [20],
+            "width": [70], "height": [26]}
+    (box,) = words_from_tesseract_data(data, x_off=card.x, y_off=card.y)
+    assert box["x"] == card.x + 10
+    assert box["y"] == card.y + 20
+    assert box["x"] > LANDSCAPE_WH[0] // 2, "card sits in the right half of the frame"
+
+
+@pytest.mark.parametrize("size", [PORTRAIT_WH, LANDSCAPE_WH])
+def test_pins_extract_with_geometry_in_either_orientation(conn, size):
+    orientation = orientation_for(*size)
+    sid = _add_screenshot(conn, f"e2e-{orientation}", size=size)
+    _add_observation(conn, sid, "label_layer",
+                     [_word("Bayamon", 300, 400), _word("Ponce", 700, 800)])
+
+    extract_labeled_pins(conn, run_id=1)
+
+    rows = _pins(conn, sid)
+    assert len(rows) == 2
+    for label, _t, _c, _bx, _by, cx, cy in rows:
+        assert cx is not None and cy is not None, f"{label} has no centroid"
+        assert 0 < cx < size[0] and 0 < cy < size[1], f"{label} outside the frame"
+
+
+def test_label_at_the_left_edge_searches_right_for_its_glyph():
+    """A label pinned against the frame edge has no neighbourhood on its default
+    side. Returning nothing there is indistinguishable from 'no icon here', which
+    is what made the left-only search look orientation-specific."""
+    assert search_sides(bx=4, bw=90, bh=26, img_w=2532)[0] == "right"
+
+
+def test_interior_labels_still_prefer_the_left():
+    assert search_sides(bx=800, bw=90, bh=26, img_w=2532)[0] == "left"
+
+
+def test_label_at_the_right_edge_does_not_try_the_right():
+    sides = search_sides(bx=2480, bw=48, bh=26, img_w=2532)
+    assert "right" not in sides
+
+
+def test_a_window_clipped_to_a_sliver_is_rejected():
+    """A label hard against the frame edge clips its left window down to the
+    sliver overlapping its own text. Detecting in that sliver fingerprints the
+    label as an icon — a confident false positive that would pollute the hash
+    clusters — so the window must be refused instead."""
+    assert glyph_window(bx=2, by=400, bw=140, bh=26, img_w=2532, img_h=1170,
+                        side="left") is None
+    assert glyph_window(bx=2, by=400, bw=140, bh=26, img_w=2532, img_h=1170,
+                        side="right") is not None
+
+
+@pytest.mark.parametrize("size", [PORTRAIT_WH, LANDSCAPE_WH])
+def test_a_right_side_window_is_usable_at_the_left_edge(size):
+    width, height = size
+    left = glyph_window(bx=4, by=300, bw=90, bh=26, img_w=width, img_h=height,
+                        side="left")
+    right = glyph_window(bx=4, by=300, bw=90, bh=26, img_w=width, img_h=height,
+                         side="right")
+    assert right is not None, "right-side fallback must produce a window"
+    assert right[2] <= width and right[3] <= height
+    if left is not None:
+        assert right[0] >= left[0], "right window should sit further right"
+
+
+@pytest.mark.parametrize("size", [PORTRAIT_WH, LANDSCAPE_WH])
+def test_glyph_windows_stay_inside_the_frame_on_every_side(size):
+    width, height = size
+    for side in ("left", "right"):
+        for bx, by in ((0, 0), (width - 60, height - 40), (width // 2, height // 2)):
+            box = glyph_window(bx, by, 60, 26, width, height, side=side)
+            if box is None:
+                continue
+            x0, y0, x1, y1 = box
+            assert 0 <= x0 < x1 <= width
+            assert 0 <= y0 < y1 <= height
+
+
+def test_orientation_breakdown_separates_the_two_layouts(conn):
+    """The measurement that makes landscape checkable: a regression in one
+    orientation is invisible in an average the other dominates."""
+    p = _add_screenshot(conn, "brk-p", size=PORTRAIT_WH)
+    ls = _add_screenshot(conn, "brk-l", size=LANDSCAPE_WH)
+    for sid in (p, ls):
+        _add_observation(conn, sid, "label_layer", [_word("Bayamon", 300, 400)])
+    extract_labeled_pins(conn, run_id=1)
+
+    breakdown = _orientation_breakdown(conn)
+
+    assert set(breakdown) == {"portrait", "landscape"}
+    for entry in breakdown.values():
+        assert entry["screenshots"] == 1
+        assert entry["pins"] == 1
+        assert entry["pins_located"] == 1

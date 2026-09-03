@@ -197,6 +197,10 @@ def _build_target_query(
             WHERE o.obs_id IN (
                 SELECT MAX(obs_id) FROM ocr_observations
                 WHERE zone='label_layer' GROUP BY screenshot_id)
+              AND (
+                    COALESCE(TRIM(o.raw_text), '') != ''
+                    OR COALESCE(o.n_words, 0) > 0
+                  )
               AND COALESCE(o.raw_lines_json, '') IN ('', '[]')
         )""")
     elif retry_failed:
@@ -265,10 +269,11 @@ def _process_one(args: tuple[int, str, int]) -> dict:
                     """
                     INSERT INTO ocr_observations
                         (screenshot_id, run_id, zone, bbox_x, bbox_y, bbox_w, bbox_h,
-                         raw_text, raw_lines_json, confidence_mean, confidence_min,
+                         raw_text, raw_lines_json, word_boxes_version,
+                         confidence_mean, confidence_min,
                          n_words, engine, engine_version, psm, preprocess,
                          preprocess_scale, ocr_status, ocr_error, observed_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'tesseract',
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'tesseract',
                             ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
@@ -281,6 +286,7 @@ def _process_one(args: tuple[int, str, int]) -> dict:
                         bbox[3] - bbox[1],
                         raw_text,
                         json.dumps(lines_json, ensure_ascii=False),
+                        "rlsm-wordboxes-v1",
                         conf_mean,
                         conf_min,
                         n_words,
