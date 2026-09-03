@@ -4,7 +4,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { AuthProvider } from '@/lib/AuthContext';
+import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { SkywatcherDataProvider } from '@/lib/SkywatcherData';
 import { DrawerHubProvider } from '@/components/skywatcher/drawers/DrawerHub';
 import Layout from '@/components/skywatcher/Layout';
