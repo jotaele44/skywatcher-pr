@@ -1,0 +1,71 @@
+{
+  "schema_version": "skywatcher.legacy-infrastructure-source-manifest.v0.3",
+  "producer_repo": "skywatcher-pr",
+  "producer_source_head": "6b95f816f1dc2c2081734df582920703743fbdf3",
+  "legacy_source": {
+    "path": "src/skywatcher/corrim/gis_intelligence.py",
+    "git_blob_sha1": "5650253d6641678e61a54044de282b6fdae3587e",
+    "assertion_kind": "HARDCODED_LITERAL",
+    "source_manifestation_identity": "CODE_LITERAL_AT_EXACT_GIT_BLOB"
+  },
+  "scope": "Complete migration denominator for the 24 legacy hardcoded infrastructure point/proxy assertions in PuertoRicoInfrastructure._load_infrastructure.",
+  "rules": {
+    "legacy_literal_is_authoritative_geometry": false,
+    "name_or_proximity_establishes_identity": false,
+    "shared_coordinate_establishes_identity": false,
+    "production_admission_default": "DENY",
+    "coordinate_semantics": "A radius around a literal point is an analytical proxy, not an asset footprint or corridor geometry.",
+    "source_manifestation_vs_real_world_identity": "The exact Git blob proves where the assertion came from; it does not prove the asserted feature's real-world geometry."
+  },
+  "features": [
+    {"feature_id":"SJU","raw_name":"San Juan International (Luis Muñoz Marín)","legacy_type":"airport","latitude":18.4386,"longitude":-66.001,"radius_nm":5,"raw_operator":"FAA","raw_sector":"","raw_operational_notes":"Primary commercial airport, Class B airspace","candidate_source_family":"FAA_AIRPORT_DATA","identity_evidence":"STABLE_AVIATION_CODE_CANDIDATE","migration_state":"SOURCE_MANIFEST_PRESERVED_IDENTITY_REVALIDATION_REQUIRED"},
+    {"feature_id":"SIG","raw_name":"San Juan (Isla Grande)","legacy_type":"heliport","latitude":18.4519,"longitude":-66.1198,"radius_nm":2,"raw_operator":"FAA","raw_sector":"","raw_operational_notes":"Helicopter/small aircraft base","candidate_source_family":"FAA_AIRPORT_DATA","identity_evidence":"STABLE_AVIATION_CODE_CANDIDATE","migration_state":"SUPERSEDED_CLASSIFICATION_AIRPORT_ENTITY_TJIG;_SUBFEATURES_OPEN"},
+    {"feature_id":"BQN","raw_name":"Aguadilla (Ramey)","legacy_type":"airport","latitude":18.5049,"longitude":-67.1314,"radius_nm":4,"raw_operator":"FAA","raw_sector":"","raw_operational_notes":"Regional commercial airport","candidate_source_family":"FAA_AIRPORT_DATA","identity_evidence":"STABLE_AVIATION_CODE_CANDIDATE","migration_state":"SOURCE_MANIFEST_PRESERVED_IDENTITY_REVALIDATION_REQUIRED"},
+    {"feature_id":"PSE","raw_name":"Ponce","legacy_type":"airport","latitude":18.0075,"longitude":-66.5627,"radius_nm":3,"raw_operator":"FAA","raw_sector":"","raw_operational_notes":"Regional airport","candidate_source_family":"FAA_AIRPORT_DATA","identity_evidence":"STABLE_AVIATION_CODE_CANDIDATE","migration_state":"SOURCE_MANIFEST_PRESERVED_IDENTITY_REVALIDATION_REQUIRED"},
+    {"feature_id":"NRR","raw_name":"Ceiba (Roosevelt Roads)","legacy_type":"airport","latitude":18.2536,"longitude":-65.6362,"radius_nm":4,"raw_operator":"US Navy","raw_sector":"","raw_operational_notes":"Naval air station, former US military base","candidate_source_family":"FAA_AIRPORT_DATA_AND_PROPERTY_RECORDS","identity_evidence":"STABLE_AVIATION_CODE_CANDIDATE","migration_state":"SOURCE_MANIFEST_PRESERVED_IDENTITY_REVALIDATION_REQUIRED"},
+    {"feature_id":"PREPA_SOUTH_CORRIDOR","raw_name":"South Coast Transmission Corridor","legacy_type":"transmission_line","latitude":18.0,"longitude":-66.5,"radius_nm":15,"raw_operator":"PREPA","raw_sector":"","raw_operational_notes":"Critical power transmission corridor, frequent inspection flights","candidate_source_family":"AGUAYLUZ_DOMAIN_PLUS_SPIDERWEB_GEOMETRY","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_NONCANONICAL_CORRIDOR_PROXY"},
+    {"feature_id":"PREPA_CENTRAL_GRID","raw_name":"Central Interior Distribution","legacy_type":"transmission_line","latitude":18.2,"longitude":-66.3,"radius_nm":20,"raw_operator":"PREPA","raw_sector":"","raw_operational_notes":"Main distribution network, high inspection activity","candidate_source_family":"AGUAYLUZ_DOMAIN_PLUS_SPIDERWEB_GEOMETRY","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_NONCANONICAL_CORRIDOR_PROXY"},
+    {"feature_id":"PALO_SECO","raw_name":"Palo Seco Power Plant Area","legacy_type":"power_substation","latitude":18.0523,"longitude":-67.0258,"radius_nm":3,"raw_operator":"PREPA","raw_sector":"","raw_operational_notes":"Major generation facility, critical infrastructure","candidate_source_family":"AGUAYLUZ_DOMAIN_PLUS_SPIDERWEB_GEOMETRY","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_COORDINATE_REVALIDATION_REQUIRED"},
+    {"feature_id":"USCG_SJ","raw_name":"USCG San Juan Sector","legacy_type":"coast_guard_sector","latitude":18.4386,"longitude":-66.001,"radius_nm":50,"raw_operator":"USCG","raw_sector":"","raw_operational_notes":"Maritime jurisdiction, active SAR operations","candidate_source_family":"USCG_SECTOR_BOUNDARY_AND_FACILITY_DATA","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_POINT_CANNOT_REPRESENT_JURISDICTION"},
+    {"feature_id":"MONA_PASSAGE","raw_name":"Mona Passage","legacy_type":"maritime_route","latitude":18.85,"longitude":-67.5,"radius_nm":25,"raw_operator":"USCG","raw_sector":"","raw_operational_notes":"High maritime traffic, dangerous crossing, frequent SAR","candidate_source_family":"NOAA_NAUTICAL_AND_USCG_ROUTE_DATA","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_POINT_CANNOT_REPRESENT_PASSAGE"},
+    {"feature_id":"PORT_SJ","raw_name":"Port of San Juan","legacy_type":"port","latitude":18.4519,"longitude":-66.1198,"radius_nm":3,"raw_operator":"PSA","raw_sector":"","raw_operational_notes":"Major container port, commercial shipping","candidate_source_family":"PUERTO_RICO_PORTS_AUTHORITY_OR_PLANNING_BOARD","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_COORDINATE_REVALIDATION_REQUIRED"},
+    {"feature_id":"RESTRICTED_VIEQUES","raw_name":"Vieques Restricted Airspace","legacy_type":"restricted_airspace","latitude":18.135,"longitude":-65.435,"radius_nm":10,"raw_operator":"US Navy","raw_sector":"","raw_operational_notes":"Former bombing range, still restricted","candidate_source_family":"FAA_SPECIAL_USE_AIRSPACE","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_CIRCLE_NOT_AIRSPACE_GEOMETRY"},
+    {"feature_id":"FURA_BASE_SJ","raw_name":"FURA (Fuerzas Unidas de Rápida Acción) Base","legacy_type":"police_base","latitude":18.45,"longitude":-66.05,"radius_nm":2,"raw_operator":"Puerto Rico Police","raw_sector":"","raw_operational_notes":"Tactical operations base, helicopter staging","candidate_source_family":"PUERTO_RICO_POLICE_PROPERTY_OR_FACILITY_DATA","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_COORDINATE_REVALIDATION_REQUIRED"},
+    {"feature_id":"FBI_SJ","raw_name":"FBI San Juan Field Office","legacy_type":"federal_building","latitude":18.4133,"longitude":-66.0594,"radius_nm":1,"raw_operator":"","raw_sector":"federal","raw_operational_notes":"","candidate_source_family":"AUTHORITATIVE_AGENCY_FACILITY_RECORD","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_COORDINATE_REVALIDATION_REQUIRED"},
+    {"feature_id":"CBP_SJ","raw_name":"DHS CBP Puerto Rico","legacy_type":"federal_building","latitude":18.4386,"longitude":-66.001,"radius_nm":2,"raw_operator":"","raw_sector":"federal","raw_operational_notes":"","candidate_source_family":"AUTHORITATIVE_AGENCY_FACILITY_RECORD","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_SHARED_AIRPORT_COORDINATE"},
+    {"feature_id":"FEMA_CARIBBEAN","raw_name":"FEMA Region II Caribbean","legacy_type":"federal_building","latitude":18.4048,"longitude":-66.0638,"radius_nm":1,"raw_operator":"FEMA","raw_sector":"federal","raw_operational_notes":"","candidate_source_family":"AUTHORITATIVE_AGENCY_FACILITY_RECORD","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_COORDINATE_REVALIDATION_REQUIRED"},
+    {"feature_id":"CBP_AMO_BQN","raw_name":"CBP Air and Marine Operations","legacy_type":"federal_building","latitude":18.5049,"longitude":-67.1314,"radius_nm":2,"raw_operator":"","raw_sector":"federal","raw_operational_notes":"","candidate_source_family":"AUTHORITATIVE_AGENCY_AND_AIRPORT_DATA","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_SHARED_AIRPORT_COORDINATE"},
+    {"feature_id":"USMS_SDPR","raw_name":"US Marshals SDPR","legacy_type":"federal_building","latitude":18.4048,"longitude":-66.0638,"radius_nm":1,"raw_operator":"US Marshals","raw_sector":"federal","raw_operational_notes":"","candidate_source_family":"AUTHORITATIVE_AGENCY_FACILITY_RECORD","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_SHARED_COORDINATE_COLLISION"},
+    {"feature_id":"TJUA","raw_name":"TJUA (San Juan/Cayey WSR-88D)","legacy_type":"radar_installation","latitude":18.1156,"longitude":-66.078,"radius_nm":3,"raw_operator":"NWS","raw_sector":"air","raw_operational_notes":"","candidate_source_family":"NOAA_NWS_RADAR_SITE_METADATA","identity_evidence":"STABLE_SITE_CODE_CANDIDATE","migration_state":"SOURCE_MANIFEST_PRESERVED_GEOMETRY_REVALIDATION_REQUIRED"},
+    {"feature_id":"TJBQ","raw_name":"TJBQ (Aguadilla WSR-88D)","legacy_type":"radar_installation","latitude":18.4947,"longitude":-67.1284,"radius_nm":3,"raw_operator":"NWS","raw_sector":"air","raw_operational_notes":"","candidate_source_family":"NOAA_NWS_RADAR_SITE_METADATA","identity_evidence":"STABLE_SITE_CODE_CANDIDATE","migration_state":"SOURCE_MANIFEST_PRESERVED_GEOMETRY_REVALIDATION_REQUIRED"},
+    {"feature_id":"TISJ_TRACON","raw_name":"TISJ (San Juan Terminal Radar)","legacy_type":"radar_installation","latitude":18.4386,"longitude":-66.001,"radius_nm":2,"raw_operator":"FAA","raw_sector":"air","raw_operational_notes":"","candidate_source_family":"FAA_FACILITY_DATA","identity_evidence":"STABLE_SITE_CODE_CANDIDATE","migration_state":"AUDIT_ONLY_SHARED_AIRPORT_COORDINATE"},
+    {"feature_id":"WINDWARD_PASSAGE","raw_name":"Windward Passage","legacy_type":"maritime_chokepoint","latitude":19.8,"longitude":-73.8,"radius_nm":30,"raw_operator":"USCG","raw_sector":"maritime","raw_operational_notes":"","candidate_source_family":"NOAA_NAUTICAL_GEOGRAPHY","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_OUTSIDE_PR_OPERATIONAL_SCOPE"},
+    {"feature_id":"ANEGADA_PASSAGE","raw_name":"Anegada Passage","legacy_type":"maritime_chokepoint","latitude":18.5,"longitude":-63.8,"radius_nm":25,"raw_operator":"USCG","raw_sector":"maritime","raw_operational_notes":"","candidate_source_family":"NOAA_NAUTICAL_GEOGRAPHY","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_OUTSIDE_PR_OPERATIONAL_SCOPE"},
+    {"feature_id":"MONA_CHOKEPOINT","raw_name":"Mona Chokepoint","legacy_type":"maritime_chokepoint","latitude":18.05,"longitude":-67.92,"radius_nm":20,"raw_operator":"USCG","raw_sector":"maritime","raw_operational_notes":"","candidate_source_family":"NOAA_NAUTICAL_GEOGRAPHY","identity_evidence":"NAME_ONLY_PROXY","migration_state":"AUDIT_ONLY_POINT_CANNOT_REPRESENT_PASSAGE"}
+  ],
+  "row_defaults": {
+    "source_authority": "LEGACY_CODE_ASSERTION_ONLY",
+    "geometry_evidence": "NONE_EXTERNAL",
+    "coordinate_method": "UNKNOWN",
+    "coordinate_confidence": "UNKNOWN",
+    "identity_semantics": "CANDIDATE_NOT_IDENTITY",
+    "certification_state": "AUDIT_ONLY",
+    "production_admitted": false,
+    "geometry_authority": null,
+    "domain_authority": "skywatcher-pr",
+    "map_manifestation_owner": "skywatcher-pr"
+  },
+  "arithmetic": {
+    "legacy_literal_denominator": 24,
+    "manifest_rows": 24,
+    "production_admitted": 0,
+    "audit_only": 24,
+    "unexplained_residue": 0
+  },
+  "certification": {
+    "LEGACY_LITERAL_PROVENANCE": "PASS",
+    "REAL_WORLD_IDENTITY": "OPEN",
+    "CANONICAL_GEOMETRY": "OPEN",
+    "PRODUCTION_ADMISSION": "BLOCKED"
+  }
+}
