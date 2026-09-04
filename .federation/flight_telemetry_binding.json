@@ -1,0 +1,17 @@
+{
+  "repo": "jotaele44/skywatcher-pr",
+  "contract_id": "flight-telemetry-contract/1.0",
+  "role": "FLIGHT_TELEMETRY_PRODUCER_AND_PRIMARY_CONSUMER",
+  "consumer_bindings": [
+    "skywatcher-airspace-evidence",
+    "fr24-route-extractor",
+    "track-termination-event-classifier",
+    "satim-flight-gis-evidence",
+    "terrain-access-candidate"
+  ],
+  "declared_downstream_or_peer_consumers": ["spiderweb-pr", "aguayluz-pr", "moneysweep-pr"],
+  "strict_parallel_development": true,
+  "breaking_change_policy": "FAIL_CLOSED",
+  "compatibility_rule": "A breaking contract change cannot be promoted in this repo unless all declared consumers update in the coordinated change set or explicitly pin the previous contract.",
+  "provider_capability_discovery": "BOOLEAN_PRESENCE_ONLY_NO_SECRET_VALUES"
+}
