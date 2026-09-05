@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher.local/schemas/replay/source-accounting-v1.schema.json",
+  "title": "Skywatcher replay source accounting v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "expected_sources", "available_sources", "missing_sources", "complete"],
+  "properties": {
+    "schema": {"const": "skywatcher.source-accounting.v1"},
+    "expected_sources": {"type": "integer", "minimum": 0},
+    "available_sources": {"type": "integer", "minimum": 0},
+    "missing_sources": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "complete": {"type": "boolean"}
+  }
+}

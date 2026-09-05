@@ -99,6 +99,7 @@ export default function TrackTimeScrubber({ map, mapReady }) {
     <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2.5 text-[11px]">
       <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Track playback:</span>
       <select
+        aria-label="Track aircraft"
         value={icao24}
         onChange={(e) => setIcao24(e.target.value)}
         className="rounded-md border border-border bg-secondary/40 px-1.5 py-0.5 text-[10px] text-foreground"
@@ -115,6 +116,7 @@ export default function TrackTimeScrubber({ map, mapReady }) {
       {coords.length >= 2 && (
         <input
           type="range"
+          aria-label="Track playback position"
           min={0}
           max={coords.length - 1}
           value={index}

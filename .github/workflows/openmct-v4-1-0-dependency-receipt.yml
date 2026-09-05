@@ -1,0 +1,103 @@
+name: Open MCT v4.1.0 dependency receipt
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/openmct-v4-1-0-dependency-receipt.yml
+      - scripts/build_openmct_v4_1_0_receipt.py
+  push:
+    branches:
+      - codex/openmct-bounded-reuse-foundation-v0-3
+    paths:
+      - .github/workflows/openmct-v4-1-0-dependency-receipt.yml
+      - scripts/build_openmct_v4_1_0_receipt.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-receipt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout operator branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+
+      - name: Checkout certified foundation head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 7400a4ec0551617bdbfa966ca1907954ccb14b4b
+          path: certified-head
+          fetch-depth: 1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node 20 LTS
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+
+      - name: Verify certified input worktree
+        run: |
+          set -euo pipefail
+          test "$(git -C certified-head rev-parse HEAD)" = "7400a4ec0551617bdbfa966ca1907954ccb14b4b"
+          test -z "$(git -C certified-head status --porcelain=v1 --untracked-files=all)"
+
+      - name: Build dependency receipt
+        id: receipt
+        continue-on-error: true
+        run: |
+          set +e
+          python3.12 scripts/build_openmct_v4_1_0_receipt.py \
+            --repo "$GITHUB_WORKSPACE/certified-head" \
+            --output-dir "$GITHUB_WORKSPACE/outputs" \
+            > "$GITHUB_WORKSPACE/operator_stdout.txt" \
+            2> "$GITHUB_WORKSPACE/operator_stderr.txt"
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          echo "$code" > "$GITHUB_WORKSPACE/operator_exit_code.txt"
+          exit 0
+
+      - name: Verify package if produced
+        run: |
+          set -euo pipefail
+          if [ -f outputs/openmct_v4_1_0_dependency_receipt.zip ]; then
+            python3 -m zipfile -t outputs/openmct_v4_1_0_dependency_receipt.zip
+            sha256sum outputs/openmct_v4_1_0_dependency_receipt.zip | tee openmct_v4_1_0_dependency_receipt.zip.sha256
+          else
+            echo "receipt ZIP was not produced" >&2
+          fi
+
+      - name: Upload receipt evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openmct-v4-1-0-dependency-receipt
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+          path: |
+            outputs/openmct_v4_1_0_dependency_receipt.zip
+            outputs/openmct_v4_1_0_dependency_receipt/**
+            outputs/openmct_v4_1_0_dependency_receipt/source_evidence/.nvmrc
+            openmct_v4_1_0_dependency_receipt.zip.sha256
+            operator_stdout.txt
+            operator_stderr.txt
+            operator_exit_code.txt
+
+      - name: Enforce operator result
+        run: |
+          set -euo pipefail
+          code="$(cat operator_exit_code.txt)"
+          if [ "$code" = "0" ] || [ "$code" = "2" ]; then
+            exit 0
+          fi
+          echo "Operator failed with exit code $code" >&2
+          cat operator_stderr.txt >&2 || true
+          exit "$code"

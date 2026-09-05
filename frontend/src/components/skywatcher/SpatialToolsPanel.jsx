@@ -125,7 +125,9 @@ export function useSpatialTools({ mapRef, mapReady, targets }) {
           return;
         }
         const origin = point(lngLat);
-        const fc = { type: "FeatureCollection", features: candidates };
+        const fc = /** @type {import("geojson").FeatureCollection<import("geojson").Point>} */ (
+          featureCollection(candidates)
+        );
         const nearest = turfNearestPoint(origin, fc);
         const distanceKm = turfDistance(origin, nearest, { units: "kilometers" });
         const connector = {
@@ -177,6 +179,7 @@ export function SpatialToolsPanel(state) {
         ))}
         {mode !== "off" && targetKeys.length > 0 && (
           <select
+            aria-label="Spatial tool target"
             value={targetKey}
             onChange={(e) => setTargetKey(e.target.value)}
             className="rounded-md border border-border bg-secondary/40 px-1.5 py-0.5 text-[10px] text-foreground"

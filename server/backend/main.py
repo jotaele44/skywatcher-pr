@@ -27,14 +27,24 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
+from server.backend.console import router as console_router
+from server.backend.console.repositories import RepositoryRegistry, row_has_complete_provenance
+from server.backend.console.repositories.normalize import attach_provenance
+from server.backend.console.source_taxonomy import build_provenance, normalize_observation
+
 ROOT = Path(__file__).resolve().parents[2]
+# Make the src-layout package importable when uvicorn starts from the repo root.
+if str(ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT / "src"))
+
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
 EXPORTS_DIR = ROOT / "exports"
 SYNTHETIC_PACKAGE = EXPORTS_DIR / "examples" / "synthetic_airspace_package"
 EVIDENCE_PATH = ROOT / "reports" / "federation" / "evidence_skywatcher-pr.jsonl"
+CRAFT_PROFILE_DIR = ROOT / "profiles" / "craft"
 RLSM_DB = ROOT / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 RLSM_MARKER_VERSION = "rlsm-aircraft-marker-v1"
 RLSM_GEOREF_VERSION = "rlsm-spatial-georef-v1"
@@ -49,7 +59,7 @@ MUNICIPIOS_PATH = ROOT / "data" / "geo" / "pr_municipios_boundaries.json"
 app = FastAPI(
     title="Skywatcher-PR Dashboard API",
     description="Read-only federation entity API over committed Skywatcher artifacts.",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -59,6 +69,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(console_router)
 
 # Session-scoped mutations from the review UI; never written to disk.
 _overlay: dict[str, dict[str, dict[str, Any]]] = {}
@@ -129,9 +140,7 @@ def require_write_access(request: Request) -> None:
     """Authorize a mutating request, by bearer token or by local-network origin."""
     if _WRITE_TOKEN:
         scheme, _, presented = request.headers.get("authorization", "").partition(" ")
-        if scheme.lower() != "bearer" or not secrets.compare_digest(
-            presented, _WRITE_TOKEN
-        ):
+        if scheme.lower() != "bearer" or not secrets.compare_digest(presented, _WRITE_TOKEN):
             raise HTTPException(status_code=401, detail="Missing or invalid write token")
         return
 
@@ -159,9 +168,7 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     rows: list[dict[str, Any]] = []
-    for line_no, line in enumerate(
-        path.read_text(encoding="utf-8").splitlines(), start=1
-    ):
+    for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         line = line.strip()
         if not line:
             continue
@@ -196,10 +203,7 @@ def read_csv(path: Path) -> list[dict[str, Any]]:
         return []
     with path.open("r", encoding="utf-8", newline="") as handle:
         return [
-            {
-                key: coerce(value) if isinstance(value, str) else value
-                for key, value in row.items()
-            }
+            {key: coerce(value) if isinstance(value, str) else value for key, value in row.items()}
             for row in csv.DictReader(handle)
         ]
 
@@ -212,8 +216,7 @@ def with_id(rows: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
 
 def load_airports() -> list[dict[str, Any]]:
     rows = with_id(read_jsonl(AIRPORTS_PATH), "airport_id")
-    # The registry schema names differ from the dashboard's native fields;
-    # alias without dropping the originals.
+    output: list[dict[str, Any]] = []
     for row in rows:
         row.setdefault("airport_name", row.get("name"))
         row.setdefault("icao_code", row.get("icao"))
@@ -222,35 +225,21 @@ def load_airports() -> list[dict[str, Any]]:
         row.setdefault("latitude", row.get("lat"))
         row.setdefault("longitude", row.get("lon"))
         row.setdefault("synthetic_flag", False)
-    return rows
-
-
-def load_infrastructure_assets() -> list[dict[str, Any]]:
-    """Serialize the Puerto Rico infrastructure model (airports, power/port/
-    radar/USCG sites, restricted zones) into the flat asset shape the
-    dashboard's Infrastructure page and PuertoRicoMapShell already expect.
-    This was previously declared with no committed source (`InfrastructureAssets:
-    list`), so the Infrastructure page rendered empty regardless of data.
-    """
-    if PuertoRicoInfrastructure is None:
-        return []
-    infra = PuertoRicoInfrastructure()
-    rows = [
-        {
-            "asset_id": f.feature_id,
-            "asset_name": f.name,
-            "asset_type": f.type.value,
-            "latitude": f.latitude,
-            "longitude": f.longitude,
-            "radius_nm": f.radius_nm,
-            "operator": f.operator,
-            "sector": f.sector,
-            "operational_notes": f.operational_notes,
-            "synthetic_flag": False,
-        }
-        for f in infra.features.values()
-    ]
-    return with_id(rows, "asset_id")
+        source_id = str(row.get("airport_id") or row.get("id"))
+        output.append(attach_provenance(
+            row,
+            path=AIRPORTS_PATH,
+            adapter="dashboard:PRAirports",
+            source_record_id=source_id,
+            source_family="official_record",
+            source_provider="skywatcher-pr-airport-registry",
+            source_method="official_feed",
+            data_rights="derived",
+            operational_mode="batch",
+            artifact_kind="airport_registry",
+            synthetic=False,
+        ))
+    return output
 
 
 def _rlsm_rows(query: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
@@ -356,9 +345,9 @@ def load_rlsm_spatial_observations() -> list[dict[str, Any]]:
 
 
 def load_observations() -> list[dict[str, Any]]:
-    rows = with_id(read_csv(SYNTHETIC_PACKAGE / "observations.csv"), "observation_id")
-    # The export package schema names differ from the dashboard's native
-    # fields; alias without dropping the originals.
+    observation_path = SYNTHETIC_PACKAGE / "observations.csv"
+    rows = with_id(read_csv(observation_path), "observation_id")
+    output: list[dict[str, Any]] = []
     for row in rows:
         row.setdefault("synthetic_flag", row.get("synthetic"))
         row.setdefault("confidence_score", row.get("confidence"))
@@ -366,10 +355,19 @@ def load_observations() -> list[dict[str, Any]]:
         row.setdefault("observed_at", row.get("event_datetime"))
         row.setdefault("latitude", row.get("lat"))
         row.setdefault("longitude", row.get("lon"))
-    return rows + load_rlsm_spatial_observations()
+        row["synthetic"] = bool(row.get("synthetic") or row.get("synthetic_flag"))
+        row["artifact_path"] = str(observation_path)
+        row["artifact_sha256"] = None
+        row["ingest_adapter"] = "dashboard:AirspaceObservations"
+        row = normalize_observation(row)
+        provenance, qa_flags = build_provenance(row)
+        row["provenance"] = provenance
+        row["qa_flags"] = sorted(set(list(row.get("qa_flags") or []) + qa_flags))
+        output.append(row)
+    return output + load_rlsm_spatial_observations()
 
 
-def load_aircraft_profiles() -> list[dict[str, Any]]:
+def load_rlsm_aircraft_profiles() -> list[dict[str, Any]]:
     """Expose one lightweight profile for each spatially located registration."""
     profiles: dict[str, dict[str, Any]] = {}
     for row in load_rlsm_spatial_observations():
@@ -392,11 +390,52 @@ def load_aircraft_profiles() -> list[dict[str, Any]]:
             },
         )
         profile["observation_count"] += 1
-        if str(row.get("observed_at") or "") > str(
-            profile.get("latest_observed_at") or ""
-        ):
+        if str(row.get("observed_at") or "") > str(profile.get("latest_observed_at") or ""):
             profile["latest_observed_at"] = row.get("observed_at")
     return sorted(profiles.values(), key=lambda row: str(row["tail_number"]))
+
+
+def load_craft_profiles() -> list[dict[str, Any]]:
+    """Load whole committed craft-profile rows without inferring mission fields."""
+    rows: list[dict[str, Any]] = []
+    if not CRAFT_PROFILE_DIR.exists():
+        return rows
+    for path in sorted(CRAFT_PROFILE_DIR.glob("*.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if not isinstance(data, dict) or not data.get("registration"):
+            continue
+        mission = data.get("primary_mission") if data.get("mission_is_authoritative") else None
+        data.setdefault("id", data["registration"])
+        data.setdefault("aircraft_id", data["registration"])
+        data.setdefault("tail_number", data["registration"])
+        data.setdefault("operator_category", data.get("operator"))
+        data.setdefault("mission_category", mission)
+        data.setdefault("profile_confidence", data.get("confidence_level"))
+        data.setdefault("synthetic_flag", False)
+        data.setdefault("last_seen_at", data.get("last_seen"))
+        data.setdefault("observation_count", data.get("total_observations"))
+        data.setdefault("registry_source", data.get("data_source"))
+        rows.append(data)
+    return rows
+
+
+def load_aircraft_profiles() -> list[dict[str, Any]]:
+    """Select one whole profile per stable registration.
+
+    A committed craft profile supersedes the lightweight RLSM row for the same
+    registration; unmatched rows from either source remain visible.
+    """
+    profiles = {
+        str(row["registration"]): row
+        for row in load_rlsm_aircraft_profiles()
+        if row.get("registration")
+    }
+    for row in load_craft_profiles():
+        profiles[str(row["registration"])] = row
+    return [profiles[key] for key in sorted(profiles)]
 
 
 def load_rlsm_spatial_frames() -> list[dict[str, Any]]:
@@ -428,10 +467,7 @@ def load_rlsm_spatial_frames() -> list[dict[str, Any]]:
     for row in rows:
         row["id"] = f"rlsm-frame-{row['screenshot_id']}"
         row["capture_id"] = row["id"]
-        row["created_date"] = (
-            row.get("filename_ts")
-            or row.get("marker_observed_at")
-        )
+        row["created_date"] = row.get("filename_ts") or row.get("marker_observed_at")
     return rows
 
 
@@ -447,9 +483,7 @@ def load_rlsm_zoom_rungs() -> list[dict[str, Any]]:
         (RLSM_GEOREF_VERSION,),
     )
     for row in rows:
-        row["id"] = (
-            f"{row['georef_version']}:{row['viewport_profile']}:{row['zoom_rung']}"
-        )
+        row["id"] = f"{row['georef_version']}:{row['viewport_profile']}:{row['zoom_rung']}"
         row["created_date"] = row.get("observed_at")
         row["eligible_for_transfer"] = bool(row.get("eligible_for_transfer"))
     return rows
@@ -475,11 +509,49 @@ def load_export_packages() -> list[dict[str, Any]]:
                 data.setdefault("path", str(summary.parent.relative_to(ROOT)))
                 data.setdefault("package_kind", "satim_calibration")
                 rows.append(data)
-    return with_id(rows, "package_id")
+    rows = with_id(rows, "package_id")
+    output: list[dict[str, Any]] = []
+    for row in rows:
+        source_id = str(row.get("package_id") or row.get("id"))
+        path_value = ROOT / str(row.get("path") or "exports")
+        output.append(attach_provenance(
+            row,
+            path=path_value,
+            adapter="dashboard:ExportPackages",
+            source_record_id=source_id,
+            source_family="secondary_reference",
+            source_provider="skywatcher-export-pipeline",
+            source_method="derived_fusion",
+            data_rights="derived",
+            operational_mode="batch",
+            artifact_kind="export_package",
+            synthetic=bool(row.get("synthetic")),
+        ))
+    return output
 
 
 def load_readiness() -> list[dict[str, Any]]:
-    return with_id(read_jsonl(EVIDENCE_PATH), "path")
+    rows = with_id(read_jsonl(EVIDENCE_PATH), "path")
+    return [
+        attach_provenance(
+            row,
+            path=EVIDENCE_PATH,
+            adapter="dashboard:ReadinessReports",
+            source_record_id=str(row.get("id") or row.get("path")),
+            source_family="secondary_reference",
+            source_provider="skywatcher-readiness-engine",
+            source_method="secondary_report",
+            data_rights="derived",
+            operational_mode="batch",
+            artifact_kind="readiness_report",
+            synthetic=bool(row.get("synthetic")),
+        )
+        for row in rows
+    ]
+
+
+def load_repository_entity(repository_name: str) -> list[dict[str, Any]]:
+    return RepositoryRegistry(ROOT).snapshot(repository_name).rows
 
 
 def _lens_registries():
@@ -554,24 +626,64 @@ LOADERS = {
     "AnalysisLenses": load_analysis_lenses,
     "AnalysisObjectives": load_analysis_objectives,
     "LensCoverage": load_lens_coverage,
-    # Declared by the dashboard but with no committed source yet; empty until
-    # the corresponding pipelines emit repo artifacts.
     "AircraftProfiles": load_aircraft_profiles,
     "RLSMSpatialObservations": load_rlsm_spatial_observations,
     "RLSMSpatialFrames": load_rlsm_spatial_frames,
     "RLSMZoomRungs": load_rlsm_zoom_rungs,
-    "FR24Captures": list,
-    # RouteSegments is FR24 screenshot track-mining output (route_cluster_id,
-    # extraction_method, segment_length_nm) — a different pipeline than the
-    # gis_intelligence.py corridor model, so it stays empty until that mining
-    # pipeline emits committed artifacts; wiring it to CorridorAnalyzer would
-    # mislabel hardcoded patrol corridors as mined route segments.
-    "RouteSegments": list,
-    "InfrastructureAssets": load_infrastructure_assets,
+    "FR24Captures": lambda: load_repository_entity("fr24_captures"),
+    "RouteSegments": lambda: load_repository_entity("route_segments"),
+    "ManualReviewItems": lambda: load_repository_entity("manual_review_items"),
+    "InfrastructureAssets": list,
     "AirspaceAssetLinks": list,
-    "ManualReviewItems": list,
     "FederationSyncEvents": list,
 }
+
+STATIC_EMPTY_REASONS = {
+    "InfrastructureAssets": "No infrastructure-asset artifact is connected in Phase 2.",
+    "AirspaceAssetLinks": "No airspace-asset link artifact is connected in Phase 2.",
+    "FederationSyncEvents": "No federation-sync event artifact is connected in Phase 2.",
+}
+
+
+def entity_availability(name: str) -> dict[str, Any]:
+    snapshot = RepositoryRegistry(ROOT).entity_snapshot(name)
+    if snapshot is not None:
+        return snapshot.as_status()
+    loader = LOADERS.get(name)
+    if loader is None:
+        return {
+            "repository": name,
+            "status": "unavailable_no_adapter",
+            "reason": "No entity loader or Phase 2 repository adapter is registered.",
+            "record_count": 0,
+            "synthetic_only": False,
+            "provenance_complete": True,
+            "warnings": [],
+            "artifacts": [],
+        }
+    rows = loader()
+    return {
+        "repository": name,
+        "status": "available" if rows else "unavailable_no_artifact",
+        "reason": (
+            "Entity loader returned provenance-backed rows."
+            if rows
+            else STATIC_EMPTY_REASONS.get(name, "The configured entity artifact is absent or empty.")
+        ),
+        "record_count": len(rows),
+        "synthetic_only": bool(rows) and all(bool(row.get("synthetic") or row.get("synthetic_flag")) for row in rows),
+        "provenance_complete": all(row_has_complete_provenance(row) for row in rows),
+        "warnings": [],
+        "artifacts": [],
+    }
+
+
+def set_availability_headers(response: Response, availability: dict[str, Any]) -> None:
+    response.headers["X-Skywatcher-Availability"] = str(availability.get("status") or "unknown")
+    response.headers["X-Skywatcher-Record-Count"] = str(availability.get("record_count") or 0)
+    response.headers["X-Skywatcher-Provenance-Complete"] = str(bool(availability.get("provenance_complete"))).lower()
+    reason = str(availability.get("reason") or "").replace("\n", " ")
+    response.headers["X-Skywatcher-Availability-Reason"] = reason[:512]
 
 
 def entity_rows(name: str) -> list[dict[str, Any]]:
@@ -660,19 +772,49 @@ def auth_me() -> dict[str, Any]:
     raise HTTPException(status_code=401, detail="No auth in local diagnostic mode")
 
 
+@app.post("/api/query")
+def query(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Answer only from persisted craft profiles, with deterministic fallback."""
+    payload = payload or {}
+    prompt = str(payload.get("prompt") or payload.get("q") or "").strip()
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Missing 'prompt'")
+
+    try:
+        from skywatcher.query.engine import QueryEngine
+    except ImportError as exc:  # pragma: no cover - import wiring
+        raise HTTPException(status_code=500, detail=f"query engine unavailable: {exc}") from exc
+
+    engine = QueryEngine(db_path=RLSM_DB, profile_dir=CRAFT_PROFILE_DIR)
+    answer = engine.answer(prompt)
+    result = answer.to_dict()
+    if payload.get("natural_language"):
+        from skywatcher.query.llm import ask
+
+        result["text"] = ask(prompt, engine=engine)
+    else:
+        result["text"] = answer.to_text()
+    return result
+
+
 @app.get("/api/entities/{entity_name}")
 def list_entities(
     entity_name: str,
+    response: Response,
     sort: str = Query("-created_date"),
     limit: int = Query(500),
 ) -> list[dict[str, Any]]:
+    availability = entity_availability(entity_name)
+    set_availability_headers(response, availability)
     return sort_rows(entity_rows(entity_name), sort)[: max(limit, 0)]
 
 
 @app.post("/api/entities/{entity_name}/filter")
 def filter_entities(
-    entity_name: str, payload: dict[str, Any] | None = None
+    entity_name: str, response: Response, payload: dict[str, Any] | None = None
 ) -> list[dict[str, Any]]:
+    availability = entity_availability(entity_name)
+    set_availability_headers(response, availability)
     payload = payload or {}
     filters = payload.get("filters") or {}
     rows = entity_rows(entity_name)
@@ -680,6 +822,11 @@ def filter_entities(
         rows = [row for row in rows if row.get(key) == expected]
     limit = int(payload.get("limit") or 500)
     return sort_rows(rows, str(payload.get("sort") or ""))[: max(limit, 0)]
+
+
+@app.get("/api/entities/{entity_name}/availability")
+def get_entity_availability(entity_name: str) -> dict[str, Any]:
+    return entity_availability(entity_name)
 
 
 @app.get("/api/entities/{entity_name}/{entity_id}")
@@ -695,19 +842,29 @@ def create_entity(entity_name: str, payload: dict[str, Any]) -> dict[str, Any]:
     row = dict(payload)
     row.setdefault("id", uuid.uuid4().hex)
     row.setdefault("_session_only", True)
+    if not row_has_complete_provenance(row):
+        row = attach_provenance(
+            row,
+            path=ROOT / ".diagnostic_session_overlay",
+            adapter="dashboard:session_overlay",
+            source_record_id=str(row["id"]),
+            source_family="manual_field",
+            source_provider="skywatcher-diagnostic-session",
+            source_method="manual_entry",
+            data_rights="user_supplied",
+            operational_mode="batch",
+            artifact_kind="session_overlay",
+            synthetic=bool(row.get("synthetic")),
+        )
     _created.setdefault(entity_name, []).append(row)
     return row
 
 
 @app.patch("/api/entities/{entity_name}/{entity_id}", dependencies=_WRITE_GUARD)
-def update_entity(
-    entity_name: str, entity_id: str, payload: dict[str, Any]
-) -> dict[str, Any]:
+def update_entity(entity_name: str, entity_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     for row in entity_rows(entity_name):
         if str(row.get("id")) == entity_id:
-            _overlay.setdefault(entity_name, {}).setdefault(entity_id, {}).update(
-                payload
-            )
+            _overlay.setdefault(entity_name, {}).setdefault(entity_id, {}).update(payload)
             return {**row, **payload}
     raise HTTPException(status_code=404, detail=f"{entity_name} not found: {entity_id}")
 

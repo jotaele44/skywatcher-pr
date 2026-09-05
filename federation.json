@@ -37,7 +37,7 @@
     "validate_export": "python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test",
     "test_suite": "python -m pytest -q",
     "export_canonical": "python3 scripts/federation_export.py --mode test",
-    "ingest_airports": "python3 scripts/ingest_airports.py",
+    "ingest_airports": "python3 scripts/ingest_airports.py --src <path/to/Airport_Master_PR_seed_v1_3.geojson>",
     "maintenance": "python3 scripts/run_maintenance.py --repo skywatcher-pr --mode audit"
   },
   "canonical_outputs": {

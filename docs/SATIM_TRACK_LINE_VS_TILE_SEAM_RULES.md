@@ -1,29 +1,60 @@
-# SATIM Track-Line vs Tile-Seam vs UI-Overlay Rules
+# SATIM Track-Line vs Imagery-Seam vs UI-Overlay Rules
 
 ## Purpose
 
-SATIM must separate three visually similar classes before any imagery-derived candidate is promoted:
+SATIM must separate visually similar observations from causal identity before any imagery-derived candidate is promoted.
 
-1. FR24 track-line overlays.
-2. FR24/UI overlay artifacts.
-3. Satellite or aerial imagery tile seams.
+The required distinction is:
 
-This document defines Phase 1 decision rules for the SATIM visual and tile artifact ledgers.
+1. FR24 track-line overlays;
+2. FR24/UI or viewport compositing artifacts;
+3. imagery-seam observations;
+4. source-mosaic cutlines;
+5. renderer/display tile edges;
+6. natural shadow boundaries;
+7. physical ground features.
 
-## Rule Matrix
+`IMAGERY_SEAM` is an observation class. It is **not** a causal identity.
 
-| Signal | Track line | UI overlay | Tile seam | Ground feature |
-|---|---:|---:|---:|---:|
-| Matches FR24 route color/opacity | High | Low/Medium | Low | Low |
-| Anchored to aircraft route geometry | High | Low | Low | Low |
-| Anchored to panel, label, icon, range ring, or UI element | Low | High | Low | Low |
-| Axis-aligned or tile-grid aligned | Low/Medium | Medium | High | Variable |
-| Radiometric discontinuity across image pixels | Low | Low | High | Variable |
-| Screen-locked across frames while aircraft/platform moves | High | High | High | Low |
-| Persists across imagery dates | Low | Low | Low | High |
-| Aligns to road/building/airport/parcel geometry | Variable | Low | Low | High |
+Legacy `TILE_SEAM_*` labels remain supported for historical calibration outputs, but they must be interpreted as visual seam likelihood only. Downstream consumers must use the causal-origin firewall in `satim_tile_seam_classifier.classify_seam_origin` before assigning an origin.
 
-## Promotion Rules
+## Evidence axes
+
+Every seam candidate should preserve four independent axes:
+
+| Axis | Allowed examples |
+|---|---|
+| Observation | `RADIOMETRIC_DISCONTINUITY`, `GEOMETRIC_REGISTRATION_DISCONTINUITY`, `RADIOMETRIC_AND_GEOMETRIC`, `UNRESOLVED` |
+| Coordinate behavior | `GROUND_FIXED`, `SCREEN_FIXED`, `TILE_GRID_BOUND`, `MIXED`, `UNRESOLVED` |
+| Origin | `SOURCE_MOSAIC_CUTLINE`, `DISPLAY_TILE_EDGE`, `VIEWPORT_COMPOSITING_ARTIFACT`, `NATURAL_SHADOW_BOUNDARY`, `PHYSICAL_GROUND_FEATURE`, `COMPRESSION_OR_RESAMPLING_ARTIFACT`, `UNRESOLVED` |
+| State | `PASS`, `FAIL`, `OPEN`, `BLOCKED`, `PROVISIONAL`, `UNRESOLVED` |
+
+## Rule matrix
+
+| Signal | Track line | UI / viewport | Imagery seam observation | Source mosaic | Display tile edge | Ground feature |
+|---|---:|---:|---:|---:|---:|---:|
+| Matches FR24 route color/opacity | High | Low/Medium | Low | Low | Low | Low |
+| Anchored to aircraft route geometry | High | Low | Low | Low | Low | Low |
+| Anchored to panel, label, icon, range ring, or viewport | Low | High | Low | Low | Low | Low |
+| Radiometric discontinuity across image pixels | Low | Low/Variable | High | High/Variable | High/Variable | Variable |
+| Geometric registration discontinuity | Low | Variable | High | Variable | Variable | Variable |
+| Screen-fixed while the map is panned | High/Variable | High | Not identity evidence | Low | Low | Low |
+| Ground-fixed while the map is panned | Low | Low | Variable | High | High at a fixed zoom | High |
+| Bound to provider tile grid | Low | Low | Not identity evidence | Low | Required for display-tile identity | Variable |
+| Persists at same ground position across adjacent zooms | Low | Low | Variable | Supportive | Variable; depends on tile pyramid | High/Variable |
+| Persists in independent imagery / GIS | Low | Low | Variable | Low/Variable | Low | Supportive; still not identity by itself |
+| Authoritative source mosaic metadata binding | Low | Low | Low | Decisive | Low | Low |
+| Independent physical-ground binding | Low | Low | Low | Contradiction | Contradiction | Decisive |
+
+### Critical correction: screen lock is not tile-edge proof
+
+A georeferenced renderer tile boundary normally moves with the map when the user pans. Therefore `screen_locked_score` must **not** be used as a promotion gate for `DISPLAY_TILE_EDGE`.
+
+Screen-fixed behavior instead supports `VIEWPORT_COMPOSITING_ARTIFACT`, UI contamination, or another viewport-relative rendering effect.
+
+A `DISPLAY_TILE_EDGE` identity requires provider tile-grid binding or equivalent authoritative renderer evidence.
+
+## Promotion rules
 
 ### Probable track line
 
@@ -38,61 +69,98 @@ AND radiometric_delta < 0.50
 
 Decision: `suppress` unless a non-overlay source independently supports the same boundary.
 
-### Probable UI overlay
+### Probable UI / viewport artifact
 
-Classify as `probable_ui_overlay` when:
+Classify as `probable_ui_overlay` or `VIEWPORT_COMPOSITING_ARTIFACT` when:
 
 ```text
 ui_overlay_overlap >= 0.70
 OR ui_anchor_match == true
 OR candidate intersects label box / panel / icon / range ring mask
+OR (screen_fixed_under_pan == true AND ground_fixed_under_pan == false)
 ```
 
-Decision: `suppress` unless the same geometry remains after UI masks are removed.
+Decision: `suppress` or retain as artifact evidence; never reinterpret screen lock as a renderer tile-edge identity.
 
-### Probable tile seam
+### Imagery seam observation
 
-Classify as `probable_tile_seam` when:
+A still image may support an imagery-seam observation when a radiometric or geometric discontinuity is reproducible within the image.
 
 ```text
-straightness >= 0.85
-AND radiometric_delta >= 0.55
-AND screen_locked_score >= 0.70
-AND multi_date_persistence < 0.35
-AND terrain_shadow_likelihood < 0.55
-AND persistent_ground_feature_likelihood < 0.55
+radiometric_discontinuity == true
+OR geometric_registration_discontinuity == true
 ```
 
-Decision: `review` or `accepted_artifact`; never promote to structural signal from one still image.
+Decision: observation may be `PASS`; causal origin remains `UNRESOLVED` until origin-specific gates are satisfied.
 
-### Probable ground feature
+### Source mosaic cutline
 
-Classify as `probable_ground_feature` when:
+`SOURCE_MOSAIC_CUTLINE` may become `PROVISIONAL` when all hold:
 
 ```text
-multi_date_persistence >= 0.65
-AND max(road_alignment, building_alignment, airport_alignment, parcel_alignment) >= 0.50
-AND ui_overlay_overlap < 0.35
-AND track_line_overlap < 0.35
+observed_discontinuity == true
+AND ground_fixed_under_pan == true
+AND persists_across_adjacent_zoom_levels == true
+AND provider_tile_grid_binding == false
+AND independent_ground_feature_binding == false
 ```
 
-Decision: `cross_source_required` unless corroborated by independent GIS or imagery sources.
+`PASS` requires authoritative source-mosaic metadata binding, unless a future certified rule supplies equivalent authoritative evidence.
 
-## Contradiction Flags
+### Renderer / display tile edge
+
+`DISPLAY_TILE_EDGE` may reach `PASS` only when:
+
+```text
+observed_discontinuity == true
+AND provider_tile_grid_binding == true
+AND screen_fixed_under_pan != true
+AND independent_ground_feature_binding != true
+```
+
+Verticality, horizontality, rectilinearity, proximity to a suspected tile boundary, or one-still appearance are discovery evidence only.
+
+### Physical ground feature
+
+`PHYSICAL_GROUND_FEATURE` reaches `PASS` only with an independent physical-ground binding. Examples include authoritative GIS/vector correspondence, independently certified geometry, or other direct binding evidence.
+
+Cross-source persistence alone is supportive but remains `PROVISIONAL` because persistent illumination, land-cover, or processing boundaries can recur.
+
+### Natural shadow boundary
+
+Shadow origin remains `PROVISIONAL` while morphology or illumination is only plausible. Stronger adjudication should use occluder morphology, solar geometry, acquisition-time evidence, and/or temporal imagery.
+
+## Contradiction flags
 
 | Flag | Meaning |
 |---|---|
 | `track_line_color_conflict` | Candidate looks like a route line but color/opacity does not match known FR24 route styling. |
 | `ui_mask_conflict` | Candidate intersects UI mask but also appears in raw imagery. |
-| `single_still_seam_claim` | Candidate was promoted as seam/structure using only one image. |
-| `persistent_tile_claim` | Candidate was called a tile seam despite multi-date persistence. |
+| `single_still_origin_claim` | A causal origin was promoted using only one still image. |
+| `screen_lock_used_as_tile_identity` | Viewport-relative behavior was incorrectly used to prove a renderer tile edge. |
+| `source_mosaic_vs_tile_grid_binding` | Source-mosaic metadata and provider tile-grid evidence conflict. |
+| `artifact_vs_physical_ground_binding` | Artifact-origin evidence conflicts with an independent physical-ground binding. |
+| `screen_fixed_vs_ground_fixed` | Coordinate-behavior observations conflict and require adjudication. |
 | `infrastructure_false_rejection` | Candidate was rejected only because infrastructure alignment exists. |
 
-## Output Contract
+## Output contract
 
 Every classified candidate should produce:
 
-- one `satim.visual_ledger.v1` row;
-- zero or one `satim.tile_artifact_ledger.v1` row;
+- one SATIM visual-observation row;
+- zero or one artifact-control row;
+- the complete origin candidate set with state for each candidate;
 - contradiction flags when evidence conflicts;
-- a review state before any downstream promotion.
+- `resolved_origin = UNRESOLVED` whenever zero or more than one origin has an uncontradicted `PASS`;
+- a review state before any downstream structural promotion.
+
+## Non-negotiable invariants
+
+1. Observation taxonomy is not causal identity.
+2. `RADIOMETRIC_DISCONTINUITY != SOURCE_MOSAIC_CUTLINE`.
+3. `SOURCE_MOSAIC_CUTLINE != DISPLAY_TILE_EDGE`.
+4. `DISPLAY_TILE_EDGE != PHYSICAL_GROUND_FEATURE`.
+5. Screen-fixed behavior is not provider tile-grid identity.
+6. Missing tests remain `BLOCKED` or `UNRESOLVED`; they never silently become negative evidence.
+7. Hard independent bindings override heuristics, but conflicting hard bindings remain unresolved until adjudicated.
+8. Deterministic ordering never resolves tied or contradictory origin evidence.

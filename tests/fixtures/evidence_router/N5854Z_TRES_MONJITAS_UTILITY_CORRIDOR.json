@@ -1,0 +1,71 @@
+{
+  "fixture_id": "N5854Z_TRES_MONJITAS_UTILITY_CORRIDOR",
+  "fixture_version": "1.0.0",
+  "scope": "Nine supplied FR24 screenshots used as a regression fixture for evidence routing and false-promotion safeguards. This fixture does not certify a landing, facility target, or exact mission.",
+  "source_manifest": {
+    "container_kind": "NATIVE_IMAGE_BATCH",
+    "count": 9,
+    "images": [
+      {"filename":"IMG_4657.jpeg","size_bytes":353314,"width":710,"height":1536,"sha256":"863aeb81caf273bc39814803aab088f75828722a0ef3cce22c9375693f190fbd"},
+      {"filename":"IMG_4658.jpeg","size_bytes":382475,"width":710,"height":1536,"sha256":"8610b743ac9893a5ec7dc2d3c541ddc0760bf6214671657f8585de6d1351eaeb"},
+      {"filename":"IMG_4659.jpeg","size_bytes":356667,"width":710,"height":1536,"sha256":"e207fe734413971d74c2acbc7fdde555ae765b34cf3be4cf943773785cb14a4a"},
+      {"filename":"IMG_4660.jpeg","size_bytes":453493,"width":1536,"height":710,"sha256":"d1c2d27ba54dfe31a6a4d087078caa734929ba84cba4b704786457309ccfe9e4"},
+      {"filename":"IMG_4661.jpeg","size_bytes":650233,"width":1170,"height":2532,"sha256":"c71abb664b9b340798b400c4512ae29aa3dfefc77b54a9a2d8b3eb252924b495"},
+      {"filename":"IMG_4662.jpeg","size_bytes":659379,"width":1170,"height":2532,"sha256":"d46c109ab79dfc0e33af8d45cdf087b47f87e3dbcce55c70e93dcd8dbfc17ebf"},
+      {"filename":"IMG_4663.jpeg","size_bytes":543296,"width":1170,"height":2532,"sha256":"06c4490d09f1327837bde054c8711fcfebd32d2465282b85887919273857980d"},
+      {"filename":"IMG_4664.jpeg","size_bytes":550366,"width":1170,"height":2532,"sha256":"a5c2bf84d0c2b1d02f5a5a302642eb520bd9ee7c2f956d80f08315037a5ddf96"},
+      {"filename":"IMG_4665.jpeg","size_bytes":502793,"width":1170,"height":2532,"sha256":"00228feb009e640c92b3de1e05fd7b4a5fd38bfa6d960558fb617d254dadc3a0"}
+    ]
+  },
+  "expected_facts": [
+    "Registration N5854Z is visibly displayed in the supplied screenshots.",
+    "Displayed ground speeds include 18 mph, 29 mph, 30 mph, and 0 mph.",
+    "Displayed barometric altitude is 0 ft in multiple screenshots.",
+    "A rendered FR24 trail and aircraft marker are visible.",
+    "Map labels and visible linear electrical infrastructure occur within the screenshot context."
+  ],
+  "expected_non_facts": [
+    "0 ft proves ground contact.",
+    "0 mph proves landing.",
+    "The nearest or most prominent map label is the aircraft target.",
+    "The rendered FR24 trail is raw telemetry.",
+    "Electrical-corridor alignment proves an exact mission."
+  ],
+  "expected_inferences": [
+    {"claim":"utility/infrastructure-associated maneuvering is a candidate interpretation","state":"PROVISIONAL"},
+    {"claim":"final stationary position is a landing candidate only","state":"UNRESOLVED"}
+  ],
+  "prohibited_promotions": [
+    "0_FT->ON_GROUND",
+    "0_MPH->LANDED",
+    "MAP_LABEL->TARGET",
+    "NEAREST_POI->TARGET",
+    "OWNER->OPERATOR",
+    "OPERATOR->MISSION",
+    "RENDERED_TRAIL->RAW_TRAJECTORY",
+    "CORRIDOR_ALIGNMENT->EXACT_MISSION"
+  ],
+  "expected_router_skills": ["RLSM","FPIM","CORRIM","SATIM","TIMELINE","PATTERN"],
+  "expected_certification_states": {
+    "SOURCE_DENOMINATOR":"PASS",
+    "VISUAL_ROUTING":"PASS",
+    "AIRCRAFT_IDENTITY":"PROVISIONAL_UNTIL_INDEPENDENT_BINDING",
+    "LANDING":"UNRESOLVED",
+    "FACILITY_TARGET":"CANDIDATE_NOT_IDENTITY",
+    "MISSION":"PROVISIONAL",
+    "ANALYTICAL_CERTIFICATION":"OPEN"
+  },
+  "regression_requirements": {
+    "positive": [
+      "all 9 manifestations are retained",
+      "visual routing invokes RLSM, FPIM, CORRIM, SATIM, TIMELINE and PATTERN capability families",
+      "raw screenshot hashes remain unchanged"
+    ],
+    "negative": [
+      "no landing promotion from zero speed or zero altitude",
+      "no facility target promotion from label or proximity",
+      "no exact mission promotion from owner or corridor alignment",
+      "no raw trajectory promotion from rendered trail"
+    ]
+  }
+}

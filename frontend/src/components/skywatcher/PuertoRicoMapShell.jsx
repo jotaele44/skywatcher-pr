@@ -16,7 +16,7 @@ const TERRAIN_DEM_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium
 // infrastructure-zone and flight-corridor polygons and the observation
 // heatmap are fetched directly from the backend's /api/geo/* endpoints,
 // since those need real buffered geometry the flat prop shape doesn't carry.
-const PR_CENTER = [-66.35, 18.2];
+const PR_CENTER = /** @type {import("maplibre-gl").LngLatLike} */ ([-66.35, 18.2]);
 
 const MARKER_STYLES = {
   observation: "hsl(190 100% 55%)",
@@ -24,7 +24,7 @@ const MARKER_STYLES = {
   asset: "hsl(262 52% 66%)",
 };
 
-const OSM_STYLE = {
+const OSM_STYLE = /** @type {import("maplibre-gl").StyleSpecification} */ ({
   version: 8,
   sources: {
     osm: {
@@ -38,12 +38,15 @@ const OSM_STYLE = {
     { id: "bg", type: "background", paint: { "background-color": "hsl(220 34% 4%)" } },
     { id: "osm", type: "raster", source: "osm", paint: { "raster-opacity": 0.55, "raster-saturation": -0.4 } },
   ],
-};
+});
 
-const EMPTY = { type: "FeatureCollection", features: [] };
+const EMPTY = /** @type {import("geojson").FeatureCollection} */ ({
+  type: "FeatureCollection",
+  features: [],
+});
 
 function toPointCollection(rows, latKey = "latitude", lonKey = "longitude") {
-  return {
+  return /** @type {import("geojson").FeatureCollection<import("geojson").Point>} */ ({
     type: "FeatureCollection",
     features: rows
       .filter((r) => r[latKey] != null && r[lonKey] != null)
@@ -52,11 +55,11 @@ function toPointCollection(rows, latKey = "latitude", lonKey = "longitude") {
         geometry: { type: "Point", coordinates: [Number(r[lonKey]), Number(r[latKey])] },
         properties: r,
       })),
-  };
+  });
 }
 
 function toLineCollection(rows) {
-  return {
+  return /** @type {import("geojson").FeatureCollection<import("geojson").LineString>} */ ({
     type: "FeatureCollection",
     features: rows
       .filter((r) => r.start_lat != null && r.start_lon != null && r.end_lat != null && r.end_lon != null)
@@ -71,7 +74,7 @@ function toLineCollection(rows) {
         },
         properties: r,
       })),
-  };
+  });
 }
 
 async function fetchGeojson(path) {
@@ -376,6 +379,7 @@ function ToggleChip({ label, active, onClick }) {
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors ${
         active
           ? "border-primary/50 bg-primary/15 text-primary"

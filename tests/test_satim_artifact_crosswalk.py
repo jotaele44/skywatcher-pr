@@ -73,7 +73,7 @@ def test_auto_derivation_tables_are_preserved_exactly() -> None:
         "probable_tile_seam": "tile_seam_likelihood",
         "probable_cloud_shadow": "cloud_shadow_likelihood",
     }
-    assert L5_CLASS_ORIGIN_LAYER == {"SATIM-A01": "mosaic", "SATIM-A09": "atmosphere"}
+    assert L5_CLASS_ORIGIN_LAYER == {"SATIM-A01": "unresolved", "SATIM-A09": "atmosphere"}
     assert L5_CLASS_RESTRICTION == {
         "SATIM-A01": "GEOMETRY_DEGRADED",
         "SATIM-A09": "OBJECT_LEVEL_PROHIBITED",
