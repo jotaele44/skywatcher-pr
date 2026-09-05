@@ -72,3 +72,25 @@ for (const route of routes) {
     expect(runtimeFailures, runtimeFailures.join("\n")).toEqual([]);
   });
 }
+
+test("interactive map exposes spatial and track workflows", async ({ page }) => {
+  const runtimeFailures = [];
+  page.on("pageerror", (error) => runtimeFailures.push(error.message));
+  page.on("response", (response) => {
+    if (response.status() >= 500) runtimeFailures.push(`${response.status()} ${response.url()}`);
+  });
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  const toolsToggle = page.getByRole("button", { name: "Tools" }).first();
+  await expect(toolsToggle).toBeVisible();
+  await toolsToggle.click();
+  await page.getByRole("button", { name: "Buffer" }).first().click();
+  await expect(page.getByRole("combobox", { name: "Spatial tool target" }).first()).toBeVisible();
+
+  const trackToggle = page.getByRole("button", { name: "Track" }).first();
+  await trackToggle.click();
+  await expect(page.getByRole("combobox", { name: "Track aircraft" }).first()).toBeVisible();
+
+  expect(runtimeFailures, runtimeFailures.join("\n")).toEqual([]);
+});

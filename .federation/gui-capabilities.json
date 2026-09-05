@@ -66,7 +66,27 @@
           "POST /api/entities/{entity_name}/filter",
           "GET /api/entities/{entity_name}/{entity_id}",
           "POST /api/entities/{entity_name}",
-          "PATCH /api/entities/{entity_name}/{entity_id}"
+          "PATCH /api/entities/{entity_name}/{entity_id}",
+          "GET /api/geo/observations.geojson",
+          "GET /api/geo/airports.geojson",
+          "GET /api/geo/infrastructure.geojson",
+          "GET /api/geo/corridors.geojson",
+          "GET /api/geo/observations/heatmap.geojson",
+          "GET /api/geo/tracks",
+          "GET /api/geo/tracks/{icao24}.geojson",
+          "GET /api/geo/municipios.geojson",
+          "GET /api/geo/municipios/observation_density.geojson"
+        ],
+        "symbols": [
+          "server/backend/main.py:geo_observations",
+          "server/backend/main.py:geo_airports",
+          "server/backend/main.py:geo_infrastructure",
+          "server/backend/main.py:geo_corridors",
+          "server/backend/main.py:geo_observations_heatmap",
+          "server/backend/main.py:geo_track_index",
+          "server/backend/main.py:geo_track",
+          "server/backend/main.py:geo_municipios",
+          "server/backend/main.py:geo_municipios_observation_density"
         ]
       },
       "frontend": {
@@ -81,7 +101,9 @@
           "/review",
           "/export",
           "/readiness",
-          "/calibration"
+          "/calibration",
+          "/console",
+          "/spatial-truth"
         ],
         "e2e_routes": [
           "/",
@@ -94,7 +116,9 @@
           "/review",
           "/export",
           "/readiness",
-          "/calibration"
+          "/calibration",
+          "/console",
+          "/spatial-truth"
         ],
         "components": [
           "frontend/src/api/federationClient.js",
@@ -110,7 +134,12 @@
           "frontend/src/pages/ManualReview.jsx",
           "frontend/src/pages/ExportCenter.jsx",
           "frontend/src/pages/Readiness.jsx",
-          "frontend/src/pages/Calibration.jsx"
+          "frontend/src/pages/Calibration.jsx",
+          "frontend/src/pages/Console.jsx",
+          "frontend/src/pages/SpatialTruth.jsx",
+          "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx",
+          "frontend/src/components/skywatcher/SpatialToolsPanel.jsx",
+          "frontend/src/components/skywatcher/TrackTimeScrubber.jsx"
         ],
         "discoverability": [
           "frontend/src/components/skywatcher/Sidebar.jsx"
@@ -121,7 +150,8 @@
           "tests/test_flight_fusion_endpoints.py",
           "tests/test_manual_review_queue.py",
           "tests/test_fr24_dashboard_data.py",
-          "tests/test_satim_calibration.py"
+          "tests/test_satim_calibration.py",
+          "tests/test_geo_municipios_routes.py"
         ],
         "contract": [
           "tests/test_gui_parity.py"
