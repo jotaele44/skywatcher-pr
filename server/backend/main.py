@@ -23,6 +23,7 @@ import secrets
 import sqlite3
 import sys
 import uuid
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +40,11 @@ RLSM_MARKER_VERSION = "rlsm-aircraft-marker-v1"
 RLSM_GEOREF_VERSION = "rlsm-spatial-georef-v1"
 RLSM_MAX_POSITION_ERROR_M = 500
 ADSB_DB = Path(os.environ["SKYWATCHER_DB"]) if os.environ.get("SKYWATCHER_DB") else ROOT / "data" / "skywatcher.db"
+# Committed as .json rather than .geojson: this repo's .gitignore blanket-excludes
+# *.geojson (data-policy convention for generated/runtime export artifacts), but
+# this is checked-in reference boundary data, the same file already committed by
+# aguayluz-pr and ovnis-pr under the identical name→GEOID shape.
+MUNICIPIOS_PATH = ROOT / "data" / "geo" / "pr_municipios_boundaries.json"
 
 app = FastAPI(
     title="Skywatcher-PR Dashboard API",
@@ -907,3 +913,67 @@ def geo_track(icao24: str) -> dict[str, Any]:
             },
         }],
     }
+
+
+@app.get("/api/geo/tracks")
+def geo_track_index() -> list[dict[str, Any]]:
+    """Distinct aircraft with a recorded ADS-B track, for a track-picker UI.
+    Empty on a checkout without an active poller, same as geo_track above.
+    """
+    rows = _adsb_rows(
+        """SELECT icao24, callsign, COUNT(*) AS point_count
+           FROM adsb_state_vectors
+           WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+           GROUP BY icao24
+           HAVING COUNT(*) >= 2
+           ORDER BY point_count DESC"""
+    )
+    return [
+        {
+            "icao24": r["icao24"],
+            "callsign": r.get("callsign"),
+            "point_count": r["point_count"],
+        }
+        for r in rows
+    ]
+
+
+def _load_municipios() -> dict[str, Any]:
+    if not MUNICIPIOS_PATH.is_file():
+        return {"type": "FeatureCollection", "features": []}
+    return json.loads(MUNICIPIOS_PATH.read_text(encoding="utf-8"))
+
+
+@app.get("/api/geo/municipios.geojson")
+def geo_municipios() -> dict[str, Any]:
+    return _load_municipios()
+
+
+@app.get("/api/geo/municipios/observation_density.geojson")
+def geo_municipios_observation_density() -> dict[str, Any]:
+    """Municipios polygons with an observation count baked into each
+    feature's properties, keyed by matching `load_observations()`'s
+    `municipality` field against each municipio's own `name` property (the
+    same name->GEOID join aguayluz-pr's event_density and spiderweb-pr's
+    gazetteer density use — no spatial join, no new geospatial dependency).
+    """
+    municipios = _load_municipios()
+    by_name: Counter[str] = Counter()
+    unmatched = 0
+    names = {f["properties"].get("name") for f in municipios["features"]}
+    for row in load_observations():
+        name = row.get("municipality")
+        if name in names:
+            by_name[name] += 1
+        else:
+            unmatched += 1
+    max_count = max(by_name.values(), default=0)
+    for feature in municipios["features"]:
+        name = feature["properties"].get("name")
+        count = by_name.get(name, 0)
+        feature["properties"]["observation_count"] = count
+        feature["properties"]["observation_density_norm"] = (
+            count / max_count if max_count else 0
+        )
+    municipios["unmatched_observations"] = unmatched
+    return municipios

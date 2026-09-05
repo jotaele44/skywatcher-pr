@@ -1,8 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Radar, MapPin } from "lucide-react";
 import { appParams } from "@/lib/app-params";
+import { useSpatialTools, SpatialToolsPanel } from "./SpatialToolsPanel";
+import TrackTimeScrubber from "./TrackTimeScrubber";
+
+// AWS's free public elevation tile set — no API key, same free-public-tile
+// precedent as the OSM raster basemap already used above.
+const TERRAIN_DEM_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
 
 // Real MapLibre GL map of Puerto Rico airspace context, replacing the earlier
 // hand-rolled SVG/projectToShell shell. Point props (observations/airports/
@@ -96,6 +102,11 @@ export default function PuertoRicoMapShell({
   const [showZones, setShowZones] = useState(true);
   const [showCorridors, setShowCorridors] = useState(true);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showTerrain, setShowTerrain] = useState(false);
+  const [showMunicipios, setShowMunicipios] = useState(false);
+  const [showTools, setShowTools] = useState(false);
+  const [showTrackScrubber, setShowTrackScrubber] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     const map = new maplibregl.Map({
@@ -176,7 +187,45 @@ export default function PuertoRicoMapShell({
         paint: { "circle-radius": 3.5, "circle-color": MARKER_STYLES.observation, "circle-opacity": 0.9, "circle-stroke-color": "#0b1220", "circle-stroke-width": 0.5 },
       });
 
+      map.addSource("terrain-dem", {
+        type: "raster-dem", tiles: [TERRAIN_DEM_URL], tileSize: 256, encoding: "terrarium",
+      });
+      map.addLayer(
+        {
+          id: "hillshade", type: "hillshade", source: "terrain-dem",
+          paint: { "hillshade-exaggeration": 0.6 },
+          layout: { visibility: "none" },
+        },
+        "routes-line",
+      );
+
+      map.addSource("municipios", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      map.addLayer(
+        {
+          id: "municipios-fill", type: "fill", source: "municipios",
+          paint: {
+            "fill-color": [
+              "interpolate", ["linear"], ["coalesce", ["get", "observation_density_norm"], 0],
+              0, "rgba(94, 234, 212, 0.05)",
+              1, "rgba(94, 234, 212, 0.75)",
+            ],
+            "fill-opacity": 1,
+          },
+          layout: { visibility: "none" },
+        },
+        "routes-line",
+      );
+      map.addLayer(
+        {
+          id: "municipios-line", type: "line", source: "municipios",
+          paint: { "line-color": "rgba(94, 234, 212, 0.5)", "line-width": 1 },
+          layout: { visibility: "none" },
+        },
+        "routes-line",
+      );
+
       readyRef.current = true;
+      setMapReady(true);
 
       for (const layer of ["observations-dot", "airports-dot", "assets-dot", "zones-fill", "corridors-fill"]) {
         map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
@@ -224,6 +273,44 @@ export default function PuertoRicoMapShell({
     mapRef.current.setLayoutProperty("obs-heatmap-layer", "visibility", showHeatmap ? "visible" : "none");
   }, [showHeatmap]);
 
+  useEffect(() => {
+    if (!mapReady) return;
+    const map = mapRef.current;
+    map.setLayoutProperty("hillshade", "visibility", showTerrain ? "visible" : "none");
+    if (showTerrain) {
+      map.setTerrain({ source: "terrain-dem", exaggeration: 1.3 });
+      map.easeTo({ pitch: 55, duration: 600 });
+    } else {
+      map.setTerrain(null);
+      map.easeTo({ pitch: 0, duration: 600 });
+    }
+  }, [showTerrain, mapReady]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    const map = mapRef.current;
+    map.setLayoutProperty("municipios-fill", "visibility", showMunicipios ? "visible" : "none");
+    map.setLayoutProperty("municipios-line", "visibility", showMunicipios ? "visible" : "none");
+    if (!showMunicipios) return;
+    let cancelled = false;
+    fetchGeojson("/geo/municipios/observation_density.geojson").then((data) => {
+      if (!cancelled) map.getSource("municipios")?.setData(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [showMunicipios, mapReady]);
+
+  const spatialToolTargets = useMemo(
+    () => ({
+      Observations: () => toPointCollection(observations).features,
+      Airports: () => toPointCollection(airports).features,
+      Assets: () => toPointCollection(assets).features,
+    }),
+    [observations, airports, assets],
+  );
+  const spatialTools = useSpatialTools({ mapRef, mapReady, targets: spatialToolTargets });
+
   return (
     <div className="relative overflow-hidden rounded-xl border border-border bg-[hsl(220_34%_4%)]">
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
@@ -235,6 +322,10 @@ export default function PuertoRicoMapShell({
           <ToggleChip label="Zones" active={showZones} onClick={() => setShowZones((v) => !v)} />
           <ToggleChip label="Corridors" active={showCorridors} onClick={() => setShowCorridors((v) => !v)} />
           <ToggleChip label="Heatmap" active={showHeatmap} onClick={() => setShowHeatmap((v) => !v)} />
+          <ToggleChip label="Terrain" active={showTerrain} onClick={() => setShowTerrain((v) => !v)} />
+          <ToggleChip label="Municipios" active={showMunicipios} onClick={() => setShowMunicipios((v) => !v)} />
+          <ToggleChip label="Tools" active={showTools} onClick={() => setShowTools((v) => !v)} />
+          <ToggleChip label="Track" active={showTrackScrubber} onClick={() => setShowTrackScrubber((v) => !v)} />
           {diagnostic && (
             <span className="ml-1 rounded-full border border-[hsl(262_52%_60%/0.35)] bg-[hsl(262_52%_60%/0.14)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[hsl(262_60%_76%)]">
               Diagnostic / Sample
@@ -263,6 +354,9 @@ export default function PuertoRicoMapShell({
           </div>
         )}
       </div>
+
+      {showTools && <SpatialToolsPanel {...spatialTools} />}
+      {showTrackScrubber && <TrackTimeScrubber map={mapRef.current} mapReady={mapReady} />}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: MARKER_STYLES.observation }} /> Observation</span>
