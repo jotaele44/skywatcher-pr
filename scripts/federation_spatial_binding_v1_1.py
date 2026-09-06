@@ -7,7 +7,8 @@ relationships remain evidence and cannot create canonical identity.
 """
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 CONTRACT_VERSION = "federation-spatial-contract/1.1"
 PRODUCER = "skywatcher-pr"
