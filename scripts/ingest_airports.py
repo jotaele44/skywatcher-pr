@@ -10,16 +10,14 @@ ilap_airspace_bridge) resolves against, replacing synthetic airport positions.
 This is REFERENCE data only — the live airspace *observation* stream still
 requires real FlightRadar24 capture (see federation.json readiness gate).
 
-Source lives outside the repo; pass ``--src`` to override. The small registry
-(19 rows) is committed.
+Source lives outside the repo; pass ``--src`` (path to
+``Airport_Master_PR_seed_v1_3.geojson``). The small registry (19 rows) is committed.
 """
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
-
-DEFAULT_SRC = "/Users/jotaele/Documents/Data/PR_Geodata/06_Vector_GeoJSON/Airport_Master_PR_seed_v1_3.geojson"
 
 
 def _num(v):
@@ -61,7 +59,7 @@ def build_registry(features: list) -> list:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--src", default=DEFAULT_SRC)
+    ap.add_argument("--src", required=True)
     ap.add_argument("--out", default="data/reference/pr_airports.jsonl")
     args = ap.parse_args()
 
