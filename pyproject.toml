@@ -71,7 +71,7 @@ geo = [
 # Entry point: python -m imagery.server
 # Providers: NASA GIBS (no auth), Sentinel Hub, Copernicus/CDSE (OAuth2).
 imagery = [
-    "fastmcp>=2.9,<3",
+    "fastmcp>=4.0.2,<5",
     "requests>=2.34.2",
     "python-dotenv>=1.0",
     "numpy",
