@@ -94,3 +94,73 @@ test("interactive map exposes spatial and track workflows", async ({ page }) => 
 
   expect(runtimeFailures, runtimeFailures.join("\n")).toEqual([]);
 });
+
+test("municipio density failure retries into scoped evidence", async ({ page }) => {
+  const consoleErrors = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  let attempts = 0;
+  await page.route("**/geo/municipios/observation_density.geojson", async (route) => {
+    attempts += 1;
+    if (attempts === 1) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": "*" },
+        body: JSON.stringify({ detail: "test outage" }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "access-control-allow-origin": "*" },
+      body: JSON.stringify({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {
+              name: "San Juan",
+              geoid: "72127",
+              observation_count: 2,
+              observation_density_norm: 1,
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [[[-66.2, 18.3], [-66.0, 18.3], [-66.0, 18.5], [-66.2, 18.5], [-66.2, 18.3]]],
+            },
+          },
+        ],
+        matched_count: 2,
+        unmatched_observations: 1,
+        unresolved_by_name: { Outside: 1 },
+        total_observations: 3,
+        ambiguous_municipio_candidates: {},
+        scope: {
+          state: "CANDIDATE_NOT_IDENTITY",
+          source_field: "municipality",
+          target_field: "name",
+          matching: "EXACT_RAW_STRING",
+          normalization: "NONE",
+          identity_effect: "NONE",
+          binding_effect: "AGGREGATION_ONLY",
+          geometry_effect: "NONE",
+        },
+      }),
+    });
+  });
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Municipios", exact: true }).first().click();
+  await expect(page.getByText("Municipio density unavailable; no zero-observation inference was made. HTTP 503").first()).toBeVisible();
+  expect(consoleErrors).toEqual([
+    "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+  ]);
+  consoleErrors.length = 0;
+  await page.getByRole("button", { name: "Retry municipio density" }).first().click();
+  await expect(page.getByText("2 matched · 1 unresolved · 3 total · identity effect NONE · CANDIDATE_NOT_IDENTITY").first()).toBeVisible();
+  expect(attempts).toBe(2);
+  expect(consoleErrors).toEqual([]);
+});

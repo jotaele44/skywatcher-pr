@@ -3,6 +3,7 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Radar, MapPin } from "lucide-react";
 import { appParams } from "@/lib/app-params";
+import { parseObservationDensityGeojson } from "@/lib/observation-density";
 import { useSpatialTools, SpatialToolsPanel } from "./SpatialToolsPanel";
 import TrackTimeScrubber from "./TrackTimeScrubber";
 
@@ -44,6 +45,15 @@ const EMPTY = /** @type {import("geojson").FeatureCollection} */ ({
   type: "FeatureCollection",
   features: [],
 });
+const IDLE_DENSITY_STATE = {
+  status: "idle",
+  message: "",
+  data: EMPTY,
+  matchedCount: 0,
+  unmatchedCount: 0,
+  totalObservations: 0,
+  scopeState: "UNRESOLVED",
+};
 
 function toPointCollection(rows, latKey = "latitude", lonKey = "longitude") {
   return /** @type {import("geojson").FeatureCollection<import("geojson").Point>} */ ({
@@ -87,6 +97,12 @@ async function fetchGeojson(path) {
   }
 }
 
+async function fetchObservationDensity() {
+  const res = await fetch(`${appParams.apiBaseUrl}/geo/municipios/observation_density.geojson`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return parseObservationDensityGeojson(await res.json());
+}
+
 export default function PuertoRicoMapShell({
   observations = [],
   airports = [],
@@ -99,6 +115,7 @@ export default function PuertoRicoMapShell({
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const readyRef = useRef(false);
+  const spatialToolActiveRef = useRef(false);
   const propsRef = useRef({ observations, airports, assets, routes });
   propsRef.current = { observations, airports, assets, routes };
   const [hover, setHover] = useState(null);
@@ -110,6 +127,8 @@ export default function PuertoRicoMapShell({
   const [showTools, setShowTools] = useState(false);
   const [showTrackScrubber, setShowTrackScrubber] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const [densityState, setDensityState] = useState(IDLE_DENSITY_STATE);
+  const [densityRequest, setDensityRequest] = useState(0);
 
   useEffect(() => {
     const map = new maplibregl.Map({
@@ -234,6 +253,7 @@ export default function PuertoRicoMapShell({
         map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
         map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
         map.on("click", layer, (e) => {
+          if (spatialToolActiveRef.current) return;
           const f = e.features[0];
           setHover({ point: e.point, props: f.properties });
         });
@@ -294,15 +314,45 @@ export default function PuertoRicoMapShell({
     const map = mapRef.current;
     map.setLayoutProperty("municipios-fill", "visibility", showMunicipios ? "visible" : "none");
     map.setLayoutProperty("municipios-line", "visibility", showMunicipios ? "visible" : "none");
-    if (!showMunicipios) return;
+    const source = map.getSource("municipios");
+    if (!showMunicipios) {
+      source?.setData(EMPTY);
+      return;
+    }
+    source?.setData(EMPTY);
     let cancelled = false;
-    fetchGeojson("/geo/municipios/observation_density.geojson").then((data) => {
-      if (!cancelled) map.getSource("municipios")?.setData(data);
-    });
+    fetchObservationDensity()
+      .then((density) => {
+        if (cancelled) return;
+        map.getSource("municipios")?.setData(density.data);
+        setDensityState({ ...IDLE_DENSITY_STATE, status: "ready", ...density });
+      })
+      .catch((error) => {
+        if (!cancelled) setDensityState({
+          ...IDLE_DENSITY_STATE,
+          status: "error",
+          message: error instanceof Error ? error.message : String(error),
+        });
+      });
     return () => {
       cancelled = true;
     };
-  }, [showMunicipios, mapReady]);
+  }, [showMunicipios, mapReady, densityRequest]);
+
+  const toggleMunicipios = () => {
+    if (showMunicipios) {
+      setShowMunicipios(false);
+      setDensityState(IDLE_DENSITY_STATE);
+      return;
+    }
+    setDensityState({ ...IDLE_DENSITY_STATE, status: "loading" });
+    setShowMunicipios(true);
+  };
+
+  const retryDensity = () => {
+    setDensityState({ ...IDLE_DENSITY_STATE, status: "loading" });
+    setDensityRequest((request) => request + 1);
+  };
 
   const spatialToolTargets = useMemo(
     () => ({
@@ -312,7 +362,7 @@ export default function PuertoRicoMapShell({
     }),
     [observations, airports, assets],
   );
-  const spatialTools = useSpatialTools({ mapRef, mapReady, targets: spatialToolTargets });
+  const spatialTools = useSpatialTools({ mapRef, mapReady, targets: spatialToolTargets, interactionLockRef: spatialToolActiveRef });
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-border bg-[hsl(220_34%_4%)]">
@@ -326,7 +376,7 @@ export default function PuertoRicoMapShell({
           <ToggleChip label="Corridors" active={showCorridors} onClick={() => setShowCorridors((v) => !v)} />
           <ToggleChip label="Heatmap" active={showHeatmap} onClick={() => setShowHeatmap((v) => !v)} />
           <ToggleChip label="Terrain" active={showTerrain} onClick={() => setShowTerrain((v) => !v)} />
-          <ToggleChip label="Municipios" active={showMunicipios} onClick={() => setShowMunicipios((v) => !v)} />
+          <ToggleChip label="Municipios" active={showMunicipios} onClick={toggleMunicipios} />
           <ToggleChip label="Tools" active={showTools} onClick={() => setShowTools((v) => !v)} />
           <ToggleChip label="Track" active={showTrackScrubber} onClick={() => setShowTrackScrubber((v) => !v)} />
           {diagnostic && (
@@ -357,6 +407,23 @@ export default function PuertoRicoMapShell({
           </div>
         )}
       </div>
+
+      {showMunicipios && densityState.status === "loading" && (
+        <div className="border-t border-border px-4 py-2 text-[10px] text-muted-foreground" role="status">
+          Loading municipio observation density…
+        </div>
+      )}
+      {showMunicipios && densityState.status === "error" && (
+        <div className="flex items-center justify-between gap-3 border-t border-destructive/40 bg-destructive/10 px-4 py-2 text-[10px] text-destructive" role="alert">
+          <span>Municipio density unavailable; no zero-observation inference was made. {densityState.message}</span>
+          <button type="button" className="font-semibold underline" onClick={retryDensity}>Retry municipio density</button>
+        </div>
+      )}
+      {showMunicipios && densityState.status === "ready" && (
+        <div className="border-t border-border px-4 py-2 text-[10px] text-muted-foreground" role="status">
+          {densityState.matchedCount} matched · {densityState.unmatchedCount} unresolved · {densityState.totalObservations} total · identity effect NONE · {densityState.scopeState}
+        </div>
+      )}
 
       {showTools && <SpatialToolsPanel {...spatialTools} />}
       {showTrackScrubber && <TrackTimeScrubber map={mapRef.current} mapReady={mapReady} />}

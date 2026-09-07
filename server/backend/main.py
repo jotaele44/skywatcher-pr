@@ -15,6 +15,7 @@ Start with:
 from __future__ import annotations
 
 import csv
+import hashlib
 import ipaddress
 import json
 import logging
@@ -24,6 +25,7 @@ import sqlite3
 import sys
 import uuid
 from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -1101,6 +1103,45 @@ def _load_municipios() -> dict[str, Any]:
     return json.loads(MUNICIPIOS_PATH.read_text(encoding="utf-8"))
 
 
+def _file_manifest(path: Path, *, mutable: bool) -> dict[str, Any]:
+    manifest: dict[str, Any] = {
+        "path": str(path),
+        "exists": path.is_file(),
+        "declared_mutable": mutable,
+        "retrieved_at_utc": datetime.now(timezone.utc).isoformat(),
+        "byte_size": None,
+        "mtime_ns": None,
+        "sha256": None,
+        "snapshot_stable_during_hash": None,
+        "identity_class": "BYTE_OBSERVATION_ONLY",
+        "logical_snapshot_bound": False,
+    }
+    if not manifest["exists"]:
+        return manifest
+    before = path.stat()
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    after = path.stat()
+    manifest.update(
+        {
+            "byte_size": after.st_size,
+            "mtime_ns": after.st_mtime_ns,
+            "sha256": digest.hexdigest(),
+            "snapshot_stable_during_hash": (
+                before.st_size == after.st_size and before.st_mtime_ns == after.st_mtime_ns
+            ),
+            "logical_snapshot_bound": (
+                not mutable
+                and before.st_size == after.st_size
+                and before.st_mtime_ns == after.st_mtime_ns
+            ),
+        }
+    )
+    return manifest
+
+
 @app.get("/api/geo/municipios.geojson")
 def geo_municipios() -> dict[str, Any]:
     return _load_municipios()
@@ -1108,29 +1149,73 @@ def geo_municipios() -> dict[str, Any]:
 
 @app.get("/api/geo/municipios/observation_density.geojson")
 def geo_municipios_observation_density() -> dict[str, Any]:
-    """Municipios polygons with an observation count baked into each
-    feature's properties, keyed by matching `load_observations()`'s
-    `municipality` field against each municipio's own `name` property (the
-    same name->GEOID join aguayluz-pr's event_density and spiderweb-pr's
-    gazetteer density use — no spatial join, no new geospatial dependency).
+    """Aggregate observations onto uniquely named municipio features.
+
+    Exact raw-name matching is discovery-only: it grants no identity,
+    canonical-name, GEOID, or geometry binding.
     """
     municipios = _load_municipios()
+    features = municipios.get("features")
+    if not isinstance(features, list):
+        raise HTTPException(status_code=500, detail="municipios source features must be a list")
+    name_candidates: dict[str, list[dict[str, Any]]] = {}
+    for index, feature in enumerate(features):
+        properties = feature.get("properties") if isinstance(feature, dict) else None
+        if not isinstance(properties, dict):
+            raise HTTPException(status_code=500, detail=f"municipio feature {index} properties must be an object")
+        name = properties.get("name")
+        if isinstance(name, str):
+            name_candidates.setdefault(name, []).append(
+                {"feature_index": index, "geoid": properties.get("geoid", properties.get("GEOID"))}
+            )
+    unique_names = {name for name, candidates in name_candidates.items() if len(candidates) == 1}
+    ambiguous_candidates = {
+        name: candidates for name, candidates in name_candidates.items() if len(candidates) > 1
+    }
+    observations = list(load_observations())
     by_name: Counter[str] = Counter()
-    unmatched = 0
-    names = {f["properties"].get("name") for f in municipios["features"]}
-    for row in load_observations():
+    unresolved_by_name: Counter[str] = Counter()
+    for row in observations:
         name = row.get("municipality")
-        if name in names:
+        if isinstance(name, str) and name in unique_names:
             by_name[name] += 1
         else:
-            unmatched += 1
+            unresolved_by_name[name if isinstance(name, str) else "<NULL>"] += 1
+    matched_count = sum(by_name.values())
+    unmatched = len(observations) - matched_count
     max_count = max(by_name.values(), default=0)
-    for feature in municipios["features"]:
+    for feature in features:
         name = feature["properties"].get("name")
-        count = by_name.get(name, 0)
+        count = by_name.get(name, 0) if name in unique_names else 0
         feature["properties"]["observation_count"] = count
         feature["properties"]["observation_density_norm"] = (
             count / max_count if max_count else 0
         )
+    municipios["matched_count"] = matched_count
     municipios["unmatched_observations"] = unmatched
+    municipios["unresolved_by_name"] = dict(sorted(unresolved_by_name.items()))
+    municipios["total_observations"] = len(observations)
+    municipios["ambiguous_municipio_candidates"] = ambiguous_candidates
+    municipios["scope"] = {
+        "state": "CANDIDATE_NOT_IDENTITY",
+        "source_field": "municipality",
+        "target_field": "name",
+        "matching": "EXACT_RAW_STRING",
+        "normalization": "NONE",
+        "identity_effect": "NONE",
+        "binding_effect": "AGGREGATION_ONLY",
+        "geometry_effect": "NONE",
+    }
+    observation_path = SYNTHETIC_PACKAGE / "observations.csv"
+    municipios["provenance"] = {
+        "sources": {
+            "municipios": _file_manifest(MUNICIPIOS_PATH, mutable=False),
+            "synthetic_observations": _file_manifest(observation_path, mutable=False),
+            "rlsm_observations": _file_manifest(RLSM_DB, mutable=True),
+        },
+        "municipio_feature_count": len(features),
+        "observation_loader": "load_observations",
+        "observation_count": len(observations),
+        "snapshot_state": "MUTABLE_RUNTIME_SOURCE" if RLSM_DB.is_file() else "COMMITTED_SYNTHETIC_ONLY",
+    }
     return municipios

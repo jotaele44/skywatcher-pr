@@ -123,6 +123,7 @@
         "components": [
           "frontend/src/api/federationClient.js",
           "frontend/src/lib/AuthContext.jsx",
+          "frontend/src/lib/observation-density.js",
           "frontend/src/lib/SkywatcherData.jsx",
           "frontend/src/pages/Dashboard.jsx",
           "frontend/src/pages/Observations.jsx",
@@ -155,6 +156,11 @@
         ],
         "contract": [
           "tests/test_gui_parity.py"
+        ],
+        "unit": [
+          "frontend/src/lib/app-params.test.js",
+          "frontend/src/components/skywatcher/PuertoRicoMapShell.test.jsx",
+          "frontend/src/components/skywatcher/SpatialToolsPanel.test.jsx"
         ],
         "e2e": [
           "frontend/tests/gui-parity.spec.mjs"
