@@ -1,3 +1,5 @@
+import pytest
+
 from scripts.federation_spatial_binding_v1_1 import bind_record
 
 
@@ -57,3 +59,36 @@ def test_multiple_candidates_preserve_one_to_many():
     )
     assert result["cardinality"] == "1:N"
     assert result["identity_state"] == "UNRESOLVED"
+
+
+def test_string_candidate_collection_fails_closed():
+    with pytest.raises(ValueError, match="must be an array"):
+        bind_record(
+            {"faa_lid": "SJU"},
+            id_field="faa_lid",
+            id_namespace="faa_lid",
+            canonical_index={"skywatcher-pr:faa_lid:SJU": "pr:airport:sju"},
+            evidence_basis=["FAA_LID"],
+        )
+
+
+def test_duplicate_candidate_ids_fail_closed():
+    with pytest.raises(ValueError, match="duplicate canonical IDs"):
+        bind_record(
+            {"faa_lid": "SJU"},
+            id_field="faa_lid",
+            id_namespace="faa_lid",
+            canonical_index={"skywatcher-pr:faa_lid:SJU": ["pr:airport:sju", "pr:airport:sju"]},
+            evidence_basis=["FAA_LID"],
+        )
+
+
+def test_lowercase_heuristic_basis_is_rejected():
+    with pytest.raises(ValueError, match="heuristic-only"):
+        bind_record(
+            {"faa_lid": "SJU"},
+            id_field="faa_lid",
+            id_namespace="faa_lid",
+            canonical_index={},
+            evidence_basis=["track_intersection"],
+        )
