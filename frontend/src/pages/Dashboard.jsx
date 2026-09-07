@@ -22,7 +22,7 @@ import PuertoRicoMapShell from "@/components/skywatcher/PuertoRicoMapShell";
 import LoadingState from "@/components/skywatcher/LoadingState";
 import { REVIEW_STATUS, SYNC_STATUS } from "@/lib/skywatcher";
 
-function IdentityRow({ label, value, tone }) {
+function IdentityRow({ label, value, tone = null }) {
   return (
     <div className="flex items-center justify-between border-b border-border/60 py-2 last:border-0">
       <span className="text-xs text-muted-foreground">{label}</span>
@@ -38,10 +38,10 @@ export default function Dashboard() {
   if (d.loading) return <LoadingState />;
 
   const m = computeMetrics(d);
-  const recentObs = [...d.observations].sort((a, b) => new Date(b.observed_at) - new Date(a.observed_at)).slice(0, 6);
+  const recentObs = [...d.observations].sort((a, b) => new Date(b.observed_at).getTime() - new Date(a.observed_at).getTime()).slice(0, 6);
   const recentReviews = d.reviews.filter((r) => r.review_status === "open" || r.review_status === "in_review").slice(0, 5);
-  const recentSyncs = [...d.syncs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 6);
-  const latestReadiness = [...d.readiness].sort((a, b) => new Date(b.report_date) - new Date(a.report_date))[0];
+  const recentSyncs = [...d.syncs].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6);
+  const latestReadiness = [...d.readiness].sort((a, b) => new Date(b.report_date).getTime() - new Date(a.report_date).getTime())[0];
 
   return (
     <div className="space-y-5">

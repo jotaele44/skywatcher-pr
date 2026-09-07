@@ -18,9 +18,9 @@ export function createMapRuntime({
   selection,
   layerVisibility = {},
   geolocationAvailable = typeof navigator !== "undefined" && Boolean(navigator.geolocation),
-  onViewportChange = () => {},
-  onSelectionChange = () => {},
-  onLoad = () => {},
+  onViewportChange = (_value) => {},
+  onSelectionChange = (_value) => {},
+  onLoad = (_value) => {},
 }) {
   if (!maplibregl?.Map) throw new Error("MapLibre GL JS runtime is unavailable.");
   if (!container) throw new Error("Map container is required.");

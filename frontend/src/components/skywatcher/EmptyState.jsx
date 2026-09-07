@@ -7,13 +7,14 @@ import { FederationEmptyState } from "@pr-federation/react";
 // container is kept here because this renders as a self-contained card, not a
 // full-height panel. The `icon` prop stays a component so existing call sites
 // are unchanged; it's instantiated here and handed to the package as a node.
-export default function EmptyState({ icon: Icon = Inbox, title = "No records", message }) {
+export default function EmptyState({ icon: Icon = Inbox, title = "No records", message = null }) {
   return (
     <FederationEmptyState
       className="rounded-lg border border-dashed border-border bg-card/40"
       icon={<Icon className="h-5 w-5" />}
       title={title}
       description={message}
+      action={null}
     />
   );
 }

@@ -1,5 +1,11 @@
+/**
+ * @typedef {{kind: string, id: string | number | null, coordinate: number[] | null, properties: Record<string, unknown>}} SelectionState
+ * @typedef {{type: string, kind?: string, id?: string | number, coordinate?: number[], properties?: Record<string, unknown>}} SelectionAction
+ */
+/** @type {SelectionState} */
 export const EMPTY_SELECTION = Object.freeze({ kind: "none", id: null, coordinate: null, properties: {} });
 
+/** @param {SelectionState} state @param {SelectionAction} action @returns {SelectionState} */
 export function selectionReducer(state, action) {
   switch (action.type) {
     case "clear":

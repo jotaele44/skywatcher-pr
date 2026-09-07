@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { X } from "lucide-react";
 
-export default function SideDrawer({ open, onClose, title, subtitle, badges, children, footer }) {
+export default function SideDrawer({ open, onClose, title, subtitle = null, badges = null, children = null, footer = null }) {
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose?.();
     if (open) window.addEventListener("keydown", onKey);
@@ -33,7 +33,7 @@ export default function SideDrawer({ open, onClose, title, subtitle, badges, chi
   );
 }
 
-export function Field({ label, children, mono }) {
+export function Field({ label, children, mono = false }) {
   return (
     <div className="space-y-0.5">
       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -42,7 +42,7 @@ export function Field({ label, children, mono }) {
   );
 }
 
-export function Section({ title, icon: Icon, children, action }) {
+export function Section({ title, icon: Icon = null, children, action = null }) {
   return (
     <div className="mt-5 first:mt-0">
       <div className="mb-2 flex items-center justify-between">

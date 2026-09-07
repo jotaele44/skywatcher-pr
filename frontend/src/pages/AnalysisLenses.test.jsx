@@ -55,16 +55,17 @@ const REGISTRY = {
 };
 
 function mockFetch(payload, { ok = true } = {}) {
-  return vi.fn(() => Promise.resolve({ ok, json: () => Promise.resolve(payload) }));
+  return vi.fn((_input, _init) => Promise.resolve(new Response(JSON.stringify(payload), { status: ok ? 200 : 503, headers: { "Content-Type": "application/json" } })));
 }
 
 describe("AnalysisLenses", () => {
   beforeEach(() => {
-    global.fetch = mockFetch(REGISTRY);
+    vi.stubGlobal("fetch", mockFetch(REGISTRY));
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("renders lenses supplied by the backend rather than a built-in list", async () => {
@@ -79,7 +80,7 @@ describe("AnalysisLenses", () => {
   it("fetches the registry endpoint", async () => {
     render(<AnalysisLenses />);
     await waitFor(() => expect(global.fetch).toHaveBeenCalled());
-    expect(String(global.fetch.mock.calls[0][0])).toContain("/analysis/registry");
+    expect(String(vi.mocked(global.fetch).mock.calls[0][0])).toContain("/analysis/registry");
   });
 
   it("shows required and optional parameters distinctly", async () => {
@@ -104,18 +105,18 @@ describe("AnalysisLenses", () => {
   });
 
   it("reports an unavailable registry instead of rendering an empty page", async () => {
-    global.fetch = mockFetch({
+    vi.stubGlobal("fetch", mockFetch({
       available: false,
       lenses: [],
       objectives: [],
       thresholds: [],
-    });
+    }));
     render(<AnalysisLenses />);
     expect(await screen.findByText("Lens registry unavailable")).toBeTruthy();
   });
 
   it("survives a failed fetch without crashing", async () => {
-    global.fetch = vi.fn(() => Promise.reject(new Error("network down")));
+    vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("network down"))));
     render(<AnalysisLenses />);
     // Falls through to the empty states rather than throwing past the error boundary.
     expect(await screen.findByText("Analysis Lenses")).toBeTruthy();

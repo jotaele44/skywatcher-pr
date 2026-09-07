@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function Panel({ title, icon: Icon, action, children, className = "", bodyClassName = "" }) {
+export default function Panel({ title = null, icon: Icon = null, action = null, children, className = "", bodyClassName = "" }) {
   return (
     <div className={`rounded-xl border border-border bg-card ${className}`}>
       {(title || action) && (

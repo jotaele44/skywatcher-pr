@@ -127,6 +127,8 @@ jobs:
         run: npm ci
       - name: Console runtime tests
         run: npm run test:console
+      - name: Typecheck
+        run: npm run typecheck
       - name: Lint
         run: npm run lint
       - name: Tests

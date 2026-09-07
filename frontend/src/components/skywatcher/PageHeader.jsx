@@ -2,7 +2,7 @@ import React from "react";
 import { Radar } from "lucide-react";
 import { PROGRAM, DISCLAIMER } from "@/lib/skywatcher";
 
-export default function PageHeader({ title, subtitle, icon: Icon, actions }) {
+export default function PageHeader({ title, subtitle = null, icon: Icon = null, actions = null }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-3">

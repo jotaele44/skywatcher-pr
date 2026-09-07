@@ -1,37 +1,15 @@
 /// <reference types="vite/client" />
+import { browserStorage, createResilientStorage } from './browser-storage.js';
 
 const isNode = typeof window === 'undefined';
-
-export const createMemoryStorage = () => {
-  const values = new Map();
-  return {
-    getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => values.set(key, String(value)),
-    removeItem: (key) => values.delete(key),
-  };
-};
-
-export const resolveStorage = (windowLike) => {
-  try {
-    const candidate = windowLike?.localStorage;
-    if (candidate
-      && typeof candidate.getItem === 'function'
-      && typeof candidate.setItem === 'function'
-      && typeof candidate.removeItem === 'function') {
-      return candidate;
-    }
-  } catch {
-    // Sandboxed or privacy-restricted browsers can throw while reading localStorage.
-  }
-  return createMemoryStorage();
-};
-
-const windowObj = isNode ? { location: { href: '' }, history: { replaceState: () => {} } } : window;
-const storage = resolveStorage(windowObj);
+export const createMemoryStorage = () => createResilientStorage(() => null);
+export const resolveStorage = (windowLike) => createResilientStorage(() => windowLike?.localStorage);
+const storage = isNode ? createMemoryStorage() : browserStorage;
 const env = import.meta.env;
 
 const toSnakeCase = (str) => str.replace(/([A-Z])/g, '_$1').toLowerCase();
 
+/** @param {string} paramName @param {{defaultValue?: string | null, removeFromUrl?: boolean}} options */
 const getParamValue = (paramName, { defaultValue = undefined, removeFromUrl = false } = {}) => {
   if (isNode) return defaultValue ?? null;
   const storageKey = `federation_${toSnakeCase(paramName)}`;
@@ -82,7 +60,7 @@ const getAppParams = () => {
     // (lib/AuthContext.jsx). That cleanup would wipe a write token too, which is
     // why supplying one as ?access_token= never survived to the first request.
     writeToken: getParamValue('write_token', { removeFromUrl: true }),
-    fromUrl: getParamValue('from_url', { defaultValue: window.location.href }),
+    fromUrl: getParamValue('from_url', { defaultValue: isNode ? '' : window.location.href }),
     mode: env.VITE_FEDERATION_MODE || 'diagnostic',
     requireAuth: env.VITE_FEDERATION_REQUIRE_AUTH === 'true',
   };

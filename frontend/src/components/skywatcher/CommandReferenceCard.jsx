@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Terminal, Copy, Check } from "lucide-react";
 
-export default function CommandReferenceCard({ command, note }) {
+export default function CommandReferenceCard({ command, note = null }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard?.writeText(command);

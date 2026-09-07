@@ -140,7 +140,9 @@
           "frontend/src/pages/SpatialTruth.jsx",
           "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.jsx",
-          "frontend/src/components/skywatcher/TrackTimeScrubber.jsx"
+          "frontend/src/components/skywatcher/TrackTimeScrubber.jsx",
+          "frontend/src/lib/browser-storage.js",
+          "frontend/src/lib/app-params.js"
         ],
         "discoverability": [
           "frontend/src/components/skywatcher/Sidebar.jsx"
@@ -155,7 +157,8 @@
           "tests/test_geo_municipios_routes.py"
         ],
         "contract": [
-          "tests/test_gui_parity.py"
+          "tests/test_gui_parity.py",
+          "frontend/src/lib/browser-storage.test.js"
         ],
         "unit": [
           "frontend/src/lib/app-params.test.js",
@@ -185,6 +188,23 @@
       "tests": {
         "backend": [
           "tests/test_server_smoke.py"
+        ]
+      }
+    },
+    {
+      "id": "desktop-startup-evidence",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Release preparation probe verifies loopback API, HTML and JavaScript delivery; it does not certify operator journeys or platform readiness. Invoked by the completion runner as an internal check, with no separate operator capability.",
+      "analysis": {
+        "files": [
+          "scripts/desktop_startup_probe.py"
+        ],
+        "symbols": [
+          "scripts/desktop_startup_probe.py:ScriptSources",
+          "scripts/desktop_startup_probe.py:main",
+          "scripts/desktop_startup_probe.py:probe"
         ]
       }
     }

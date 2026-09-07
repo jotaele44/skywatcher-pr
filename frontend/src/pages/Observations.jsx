@@ -78,7 +78,7 @@ export default function Observations() {
     if (conf === "medium") rows = rows.filter((o) => (o.confidence_score ?? 0) >= 0.5 && (o.confidence_score ?? 0) < 0.75);
     if (conf === "low") rows = rows.filter((o) => (o.confidence_score ?? 0) < 0.5);
 
-    if (sort === "time") rows.sort((a, b) => new Date(b.observed_at) - new Date(a.observed_at));
+    if (sort === "time") rows.sort((a, b) => new Date(b.observed_at).getTime() - new Date(a.observed_at).getTime());
     if (sort === "confidence") rows.sort((a, b) => (b.confidence_score ?? 0) - (a.confidence_score ?? 0));
     if (sort === "distance") rows.sort((a, b) => (a.distance_nm ?? 999) - (b.distance_nm ?? 999));
     return rows;

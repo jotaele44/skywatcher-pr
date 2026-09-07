@@ -14,7 +14,7 @@ const TONE_ROLE = {
   muted: "neutral",
 };
 
-export default function StatusChip({ tone = "muted", label, icon: Icon, className = "" }) {
+export default function StatusChip({ tone = "muted", label, icon: Icon = null, className = "" }) {
   const { className: fdClass, ...toneAttrs } = federationTone(TONE_ROLE[tone] || "neutral");
   return (
     <span
