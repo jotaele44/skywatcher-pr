@@ -5,11 +5,147 @@ import { test, expect } from 'playwright/test';
 test.beforeEach(async ({ page }) => {
  await page.route('**/*', async route => {
   const url = new URL(route.request().url());
-  if (url.pathname.includes('public-settings')) return route.fulfill({json: {requires_auth: false}});
+  if (url.pathname === '/api/auth/me') return route.fulfill({ status: 401, json: { detail: 'Not authenticated' } });
+  if (url.pathname.includes('public-settings')) return route.fulfill({json: {public_settings: {requires_auth: false}}});
   if (url.hostname === '127.0.0.1' && url.port === '5419' && !url.pathname.startsWith('/api/')) return route.continue();
   return route.abort('connectionrefused');
  });
 });
+
+test('settings outage blocks collections and retry preserves the requested page', async ({ page }) => {
+ let available = false;
+ let collections = 0;
+ await page.route('**/api/apps/public-settings', route => available
+  ? route.fulfill({ json: { public_settings: { requires_auth: false } } })
+  : route.fulfill({ status: 503, json: { detail: 'Unavailable' } }));
+ await page.route('**/api/entities/**', route => { collections++; return route.fulfill({ json: [] }); });
+ await page.goto('/review');
+ await expect(page.getByRole('alert')).toContainText('Unable to verify application access');
+ expect(collections).toBe(0);
+ await expect(page).toHaveURL(/\/review$/);
+ available = true;
+ await page.getByRole('button', { name: 'Retry connection' }).click();
+ await expect(page.getByText('Manual Review Queue', { exact: true })).toBeVisible();
+ expect(collections).toBeGreaterThan(0);
+});
+
+test('malformed settings never imply diagnostic access', async ({ page }) => {
+ let collections = 0;
+ await page.route('**/api/apps/public-settings', route => route.fulfill({ json: { public_settings: { requires_auth: 'false' } } }));
+ await page.route('**/api/entities/**', route => { collections++; return route.fulfill({ json: [] }); });
+ await page.goto('/');
+ await expect(page.getByRole('alert')).toContainText('Unable to verify application access');
+ expect(collections).toBe(0);
+});
+
+test('required authentication blocks protected fetches until sign-in succeeds', async ({ page }) => {
+ let collections = 0;
+ await page.route('**/api/apps/public-settings', route => route.fulfill({ json: { public_settings: { requires_auth: true } } }));
+ await page.route('**/api/entities/**', route => { collections++; return route.fulfill({ json: [] }); });
+ await page.route('**/api/auth/login', route => route.fulfill({ json: { access_token: 'test-session-token' } }));
+ await page.route('**/api/auth/me', route => route.request().headers().authorization === 'Bearer test-session-token' ? route.fulfill({ json: { id: 'fixture-user' } }) : route.fulfill({ status: 401, json: { detail: 'Not authenticated' } }));
+ await page.goto('/review');
+ await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+ expect(collections).toBe(0);
+ await page.getByLabel('Email', { exact: true }).fill('test@example.invalid');
+ await page.getByLabel('Password', { exact: true }).fill('test-only-password');
+ await page.getByRole('button', { name: 'Log in', exact: true }).click();
+ await expect(page.getByText('Manual Review Queue', { exact: true })).toBeVisible();
+ expect(collections).toBeGreaterThan(0);
+ await expect(page).toHaveURL(/\/review$/);
+});
+
+test('backend-required account check failure exposes retry without fetching data', async ({ page }) => {
+ let available = false;
+ let collections = 0;
+ await page.route('**/api/apps/public-settings', route => route.fulfill({ json: { public_settings: { requires_auth: true } } }));
+ await page.route('**/api/entities/**', route => { collections++; return route.fulfill({ json: [] }); });
+ await page.route('**/api/auth/me', route => available ? route.fulfill({ json: { id: 'fixture-user' } }) : route.fulfill({ status: 503, json: { detail: 'Unavailable' } }));
+ await page.goto('/review?access_token=test-session-token');
+ await expect(page.getByRole('alert')).toContainText('Unable to verify application access');
+ expect(collections).toBe(0);
+ available = true;
+ await page.getByRole('button', { name: 'Retry connection' }).click();
+ await expect(page.getByText('Manual Review Queue', { exact: true })).toBeVisible();
+ expect(collections).toBeGreaterThan(0);
+});
+
+test('password reset delivery failure retains the address and retries neutrally', async ({ page }) => {
+ let available = false;
+ await page.route('**/api/apps/public-settings', route => route.fulfill({ json: { public_settings: { requires_auth: true } } }));
+ await page.route('**/api/auth/password/reset-request', route => available ? route.fulfill({ json: {} }) : route.fulfill({ status: 503, json: { detail: 'Unavailable' } }));
+ await page.goto('/forgot-password');
+ await page.getByLabel('Email address').fill('test@example.invalid');
+ await page.getByRole('button', { name: 'Send reset link' }).click();
+ await expect(page.getByRole('alert')).toContainText('could not be completed');
+ await expect(page.getByLabel('Email address')).toHaveValue('test@example.invalid');
+ await expect(page.getByText(/If an account exists/)).toHaveCount(0);
+ available = true;
+ await page.getByRole('button', { name: 'Send reset link' }).click();
+ await expect(page.getByText(/If an account exists/)).toBeVisible();
+});
+
+test('clipboard rejection stays visible and a successful retry is confirmed', async ({ page }) => {
+ await page.addInitScript(() => {
+  let attempts = 0;
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+   writeText: async () => { if (++attempts === 1) throw new Error('Denied'); },
+  } });
+ });
+ await page.route('**/api/entities/**', route => route.fulfill({ json: [] }));
+ await page.goto('/export');
+ const copy = page.getByRole('button', { name: 'Copy', exact: true }).first();
+ await copy.click();
+ await expect(page.getByRole('alert')).toContainText('Copy failed');
+ await expect(page.getByRole('button', { name: 'Copied', exact: true })).toHaveCount(0);
+ await copy.click();
+ await expect(page.getByRole('button', { name: 'Copied', exact: true })).toBeVisible();
+});
+
+test('an authenticated cookie session can load a protected page without a stored token', async ({ page }) => {
+ await page.route('**/api/apps/public-settings', route => route.fulfill({ json: { public_settings: { requires_auth: true } } }));
+ await page.route('**/api/auth/me', route => route.fulfill({ json: { id: 'cookie-session-user' } }));
+ await page.route('**/api/entities/**', route => route.fulfill({ json: [] }));
+ await page.goto('/review');
+ await expect(page.getByText('Manual Review Queue', { exact: true })).toBeVisible();
+ await expect(page).toHaveURL(/\/review$/);
+});
+
+for (const destination of ['https://example.invalid/steal', 'http://[invalid', '/login', 'http://127.0.0.1:5419//example.invalid/steal']) {
+ test(`successful login safely handles redirect ${destination}`, async ({ page }) => {
+  let signedIn = false;
+  await page.route('**/api/apps/public-settings', route => route.fulfill({ json: { public_settings: { requires_auth: true } } }));
+  await page.route('**/api/auth/me', route => signedIn ? route.fulfill({ json: { id: 'cookie-session-user' } }) : route.fulfill({ status: 401, json: {} }));
+  await page.route('**/api/auth/login', route => { signedIn = true; return route.fulfill({ json: {} }); });
+  await page.route('**/api/entities/**', route => route.fulfill({ json: [] }));
+  await page.goto(`/login?redirect=${encodeURIComponent(destination)}`);
+  await page.getByLabel('Email', { exact: true }).fill('test@example.invalid');
+  await page.getByLabel('Password', { exact: true }).fill('test-only-password');
+  await page.getByRole('button', { name: 'Log in', exact: true }).click();
+  await expect(page.locator('.zip-surface')).toBeVisible({ timeout: 15000 });
+  await expect(page).toHaveURL('http://127.0.0.1:5419/');
+ });
+}
+
+for (const kind of ['access', 'write']) {
+ test(`clear ${kind} token is one-shot and a replacement survives reload`, async ({ page }) => {
+  const authorizations = [];
+  await page.route('**/api/apps/public-settings', route => route.fulfill({ json: { public_settings: { requires_auth: kind === 'access' } } }));
+  await page.route('**/api/auth/me', route => route.request().headers().authorization === 'Bearer replacement-token' ? route.fulfill({ json: { id: 'fixture-user' } }) : route.fulfill({ status: 401, json: {} }));
+  await page.route('**/api/entities/**', route => {
+   authorizations.push(route.request().headers().authorization);
+   return route.fulfill({ json: [] });
+  });
+  await page.goto(`/review?clear_${kind}_token=true&${kind}_token=replacement-token`);
+  await expect(page.getByText('Manual Review Queue', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/review$/);
+  authorizations.length = 0;
+  await page.reload();
+  await expect(page.getByText('Manual Review Queue', { exact: true })).toBeVisible();
+  expect(authorizations.length).toBeGreaterThan(0);
+  expect(authorizations.every(value => value === 'Bearer replacement-token')).toBe(true);
+ });
+}
 for (const width of [390, 1440]) {
  test(`archive design renders and stays within ${width}px viewport`, async ({ page }) => {
   await page.setViewportSize({width, height: 900});

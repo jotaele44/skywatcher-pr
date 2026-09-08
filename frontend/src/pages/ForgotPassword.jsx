@@ -11,17 +11,20 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     try {
       await federation.auth.resetPasswordRequest(email);
+      setSent(true);
     } catch {
-      // Always show success regardless
+      // Keep account existence private without claiming a failed delivery worked.
+      setError('The reset request could not be completed. Please try again.');
     } finally {
       setLoading(false);
-      setSent(true);
     }
   };
 
@@ -42,6 +45,7 @@ export default function ForgotPassword() {
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
             <div className="relative">

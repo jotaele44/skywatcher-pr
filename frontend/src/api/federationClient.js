@@ -194,10 +194,13 @@ const connectors = {
 };
 
 const system = {
-  publicSettings: () => request('/apps/public-settings').catch(() => ({
-    id: appParams.appId,
-    public_settings: { requires_auth: Boolean(appParams.requireAuth) },
-  })),
+  publicSettings: async () => {
+    const result = await request('/apps/public-settings');
+    if (typeof result?.public_settings?.requires_auth !== 'boolean') {
+      throw new Error('The server returned an invalid authentication policy.');
+    }
+    return result;
+  },
 };
 
 export const federation = {

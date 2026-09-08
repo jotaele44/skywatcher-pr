@@ -133,7 +133,10 @@
           "frontend/src/components/skywatcher/StatusChip.jsx",
           "frontend/src/components/skywatcher/EmptyState.jsx",
           "frontend/src/components/skywatcher/HourlyObservationsChart.jsx",
-          "frontend/src/components/skywatcher/drawers/DrawerHub.jsx"
+          "frontend/src/components/skywatcher/drawers/DrawerHub.jsx",
+          "frontend/src/App.jsx",
+          "frontend/src/pages/Login.jsx",
+          "frontend/src/pages/ForgotPassword.jsx"
         ],
         "discoverability": [
           "frontend/src/components/skywatcher/Sidebar.jsx",
@@ -158,7 +161,9 @@
           "frontend/src/lib/SkywatcherData.test.jsx",
           "frontend/src/lib/browser-storage.test.js",
           "frontend/src/components/skywatcher/ReviewActions.test.jsx",
-          "frontend/src/lib/federation-types.test.js"
+          "frontend/src/lib/federation-types.test.js",
+          "frontend/src/api/federationClient.test.js",
+          "frontend/src/components/skywatcher/CommandReferenceCard.test.jsx"
         ]
       }
     },
@@ -232,6 +237,37 @@
       "tests": {
         "backend": [
           "tests/test_repair_runner.py"
+        ]
+      }
+    },
+    {
+      "id": "command-reference-copy",
+      "classification": "client_only",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Copies displayed reference text using the browser clipboard; does not execute commands or mutate backend state. Failure exposes manual selection and retry.",
+      "frontend": {
+        "routes": [
+          "/export"
+        ],
+        "e2e_routes": [
+          "/export"
+        ],
+        "components": [
+          "frontend/src/components/skywatcher/CommandReferenceCard.jsx"
+        ],
+        "discoverability": [
+          "frontend/src/pages/ExportCenter.jsx",
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "unit": [
+          "frontend/src/components/skywatcher/CommandReferenceCard.test.jsx"
+        ],
+        "e2e": [
+          "frontend/tests/zip-design.spec.mjs",
+          "frontend/tests/gui-parity.spec.mjs"
         ]
       }
     }

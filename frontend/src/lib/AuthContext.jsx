@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
           federation.auth.setToken(null);
           appParams.token = null;
         }
-      } else if (appParams.requireAuth) {
+      } else if (authRequired) {
         setAuthError({ type: 'unknown', message: error.message || 'Authentication check failed' });
       }
     } finally {
@@ -46,6 +46,9 @@ export const AuthProvider = ({ children }) => {
   const checkAppState = useCallback(async () => {
     try {
       setIsLoadingPublicSettings(true);
+      setIsLoadingAuth(true);
+      setAuthChecked(false);
+      setAppPublicSettings(null);
       setAuthError(null);
       const publicSettings = await federation.system.publicSettings();
       setAppPublicSettings(publicSettings);
@@ -53,7 +56,8 @@ export const AuthProvider = ({ children }) => {
       const authRequired = Boolean(
         publicSettings?.public_settings?.requires_auth || appParams.requireAuth
       );
-      if (federation.auth.isAuthenticated()) {
+      // The server may authenticate an HttpOnly cookie rather than a stored token.
+      if (authRequired || federation.auth.isAuthenticated()) {
         await checkUserAuth(authRequired);
       } else {
         setIsAuthenticated(false);
