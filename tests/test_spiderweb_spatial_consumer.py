@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from skywatcher.spatial_context import SpatialArtifactError, consume_result_set, consume_spiderweb_result
+from skywatcher.spatial_context import SpatialArtifactError, compare_track_contexts, consume_result_set, consume_spiderweb_result, derive_spatial_events, spiderweb_handoff_url
 
 
 def artifact(**changes):
@@ -44,3 +44,29 @@ def test_result_set_rejects_duplicate_whole_records():
     item = artifact()
     with pytest.raises(SpatialArtifactError, match="duplicate"):
         consume_result_set([item, item])
+
+
+def test_derived_events_remain_distinct_from_aircraft_observations():
+    context = consume_spiderweb_result(artifact(target_domain="SHELF_BREAK"))
+    event = derive_spatial_events([context])[0]
+    assert event["event_type"] == "CROSSED_SHELF_BREAK"
+    assert event["event_class"] == "DERIVED_SPATIAL_EVENT"
+    assert event["aircraft_source_observation"] is False
+
+
+def test_track_comparison_returns_complete_set_algebra():
+    a = [consume_spiderweb_result(artifact(analysis_id="a1", target_candidate_id="ridge-1"))]
+    b = [consume_spiderweb_result(artifact(analysis_id="b1", target_candidate_id="ridge-2"))]
+    result = compare_track_contexts(a, b)
+    assert result["INTERSECTION"] == ()
+    assert result["A_ONLY"] == ("candidate:ridge-1",)
+    assert result["B_ONLY"] == ("candidate:ridge-2",)
+    assert result["UNION"] == ("candidate:ridge-1", "candidate:ridge-2")
+    assert result["SYMMETRIC_DIFFERENCE"] == result["UNION"]
+
+
+def test_handoff_binds_analysis_and_result_hash():
+    context = consume_spiderweb_result(artifact())
+    url = spiderweb_handoff_url("https://spiderweb.example", context, time_start="2026-09-08T00:00Z")
+    assert "/spatial-workbench?" in url
+    assert "analysis_id=a1" in url and context.result_hash in url
