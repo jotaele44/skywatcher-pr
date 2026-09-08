@@ -1,0 +1,28 @@
+{
+  "schema_version": "skywatcher.completion-inventory/1",
+  "source_commit": "7c60d0a0ccd681d9da3c60441a1cf9d576d6d03f",
+  "scope": "Original legacy GUI findings retained after repair; routing is not adjudication",
+  "original_denominator": 1885,
+  "retained": 1885,
+  "excluded": 0,
+  "resolved": 0,
+  "by_kind": {
+    "analysis_module": 122,
+    "analysis_symbol": 404,
+    "backend_endpoint": 14,
+    "cli_surface": 145,
+    "gui_control": 29,
+    "gui_page": 4,
+    "gui_route": 5,
+    "gui_unreachable": 1,
+    "python_module": 214,
+    "python_symbol": 947
+  },
+  "by_group": {
+    "analytical_modules": 448,
+    "operator_and_developer_commands": 566,
+    "console_api": 140,
+    "fr24_evidence_pipeline": 692,
+    "authentication_and_navigation": 39
+  }
+}

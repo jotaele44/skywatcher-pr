@@ -208,6 +208,32 @@
           "tests/test_sensor_fusion_policy_guards.py"
         ]
       }
+    },
+    {
+      "id": "local-repair-validation",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Developer and CI validation infrastructure only; executes explicitly configured test commands, preserves receipts, and never supplies a production operator workflow or certification.",
+      "backend": {
+        "files": [
+          "maintenance/repair_runner.py"
+        ],
+        "symbols": [
+          "maintenance/repair_runner.py:digest",
+          "maintenance/repair_runner.py:canonical",
+          "maintenance/repair_runner.py:snapshot",
+          "maintenance/repair_runner.py:write_json",
+          "maintenance/repair_runner.py:run_plan",
+          "maintenance/repair_runner.py:main",
+          "maintenance/repair_runner.py:fingerprints"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_repair_runner.py"
+        ]
+      }
     }
   ],
   "exceptions": []
