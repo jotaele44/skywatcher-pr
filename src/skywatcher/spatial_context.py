@@ -11,6 +11,7 @@ import hashlib
 import json
 import re
 from typing import Any, Iterable, Mapping
+from urllib.parse import urlencode
 
 CONTRACT_VERSION = "spatial-analysis-result/1.0"
 PRODUCER_AUTHORITY = "spiderweb-pr"
@@ -89,3 +90,39 @@ def consume_result_set(artifacts: Iterable[Mapping[str, Any]]) -> tuple[SpatialC
     if len(hashes) != len(set(hashes)):
         raise SpatialArtifactError("duplicate result_hash in result set")
     return results
+
+
+def derive_spatial_events(contexts: Iterable[SpatialContext]) -> tuple[dict[str, Any], ...]:
+    """Create derived analytical events while preserving their non-observation status."""
+    events = []
+    for context in contexts:
+        if context.spatial_state not in {"FULLY_WITHIN", "PARTIAL", "TOUCH_ONLY"}:
+            continue
+        domain = context.target_domain
+        event_type = {
+            "COASTAL_SHELF": "ENTERED_COASTAL_SHELF",
+            "SHELF_BREAK": "CROSSED_SHELF_BREAK",
+            "CANYON": "OVER_CANYON",
+            "HIGH_RUGGEDNESS": "OVER_HIGH_RUGGEDNESS",
+            "SURVEY_COVERAGE": "ENTERED_SURVEYED_MULTIBEAM_AREA",
+            "SENSOR_FOOTPRINT": "SENSOR_FOOTPRINT_INTERSECTED_FEATURE",
+        }.get(domain)
+        if event_type:
+            events.append({"event_type": event_type, "event_class": "DERIVED_SPATIAL_EVENT", "aircraft_source_observation": False, "analysis_id": context.analysis_id, "subject_id": context.subject_id, "spatial_state": context.spatial_state, "result_hash": context.result_hash, "source_manifestation_ids": list(context.source_manifestation_ids)})
+    return tuple(events)
+
+
+def compare_track_contexts(a: Iterable[SpatialContext], b: Iterable[SpatialContext]) -> dict[str, tuple[str, ...]]:
+    """Exact set algebra over preserved feature/candidate identifiers."""
+    def keys(rows):
+        return {f"feature:{r.target_feature_id}" if r.target_feature_id else f"candidate:{r.target_candidate_id}" for r in rows if r.target_feature_id or r.target_candidate_id}
+    a_keys, b_keys = keys(a), keys(b)
+    return {"INTERSECTION": tuple(sorted(a_keys & b_keys)), "A_ONLY": tuple(sorted(a_keys - b_keys)), "B_ONLY": tuple(sorted(b_keys - a_keys)), "UNION": tuple(sorted(a_keys | b_keys)), "SYMMETRIC_DIFFERENCE": tuple(sorted(a_keys ^ b_keys))}
+
+
+def spiderweb_handoff_url(base_url: str, context: SpatialContext, *, time_start: str | None = None, time_end: str | None = None) -> str:
+    """Build an explicit investigation handoff without transferring authority."""
+    query = {"subject_id": context.subject_id, "analysis_id": context.analysis_id, "result_hash": context.result_hash}
+    if time_start: query["time_start"] = time_start
+    if time_end: query["time_end"] = time_end
+    return f"{base_url.rstrip('/')}/spatial-workbench?{urlencode(query)}"
