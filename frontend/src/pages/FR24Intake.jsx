@@ -29,7 +29,7 @@ export default function FR24Intake() {
     let rows = [...d.captures];
     if (q) { const s = q.toLowerCase(); rows = rows.filter((c) => [c.file_name, c.capture_id, c.sha256_hash].filter(Boolean).some((v) => v.toLowerCase().includes(s))); }
     if (status !== "all") rows = rows.filter((c) => c.ingest_status === status);
-    return rows.sort((a, b) => new Date(b.captured_at) - new Date(a.captured_at));
+    return rows.sort((a, b) => new Date(b.captured_at).getTime() - new Date(a.captured_at).getTime());
   }, [d.captures, q, status]);
 
   if (d.loading) return <LoadingState />;

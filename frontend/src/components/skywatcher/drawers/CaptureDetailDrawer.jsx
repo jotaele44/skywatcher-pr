@@ -19,12 +19,17 @@ export default function CaptureDetailDrawer({ id, onClose, go }) {
   const routes = r.routesForCapture(cap.capture_id);
   const is = INGEST_STATUS[cap.ingest_status] || INGEST_STATUS.queued;
 
-  const setStatus = (s, msg) => {
-    d.updateRecord("captures", cap.id, { ingest_status: s });
-    toast({ title: "Diagnostic state updated", description: msg });
+  const setStatus = async (s, msg) => {
+    try {
+      await d.updateRecord("captures", cap.id, { ingest_status: s });
+      toast({ title: "Diagnostic state updated for this server session", description: msg });
+    } catch (error) {
+      toast({ title: "Capture update failed", description: error?.message || "Try again.", variant: "destructive" });
+    }
   };
   const placeholder = (msg) => toast({ title: "Repository-side action (placeholder)", description: msg });
   const openReview = async () => {
+    try {
     await d.createReview({
       review_id: `rev_cap_${Date.now()}`, item_type: "capture", item_id: cap.capture_id,
       reason: "Manual review opened from FR24 Intake for capture metadata.",
@@ -33,6 +38,9 @@ export default function CaptureDetailDrawer({ id, onClose, go }) {
       created_at: new Date().toISOString(), notes: "Created from capture drawer (diagnostic).", synthetic_flag: true,
     });
     toast({ title: "Manual review item created", description: `Linked to ${cap.capture_id}` });
+    } catch (error) {
+      toast({ title: "Review creation failed", description: error?.message || "Try again.", variant: "destructive" });
+    }
   };
 
   return (

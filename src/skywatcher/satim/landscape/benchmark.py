@@ -160,7 +160,7 @@ def evaluate_benchmark_manifest(path: str | Path) -> BenchmarkState:
     if calibration_hashes & holdout_hashes:
         blockers.append("calibration/holdout raw-byte SHA256 leakage")
 
-    verified = Counter()
+    verified: Counter[str] = Counter()
     verified_ids: set[str] = set()
     for item in fixtures:
         fixture_id = str(item.get("fixture_id") or "")
@@ -262,7 +262,7 @@ def evaluate_predictions(
     tp = fp = tn = fn = 0
     unresolved_count = tied_count = null_competitor_count = 0
     blockers: list[str] = []
-    per_class = defaultdict(
+    per_class: dict[str, dict[str, int]] = defaultdict(
         lambda: {"agriculture_pred": 0, "correct_negative": 0, "unresolved": 0}
     )
     total = 0

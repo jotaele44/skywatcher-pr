@@ -110,3 +110,7 @@ exports/spiderweb/
 # runtime logs, tokens, secrets
 *.log
 *.token
+
+# Local Playwright run artifacts (retained separately as validation receipts).
+frontend/test-results/
+frontend/playwright-report/

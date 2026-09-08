@@ -140,11 +140,10 @@ ignore = [
 "tests/*" = ["B011"] # assert False is idiomatic in tests
 
 # ── mypy ─────────────────────────────────────────────────────────────────────
-# Gradually-typed baseline, matching spiderweb-pr and moneysweep-pr. Scoped to
-# the src/skywatcher package, which is the structured part of the tree (13
-# findings today; src/skywatcher/satim/artifacts is already clean). The flat
-# root modules and fr24/ are not in scope yet. follow_imports = "silent" keeps
-# errors in not-yet-typed dependencies from being reported. Non-gating in CI.
+# Gating type check for the structured src/skywatcher package. The flat root
+# modules and fr24/ are not in scope yet. follow_imports = "silent" keeps
+# errors in not-yet-typed dependencies from being reported. The configured
+# 91-file scope passed with mypy 2.3.1 under Python 3.12 on 2026-09-08.
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true

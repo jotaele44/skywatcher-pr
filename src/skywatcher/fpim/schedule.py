@@ -166,8 +166,8 @@ def craft_schedule(
             "denominator": lookback_weeks,
         }
 
-    since = (max_dt - timedelta(weeks=lookback_weeks)).isoformat()
-    windowed = [(r, t) for r, t in reg_rows if (parse_ts(t) or max_dt) >= parse_ts(since)]
+    since = max_dt - timedelta(weeks=lookback_weeks)
+    windowed = [(r, t) for r, t in reg_rows if (parsed := parse_ts(t)) is not None and parsed >= since]
     cells = build_cells(windowed, keep_regs={registration}, hour_bucket_size=hour_bucket_size)
 
     dow_hour_cells: list[dict] = []

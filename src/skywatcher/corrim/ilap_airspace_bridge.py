@@ -154,7 +154,7 @@ class ILAPAirspaceBridge:
             cell = (int(lat / GRID_DEG), int(lon / GRID_DEG))
             cells[cell].append(tp)
 
-        features = []
+        features: list[dict] = []
         for _cell, points in cells.items():
             if len(points) < 3:
                 continue
@@ -217,7 +217,7 @@ class ILAPAirspaceBridge:
     # ----------------------------------------------------------------- ILAP
 
     def _build_ilap_candidates(self, flights: list[dict], track_pts: list[dict]) -> list[dict]:
-        features = []
+        features: list[dict] = []
         tp_by_flight: dict[str, list] = defaultdict(list)
         for tp in track_pts:
             fid = tp.get("flight_id")
@@ -261,7 +261,7 @@ class ILAPAirspaceBridge:
 
     def _build_corridor_candidates(self, poi_features: list[dict],
                                    flights: list[dict]) -> list[dict]:
-        features = []
+        features: list[dict] = []
         n = len(poi_features)
         if n < 2:
             return features

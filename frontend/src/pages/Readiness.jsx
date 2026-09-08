@@ -35,7 +35,7 @@ export default function Readiness() {
   const d = useSkywatcher();
   if (d.loading) return <LoadingState />;
 
-  const latest = [...d.readiness].sort((a, b) => new Date(b.report_date) - new Date(a.report_date))[0];
+  const latest = [...d.readiness].sort((a, b) => new Date(b.report_date).getTime() - new Date(a.report_date).getTime())[0];
 
   return (
     <div className="space-y-5">

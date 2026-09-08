@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
 
-function CustomTooltip({ active, payload, label }) {
+function CustomTooltip({ active = false, payload = [], label = null }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs shadow-lg">

@@ -282,7 +282,7 @@ class CraftProfileBuilder:
             p.coverage_gaps.append("no_origin_destination_side_mining")
             return
 
-        top_code = max(combined, key=combined.get)
+        top_code = max(combined, key=lambda key: combined[key])
         facility = self.airport_index.get(top_code.upper(), {})
         g = grade(
             observation_count=combined[top_code],

@@ -129,6 +129,8 @@ jobs:
         run: npm run test:console
       - name: Lint
         run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
       - name: Tests
         run: npm run test
       - name: Build
@@ -161,6 +163,5 @@ jobs:
           uv pip install ruff mypy
       - name: Ruff
         run: uv run ruff check .
-      - name: Mypy (report-only)
-        continue-on-error: true
+      - name: Mypy
         run: uv run python -m mypy

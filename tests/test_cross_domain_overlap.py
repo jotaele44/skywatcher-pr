@@ -34,3 +34,22 @@ def test_find_cross_domain_overlaps_suppresses_operational_context():
     )
 
     assert overlaps == []
+
+
+import pytest
+
+
+@pytest.mark.parametrize("options", [
+    {"max_minutes": 0}, {"max_distance_km": 0}, {"max_minutes": -1},
+    {"max_distance_km": float("nan")}, {"min_confidence": 2},
+])
+def test_invalid_thresholds_fail_even_for_empty_inputs(options):
+    with pytest.raises(ValueError):
+        find_cross_domain_overlaps([], [], **options)
+
+
+def test_timezone_naive_observation_fails_explicitly():
+    with pytest.raises(ValueError, match="timezone"):
+        find_cross_domain_overlaps(
+            [{"tactical_public_tracking": False, "observed_at": "2026-01-01T12:00:00"}], []
+        )

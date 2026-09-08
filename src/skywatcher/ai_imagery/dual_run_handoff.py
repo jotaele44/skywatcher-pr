@@ -441,7 +441,7 @@ def build_h08_operator_handoff(
 
 class _ReplayResolver:
     def __init__(self, records: Sequence[Mapping[str, Any]]) -> None:
-        self._records = {}
+        self._records: dict[str, Mapping[str, Any]] = {}
         for record in records:
             run_id = str(record["run_id"])
             if run_id in self._records:

@@ -38,7 +38,8 @@
       "frontend/src/App.jsx"
     ],
     "navigation_files": [
-      "frontend/src/components/skywatcher/Sidebar.jsx"
+      "frontend/src/components/skywatcher/Sidebar.jsx",
+      "frontend/src/components/skywatcher/Layout.jsx"
     ],
     "implicit_routes": [],
     "exclude": [
@@ -81,7 +82,10 @@
           "/review",
           "/export",
           "/readiness",
-          "/calibration"
+          "/calibration",
+          "/console",
+          "/analysis",
+          "/spatial-truth"
         ],
         "e2e_routes": [
           "/",
@@ -94,7 +98,10 @@
           "/review",
           "/export",
           "/readiness",
-          "/calibration"
+          "/calibration",
+          "/console",
+          "/analysis",
+          "/spatial-truth"
         ],
         "components": [
           "frontend/src/api/federationClient.js",
@@ -110,10 +117,27 @@
           "frontend/src/pages/ManualReview.jsx",
           "frontend/src/pages/ExportCenter.jsx",
           "frontend/src/pages/Readiness.jsx",
-          "frontend/src/pages/Calibration.jsx"
+          "frontend/src/pages/Calibration.jsx",
+          "frontend/src/components/skywatcher/ReviewActions.jsx",
+          "frontend/src/components/skywatcher/drawers/ReviewDetailDrawer.jsx",
+          "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx",
+          "frontend/src/lib/browser-storage.js",
+          "frontend/src/components/skywatcher/Layout.jsx",
+          "frontend/src/pages/Console.jsx",
+          "frontend/src/pages/AnalysisLenses.jsx",
+          "frontend/src/pages/SpatialTruth.jsx",
+          "frontend/src/components/skywatcher/SideDrawer.jsx",
+          "frontend/src/components/skywatcher/MetricCard.jsx",
+          "frontend/src/components/skywatcher/PageHeader.jsx",
+          "frontend/src/components/skywatcher/Panel.jsx",
+          "frontend/src/components/skywatcher/StatusChip.jsx",
+          "frontend/src/components/skywatcher/EmptyState.jsx",
+          "frontend/src/components/skywatcher/HourlyObservationsChart.jsx",
+          "frontend/src/components/skywatcher/drawers/DrawerHub.jsx"
         ],
         "discoverability": [
-          "frontend/src/components/skywatcher/Sidebar.jsx"
+          "frontend/src/components/skywatcher/Sidebar.jsx",
+          "frontend/src/components/skywatcher/Layout.jsx"
         ]
       },
       "tests": {
@@ -127,7 +151,14 @@
           "tests/test_gui_parity.py"
         ],
         "e2e": [
-          "frontend/tests/gui-parity.spec.mjs"
+          "frontend/tests/gui-parity.spec.mjs",
+          "frontend/tests/zip-design.spec.mjs"
+        ],
+        "unit": [
+          "frontend/src/lib/SkywatcherData.test.jsx",
+          "frontend/src/lib/browser-storage.test.js",
+          "frontend/src/components/skywatcher/ReviewActions.test.jsx",
+          "frontend/src/lib/federation-types.test.js"
         ]
       }
     },
@@ -149,6 +180,32 @@
       "tests": {
         "backend": [
           "tests/test_server_smoke.py"
+        ]
+      }
+    },
+    {
+      "id": "fusion-input-validation",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Validation and candidate bookkeeping inside existing batch fusion calculations; no new operator command or workflow. Proximity remains discovery, not identity.",
+      "backend": {
+        "files": [
+          "src/skywatcher/fusion/coastal_corridor_index.py",
+          "src/skywatcher/fusion/cross_domain_overlap.py",
+          "src/skywatcher/fusion/anomaly_scoring.py",
+          "src/skywatcher/fr24/screenshot_source.py",
+          "src/skywatcher/satim/landscape/benchmark.py"
+        ],
+        "symbols": [
+          "src/skywatcher/fusion/coastal_corridor_index.py:finite_number"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_pr_corridor_attachment.py",
+          "tests/test_cross_domain_overlap.py",
+          "tests/test_sensor_fusion_policy_guards.py"
         ]
       }
     }

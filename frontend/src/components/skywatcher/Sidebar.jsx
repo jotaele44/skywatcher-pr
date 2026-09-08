@@ -8,7 +8,7 @@ import {
 import { PROGRAM } from "@/lib/skywatcher";
 import brandMark from "@/assets/icon-64.png?inline";
 
-const NAV = [
+export const NAV = [
   { to: "/", label: "Command Dashboard", icon: LayoutDashboard },
   { to: "/console", label: "Interactive Console", icon: Map },
   { to: "/observations", label: "Airspace Observations", icon: Plane },

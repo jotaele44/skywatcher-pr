@@ -1,4 +1,5 @@
 import { appParams } from '@/lib/app-params';
+import { browserStorage } from '@/lib/browser-storage';
 
 const TOKEN_STORAGE_KEY = 'federation_access_token';
 
@@ -7,7 +8,7 @@ const encode = (value) => encodeURIComponent(String(value));
 
 const getStoredToken = () => {
   if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem(TOKEN_STORAGE_KEY) || window.localStorage.getItem('access_token') || null;
+  return browserStorage.getItem(TOKEN_STORAGE_KEY) || browserStorage.getItem('access_token') || null;
 };
 
 const WRITE_TOKEN_STORAGE_KEY = 'federation_write_token';
@@ -17,24 +18,26 @@ const WRITE_TOKEN_STORAGE_KEY = 'federation_write_token';
 // write token stored alongside it would be discarded before the first request.
 export const getWriteToken = () => {
   if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem(WRITE_TOKEN_STORAGE_KEY) || null;
+  return browserStorage.getItem(WRITE_TOKEN_STORAGE_KEY) || null;
 };
 
 export const setWriteToken = (token) => {
+  appParams.writeToken = token || null;
   if (typeof window === 'undefined') return;
-  if (token) window.localStorage.setItem(WRITE_TOKEN_STORAGE_KEY, token);
-  else window.localStorage.removeItem(WRITE_TOKEN_STORAGE_KEY);
+  if (token) browserStorage.setItem(WRITE_TOKEN_STORAGE_KEY, token);
+  else browserStorage.removeItem(WRITE_TOKEN_STORAGE_KEY);
 };
 
 const setStoredToken = (token) => {
+  appParams.token = token || null;
   if (typeof window === 'undefined') return;
   if (token) {
-    window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
-    window.localStorage.setItem('access_token', token);
+    browserStorage.setItem(TOKEN_STORAGE_KEY, token);
+    browserStorage.setItem('access_token', token);
   } else {
-    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-    window.localStorage.removeItem('access_token');
-    window.localStorage.removeItem('token');
+    browserStorage.removeItem(TOKEN_STORAGE_KEY);
+    browserStorage.removeItem('access_token');
+    browserStorage.removeItem('token');
   }
 };
 
@@ -43,7 +46,7 @@ const normalizeError = async (response) => {
   let message = response.statusText || 'Request failed';
   try {
     data = await response.json();
-    message = data?.message || data?.error || message;
+    message = data?.message || data?.error || (typeof data?.detail === 'string' ? data.detail : null) || message;
   } catch {
     try {
       const text = await response.text();
@@ -52,9 +55,7 @@ const normalizeError = async (response) => {
       // no body
     }
   }
-  const error = new Error(message);
-  error.status = response.status;
-  error.data = data;
+  const error = Object.assign(new Error(message), { status: response.status, data });
   return error;
 };
 

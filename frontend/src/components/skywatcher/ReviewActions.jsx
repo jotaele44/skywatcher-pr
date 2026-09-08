@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { CircleDot, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 
 const ACTIONS = [
@@ -22,15 +22,34 @@ const ACTIVE = {
 };
 
 export default function ReviewActions({ current, onChange, actions = ACTIONS }) {
+  const pending = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const apply = async (key) => {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      await onChange(key);
+    } catch (failure) {
+      setError(failure?.message || "Review update failed. Try again.");
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  };
   return (
     <div className="flex flex-wrap gap-2">
+      {error && <p role="alert" className="w-full text-sm text-destructive">{error}</p>}
       {actions.map((a) => {
         const Icon = a.icon;
         const active = current === a.key;
         return (
           <button
             key={a.key}
-            onClick={() => onChange(a.key)}
+            onClick={() => apply(a.key)}
+            disabled={busy}
             className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
               active ? ACTIVE[a.tone] : `border-border bg-secondary text-muted-foreground ${TONE[a.tone]}`
             }`}

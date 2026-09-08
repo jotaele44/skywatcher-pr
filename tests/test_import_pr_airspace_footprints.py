@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -13,7 +14,7 @@ def test_import_preserves_all_rows_and_splits_helipads(tmp_path: Path) -> None:
 
     result = subprocess.run(
         [
-            "python",
+            sys.executable,
             "scripts/import_pr_airspace_footprints.py",
             "--input",
             str(source),
@@ -51,7 +52,7 @@ def test_helipads_include_coordinates(tmp_path: Path) -> None:
     helipads = tmp_path / "helipads.csv"
     subprocess.run(
         [
-            "python",
+            sys.executable,
             "scripts/import_pr_airspace_footprints.py",
             "--helipads-out",
             str(helipads),

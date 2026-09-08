@@ -33,7 +33,7 @@ export default function Aircraft() {
       rows = rows.filter((a) => [a.callsign, a.tail_number, a.operator_name, a.mission_category].filter(Boolean).some((v) => v.toLowerCase().includes(s)));
     }
     if (cat !== "all") rows = rows.filter((a) => a.operator_category === cat);
-    return rows.sort((a, b) => new Date(b.last_seen_at) - new Date(a.last_seen_at));
+    return rows.sort((a, b) => new Date(b.last_seen_at).getTime() - new Date(a.last_seen_at).getTime());
   }, [d.aircraft, q, cat]);
 
   if (d.loading) return <LoadingState />;

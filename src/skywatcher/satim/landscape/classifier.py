@@ -224,7 +224,7 @@ def classify_metrics(
     top_class: str | None = None
     tie = False
     if evaluated:
-        top_score = max(float(item.score) for item in evaluated)
+        top_score = max(item.score for item in evaluated if item.score is not None)
         top = [item for item in evaluated if item.score == top_score]
         tie = len(top) != 1
         if not tie:

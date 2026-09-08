@@ -78,7 +78,7 @@ export default function Observations() {
     if (conf === "medium") rows = rows.filter((o) => (o.confidence_score ?? 0) >= 0.5 && (o.confidence_score ?? 0) < 0.75);
     if (conf === "low") rows = rows.filter((o) => (o.confidence_score ?? 0) < 0.5);
 
-    if (sort === "time") rows.sort((a, b) => new Date(b.observed_at) - new Date(a.observed_at));
+    if (sort === "time") rows.sort((a, b) => new Date(b.observed_at).getTime() - new Date(a.observed_at).getTime());
     if (sort === "confidence") rows.sort((a, b) => (b.confidence_score ?? 0) - (a.confidence_score ?? 0));
     if (sort === "distance") rows.sort((a, b) => (a.distance_nm ?? 999) - (b.distance_nm ?? 999));
     return rows;
@@ -109,12 +109,23 @@ export default function Observations() {
     const ids = [...selected];
     if (!ids.length) return;
     setBulkBusy(true);
-    for (const id of ids) {
-      await d.updateRecord("observations", id, { review_status: status });
+    let completed = 0;
+    try {
+      for (const id of ids) {
+        await d.updateRecord("observations", id, { review_status: status });
+        completed += 1;
+        setSelected((previous) => {
+          const remaining = new Set(previous);
+          remaining.delete(id);
+          return remaining;
+        });
+      }
+      toast({ title: `${completed} observation${completed > 1 ? "s" : ""} ${verb}`, description: "Diagnostic review status updated for this server session." });
+    } catch (error) {
+      toast({ title: "Bulk review incomplete", description: `${completed} of ${ids.length} saved. Remaining records are selected for retry. ${error?.message || "Request failed"}`, variant: "destructive" });
+    } finally {
+      setBulkBusy(false);
     }
-    setBulkBusy(false);
-    setSelected(new Set());
-    toast({ title: `${ids.length} observation${ids.length > 1 ? "s" : ""} ${verb}`, description: "Diagnostic review status updated." });
   };
 
   if (d.loading) return <LoadingState />;

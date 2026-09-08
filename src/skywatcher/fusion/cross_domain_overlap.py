@@ -6,12 +6,15 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime
 from hashlib import sha1
 
-from skywatcher.fusion.coastal_corridor_index import haversine_km
+from skywatcher.fusion.coastal_corridor_index import finite_number, haversine_km
 
 
 def _parse_time(value: object) -> datetime:
     text = str(value).replace("Z", "+00:00")
-    return datetime.fromisoformat(text)
+    parsed = datetime.fromisoformat(text)
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("observed_at must include a timezone")
+    return parsed
 
 
 def _record_id(record: Mapping[str, object]) -> str:
@@ -32,6 +35,13 @@ def find_cross_domain_overlaps(
     operational-use-allowed is ignored.
     """
 
+    max_minutes = finite_number(max_minutes, "max_minutes")
+    max_distance_km = finite_number(max_distance_km, "max_distance_km")
+    min_confidence = finite_number(min_confidence, "min_confidence")
+    if max_minutes <= 0 or max_distance_km <= 0:
+        raise ValueError("Overlap time and distance thresholds must be positive")
+    if not 0 <= min_confidence <= 1:
+        raise ValueError("min_confidence must be between zero and one")
     overlaps: list[dict[str, object]] = []
     for air in air_events:
         if air.get("tactical_public_tracking") is not False:
@@ -44,7 +54,7 @@ def find_cross_domain_overlaps(
             minutes = abs((air_time - ctx_time).total_seconds()) / 60.0
             if minutes > max_minutes:
                 continue
-            distance = haversine_km(float(air["lat"]), float(air["lon"]), float(ctx["lat"]), float(ctx["lon"]))
+            distance = haversine_km(finite_number(air.get("lat"), "air.lat"), finite_number(air.get("lon"), "air.lon"), finite_number(ctx.get("lat"), "context.lat"), finite_number(ctx.get("lon"), "context.lon"))
             if distance > max_distance_km:
                 continue
             corridor_match = air.get("corridor_id") and air.get("corridor_id") == ctx.get("corridor_id")

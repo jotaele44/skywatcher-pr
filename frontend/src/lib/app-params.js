@@ -1,6 +1,7 @@
+/// <reference types="vite/client" />
+import { browserStorage as storage } from './browser-storage';
+
 const isNode = typeof window === 'undefined';
-const windowObj = isNode ? { localStorage: new Map(), location: { href: '' }, history: { replaceState: () => {} } } : window;
-const storage = windowObj.localStorage;
 
 const toSnakeCase = (str) => str.replace(/([A-Z])/g, '_$1').toLowerCase();
 
@@ -54,7 +55,7 @@ const getAppParams = () => {
     // (lib/AuthContext.jsx). That cleanup would wipe a write token too, which is
     // why supplying one as ?access_token= never survived to the first request.
     writeToken: getParamValue('write_token', { removeFromUrl: true }),
-    fromUrl: getParamValue('from_url', { defaultValue: window.location.href }),
+    fromUrl: getParamValue('from_url', { defaultValue: isNode ? '' : window.location.href }),
     mode: import.meta.env.VITE_FEDERATION_MODE || 'diagnostic',
     requireAuth: import.meta.env.VITE_FEDERATION_REQUIRE_AUTH === 'true',
   };

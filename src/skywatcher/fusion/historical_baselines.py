@@ -6,6 +6,8 @@ from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from statistics import mean, pstdev
 
+from skywatcher.fusion.coastal_corridor_index import finite_number
+
 
 def _key(record: Mapping[str, object]) -> tuple[str, str]:
     corridor = str(record.get("corridor_id") or "unassigned")
@@ -26,8 +28,8 @@ def build_historical_baselines(records: Iterable[Mapping[str, object]]) -> list[
 
     baselines: list[dict[str, object]] = []
     for (corridor_id, domain), items in sorted(groups.items()):
-        confidence_values = [float(item.get("confidence", 0.0)) for item in items]
-        count_values = [float(item.get("event_count", 1.0)) for item in items]
+        confidence_values = [finite_number(item.get("confidence", 0.0), "confidence") for item in items]
+        count_values = [finite_number(item.get("event_count", 1.0), "event_count") for item in items]
         baseline_count = sum(count_values)
         confidence_mean = mean(confidence_values) if confidence_values else 0.0
         count_stddev = pstdev(count_values) if len(count_values) > 1 else 0.0
