@@ -19,12 +19,17 @@ and has no CLI surface (added in a later phase).
 """
 
 import json
+from collections.abc import Callable, Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+satim_report_to_legacy_calibration: Callable[[Mapping[str, Any]], dict[str, Any]] | None
 try:
-    from fr24.calibration.readiness_adapter import satim_report_to_legacy_calibration
+    from fr24.calibration.readiness_adapter import (
+        satim_report_to_legacy_calibration as _satim_adapter,
+    )
+    satim_report_to_legacy_calibration = _satim_adapter
 except Exception:  # pragma: no cover - keeps legacy engine importable in partial builds
     satim_report_to_legacy_calibration = None
 

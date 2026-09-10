@@ -161,7 +161,9 @@ def _insert_extraction(
             observed_at,
         ),
     )
-    ocr_obs_id = int(cursor.lastrowid)
+    ocr_obs_id = cursor.lastrowid
+    if ocr_obs_id is None:
+        raise RuntimeError("OCR observation insert did not produce a row ID")
     conn.execute(
         "INSERT INTO vision_extractions (extraction_id, screenshot_id, ocr_obs_id,"
         " source_artifact_id, model_run_receipt_id, extraction_schema_version,"

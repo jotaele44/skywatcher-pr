@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     # so the name stays absent at runtime and the module __getattr__ below still
     # fires for it. Without this, both ruff (F822) and CodeQL (py/undefined-export)
     # read __all__ statically, see no binding, and flag the export.
-    from integration.geo_calibration import CoordResult
+    from integration.geo_calibration import CoordResult, GeoCalibration
 
 __all__ = [
     "PARSER_VERSION",
@@ -74,7 +74,7 @@ def coordinate_from_pixel(
     image_width: int,
     image_height: int,
     *,
-    calibration: object | None = None,
+    calibration: GeoCalibration | None = None,
 ) -> Any:
     """Resolve a pixel coordinate to lat/lon with method + confidence.
 

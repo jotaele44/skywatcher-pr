@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { federation } from "@/api/federationClient";
 
 const DataContext = createContext(null);
@@ -38,8 +38,12 @@ const emptyData = () => ({
 export function SkywatcherDataProvider({ children }) {
   const [data, setData] = useState(emptyData);
   const [loading, setLoading] = useState(true);
+  const [loadErrors, setLoadErrors] = useState({});
+  const loadGeneration = useRef(0);
 
   const loadAll = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    setLoading(true);
     const keys = Object.keys(ENTITIES);
     try {
       // allSettled + finally: a single failed/missing collection (e.g. no
@@ -50,26 +54,48 @@ export function SkywatcherDataProvider({ children }) {
           ENTITY_LIMITS[k] || 500,
         ))
       );
-      const next = emptyData();
+      if (generation !== loadGeneration.current) return;
+      const next = {};
+      const errors = {};
       keys.forEach((k, i) => {
-        next[k] = results[i].status === "fulfilled" ? (results[i].value || []) : [];
+        const result = results[i];
+        if (result.status === "fulfilled" && Array.isArray(result.value)) {
+          next[k] = result.value;
+        } else {
+          errors[k] = result.status === "rejected"
+            ? String(result.reason?.message || "Request failed")
+            : "Invalid collection response";
+        }
       });
-      setData(next);
+      // Retain the last successful data, explicitly marked stale by loadErrors.
+      setData((previous) => ({ ...previous, ...next }));
+      setLoadErrors(errors);
     } finally {
-      setLoading(false);
+      if (generation === loadGeneration.current) setLoading(false);
     }
   }, []);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => {
+    loadAll();
+    return () => { ++loadGeneration.current; };
+  }, [loadAll]);
 
-  // Optimistic local update + persisted write
+  // The diagnostic backend confirms session state, not durable adjudication.
   const updateRecord = useCallback(async (collection, id, patch) => {
     const entityName = ENTITIES[collection];
+    if (!entityName) throw new Error(`Unknown collection: ${collection}`);
+    const updated = await federation.entities[entityName].update(id, patch);
+    if (!updated || typeof updated !== "object" || Array.isArray(updated) || updated.id !== id) {
+      throw new Error("Invalid update response; reload before retrying");
+    }
+    // Invalidate reads started before the confirmed write.
+    ++loadGeneration.current;
+    setLoading(false);
     setData((prev) => ({
       ...prev,
-      [collection]: prev[collection].map((r) => (r.id === id ? { ...r, ...patch } : r)),
+      [collection]: prev[collection].map((r) => (r.id === id ? updated : r)),
     }));
-    await federation.entities[entityName].update(id, patch);
+    return updated;
   }, []);
 
   const createReview = useCallback(async (payload) => {
@@ -79,7 +105,7 @@ export function SkywatcherDataProvider({ children }) {
   }, []);
 
   return (
-    <DataContext.Provider value={{ ...data, loading, reload: loadAll, updateRecord, createReview }}>
+    <DataContext.Provider value={{ ...data, loading, loadErrors, reload: loadAll, updateRecord, createReview }}>
       {children}
     </DataContext.Provider>
   );

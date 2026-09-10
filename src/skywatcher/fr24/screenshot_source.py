@@ -58,6 +58,8 @@ class DirectoryScreenshotSource(ScreenshotSource):
     (sorted) order and does NOT read file contents.
     """
 
+    recursive: bool
+
     def __init__(self, root: str | Path, recursive: bool = True):
         object.__setattr__(self, "root", Path(root))
         object.__setattr__(self, "recursive", recursive)

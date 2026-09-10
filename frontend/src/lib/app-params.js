@@ -1,10 +1,11 @@
+/// <reference types="vite/client" />
+import { browserStorage as storage } from './browser-storage';
+
 const isNode = typeof window === 'undefined';
-const windowObj = isNode ? { localStorage: new Map(), location: { href: '' }, history: { replaceState: () => {} } } : window;
-const storage = windowObj.localStorage;
 
 const toSnakeCase = (str) => str.replace(/([A-Z])/g, '_$1').toLowerCase();
 
-const getParamValue = (paramName, { defaultValue = undefined, removeFromUrl = false } = {}) => {
+const getParamValue = (paramName, { defaultValue = undefined, removeFromUrl = false, persist = true } = {}) => {
   if (isNode) return defaultValue ?? null;
   const storageKey = `federation_${toSnakeCase(paramName)}`;
   const urlParams = new URLSearchParams(window.location.search);
@@ -14,6 +15,12 @@ const getParamValue = (paramName, { defaultValue = undefined, removeFromUrl = fa
     urlParams.delete(paramName);
     const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}${window.location.hash}`;
     window.history.replaceState({}, document.title, newUrl);
+  }
+
+  if (!persist) {
+    // URL commands are one-shot; discard flags persisted by older clients.
+    storage.removeItem(storageKey);
+    return searchParam;
   }
 
   if (searchParam) {
@@ -28,12 +35,12 @@ const getParamValue = (paramName, { defaultValue = undefined, removeFromUrl = fa
 };
 
 const getAppParams = () => {
-  if (getParamValue('clear_access_token') === 'true') {
+  if (getParamValue('clear_access_token', { removeFromUrl: true, persist: false }) === 'true') {
     storage.removeItem('federation_access_token');
     storage.removeItem('access_token');
     storage.removeItem('token');
   }
-  if (getParamValue('clear_write_token') === 'true') {
+  if (getParamValue('clear_write_token', { removeFromUrl: true, persist: false }) === 'true') {
     storage.removeItem('federation_write_token');
   }
 
@@ -54,7 +61,7 @@ const getAppParams = () => {
     // (lib/AuthContext.jsx). That cleanup would wipe a write token too, which is
     // why supplying one as ?access_token= never survived to the first request.
     writeToken: getParamValue('write_token', { removeFromUrl: true }),
-    fromUrl: getParamValue('from_url', { defaultValue: window.location.href }),
+    fromUrl: getParamValue('from_url', { defaultValue: isNode ? '' : window.location.href }),
     mode: import.meta.env.VITE_FEDERATION_MODE || 'diagnostic',
     requireAuth: import.meta.env.VITE_FEDERATION_REQUIRE_AUTH === 'true',
   };

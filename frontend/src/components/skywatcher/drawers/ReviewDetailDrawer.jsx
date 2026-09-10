@@ -15,19 +15,28 @@ export default function ReviewDetailDrawer({ id, onClose, go }) {
   const r = useResolvers();
   const item = d.reviews.find((x) => x.id === id) || d.reviews.find((x) => x.review_id === id);
   const [notes, setNotes] = useState(item?.notes || "");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   if (!item) return <SideDrawer open onClose={onClose} title="Review item not found" />;
 
   const rs = REVIEW_STATUS[item.review_status] || REVIEW_STATUS.open;
   const target = r.reviewItemTarget(item);
 
   const setStatus = (s) => {
-    const patch = { review_status: s };
-    if (s === "resolved" || s === "rejected") patch.resolved_at = new Date().toISOString();
-    d.updateRecord("reviews", item.id, patch);
+    const patch = { review_status: s, resolved_at: s === "resolved" || s === "rejected" ? new Date().toISOString() : null };
+    return d.updateRecord("reviews", item.id, patch);
   };
-  const saveNotes = () => {
-    d.updateRecord("reviews", item.id, { notes });
-    toast({ title: "Notes saved" });
+  const saveNotes = async () => {
+    setSaving(true);
+    setSaveError("");
+    try {
+      await d.updateRecord("reviews", item.id, { notes });
+      toast({ title: "Notes saved for this server session" });
+    } catch (error) {
+      setSaveError(error?.message || "Notes could not be saved. Try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const openTarget = () => {
@@ -82,15 +91,17 @@ export default function ReviewDetailDrawer({ id, onClose, go }) {
       </Section>
 
       <Section title="Notes" icon={StickyNote}>
+        {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
         <textarea
+          aria-label="Review notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
           className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-hidden"
           placeholder="Add diagnostic review notes…"
         />
-        <button onClick={saveNotes} className="mt-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
-          Save Notes
+        <button onClick={saveNotes} disabled={saving} className="mt-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
+          {saving ? "Saving…" : "Save Notes"}
         </button>
       </Section>
     </SideDrawer>

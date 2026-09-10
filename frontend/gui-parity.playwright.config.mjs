@@ -16,12 +16,14 @@ function findRepositoryRoot(start) {
 
 const frontendRoot = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = findRepositoryRoot(frontendRoot);
-const frontendUrl = "http://127.0.0.1:5173";
-const backendUrl = "http://127.0.0.1:8000";
+const frontendPort = process.env.GUI_FRONTEND_PORT || "5173";
+const frontendUrl = `http://127.0.0.1:${frontendPort}`;
+const backendPort = process.env.GUI_BACKEND_PORT || "8000";
+const backendUrl = `http://127.0.0.1:${backendPort}`;
 const seedScript = path.join(repositoryRoot, "server", "ingestion", "seed_demo.py");
 const backendCommand = fs.existsSync(seedScript)
-  ? "python server/ingestion/seed_demo.py && python -m uvicorn server.backend.main:app --host 127.0.0.1 --port 8000"
-  : "python -m uvicorn server.backend.main:app --host 127.0.0.1 --port 8000";
+  ? `python server/ingestion/seed_demo.py && python -m uvicorn server.backend.main:app --host 127.0.0.1 --port ${backendPort}`
+  : `python -m uvicorn server.backend.main:app --host 127.0.0.1 --port ${backendPort}`;
 
 export default defineConfig({
   testDir: "./tests",
@@ -50,6 +52,8 @@ export default defineConfig({
       cwd: repositoryRoot,
       env: {
         ...process.env,
+        ALLOWED_ORIGINS: frontendUrl,
+        MONEYSWEEP_CORS_ORIGINS: frontendUrl,
         PYTHONPATH: [
           path.join(repositoryRoot, "src"),
           repositoryRoot,
@@ -63,11 +67,12 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: "npm run dev -- --host 127.0.0.1 --port 5173 --strictPort",
+      command: `npm run dev -- --host 127.0.0.1 --port ${frontendPort} --strictPort`,
       cwd: frontendRoot,
       env: {
         ...process.env,
         VITE_API_BASE: backendUrl,
+        VITE_API_PROXY_TARGET: backendUrl,
         VITE_FEDERATION_API_BASE_URL: `${backendUrl}/api`,
         VITE_HUB_API_BASE_URL: `${backendUrl}/api`,
         VITE_SKYWATCHER_API_BASE_URL: `${backendUrl}/api`,

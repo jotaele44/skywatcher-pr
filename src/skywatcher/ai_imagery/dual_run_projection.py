@@ -474,7 +474,7 @@ def write_dual_run_evidence_staging(
         candidate_execution_receipt, candidate["execution_receipt"], "candidate receipt"
     )
     prefix = f"trials/{trial_id}"
-    paths = {
+    paths: dict[str, Any] = {
         "campaign_manifest.json": camp,
         "model_field_equivalence_policy.json": policy,
         f"{prefix}/legacy_shadow/execution_receipt.json": legacy_execution_receipt,

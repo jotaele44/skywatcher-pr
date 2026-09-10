@@ -9,7 +9,7 @@ const ACCENT = {
   info: "hsl(218 100% 60%)",
 };
 
-export default function MetricCard({ label, value, sub, icon: Icon, accent = "primary", className = "" }) {
+export default function MetricCard({ label, value, sub = null, icon: Icon = null, accent = "primary", className = "" }) {
   const color = ACCENT[accent] || ACCENT.primary;
   return (
     <div className={`relative overflow-hidden rounded-xl border border-border bg-card p-4 ${className}`}>

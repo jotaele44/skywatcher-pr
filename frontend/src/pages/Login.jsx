@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { federation } from "@/api/federationClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 
 export default function Login() {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,7 +21,15 @@ export default function Login() {
     setLoading(true);
     try {
       await federation.auth.loginViaEmailPassword(email, password);
-      window.location.href = "/";
+      let nextPath = '/';
+      try {
+        const destination = new URL(searchParams.get('redirect') || '/', window.location.origin);
+        const authPage = ['/login', '/register', '/forgot-password', '/reset-password'].includes(destination.pathname);
+        if (destination.origin === window.location.origin && !authPage && !destination.pathname.startsWith('//')) {
+          nextPath = destination.href;
+        }
+      } catch { /* An invalid redirect must not turn successful sign-in into failure. */ }
+      window.location.href = nextPath;
     } catch (err) {
       setError(err.message || "Invalid email or password");
     } finally {

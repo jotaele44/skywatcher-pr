@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 
 from skywatcher.core.lenses import default_registry
+from skywatcher.fusion.coastal_corridor_index import finite_number
 from skywatcher.fusion.historical_baselines import index_baselines
 
 # These were five unnamed literals inside function bodies - two scoring weights and three
@@ -62,8 +63,8 @@ def score_against_historical_baselines(
         domain = str(record.get("domain") or record.get("source_domain") or "context")
         baseline = baseline_index.get((corridor_id, domain), {})
         historical_count = float(baseline.get("historical_count", 0.0))
-        current_count = float(record.get("event_count", 1.0))
-        confidence = float(record.get("confidence", 0.0))
+        current_count = finite_number(record.get("event_count", 1.0), "event_count")
+        confidence = finite_number(record.get("confidence", 0.0), "confidence")
         ratio = 1.0 if historical_count <= 0 else current_count / historical_count
         ratio_component = min(1.0, max(0.0, abs(ratio - 1.0)))
         confidence_component = min(1.0, max(0.0, confidence))

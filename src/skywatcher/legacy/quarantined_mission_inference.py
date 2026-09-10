@@ -174,7 +174,7 @@ class FlightMissionAnalyzer:
             ch_score += 0.3
         scores["Private Charter"] = ch_score
 
-        best_mission = max(scores, key=scores.get)
+        best_mission = max(scores, key=lambda key: scores[key])
         best_score = scores[best_mission]
 
         if best_score < 0.3:

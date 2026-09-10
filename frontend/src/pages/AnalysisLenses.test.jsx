@@ -55,12 +55,12 @@ const REGISTRY = {
 };
 
 function mockFetch(payload, { ok = true } = {}) {
-  return vi.fn(() => Promise.resolve({ ok, json: () => Promise.resolve(payload) }));
+  return vi.fn(() => Promise.resolve(new Response(JSON.stringify(payload), { status: ok ? 200 : 503, headers: { "Content-Type": "application/json" } })));
 }
 
 describe("AnalysisLenses", () => {
   beforeEach(() => {
-    global.fetch = mockFetch(REGISTRY);
+    vi.spyOn(global, "fetch").mockImplementation(mockFetch(REGISTRY));
   });
 
   afterEach(() => {
@@ -79,7 +79,7 @@ describe("AnalysisLenses", () => {
   it("fetches the registry endpoint", async () => {
     render(<AnalysisLenses />);
     await waitFor(() => expect(global.fetch).toHaveBeenCalled());
-    expect(String(global.fetch.mock.calls[0][0])).toContain("/analysis/registry");
+    expect(String(vi.mocked(global.fetch).mock.calls[0][0])).toContain("/analysis/registry");
   });
 
   it("shows required and optional parameters distinctly", async () => {

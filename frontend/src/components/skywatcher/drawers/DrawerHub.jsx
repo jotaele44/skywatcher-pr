@@ -48,7 +48,7 @@ export function DrawerHubProvider({ children }) {
       {top?.kind === "capture" && <CaptureDetailDrawer id={top.id} onClose={onClose} go={go} />}
       {top?.kind === "route" && <RouteDetailDrawer id={top.id} onClose={onClose} go={go} />}
       {top?.kind === "asset" && <AssetDetailDrawer id={top.id} onClose={onClose} go={go} />}
-      {top?.kind === "export" && <ExportDetailDrawer id={top.id} onClose={onClose} go={go} />}
+      {top?.kind === "export" && <ExportDetailDrawer id={top.id} onClose={onClose} />}
       {top?.kind === "review" && <ReviewDetailDrawer id={top.id} onClose={onClose} go={go} />}
     </DrawerContext.Provider>
   );

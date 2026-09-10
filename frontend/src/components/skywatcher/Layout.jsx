@@ -1,47 +1,30 @@
-import React, { useState } from "react";
-import { Outlet } from "react-router-dom";
-import { Menu, X } from "lucide-react";
-import Sidebar from "./Sidebar";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import Sidebar, { NAV } from "./Sidebar";
 import TopStatusStrip from "./TopStatusStrip";
+import styles from "../../zip-design/AppShell.module.css";
+import { useSkywatcher } from "@/lib/SkywatcherData";
 
 export default function Layout() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
-      <TopStatusStrip />
-      <div className="flex flex-1 overflow-hidden">
-        {/* Desktop sidebar */}
-        <div className="hidden md:block">
-          <Sidebar />
-        </div>
-
-        {/* Mobile sidebar */}
-        {mobileOpen && (
-          <div className="fixed inset-0 z-40 md:hidden">
-            <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-            <div className="absolute left-0 top-0 h-full">
-              <Sidebar onNavigate={() => setMobileOpen(false)} />
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2 md:hidden">
-            <button
-              onClick={() => setMobileOpen((v) => !v)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-secondary text-foreground"
-            >
-              {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-            </button>
-            <span className="text-sm font-semibold">Skywatcher-PR</span>
-          </div>
-          <main className="flex-1 overflow-y-auto scrollbar-thin">
-            <div className="mx-auto max-w-[1400px] space-y-5 p-4 md:p-6">
-              <Outlet />
-            </div>
-          </main>
-        </div>
-      </div>
+  const { pathname } = useLocation();
+  const { loadErrors, loading, reload } = useSkywatcher();
+  const failedCollections = Object.keys(loadErrors);
+  const current = NAV.find(item => item.to === pathname);
+  return <div className={`zip-surface ${styles.app}`}>
+    <div className={styles.topStrip}><TopStatusStrip /></div>
+    <div className={styles.desktopRail}><Sidebar /></div>
+    <div className={styles.workspace}>
+      <header className={styles.desktopHeader}><div><span className={styles.eyebrow}>AIRSPACE INTELLIGENCE</span><h1>{current?.label || 'Skywatcher PR'}</h1></div></header>
+      <header className={styles.mobileHeader}><span aria-hidden="true">✈</span><div className={styles.mobileTitle}><span>Skywatcher PR</span><strong>{current?.label || 'Airspace intelligence'}</strong></div></header>
+      <details className="zip-mobile-menu"><summary>All workflows</summary><Sidebar /></details>
+      <main className={styles.main}>
+        {failedCollections.length > 0 && <section role="alert" className="mb-4 rounded-lg border border-destructive p-3">
+          <p className="font-semibold">Data is incomplete</p>
+          <p>Unavailable collections: {failedCollections.join(", ")}. Previous data may be stale; empty counts do not confirm zero records.</p>
+          <button type="button" onClick={reload} disabled={loading} className="mt-2 rounded border px-3 py-1">{loading ? "Retrying…" : "Retry data"}</button>
+        </section>}
+        <Outlet />
+      </main>
+      <nav className={styles.mobileTabs} aria-label="Mobile navigation">{NAV.filter(item => ['/', '/observations', '/fr24', '/review', '/export'].includes(item.to)).map(({to, label, icon: Icon}) => <NavLink key={to} to={to} end={to === '/'} className={({isActive}) => `${styles.mobileTab} ${isActive ? styles.mobileTabActive : ''}`}><Icon size={20} aria-hidden="true"/><span>{label}</span></NavLink>)}</nav>
     </div>
-  );
+  </div>;
 }
