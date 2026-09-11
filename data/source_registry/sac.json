@@ -1,0 +1,38 @@
+{
+  "source_id": "sac-pr",
+  "source_name_raw": "Sociedad de Astronomía del Caribe",
+  "canonical_origin": "https://www.sociedadastronomia.com/",
+  "source_class": "LOCAL_ASTRONOMICAL_OBSERVATION",
+  "authority": {
+    "local_observation": "HIGH_VALUE",
+    "event_prediction": "SECONDARY",
+    "object_identity": "NONCANONICAL",
+    "orbital_identity": "NONCANONICAL"
+  },
+  "retrieval": {
+    "snapshot_date": "2026-09-11",
+    "archive_denominator_state": "OPEN",
+    "discovery_methods": ["homepage", "web_index_discovery"],
+    "discovery_is_exhaustive": false,
+    "raw_bytes_frozen": false
+  },
+  "canonicalization": {
+    "preserve_raw_url": true,
+    "strip_tracking_parameters_from_canonical_url": ["fbclid", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"]
+  },
+  "allowed_assertion_types": [
+    "PREDICTED_EVENT",
+    "OBSERVED_EVENT",
+    "POST_EVENT_IDENTIFICATION",
+    "SCIENTIFIC_INTERPRETATION",
+    "GENERAL_ASTRONOMY",
+    "ORGANIZATIONAL_NEWS"
+  ],
+  "correlation_eligible_assertion_types": [
+    "PREDICTED_EVENT",
+    "OBSERVED_EVENT",
+    "POST_EVENT_IDENTIFICATION",
+    "SCIENTIFIC_INTERPRETATION"
+  ],
+  "certification_state": "PROVISIONAL"
+}
