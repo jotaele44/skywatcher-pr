@@ -1,0 +1,44 @@
+{
+  "manifest_id": "sac-lanzamiento-tag-2026-09-11",
+  "source_id": "sac-pr",
+  "scope_url": "https://www.sociedadastronomia.com/tags/lanzamiento",
+  "retrieval_date": "2026-09-11",
+  "scope_type": "SAC_CONTROLLED_TAG_PAGE",
+  "scope_state": "BOUNDED_CLOSED_FROM_RETRIEVED_TAG_MANIFESTATION",
+  "article_count": 4,
+  "raw_bytes_frozen": false,
+  "raw_sha256": null,
+  "articles": [
+    {
+      "published": "2025-02-16",
+      "title_raw": "Lanzamiento de cohete sería visible desde Puerto Rico el martes 18 de febrero",
+      "url": "https://www.sociedadastronomia.com/blog/2025/02/16/Lanzamiento_Falcon9_Febrero",
+      "classification": "PREDICTED_EVENT",
+      "sky_relevance": "CORRELATION_ELIGIBLE"
+    },
+    {
+      "published": "2024-11-17",
+      "title_raw": "¿Es posible ver el cohete Starship pasando al norte de Puerto Rico?",
+      "url": "https://www.sociedadastronomia.com/blog/2024/11/17/Posible_Avistamiento_Starship",
+      "classification": "PREDICTED_EVENT",
+      "sky_relevance": "CORRELATION_ELIGIBLE"
+    },
+    {
+      "published": "2023-11-18",
+      "title_raw": "Nave Starship se desintegra sobre el Caribe",
+      "url": "https://www.sociedadastronomia.com/blog/2023/11/18/SpaceX_Starship_20231118",
+      "classification": "OBSERVED_EVENT",
+      "sky_relevance": "CORRELATION_ELIGIBLE"
+    },
+    {
+      "published": "2022-12-05",
+      "title_raw": "Se verá desde Puerto Rico el lanzamiento de un cohete que despegará desde la Florida",
+      "url": null,
+      "classification": "PREDICTED_EVENT",
+      "sky_relevance": "CORRELATION_ELIGIBLE",
+      "notes": "Tag manifestation proves article membership/title/date, but exact SAC article URL was not independently recovered in the current execution surface. Preserve null rather than invent a slug."
+    }
+  ],
+  "closure_notes": "This closes only the retrieved SAC lanzamiento tag manifestation. It does not close the SAC-wide archive, deleted historical posts, other tags, or raw-byte provenance.",
+  "certification_state": "PROVISIONAL"
+}
