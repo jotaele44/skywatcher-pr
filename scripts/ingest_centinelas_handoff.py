@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Durably ingest one fail-closed Centinelas handoff envelope.
 
-The receiver verifies the producer's deterministic idempotency key, validates the
-bounded Skywatcher intake contract, and stores an immutable receipt. Exact replay
-is idempotent. Reuse of one idempotency key with different payload bytes is a
-collision/fork and fails closed with preserved collision evidence.
+The receiver validates the bounded Skywatcher intake contract and stores an
+immutable receipt. Exact replay is idempotent. Reuse of one idempotency key with
+different protected payload bytes is a collision/fork and fails closed with
+preserved collision evidence. New receipts also verify Centinelas' deterministic
+idempotency-key derivation before they are accepted.
 
 This adapter has no identity authority: a routed signal is an aviation lead only.
 """
@@ -93,6 +94,11 @@ def _validate_signal(signal: Any) -> dict[str, Any]:
 
 
 def validate_envelope(payload: Any, expected_target: str) -> dict[str, Any]:
+    """Validate envelope shape without consuming the idempotency key.
+
+    Key verification for a new receipt happens only after the existing-receipt
+    collision check so a fork attempt cannot disappear as a bare key-mismatch.
+    """
     if not isinstance(payload, dict):
         raise ValueError("handoff payload must be an object")
     for field in ("item_id", "target", "idempotency_key", "signal"):
@@ -110,9 +116,6 @@ def validate_envelope(payload: Any, expected_target: str) -> dict[str, Any]:
     signal = _validate_signal(payload["signal"])
     if signal["item_id"] != item_id:
         raise ValueError("outer item_id does not match signal.item_id")
-    expected_key = _expected_idempotency_key(item_id, target, signal)
-    if key != expected_key:
-        raise ValueError("idempotency_key does not match protected payload")
     return payload
 
 
@@ -156,6 +159,12 @@ def ingest(
             )
             raise ValueError("idempotency collision: protected payload differs")
         return {"duplicate": True, "receipt_path": str(out), "payload_sha256": incoming_sha}
+
+    expected_key = _expected_idempotency_key(
+        payload["item_id"], payload["target"], payload["signal"]
+    )
+    if key != expected_key:
+        raise ValueError("idempotency_key does not match protected payload")
 
     receipt = {
         "receipt_schema": RECEIPT_SCHEMA,
