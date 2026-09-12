@@ -435,6 +435,15 @@ export default function PuertoRicoMapShell({
         <span className="flex items-center gap-1.5"><span className="inline-block h-0 w-3 border-t-2 border-dashed" style={{ borderColor: "hsl(190 100% 60%)" }} /> Route segment</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm border" style={{ borderColor: "hsl(0 84% 60% / 0.6)", background: "hsl(0 84% 60% / 0.15)" }} /> Restricted zone</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm border" style={{ borderColor: "hsl(38 100% 56% / 0.6)", background: "hsl(38 100% 56% / 0.15)" }} /> Flight corridor</span>
+        {showMunicipios && (
+          <span className="flex items-center gap-1.5">
+            <span
+              className="h-2 w-10 rounded-sm border border-border"
+              style={{ background: "linear-gradient(to right, rgba(94,234,212,0.05), rgba(94,234,212,0.75))" }}
+            />
+            Obs. density (low→high)
+          </span>
+        )}
         <span className="ml-auto flex items-center gap-1 font-mono"><MapPin className="h-3 w-3" /> MapLibre / OSM</span>
       </div>
     </div>
