@@ -24,6 +24,7 @@ enum MobilePersistenceError: Error, Equatable {
     case invalidSHA256
     case arithmeticMismatch
     case duplicateStableID
+    case invalidStableID
     case invalidCount
     case database(String)
     case inactiveGeneration
@@ -35,13 +36,16 @@ enum MobilePersistenceError: Error, Equatable {
 /// backup state and deliberately does not duplicate producer flight, aircraft,
 /// RLSM, or federation-domain tables.
 final class MobilePersistenceStore {
-    private static let migration1 = """
+    private static let migrationLedgerDDL = """
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version INTEGER PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
       sha256 TEXT NOT NULL CHECK(length(sha256) = 64),
       applied_at TEXT NOT NULL
-    );
+    )
+    """
+
+    private static let migration1 = """
     CREATE TABLE IF NOT EXISTS workspace_state (
       key TEXT PRIMARY KEY,
       value_json BLOB NOT NULL,
@@ -59,13 +63,13 @@ final class MobilePersistenceStore {
       created_at TEXT NOT NULL,
       activated_at TEXT,
       CHECK(raw_count = retained_count + excluded_count + unresolved_count),
-      CHECK(stable_id_count <= retained_count)
+      CHECK(stable_id_count = retained_count)
     );
     CREATE UNIQUE INDEX IF NOT EXISTS one_active_import
       ON import_manifest(state) WHERE state = 'ACTIVE';
     CREATE TABLE IF NOT EXISTS import_record_ref (
       generation_id TEXT NOT NULL,
-      stable_id TEXT NOT NULL,
+      stable_id TEXT NOT NULL CHECK(length(trim(stable_id)) > 0),
       canonical_ref TEXT,
       PRIMARY KEY(generation_id, stable_id),
       FOREIGN KEY(generation_id) REFERENCES import_manifest(generation_id) ON DELETE CASCADE
@@ -183,10 +187,13 @@ final class MobilePersistenceStore {
         guard rawCount == retainedCount + excludedCount + unresolvedCount else {
             throw MobilePersistenceError.arithmeticMismatch
         }
+        guard stableIDs.count == retainedCount else { throw MobilePersistenceError.invalidCount }
+        guard stableIDs.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+            throw MobilePersistenceError.invalidStableID
+        }
         guard Set(stableIDs).count == stableIDs.count else {
             throw MobilePersistenceError.duplicateStableID
         }
-        guard stableIDs.count <= retainedCount else { throw MobilePersistenceError.invalidCount }
 
         try transaction {
             let statement = try prepare("""
@@ -278,7 +285,7 @@ final class MobilePersistenceStore {
     func createBackup(at backupURL: URL) throws -> MobileBackupReceipt {
         guard let db else { throw MobilePersistenceError.database("database closed") }
         try execute("PRAGMA wal_checkpoint(FULL)")
-        try? FileManager.default.removeItem(at: backupURL)
+        Self.removeDatabaseFiles(at: backupURL)
         try FileManager.default.createDirectory(
             at: backupURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
@@ -327,12 +334,12 @@ final class MobilePersistenceStore {
 
         let fm = FileManager.default
         let rollbackURL = databaseURL.appendingPathExtension("pre-restore")
-        try? fm.removeItem(at: rollbackURL)
+        removeDatabaseFiles(at: rollbackURL)
         let hadCurrent = fm.fileExists(atPath: databaseURL.path)
         if hadCurrent { try fm.copyItem(at: databaseURL, to: rollbackURL) }
 
         do {
-            try? fm.removeItem(at: databaseURL)
+            removeDatabaseFiles(at: databaseURL)
             try fm.copyItem(at: backupURL, to: databaseURL)
             var checkDB: OpaquePointer?
             let rc = sqlite3_open_v2(databaseURL.path, &checkDB, SQLITE_OPEN_READONLY, nil)
@@ -345,9 +352,9 @@ final class MobilePersistenceStore {
             guard sqlite3_step(statement) == SQLITE_ROW,
                   let text = sqlite3_column_text(statement, 0),
                   String(cString: text) == "ok" else { throw MobilePersistenceError.integrityFailure }
-            try? fm.removeItem(at: rollbackURL)
+            removeDatabaseFiles(at: rollbackURL)
         } catch {
-            try? fm.removeItem(at: databaseURL)
+            removeDatabaseFiles(at: databaseURL)
             if hadCurrent { try? fm.moveItem(at: rollbackURL, to: databaseURL) }
             throw error
         }
@@ -375,7 +382,7 @@ final class MobilePersistenceStore {
     }
 
     private func migrate() throws {
-        try execute("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, sha256 TEXT NOT NULL, applied_at TEXT NOT NULL)")
+        try execute(Self.migrationLedgerDDL)
         let current = try schemaVersion()
         for migration in Self.migrations where migration.version > current {
             let hash = Self.sha256(Data(migration.sql.utf8))
@@ -454,7 +461,10 @@ final class MobilePersistenceStore {
     private static let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
     private static func isSHA256(_ value: String) -> Bool {
-        value.count == 64 && value.allSatisfy { $0.isHexDigit }
+        guard value.utf8.count == 64 else { return false }
+        return value.utf8.allSatisfy { byte in
+            (48...57).contains(byte) || (65...70).contains(byte) || (97...102).contains(byte)
+        }
     }
 
     private static func sha256(_ data: Data) -> String {
@@ -468,5 +478,12 @@ final class MobilePersistenceStore {
     private static func fileSize(_ url: URL) throws -> Int64 {
         let attrs = try FileManager.default.attributesOfItem(atPath: url.path)
         return (attrs[.size] as? NSNumber)?.int64Value ?? 0
+    }
+
+    private static func removeDatabaseFiles(at url: URL) {
+        let fm = FileManager.default
+        try? fm.removeItem(at: url)
+        try? fm.removeItem(atPath: url.path + "-wal")
+        try? fm.removeItem(atPath: url.path + "-shm")
     }
 }
