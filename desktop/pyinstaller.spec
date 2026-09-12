@@ -8,6 +8,8 @@ import os
 import sys
 from pathlib import Path
 
+from PyInstaller.utils.hooks import collect_submodules
+
 REPO_ROOT = Path(SPECPATH).resolve().parent
 APP_NAME = "PRII-SKYWATCHER"
 
@@ -26,6 +28,14 @@ CONSOLE = os.environ.get("PRII_CONSOLE") == "1"
 datas = [
     (str(REPO_ROOT / "frontend" / "dist"), "frontend/dist"),
     (str(REPO_ROOT / "data" / "reference"), "data/reference"),
+    (str(REPO_ROOT / "data" / "geo"), "data/geo"),
+    (str(REPO_ROOT / "data" / "rlsm"), "data/rlsm"),
+    (str(REPO_ROOT / "configs"), "configs"),
+    (str(REPO_ROOT / "profiles"), "profiles"),
+    (
+        str(REPO_ROOT / "docs" / "architecture" / "SKYWATCHER_THRESHOLD_REGISTRY_SEED_v2_0.csv"),
+        "docs/architecture",
+    ),
     (str(BRANDING / "icon-256.png"), "assets/branding"),
 ]
 for extra in ("exports", "reports"):
@@ -35,7 +45,7 @@ for extra in ("exports", "reports"):
 
 a = Analysis(
     [str(REPO_ROOT / "desktop" / "launch.py")],
-    pathex=[str(REPO_ROOT)],
+    pathex=[str(REPO_ROOT), str(REPO_ROOT / "src")],
     datas=datas,
     hiddenimports=[
         "uvicorn.logging",
@@ -52,7 +62,7 @@ a = Analysis(
         "prii_desktop.appserver",
         "prii_desktop.config",
         "prii_desktop.setup_center",
-    ],
+    ] + collect_submodules("skywatcher"),
     noarchive=False,
 )
 pyz = PYZ(a.pure)

@@ -709,7 +709,19 @@ def sort_rows(rows: list[dict[str, Any]], sort: str) -> list[dict[str, Any]]:
 @app.get("/health")
 def health() -> dict[str, Any]:
     counts = {name: len(entity_rows(name)) for name in LOADERS}
-    return {"status": "ok", "mode": "read_only_diagnostic", "counts": counts}
+    components = {
+        "analysis_registry": _lens_registries() is not None,
+        "gis_intelligence": all(
+            component is not None
+            for component in (CorridorAnalyzer, HeatmapGenerator, PuertoRicoInfrastructure)
+        ),
+    }
+    return {
+        "status": "ok" if all(components.values()) else "degraded",
+        "mode": "read_only_diagnostic",
+        "components": components,
+        "counts": counts,
+    }
 
 
 @app.get("/api/health")

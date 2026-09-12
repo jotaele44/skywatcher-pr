@@ -15,6 +15,7 @@ proven in this repo. The differences are deliberate:
 from __future__ import annotations
 
 import json
+import sys
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
@@ -23,7 +24,7 @@ from skywatcher.core.lenses.models import LensSpec, ObjectiveProfile
 from skywatcher.core.normalize_locations import load_simple_yaml
 
 # Repo-root-relative defaults, resolved from this file so callers need not guess.
-_REPO_ROOT = Path(__file__).resolve().parents[4]
+_REPO_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[4]))
 DEFAULT_LENS_DIR = _REPO_ROOT / "configs" / "analysis" / "lenses"
 DEFAULT_OBJECTIVE_DIR = _REPO_ROOT / "configs" / "analysis" / "objectives"
 

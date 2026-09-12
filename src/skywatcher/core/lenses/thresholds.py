@@ -16,12 +16,13 @@ be executed without also being governed.
 from __future__ import annotations
 
 import csv
+import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-_REPO_ROOT = Path(__file__).resolve().parents[4]
+_REPO_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[4]))
 DEFAULT_THRESHOLD_CSV = (
     _REPO_ROOT / "docs" / "architecture" / "SKYWATCHER_THRESHOLD_REGISTRY_SEED_v2_0.csv"
 )
