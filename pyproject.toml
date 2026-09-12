@@ -17,7 +17,7 @@ name = "skywatcher-pr"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
-    "Pillow>=10.0",
+    "Pillow>=12.3.0",
     "PyMuPDF>=1.28.2",
     "pytest>=8.0",
     "pillow-heif>=1.5.0; platform_system != 'Windows'",
