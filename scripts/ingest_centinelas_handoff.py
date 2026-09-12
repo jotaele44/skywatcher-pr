@@ -52,10 +52,10 @@ def _valid_datetime(value: Any) -> bool:
     if not isinstance(value, str) or not value:
         return False
     try:
-        datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return False
-    return True
+    return parsed.utcoffset() is not None
 
 
 def _validate_signal(signal: Any) -> dict[str, Any]:
@@ -79,7 +79,7 @@ def _validate_signal(signal: Any) -> dict[str, Any]:
         raise ValueError("signal.labels must be an array of strings")
     for field in ("captured_at", "published_at", "routed_at"):
         if field in signal and signal[field] is not None and not _valid_datetime(signal[field]):
-            raise ValueError(f"signal.{field} must be an ISO date-time")
+            raise ValueError(f"signal.{field} must be an ISO date-time with timezone")
     tier = signal.get("evidence_tier")
     if tier is not None and tier not in {"T1", "T2", "T3", "T4"}:
         raise ValueError("signal.evidence_tier must be T1|T2|T3|T4")
