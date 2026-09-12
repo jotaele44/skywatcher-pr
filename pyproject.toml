@@ -42,7 +42,7 @@ adsb = [
     "python-dotenv>=1.0",
 ]
 dev = [
-    "pytest-cov>=5",
+    "pytest-cov>=7.1.0",
 ]
 # FR24 screenshot-processing (skywatcher-pr owns FR24, transferred from
 # spiderweb-pr as part of the repository-boundary correction). Optional: the
