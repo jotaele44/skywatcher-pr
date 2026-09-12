@@ -5,7 +5,6 @@ as GeoJSON for ingestion into the ILAP/Spiderweb airspace intelligence system.
 """
 
 import json
-import os
 import sqlite3
 from collections import defaultdict
 from datetime import datetime
@@ -13,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from skywatcher.core.lenses import default_registry as _default_threshold_registry
+from skywatcher.spatial_context import SpatialContext, consume_result_set
 
 _thresholds = _default_threshold_registry()
 
@@ -80,39 +80,50 @@ CONFIDENCE_WEIGHTS = {
 GRID_DEG = _thresholds.value_of("ILAP-GRID-0.05DEG")  # ~5 km grid cell size
 
 
-def _hydro_utility_score(center_lat: float, center_lon: float) -> float:
-    """Return hydro-utility score for a POI centroid using GEBCO depth data.
+def _hydro_utility_score(context: SpatialContext | None) -> float:
+    """Return a bounded score from a verified Spiderweb result.
 
-    Attempts to use GEBCO bathymetry at the track centroid.  Falls back to the
-    historical baseline (0.2) when the GEBCO module is unavailable or has no
-    data covering the requested point.
+    Skywatcher no longer opens or samples a GEBCO raster.  Missing, unresolved,
+    non-ocean and null results preserve the historical 0.2 baseline.  The
+    result's measurement class remains available on the exported evidence and
+    is never promoted to an aircraft observation.
     """
-    try:
-        from gebco.io import GebcoIO
-        gio = GebcoIO(path=os.environ.get("GEBCO_PATH"))
-        if not gio.validate_bounds(center_lat - 0.01, center_lat + 0.01,
-                                   center_lon - 0.01, center_lon + 0.01):
-            return 0.2
-        depth_m = gio.depth_at(center_lat, center_lon)
-        if depth_m is None:
-            return 0.2
-        # Shallow coastal water (< 200 m) → higher utility; deep ocean → lower
-        if abs(depth_m) < 50:
-            return 0.9
-        if abs(depth_m) < 200:
-            return 0.6
-        if abs(depth_m) < 1000:
-            return 0.4
+    if context is None or context.target_domain != "OCEAN_DEPTH":
         return 0.2
-    except Exception:
+    if context.spatial_state in {"NULL_EMPTY", "UNRESOLVED"}:
         return 0.2
+    depth_m = context.artifact.get("surface_depth_mean_m")
+    if depth_m is None:
+        return 0.2
+    depth = abs(float(depth_m))
+    if depth < 50:
+        return 0.9
+    if depth < 200:
+        return 0.6
+    if depth < 1000:
+        return 0.4
+    return 0.2
+
+
+def _load_spatial_contexts(path: str | None) -> dict[str, SpatialContext]:
+    """Load a frozen JSON array or NDJSON artifact set, failing closed."""
+    if not path:
+        return {}
+    source = Path(path)
+    text = source.read_text(encoding="utf-8")
+    raw = json.loads(text) if text.lstrip().startswith("[") else [
+        json.loads(line) for line in text.splitlines() if line.strip()
+    ]
+    contexts = consume_result_set(raw)
+    return {item.subject_id: item for item in contexts}
 
 
 class ILAPAirspaceBridge:
-    def __init__(self, db_path: str, output_dir: str):
+    def __init__(self, db_path: str, output_dir: str, *, spatial_results_path: str | None = None):
         self.db_path = db_path
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.spatial_contexts = _load_spatial_contexts(spatial_results_path)
 
     def export_all(self) -> dict[str, Any]:
         conn = sqlite3.connect(self.db_path)
@@ -155,7 +166,7 @@ class ILAPAirspaceBridge:
             cells[cell].append(tp)
 
         features = []
-        for _cell, points in cells.items():
+        for cell, points in cells.items():
             if len(points) < 3:
                 continue
             flight_ids = {tp.get("flight_id") for tp in points if tp.get("flight_id")}
@@ -170,7 +181,9 @@ class ILAPAirspaceBridge:
             recurrence = min(1.0, len(flight_ids) / 10.0)
             loiter = self._loiter_score(points)
             infra_align = _infra_align_score(center_lat, center_lon)
-            hydro_utility = _hydro_utility_score(center_lat, center_lon)
+            spatial_subject_id = f"ilap-poi-cell:{cell[0]}:{cell[1]}"
+            spatial_context = self.spatial_contexts.get(spatial_subject_id)
+            hydro_utility = _hydro_utility_score(spatial_context)
             mbil_proximity = 0.1
 
             overall = (
@@ -202,6 +215,10 @@ class ILAPAirspaceBridge:
                     "overall_confidence": round(overall, 4),
                     "review_priority": priority,
                     "identity_note": IDENTITY_NOTE,
+                    "spatial_subject_id": spatial_subject_id,
+                    "spatial_analysis_id": spatial_context.analysis_id if spatial_context else None,
+                    "spatial_result_hash": spatial_context.result_hash if spatial_context else None,
+                    "spatial_measurement_classes": list(spatial_context.measurement_classes) if spatial_context else [],
                 },
             })
 
