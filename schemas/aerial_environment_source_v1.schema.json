@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skywatcher-pr/schemas/aerial_environment_source_v1.schema.json",
+  "title": "Skywatcher Aerial Environment Source v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_id",
+    "family",
+    "provider",
+    "authority_role",
+    "admission_status",
+    "access_mode",
+    "semantic_states_allowed",
+    "redistribution_status"
+  ],
+  "properties": {
+    "source_id": {"type": "string", "minLength": 1},
+    "family": {
+      "enum": [
+        "aviation_weather",
+        "geomagnetism",
+        "air_quality",
+        "weather_radar",
+        "satellite",
+        "lightning",
+        "atmospheric_profile",
+        "space_weather"
+      ]
+    },
+    "provider": {"type": "string", "minLength": 1},
+    "authority_role": {
+      "enum": ["source_authority", "derived_non_authoritative"]
+    },
+    "admission_status": {
+      "enum": [
+        "candidate_public_official",
+        "admitted",
+        "blocked_terms",
+        "blocked_access",
+        "disabled_by_policy"
+      ]
+    },
+    "access_mode": {
+      "enum": ["official_api", "official_archive", "official_download", "local_fixture"]
+    },
+    "semantic_states_allowed": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["measured", "forecast", "modeled", "interpolated", "derived"]
+      }
+    },
+    "redistribution_status": {
+      "enum": ["allowed", "restricted", "unknown"]
+    },
+    "terms_ref": {"type": ["string", "null"]},
+    "product_identity": {"type": ["string", "null"]},
+    "native_timezone": {"type": ["string", "null"]},
+    "expected_cadence": {"type": ["string", "null"]},
+    "notes": {"type": ["string", "null"]}
+  }
+}
