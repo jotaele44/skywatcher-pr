@@ -76,7 +76,7 @@ jobs:
 
       - name: Upload receipt evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: openmct-v4-1-0-dependency-receipt
           if-no-files-found: warn
