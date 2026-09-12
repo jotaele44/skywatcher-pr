@@ -1,0 +1,22 @@
+{
+  "schema": "floot-archive-provenance/1.0",
+  "app": "Skywatcher PR",
+  "source_archive": "Skywatcher PR.zip",
+  "retrieved_context_date": "2026-09-12",
+  "sha256": "9d272dc9decfd79a6198bfed9ef72fa5834914848e6d3033b0668e57c155e1a8",
+  "byte_size": 726438,
+  "zip_member_count": 261,
+  "archive_role": "HISTORICAL_DONOR_SNAPSHOT",
+  "canonicality": "NONCANONICAL",
+  "current_main_at_reconciliation_start": "867e85ae4bb6ba43b81b9ee3ee7c240fd5aa5a8f",
+  "rules": {
+    "overwrite_current_main": false,
+    "schema_is_canonical_by_age": false,
+    "infer_database_contents_from_schema": false,
+    "preserve_raw_before_normalization": true
+  },
+  "notes": [
+    "The current fed repository already contains a native iOS implementation and SQLite-backed analytical subsystems; the Floot export is therefore treated as a donor snapshot rather than the architectural baseline.",
+    "This manifest freezes archive identity. Full raw ZIP bytes are not represented by this JSON and remain separately hash-bound."
+  ]
+}
