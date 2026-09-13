@@ -30,6 +30,8 @@ enum MobilePersistenceError: Error, Equatable {
     case inactiveGeneration
     case integrityFailure
     case backupHashMismatch
+    case invalidText
+    case invalidPath
 }
 
 /// Device-local persistence only. This store owns workspace/import/annotation/
@@ -115,6 +117,7 @@ final class MobilePersistenceStore {
     ]
 
     private let databaseURL: URL
+    private let operationLock = NSRecursiveLock()
     private var db: OpaquePointer?
     private let iso8601 = ISO8601DateFormatter()
 
@@ -125,8 +128,14 @@ final class MobilePersistenceStore {
             withIntermediateDirectories: true
         )
         try open()
-        try configure()
-        try migrate()
+        do {
+            try migrate()
+            try configure()
+        } catch {
+            if let db { sqlite3_close(db) }
+            db = nil
+            throw error
+        }
     }
 
     deinit {
@@ -134,6 +143,8 @@ final class MobilePersistenceStore {
     }
 
     func close() throws {
+        operationLock.lock()
+        defer { operationLock.unlock() }
         guard let db else { return }
         let rc = sqlite3_close(db)
         guard rc == SQLITE_OK else { throw sqlError("close", code: rc) }
@@ -141,24 +152,39 @@ final class MobilePersistenceStore {
     }
 
     func schemaVersion() throws -> Int {
-        try scalarInt("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")
+        operationLock.lock()
+        defer { operationLock.unlock() }
+        return try scalarInt("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")
     }
 
     func setWorkspaceValue(key: String, value: Data) throws {
+        operationLock.lock()
+        defer { operationLock.unlock() }
         let statement = try prepare("""
         INSERT INTO workspace_state(key, value_json, updated_at) VALUES(?, ?, ?)
         ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at
         """)
         defer { sqlite3_finalize(statement) }
         try bindText(statement, index: 1, value: key)
-        value.withUnsafeBytes { raw in
-            _ = sqlite3_bind_blob(statement, 2, raw.baseAddress, Int32(raw.count), Self.transient)
+        guard let byteCount = Int32(exactly: value.count) else {
+            throw MobilePersistenceError.invalidCount
         }
+        let bindRC: Int32
+        if value.isEmpty {
+            bindRC = sqlite3_bind_zeroblob(statement, 2, 0)
+        } else {
+            bindRC = value.withUnsafeBytes { raw in
+                sqlite3_bind_blob(statement, 2, raw.baseAddress, byteCount, Self.transient)
+            }
+        }
+        guard bindRC == SQLITE_OK else { throw sqlError("bind workspace blob", code: bindRC) }
         try bindText(statement, index: 3, value: now())
         try stepDone(statement)
     }
 
     func workspaceValue(key: String) throws -> Data? {
+        operationLock.lock()
+        defer { operationLock.unlock() }
         let statement = try prepare("SELECT value_json FROM workspace_state WHERE key = ?")
         defer { sqlite3_finalize(statement) }
         try bindText(statement, index: 1, value: key)
@@ -180,12 +206,19 @@ final class MobilePersistenceStore {
         unresolvedCount: Int,
         stableIDs: [String]
     ) throws -> MobileImportManifest {
+        operationLock.lock()
+        defer { operationLock.unlock() }
         guard Self.isSHA256(sourceSHA256) else { throw MobilePersistenceError.invalidSHA256 }
         guard rawCount >= 0, retainedCount >= 0, excludedCount >= 0, unresolvedCount >= 0 else {
             throw MobilePersistenceError.invalidCount
         }
-        guard rawCount == retainedCount + excludedCount + unresolvedCount else {
+        let (accounted, overflow1) = retainedCount.addingReportingOverflow(excludedCount)
+        let (total, overflow2) = accounted.addingReportingOverflow(unresolvedCount)
+        guard !overflow1, !overflow2, rawCount == total else {
             throw MobilePersistenceError.arithmeticMismatch
+        }
+        guard !generationID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw MobilePersistenceError.invalidStableID
         }
         guard stableIDs.count == retainedCount else { throw MobilePersistenceError.invalidCount }
         guard stableIDs.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
@@ -235,6 +268,8 @@ final class MobilePersistenceStore {
     }
 
     func activateGeneration(_ generationID: String) throws {
+        operationLock.lock()
+        defer { operationLock.unlock() }
         try transaction {
             let expected = try scalarInt(
                 "SELECT stable_id_count FROM import_manifest WHERE generation_id = ? AND state = 'STAGED'",
@@ -260,6 +295,8 @@ final class MobilePersistenceStore {
     }
 
     func activeGenerationID() throws -> String? {
+        operationLock.lock()
+        defer { operationLock.unlock() }
         let statement = try prepare("SELECT generation_id FROM import_manifest WHERE state = 'ACTIVE'")
         defer { sqlite3_finalize(statement) }
         let rc = sqlite3_step(statement)
@@ -271,6 +308,8 @@ final class MobilePersistenceStore {
     }
 
     func importState(generationID: String) throws -> String? {
+        operationLock.lock()
+        defer { operationLock.unlock() }
         let statement = try prepare("SELECT state FROM import_manifest WHERE generation_id = ?")
         defer { sqlite3_finalize(statement) }
         try bindText(statement, index: 1, value: generationID)
@@ -282,38 +321,40 @@ final class MobilePersistenceStore {
         return String(cString: text)
     }
 
+    /// Publishes a new, standalone backup without replacing any prior backup.
     func createBackup(at backupURL: URL) throws -> MobileBackupReceipt {
+        operationLock.lock()
+        defer { operationLock.unlock() }
         guard let db else { throw MobilePersistenceError.database("database closed") }
-        try execute("PRAGMA wal_checkpoint(FULL)")
-        Self.removeDatabaseFiles(at: backupURL)
-        try FileManager.default.createDirectory(
-            at: backupURL.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-
-        var destination: OpaquePointer?
-        let openRC = sqlite3_open_v2(backupURL.path, &destination, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil)
-        guard openRC == SQLITE_OK, let destination else {
-            if let destination { sqlite3_close(destination) }
-            throw MobilePersistenceError.database("backup destination open failed: \(openRC)")
+        let fm = FileManager.default
+        guard !fm.fileExists(atPath: backupURL.path) else { throw MobilePersistenceError.invalidPath }
+        try fm.createDirectory(at: backupURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let staging = backupURL.deletingLastPathComponent()
+            .appendingPathComponent(".backup-" + UUID().uuidString, isDirectory: true)
+        try fm.createDirectory(at: staging, withIntermediateDirectories: false,
+                               attributes: [.posixPermissions: 0o700])
+        defer { try? fm.removeItem(at: staging) } // Only our private staging directory.
+        let candidate = staging.appendingPathComponent("backup.sqlite")
+        let destination = try Self.openDatabase(candidate, flags: SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE)
+        do {
+            try Self.copyDatabase(from: db, to: destination)
+            guard sqlite3_exec(destination, "PRAGMA journal_mode=DELETE", nil, nil, nil) == SQLITE_OK else {
+                throw MobilePersistenceError.integrityFailure
+            }
+            try Self.validateDatabase(destination)
+        } catch {
+            sqlite3_close(destination)
+            throw error
         }
-        defer { sqlite3_close(destination) }
-
-        guard let backup = sqlite3_backup_init(destination, "main", db, "main") else {
-            throw MobilePersistenceError.database("backup init failed")
-        }
-        let stepRC = sqlite3_backup_step(backup, -1)
-        let finishRC = sqlite3_backup_finish(backup)
-        guard stepRC == SQLITE_DONE, finishRC == SQLITE_OK else {
-            throw MobilePersistenceError.database("backup failed: step=\(stepRC) finish=\(finishRC)")
-        }
-
+        guard sqlite3_close(destination) == SQLITE_OK else { throw MobilePersistenceError.integrityFailure }
         let receipt = MobileBackupReceipt(
             backupID: UUID().uuidString.lowercased(),
-            databaseSHA256: try Self.fileSHA256(backupURL),
-            byteCount: try Self.fileSize(backupURL),
+            databaseSHA256: try Self.fileSHA256(candidate),
+            byteCount: try Self.fileSize(candidate),
             createdAt: now()
         )
+        // moveItem refuses an existing destination, including a concurrent creation.
+        try fm.moveItem(at: candidate, to: backupURL)
         let statement = try prepare(
             "INSERT INTO backup_receipt(backup_id, database_sha256, byte_count, created_at) VALUES(?, ?, ?, ?)"
         )
@@ -326,37 +367,162 @@ final class MobilePersistenceStore {
         return receipt
     }
 
+    /// Restore only device-local schema. Never unlink the live database or its WAL.
+    /// App lifecycle coordination and native crash/power-loss testing remain required.
     static func restoreBackup(from backupURL: URL, expectedSHA256: String, to databaseURL: URL) throws {
         guard isSHA256(expectedSHA256) else { throw MobilePersistenceError.invalidSHA256 }
-        guard try fileSHA256(backupURL) == expectedSHA256.lowercased() else {
+        let fm = FileManager.default
+        guard !sameFile(backupURL, databaseURL) else { throw MobilePersistenceError.invalidPath }
+        let sourceURL = backupURL.resolvingSymlinksInPath()
+        // Incoming backups must be standalone, not a live WAL-mode file set.
+        for suffix in ["-wal", "-shm", "-journal"] {
+            guard !fm.fileExists(atPath: sourceURL.path + suffix) else {
+                throw MobilePersistenceError.invalidPath
+            }
+        }
+        let staging = fm.temporaryDirectory.appendingPathComponent("restore-" + UUID().uuidString,
+                                                                   isDirectory: true)
+        try fm.createDirectory(at: staging, withIntermediateDirectories: false,
+                               attributes: [.posixPermissions: 0o700])
+        defer { try? fm.removeItem(at: staging) }
+        let candidate = staging.appendingPathComponent("backup.sqlite")
+        try fm.copyItem(at: sourceURL, to: candidate)
+        // Hash the private copy that will actually be opened, not a mutable source path.
+        guard try fileSHA256(candidate) == expectedSHA256.lowercased() else {
             throw MobilePersistenceError.backupHashMismatch
         }
+        let source = try openDatabase(candidate, flags: SQLITE_OPEN_READONLY)
+        do { try validateDatabase(source) } catch { sqlite3_close(source); throw error }
+        if !fm.fileExists(atPath: databaseURL.path) {
+            guard sqlite3_close(source) == SQLITE_OK else { throw MobilePersistenceError.integrityFailure }
+            for suffix in ["-wal", "-shm", "-journal"] {
+                guard !fm.fileExists(atPath: databaseURL.path + suffix) else {
+                    throw MobilePersistenceError.invalidPath
+                }
+            }
+            try fm.createDirectory(at: databaseURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try fm.moveItem(at: candidate, to: databaseURL)
+            return
+        }
+        defer { sqlite3_close(source) }
+        let destination = try openDatabase(databaseURL, flags: SQLITE_OPEN_READWRITE)
+        defer { sqlite3_close(destination) }
+        // Prevent a device-local restore from overwriting a producer or unknown database.
+        try validateDatabase(destination)
+        try copyDatabase(from: source, to: destination)
+    }
 
+    private static func sameFile(_ a: URL, _ b: URL) -> Bool {
+        if a.resolvingSymlinksInPath().standardizedFileURL == b.resolvingSymlinksInPath().standardizedFileURL {
+            return true
+        }
         let fm = FileManager.default
-        let rollbackURL = databaseURL.appendingPathExtension("pre-restore")
-        removeDatabaseFiles(at: rollbackURL)
-        let hadCurrent = fm.fileExists(atPath: databaseURL.path)
-        if hadCurrent { try fm.copyItem(at: databaseURL, to: rollbackURL) }
+        guard let x = try? fm.attributesOfItem(atPath: a.path),
+              let y = try? fm.attributesOfItem(atPath: b.path),
+              let xi = x[.systemFileNumber] as? NSNumber,
+              let yi = y[.systemFileNumber] as? NSNumber,
+              let xd = x[.systemNumber] as? NSNumber,
+              let yd = y[.systemNumber] as? NSNumber else { return false }
+        return xi == yi && xd == yd
+    }
 
-        do {
-            removeDatabaseFiles(at: databaseURL)
-            try fm.copyItem(at: backupURL, to: databaseURL)
-            var checkDB: OpaquePointer?
-            let rc = sqlite3_open_v2(databaseURL.path, &checkDB, SQLITE_OPEN_READONLY, nil)
-            guard rc == SQLITE_OK, let checkDB else { throw MobilePersistenceError.integrityFailure }
-            defer { sqlite3_close(checkDB) }
-            var statement: OpaquePointer?
-            guard sqlite3_prepare_v2(checkDB, "PRAGMA integrity_check", -1, &statement, nil) == SQLITE_OK,
-                  let statement else { throw MobilePersistenceError.integrityFailure }
-            defer { sqlite3_finalize(statement) }
-            guard sqlite3_step(statement) == SQLITE_ROW,
-                  let text = sqlite3_column_text(statement, 0),
-                  String(cString: text) == "ok" else { throw MobilePersistenceError.integrityFailure }
-            removeDatabaseFiles(at: rollbackURL)
-        } catch {
-            removeDatabaseFiles(at: databaseURL)
-            if hadCurrent { try? fm.moveItem(at: rollbackURL, to: databaseURL) }
-            throw error
+    private static func openDatabase(_ url: URL, flags: Int32) throws -> OpaquePointer {
+        var handle: OpaquePointer?
+        let rc = sqlite3_open_v2(url.path, &handle, flags | SQLITE_OPEN_FULLMUTEX, nil)
+        guard rc == SQLITE_OK, let handle else {
+            if let handle { sqlite3_close(handle) }
+            throw MobilePersistenceError.database("database open failed: \(rc)")
+        }
+        sqlite3_busy_timeout(handle, 1000)
+        return handle
+    }
+
+    private static func copyDatabase(from source: OpaquePointer, to destination: OpaquePointer) throws {
+        guard let backup = sqlite3_backup_init(destination, "main", source, "main") else {
+            throw MobilePersistenceError.database("backup init failed")
+        }
+        let step = sqlite3_backup_step(backup, -1)
+        let finish = sqlite3_backup_finish(backup)
+        // finish rolls back an unfinished destination backup transaction.
+        guard step == SQLITE_DONE, finish == SQLITE_OK else {
+            throw MobilePersistenceError.database("backup failed: step=\(step) finish=\(finish)")
+        }
+    }
+
+    private static func rows(_ db: OpaquePointer, _ sql: String) throws -> [[String?]] {
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK, let statement else {
+            throw MobilePersistenceError.integrityFailure
+        }
+        defer { sqlite3_finalize(statement) }
+        var result: [[String?]] = []
+        while true {
+            let rc = sqlite3_step(statement)
+            if rc == SQLITE_DONE { return result }
+            guard rc == SQLITE_ROW else { throw MobilePersistenceError.integrityFailure }
+            var row: [String?] = []
+            for column in 0..<sqlite3_column_count(statement) {
+                if sqlite3_column_type(statement, column) == SQLITE_NULL {
+                    row.append(nil)
+                } else {
+                    guard let ptr = sqlite3_column_text(statement, column),
+                          let text = String(bytes: UnsafeBufferPointer(start: ptr,
+                              count: Int(sqlite3_column_bytes(statement, column))), encoding: .utf8) else {
+                        throw MobilePersistenceError.integrityFailure
+                    }
+                    row.append(text)
+                }
+            }
+            result.append(row)
+        }
+    }
+
+    private static func verifyLedger(_ db: OpaquePointer, allowPending: Bool) throws -> Int {
+        let actual = try rows(db, "SELECT version,name,sha256 FROM schema_migrations ORDER BY version")
+        guard actual.count <= migrations.count,
+              allowPending || actual.count == migrations.count else {
+            throw MobilePersistenceError.integrityFailure
+        }
+        for (index, row) in actual.enumerated() {
+            let migration = migrations[index]
+            let expected: [String?] = [String(migration.version), migration.name, sha256(Data(migration.sql.utf8))]
+            guard row == expected else { throw MobilePersistenceError.integrityFailure }
+        }
+        return actual.count
+    }
+
+    private static func validateDatabase(_ db: OpaquePointer) throws {
+        _ = try verifyLedger(db, allowPending: false)
+        guard try rows(db, "PRAGMA integrity_check") == [["ok"]],
+              try rows(db, "PRAGMA foreign_key_check").isEmpty else {
+            throw MobilePersistenceError.integrityFailure
+        }
+        var reference: OpaquePointer?
+        guard sqlite3_open(":memory:", &reference) == SQLITE_OK, let reference else {
+            throw MobilePersistenceError.integrityFailure
+        }
+        defer { sqlite3_close(reference) }
+        guard sqlite3_exec(reference, migrationLedgerDDL, nil, nil, nil) == SQLITE_OK else {
+            throw MobilePersistenceError.integrityFailure
+        }
+        for migration in migrations {
+            guard sqlite3_exec(reference, migration.sql, nil, nil, nil) == SQLITE_OK else {
+                throw MobilePersistenceError.integrityFailure
+            }
+        }
+        let schema = "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name NOT GLOB 'sqlite_*' ORDER BY type COLLATE BINARY,name COLLATE BINARY"
+        guard try rows(db, schema) == rows(reference, schema),
+              try rows(db, "SELECT generation_id FROM import_manifest WHERE stable_id_count != (SELECT COUNT(*) FROM import_record_ref WHERE import_record_ref.generation_id=import_manifest.generation_id)").isEmpty else {
+            throw MobilePersistenceError.integrityFailure
+        }
+        for (table, columns) in [("workspace_state", ["key"]),
+                                 ("import_manifest", ["generation_id"]),
+                                 ("import_record_ref", ["generation_id", "stable_id"])] {
+            for column in columns {
+                guard try rows(db, "SELECT 1 FROM \(table) WHERE instr(\(column),char(0))>0 LIMIT 1").isEmpty else {
+                    throw MobilePersistenceError.integrityFailure
+                }
+            }
         }
     }
 
@@ -382,11 +548,12 @@ final class MobilePersistenceStore {
     }
 
     private func migrate() throws {
-        try execute(Self.migrationLedgerDDL)
-        let current = try schemaVersion()
-        for migration in Self.migrations where migration.version > current {
-            let hash = Self.sha256(Data(migration.sql.utf8))
-            try transaction {
+        guard let db else { throw MobilePersistenceError.database("database closed") }
+        try transaction {
+            try execute(Self.migrationLedgerDDL)
+            let completed = try Self.verifyLedger(db, allowPending: true)
+            for migration in Self.migrations.dropFirst(completed) {
+                let hash = Self.sha256(Data(migration.sql.utf8))
                 try execute(migration.sql)
                 let statement = try prepare(
                     "INSERT INTO schema_migrations(version, name, sha256, applied_at) VALUES(?, ?, ?, ?)"
@@ -398,6 +565,7 @@ final class MobilePersistenceStore {
                 try bindText(statement, index: 4, value: now())
                 try stepDone(statement)
             }
+            try Self.validateDatabase(db)
         }
     }
 
@@ -442,7 +610,10 @@ final class MobilePersistenceStore {
     }
 
     private func bindText(_ statement: OpaquePointer, index: Int32, value: String) throws {
-        let rc = sqlite3_bind_text(statement, index, value, -1, Self.transient)
+        guard !value.utf8.contains(0), let length = Int32(exactly: value.utf8.count) else {
+            throw MobilePersistenceError.invalidText
+        }
+        let rc = sqlite3_bind_text(statement, index, value, length, Self.transient)
         guard rc == SQLITE_OK else { throw sqlError("bind text", code: rc) }
     }
 
@@ -477,13 +648,10 @@ final class MobilePersistenceStore {
 
     private static func fileSize(_ url: URL) throws -> Int64 {
         let attrs = try FileManager.default.attributesOfItem(atPath: url.path)
-        return (attrs[.size] as? NSNumber)?.int64Value ?? 0
+        guard let size = (attrs[.size] as? NSNumber)?.int64Value, size >= 0 else {
+            throw MobilePersistenceError.invalidCount
+        }
+        return size
     }
 
-    private static func removeDatabaseFiles(at url: URL) {
-        let fm = FileManager.default
-        try? fm.removeItem(at: url)
-        try? fm.removeItem(atPath: url.path + "-wal")
-        try? fm.removeItem(atPath: url.path + "-shm")
-    }
 }
