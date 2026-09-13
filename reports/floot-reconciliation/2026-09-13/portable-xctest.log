@@ -1,0 +1,49 @@
+Test Suite 'All tests' started at 2026-09-13 11:27:36.262
+Test Suite 'bin.xctest' started at 2026-09-13 11:27:36.264
+Test Suite 'LocalPersistenceSafetyTests' started at 2026-09-13 11:27:36.264
+Test Case 'LocalPersistenceSafetyTests.testHashValidCorruptBackupPreservesCommittedWALBytes' started at 2026-09-13 11:27:36.264
+Test Case 'LocalPersistenceSafetyTests.testHashValidCorruptBackupPreservesCommittedWALBytes' passed (0.008 seconds)
+Test Case 'LocalPersistenceSafetyTests.testMigrationDigestTamperingFailsClosed' started at 2026-09-13 11:27:36.273
+Test Case 'LocalPersistenceSafetyTests.testMigrationDigestTamperingFailsClosed' passed (0.003 seconds)
+Test Case 'LocalPersistenceSafetyTests.testFutureMigrationVersionFailsClosed' started at 2026-09-13 11:27:36.276
+Test Case 'LocalPersistenceSafetyTests.testFutureMigrationVersionFailsClosed' passed (0.003 seconds)
+Test Case 'LocalPersistenceSafetyTests.testMigrationNameTamperingFailsClosed' started at 2026-09-13 11:27:36.278
+Test Case 'LocalPersistenceSafetyTests.testMigrationNameTamperingFailsClosed' passed (0.003 seconds)
+Test Case 'LocalPersistenceSafetyTests.testNULKeyCannotOverwriteDifferentRawKey' started at 2026-09-13 11:27:36.281
+Test Case 'LocalPersistenceSafetyTests.testNULKeyCannotOverwriteDifferentRawKey' passed (0.002 seconds)
+Test Case 'LocalPersistenceSafetyTests.testNULStableIDRollsBackWholeImport' started at 2026-09-13 11:27:36.284
+Test Case 'LocalPersistenceSafetyTests.testNULStableIDRollsBackWholeImport' passed (0.003 seconds)
+Test Case 'LocalPersistenceSafetyTests.testOverflowIsRejectedWithoutTrapping' started at 2026-09-13 11:27:36.286
+Test Case 'LocalPersistenceSafetyTests.testOverflowIsRejectedWithoutTrapping' passed (0.002 seconds)
+Test Case 'LocalPersistenceSafetyTests.testEmptyBlobRoundTripsWithoutBecomingSQLNull' started at 2026-09-13 11:27:36.288
+Test Case 'LocalPersistenceSafetyTests.testEmptyBlobRoundTripsWithoutBecomingSQLNull' passed (0.002 seconds)
+Test Case 'LocalPersistenceSafetyTests.testBackupCannotTargetLiveDatabase' started at 2026-09-13 11:27:36.290
+Test Case 'LocalPersistenceSafetyTests.testBackupCannotTargetLiveDatabase' passed (0.002 seconds)
+Test Case 'LocalPersistenceSafetyTests.testExistingBackupIsNeverOverwritten' started at 2026-09-13 11:27:36.293
+Test Case 'LocalPersistenceSafetyTests.testExistingBackupIsNeverOverwritten' passed (0.004 seconds)
+Test Case 'LocalPersistenceSafetyTests.testValidBackupRestoresToNewDestination' started at 2026-09-13 11:27:36.297
+Test Case 'LocalPersistenceSafetyTests.testValidBackupRestoresToNewDestination' passed (0.007 seconds)
+Test Case 'LocalPersistenceSafetyTests.testUnrelatedSQLiteSourceIsRejected' started at 2026-09-13 11:27:36.303
+Test Case 'LocalPersistenceSafetyTests.testUnrelatedSQLiteSourceIsRejected' passed (0.003 seconds)
+Test Case 'LocalPersistenceSafetyTests.testProducerDestinationIsNotOverwritten' started at 2026-09-13 11:27:36.306
+Test Case 'LocalPersistenceSafetyTests.testProducerDestinationIsNotOverwritten' passed (0.005 seconds)
+Test Case 'LocalPersistenceSafetyTests.testHardLinkRestoreAliasIsRejected' started at 2026-09-13 11:27:36.311
+Test Case 'LocalPersistenceSafetyTests.testHardLinkRestoreAliasIsRejected' passed (0.002 seconds)
+Test Case 'LocalPersistenceSafetyTests.testFailedActivationPreservesPriorGeneration' started at 2026-09-13 11:27:36.313
+Test Case 'LocalPersistenceSafetyTests.testFailedActivationPreservesPriorGeneration' passed (0.003 seconds)
+Test Case 'LocalPersistenceSafetyTests.testBlankGenerationIsRejected' started at 2026-09-13 11:27:36.316
+Test Case 'LocalPersistenceSafetyTests.testBlankGenerationIsRejected' passed (0.002 seconds)
+Test Case 'LocalPersistenceSafetyTests.testLockedDestinationRestorePreservesPriorValue' started at 2026-09-13 11:27:36.319
+Test Case 'LocalPersistenceSafetyTests.testLockedDestinationRestorePreservesPriorValue' passed (1.01 seconds)
+Test Case 'LocalPersistenceSafetyTests.testSchemaWildcardCannotHideExtraAuthorityTable' started at 2026-09-13 11:27:37.329
+Test Case 'LocalPersistenceSafetyTests.testSchemaWildcardCannotHideExtraAuthorityTable' passed (0.004 seconds)
+Test Case 'LocalPersistenceSafetyTests.testWrongDigestDoesNotTouchCurrentDatabase' started at 2026-09-13 11:27:37.332
+Test Case 'LocalPersistenceSafetyTests.testWrongDigestDoesNotTouchCurrentDatabase' passed (0.004 seconds)
+Test Case 'LocalPersistenceSafetyTests.testFailedMigrationDoesNotAdoptUnrelatedDatabase' started at 2026-09-13 11:27:37.337
+Test Case 'LocalPersistenceSafetyTests.testFailedMigrationDoesNotAdoptUnrelatedDatabase' passed (0.002 seconds)
+Test Suite 'LocalPersistenceSafetyTests' passed at 2026-09-13 11:27:37.339
+	 Executed 20 tests, with 0 failures (0 unexpected) in 1.074 (1.074) seconds
+Test Suite 'bin.xctest' passed at 2026-09-13 11:27:37.339
+	 Executed 20 tests, with 0 failures (0 unexpected) in 1.074 (1.074) seconds
+Test Suite 'All tests' passed at 2026-09-13 11:27:37.339
+	 Executed 20 tests, with 0 failures (0 unexpected) in 1.074 (1.074) seconds

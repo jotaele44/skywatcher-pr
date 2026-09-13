@@ -1,0 +1,84 @@
+{
+  "schema": "portable-fault-probes/1",
+  "executed_utc": "2026-09-13T11:36:47.380881+00:00",
+  "classification": "AUDIT_ONLY",
+  "ios_acceptance": false,
+  "checks": 8,
+  "checks_passed": 8,
+  "source_sha256": {
+    "original": "29d43de0a0e9c660f21324dbd3f6a08ce3473234b6944eaadb1baaee2d67122c",
+    "hardened": "5965e9a4d77dc6491c4f11a8c2e3aedd52b7e0a326b58133008145bfbf3aa706"
+  },
+  "runs": [
+    {
+      "variant": "original",
+      "action": "positive",
+      "returncode": 0,
+      "stdout": "POSITIVE_VALUE=persisted\n",
+      "stderr": ""
+    },
+    {
+      "variant": "original",
+      "action": "crash-wal",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "variant": "original",
+      "action": "restore-corrupt",
+      "returncode": 0,
+      "stdout": "RESTORE_REJECTED integrityFailure\nADMITTED_PRESENT=false\n",
+      "stderr": ""
+    },
+    {
+      "variant": "original",
+      "action": "tampered-ledger",
+      "returncode": 0,
+      "stdout": "TAMPERED_LEDGER_ACCEPTED version=1\n",
+      "stderr": ""
+    },
+    {
+      "variant": "original",
+      "action": "nul-key",
+      "returncode": 0,
+      "stdout": "BASE_KEY_VALUE=replacement\n",
+      "stderr": ""
+    },
+    {
+      "variant": "hardened",
+      "action": "positive",
+      "returncode": 0,
+      "stdout": "POSITIVE_VALUE=persisted\n",
+      "stderr": ""
+    },
+    {
+      "variant": "hardened",
+      "action": "crash-wal",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "variant": "hardened",
+      "action": "restore-corrupt",
+      "returncode": 0,
+      "stdout": "RESTORE_REJECTED integrityFailure\nADMITTED_PRESENT=true\n",
+      "stderr": ""
+    },
+    {
+      "variant": "hardened",
+      "action": "tampered-ledger",
+      "returncode": 0,
+      "stdout": "TAMPERED_LEDGER_REJECTED integrityFailure\n",
+      "stderr": ""
+    },
+    {
+      "variant": "hardened",
+      "action": "nul-key",
+      "returncode": 0,
+      "stdout": "NUL_KEY_REJECTED invalidText\n",
+      "stderr": ""
+    }
+  ]
+}
