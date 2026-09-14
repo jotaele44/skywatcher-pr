@@ -136,6 +136,31 @@ def test_observation_density_keeps_duplicate_name_candidates_unresolved(
     }
 
 
+def test_observation_density_matches_against_real_corpus() -> None:
+    """Regression guard for the municipality name/GEOID join, modeled on
+    spiderweb-pr's test_municipios_density_matches_when_municipios_loaded:
+    the fixture-based reconciliation tests above always balance by
+    construction and would not catch a silent name/accent/casing mismatch.
+    Runs against the real municipios boundaries file and real
+    load_observations() corpus (no monkeypatching)."""
+    from starlette.testclient import TestClient
+
+    if not backend.MUNICIPIOS_PATH.is_file():
+        pytest.skip("data/geo/pr_municipios_boundaries.json missing")
+
+    with TestClient(backend.app) as client:
+        resp = client.get("/api/geo/municipios/observation_density.geojson")
+    assert resp.status_code == 200
+    body = resp.json()
+
+    total = body["total_observations"]
+    if total == 0:
+        pytest.skip("no observations loaded in this checkout to test the join against")
+    assert body["matched_count"] / total > 0.9, (
+        f"only {body['matched_count']}/{total} observations matched a municipio by name"
+    )
+
+
 def test_track_index_empty_without_adsb_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from starlette.testclient import TestClient
 

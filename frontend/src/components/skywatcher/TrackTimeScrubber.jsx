@@ -4,9 +4,13 @@ import { appParams } from "@/lib/app-params";
 // Finishes the track-playback feature left half-built by the original GIS
 // rollout: the backend has always shipped GET /api/geo/tracks/{icao24}.geojson
 // (a full ADS-B LineString for one aircraft), but no UI ever called it.
-// Scrubbing truncates the rendered line to points up to the selected time and
+// Scrubbing truncates the rendered line to points up to the selected point and
 // drops a marker at the current head, driven entirely off this component's
 // own fetches so it works on any page that mounts PuertoRicoMapShell.
+//
+// The slider is a plain array index over recorded points, not a time value —
+// ADS-B points aren't evenly spaced in time, so this is positional scrubbing,
+// not time-synced playback (no timestamps shown, no play/pause/speed).
 export default function TrackTimeScrubber({ map, mapReady }) {
   const [available, setAvailable] = useState([]);
   const [icao24, setIcao24] = useState("");
@@ -97,7 +101,7 @@ export default function TrackTimeScrubber({ map, mapReady }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2.5 text-[11px]">
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Track playback:</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Track path (by point):</span>
       <select
         aria-label="Track aircraft"
         value={icao24}
@@ -116,7 +120,8 @@ export default function TrackTimeScrubber({ map, mapReady }) {
       {coords.length >= 2 && (
         <input
           type="range"
-          aria-label="Track playback position"
+          aria-label="Track point index"
+          title="Positional scrubbing — not synced to elapsed real-world time between ADS-B points"
           min={0}
           max={coords.length - 1}
           value={index}
@@ -126,7 +131,7 @@ export default function TrackTimeScrubber({ map, mapReady }) {
       )}
       {coords.length >= 2 && (
         <span className="font-mono text-[10px] text-muted-foreground">
-          {index + 1} / {coords.length}
+          {index + 1} / {coords.length} pt.
         </span>
       )}
     </div>
