@@ -15,6 +15,7 @@ Start with:
 from __future__ import annotations
 
 import csv
+import hashlib
 import ipaddress
 import json
 import logging
@@ -23,6 +24,8 @@ import secrets
 import sqlite3
 import sys
 import uuid
+from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -48,6 +51,12 @@ RLSM_DB = ROOT / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 RLSM_MARKER_VERSION = "rlsm-aircraft-marker-v1"
 RLSM_GEOREF_VERSION = "rlsm-spatial-georef-v1"
 RLSM_MAX_POSITION_ERROR_M = 500
+ADSB_DB = Path(os.environ["SKYWATCHER_DB"]) if os.environ.get("SKYWATCHER_DB") else ROOT / "data" / "skywatcher.db"
+# Committed as .json rather than .geojson: this repo's .gitignore blanket-excludes
+# *.geojson (data-policy convention for generated/runtime export artifacts), but
+# this is checked-in reference boundary data, the same file already committed by
+# aguayluz-pr and ovnis-pr under the identical name→GEOID shape.
+MUNICIPIOS_PATH = ROOT / "data" / "geo" / "pr_municipios_boundaries.json"
 
 app = FastAPI(
     title="Skywatcher-PR Dashboard API",
@@ -69,6 +78,28 @@ _overlay: dict[str, dict[str, dict[str, Any]]] = {}
 _created: dict[str, list[dict[str, Any]]] = {}
 
 log = logging.getLogger("skywatcher.backend")
+
+# The root-level gis_intelligence.py shim bootstraps src/ onto sys.path itself
+# (see docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md); importing it here rather than
+# reaching into skywatcher.corrim.gis_intelligence directly keeps this file on
+# the one supported cross-boundary entry point. Guarded: src/skywatcher is an
+# implicit namespace package (no __init__.py), which the frozen PyInstaller
+# desktop build's static import analysis does not follow through this
+# runtime sys.path.insert — so this import can legitimately fail there. Rather
+# than crash the whole app on startup, degrade the way _rlsm_rows already does
+# for a checkout without its optional data: the infrastructure/corridor/
+# heatmap geo endpoints report empty until this module is available.
+try:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from gis_intelligence import (
+        CorridorAnalyzer,
+        HeatmapGenerator,
+        PuertoRicoInfrastructure,
+    )
+except ImportError as exc:
+    log.warning("gis_intelligence unavailable (%s); infrastructure/corridor/heatmap geo endpoints will report empty.", exc)
+    CorridorAnalyzer = HeatmapGenerator = PuertoRicoInfrastructure = None
 
 # ── Write authorization ────────────────────────────────────────────────────────
 # Diagnostic mode ships without authentication: /api/auth/me always 401s and
@@ -838,3 +869,353 @@ def update_entity(entity_name: str, entity_id: str, payload: dict[str, Any]) -> 
             _overlay.setdefault(entity_name, {}).setdefault(entity_id, {}).update(payload)
             return {**row, **payload}
     raise HTTPException(status_code=404, detail=f"{entity_name} not found: {entity_id}")
+
+
+# ============================================================================
+# GIS / geo endpoints
+#
+# These serve real GeoJSON geometry to the MapLibre-based frontend, replacing
+# the earlier hand-rolled SVG projection. Infrastructure zones and flight
+# corridors are buffered into real Polygon geometry server-side (haversine
+# destination-point sampling) rather than shipping lat/lon+radius for the
+# client to approximate. All pure GET, computed in-memory — no repo files
+# are written, matching this module's read-only diagnostic contract.
+# ============================================================================
+
+_EARTH_RADIUS_NM = 3440.065
+
+
+def _destination_point(lat: float, lon: float, bearing_deg: float, distance_nm: float) -> tuple[float, float]:
+    """Great-circle destination point given a start point, bearing, and distance."""
+    from math import asin, atan2, cos, degrees, radians, sin
+
+    d_r = distance_nm / _EARTH_RADIUS_NM
+    br = radians(bearing_deg)
+    lat1 = radians(lat)
+    lon1 = radians(lon)
+    lat2 = asin(sin(lat1) * cos(d_r) + cos(lat1) * sin(d_r) * cos(br))
+    lon2 = lon1 + atan2(sin(br) * sin(d_r) * cos(lat1), cos(d_r) - sin(lat1) * sin(lat2))
+    return degrees(lat2), degrees(lon2)
+
+
+def _initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    from math import atan2, cos, degrees, radians, sin
+
+    lat1r, lat2r = radians(lat1), radians(lat2)
+    dlon = radians(lon2 - lon1)
+    x = sin(dlon) * cos(lat2r)
+    y = cos(lat1r) * sin(lat2r) - sin(lat1r) * cos(lat2r) * cos(dlon)
+    return (degrees(atan2(x, y)) + 360) % 360
+
+
+def _circle_polygon(lat: float, lon: float, radius_nm: float, n: int = 32) -> dict[str, Any]:
+    """Approximate a circular buffer (e.g. a restricted-airspace radius) as an
+    n-gon GeoJSON Polygon, rather than shipping the raw radius to the client.
+    """
+    ring = []
+    for i in range(n):
+        bearing = (360.0 / n) * i
+        plat, plon = _destination_point(lat, lon, bearing, radius_nm)
+        ring.append([plon, plat])
+    ring.append(ring[0])
+    return {"type": "Polygon", "coordinates": [ring]}
+
+
+def _corridor_polygon(
+    start: tuple[float, float], end: tuple[float, float], width_nm: float
+) -> dict[str, Any]:
+    """Buffer a start->end corridor centerline into a rectangular GeoJSON
+    Polygon of the given width, via perpendicular offsets at each endpoint.
+    """
+    lat1, lon1 = start
+    lat2, lon2 = end
+    bearing = _initial_bearing(lat1, lon1, lat2, lon2)
+    half_w = width_nm / 2
+    p1 = _destination_point(lat1, lon1, bearing - 90, half_w)
+    p2 = _destination_point(lat2, lon2, bearing - 90, half_w)
+    p3 = _destination_point(lat2, lon2, bearing + 90, half_w)
+    p4 = _destination_point(lat1, lon1, bearing + 90, half_w)
+    ring = [[p[1], p[0]] for p in (p1, p2, p3, p4, p1)]
+    return {"type": "Polygon", "coordinates": [ring]}
+
+
+def _points_to_geojson(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    features = []
+    for row in rows:
+        lat, lon = row.get("latitude"), row.get("longitude")
+        if lat is None or lon is None:
+            continue
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [float(lon), float(lat)]},
+            "properties": row,
+        })
+    return {"type": "FeatureCollection", "features": features}
+
+
+def _adsb_rows(query: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
+    """Query the ADS-B live-feed sink read-only. A checkout without an active
+    poller (the normal diagnostic state) simply advertises zero tracks.
+    """
+    if not ADSB_DB.is_file():
+        return []
+    uri = f"{ADSB_DB.resolve().as_uri()}?mode=ro"
+    try:
+        with sqlite3.connect(uri, uri=True, timeout=5.0) as conn:
+            conn.row_factory = sqlite3.Row
+            return [dict(row) for row in conn.execute(query, params).fetchall()]
+    except sqlite3.Error as exc:
+        log.warning("ADS-B track entity unavailable: %s", exc)
+        return []
+
+
+@app.get("/api/geo/observations.geojson")
+def geo_observations() -> dict[str, Any]:
+    return _points_to_geojson(load_observations())
+
+
+@app.get("/api/geo/airports.geojson")
+def geo_airports() -> dict[str, Any]:
+    return _points_to_geojson(load_airports())
+
+
+@app.get("/api/geo/infrastructure.geojson")
+def geo_infrastructure() -> dict[str, Any]:
+    if PuertoRicoInfrastructure is None:
+        return {"type": "FeatureCollection", "features": []}
+    infra = PuertoRicoInfrastructure()
+    features = [
+        {
+            "type": "Feature",
+            "geometry": _circle_polygon(f.latitude, f.longitude, f.radius_nm),
+            "properties": {
+                "feature_id": f.feature_id,
+                "name": f.name,
+                "type": f.type.value,
+                "operator": f.operator,
+                "sector": f.sector,
+                "radius_nm": f.radius_nm,
+                "operational_notes": f.operational_notes,
+            },
+        }
+        for f in infra.features.values()
+    ]
+    return {"type": "FeatureCollection", "features": features}
+
+
+@app.get("/api/geo/corridors.geojson")
+def geo_corridors() -> dict[str, Any]:
+    if CorridorAnalyzer is None or PuertoRicoInfrastructure is None:
+        return {"type": "FeatureCollection", "features": []}
+    analyzer = CorridorAnalyzer(PuertoRicoInfrastructure())
+    features = [
+        {
+            "type": "Feature",
+            "geometry": _corridor_polygon(c.start_point, c.end_point, c.width_nm),
+            "properties": {
+                "corridor_id": c.corridor_id,
+                "name": c.name,
+                "purpose": c.purpose,
+                "typical_operator": c.typical_operator,
+                "activity_level": c.activity_level,
+                "width_nm": c.width_nm,
+            },
+        }
+        for c in analyzer.corridors
+    ]
+    return {"type": "FeatureCollection", "features": features}
+
+
+@app.get("/api/geo/observations/heatmap.geojson")
+def geo_observations_heatmap() -> dict[str, Any]:
+    if HeatmapGenerator is None:
+        return {"type": "FeatureCollection", "features": []}
+    generator = HeatmapGenerator()
+    for row in load_observations():
+        lat, lon = row.get("latitude"), row.get("longitude")
+        if lat is not None and lon is not None:
+            generator.add_point(float(lat), float(lon))
+    return generator.get_geojson()
+
+
+@app.get("/api/geo/tracks/{icao24}.geojson")
+def geo_track(icao24: str) -> dict[str, Any]:
+    """A single aircraft's ADS-B track as a GeoJSON LineString. The same
+    point-list-to-LineString shape as the Spiderweb bridge export's
+    _line_string() (spiderweb_export.py), kept as a local one-liner rather
+    than an import across the src/skywatcher package boundary: unlike
+    gis_intelligence.py, this endpoint has no reason to ever hard-fail when
+    that boundary is unavailable (e.g. the frozen desktop build).
+    """
+    rows = _adsb_rows(
+        """SELECT icao24, callsign, latitude, longitude, time_position
+           FROM adsb_state_vectors
+           WHERE icao24 = ? AND latitude IS NOT NULL AND longitude IS NOT NULL
+           ORDER BY time_position ASC""",
+        (icao24,),
+    )
+    coords = [[float(r["longitude"]), float(r["latitude"])] for r in rows]
+    if len(coords) < 2:
+        return {"type": "FeatureCollection", "features": []}
+    geometry = {"type": "LineString", "coordinates": coords}
+    return {
+        "type": "FeatureCollection",
+        "features": [{
+            "type": "Feature",
+            "geometry": geometry,
+            "properties": {
+                "icao24": icao24,
+                "callsign": rows[0].get("callsign"),
+                "point_count": len(rows),
+                "first_time_position": rows[0].get("time_position"),
+                "last_time_position": rows[-1].get("time_position"),
+            },
+        }],
+    }
+
+
+@app.get("/api/geo/tracks")
+def geo_track_index() -> list[dict[str, Any]]:
+    """Distinct aircraft with a recorded ADS-B track, for a track-picker UI.
+    Empty on a checkout without an active poller, same as geo_track above.
+    """
+    rows = _adsb_rows(
+        """SELECT icao24, callsign, COUNT(*) AS point_count
+           FROM adsb_state_vectors
+           WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+           GROUP BY icao24
+           HAVING COUNT(*) >= 2
+           ORDER BY point_count DESC"""
+    )
+    return [
+        {
+            "icao24": r["icao24"],
+            "callsign": r.get("callsign"),
+            "point_count": r["point_count"],
+        }
+        for r in rows
+    ]
+
+
+def _load_municipios() -> dict[str, Any]:
+    if not MUNICIPIOS_PATH.is_file():
+        return {"type": "FeatureCollection", "features": []}
+    return json.loads(MUNICIPIOS_PATH.read_text(encoding="utf-8"))
+
+
+def _file_manifest(path: Path, *, mutable: bool) -> dict[str, Any]:
+    manifest: dict[str, Any] = {
+        "path": str(path),
+        "exists": path.is_file(),
+        "declared_mutable": mutable,
+        "retrieved_at_utc": datetime.now(timezone.utc).isoformat(),
+        "byte_size": None,
+        "mtime_ns": None,
+        "sha256": None,
+        "snapshot_stable_during_hash": None,
+        "identity_class": "BYTE_OBSERVATION_ONLY",
+        "logical_snapshot_bound": False,
+    }
+    if not manifest["exists"]:
+        return manifest
+    before = path.stat()
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    after = path.stat()
+    manifest.update(
+        {
+            "byte_size": after.st_size,
+            "mtime_ns": after.st_mtime_ns,
+            "sha256": digest.hexdigest(),
+            "snapshot_stable_during_hash": (
+                before.st_size == after.st_size and before.st_mtime_ns == after.st_mtime_ns
+            ),
+            "logical_snapshot_bound": (
+                not mutable
+                and before.st_size == after.st_size
+                and before.st_mtime_ns == after.st_mtime_ns
+            ),
+        }
+    )
+    return manifest
+
+
+@app.get("/api/geo/municipios.geojson")
+def geo_municipios() -> dict[str, Any]:
+    return _load_municipios()
+
+
+@app.get("/api/geo/municipios/observation_density.geojson")
+def geo_municipios_observation_density() -> dict[str, Any]:
+    """Aggregate observations onto uniquely named municipio features.
+
+    Exact raw-name matching is discovery-only: it grants no identity,
+    canonical-name, GEOID, or geometry binding.
+    """
+    municipios = _load_municipios()
+    features = municipios.get("features")
+    if not isinstance(features, list):
+        raise HTTPException(status_code=500, detail="municipios source features must be a list")
+    name_candidates: dict[str, list[dict[str, Any]]] = {}
+    for index, feature in enumerate(features):
+        properties = feature.get("properties") if isinstance(feature, dict) else None
+        if not isinstance(properties, dict):
+            raise HTTPException(status_code=500, detail=f"municipio feature {index} properties must be an object")
+        name = properties.get("name")
+        if isinstance(name, str):
+            name_candidates.setdefault(name, []).append(
+                {"feature_index": index, "geoid": properties.get("geoid", properties.get("GEOID"))}
+            )
+    unique_names = {name for name, candidates in name_candidates.items() if len(candidates) == 1}
+    ambiguous_candidates = {
+        name: candidates for name, candidates in name_candidates.items() if len(candidates) > 1
+    }
+    observations = list(load_observations())
+    by_name: Counter[str] = Counter()
+    unresolved_by_name: Counter[str] = Counter()
+    for row in observations:
+        name = row.get("municipality")
+        if isinstance(name, str) and name in unique_names:
+            by_name[name] += 1
+        else:
+            unresolved_by_name[name if isinstance(name, str) else "<NULL>"] += 1
+    matched_count = sum(by_name.values())
+    unmatched = len(observations) - matched_count
+    max_count = max(by_name.values(), default=0)
+    for feature in features:
+        name = feature["properties"].get("name")
+        count = by_name.get(name, 0) if name in unique_names else 0
+        feature["properties"]["observation_count"] = count
+        feature["properties"]["observation_density_norm"] = (
+            count / max_count if max_count else 0
+        )
+    municipios["matched_count"] = matched_count
+    municipios["unmatched_observations"] = unmatched
+    municipios["unresolved_by_name"] = dict(sorted(unresolved_by_name.items()))
+    municipios["total_observations"] = len(observations)
+    municipios["ambiguous_municipio_candidates"] = ambiguous_candidates
+    municipios["scope"] = {
+        "state": "CANDIDATE_NOT_IDENTITY",
+        "source_field": "municipality",
+        "target_field": "name",
+        "matching": "EXACT_RAW_STRING",
+        "normalization": "NONE",
+        "identity_effect": "NONE",
+        "binding_effect": "AGGREGATION_ONLY",
+        "geometry_effect": "NONE",
+    }
+    observation_path = SYNTHETIC_PACKAGE / "observations.csv"
+    municipios["provenance"] = {
+        "sources": {
+            "municipios": _file_manifest(MUNICIPIOS_PATH, mutable=False),
+            "synthetic_observations": _file_manifest(observation_path, mutable=False),
+            "rlsm_observations": _file_manifest(RLSM_DB, mutable=True),
+        },
+        "municipio_feature_count": len(features),
+        "observation_loader": "load_observations",
+        "observation_count": len(observations),
+        "snapshot_state": "MUTABLE_RUNTIME_SOURCE" if RLSM_DB.is_file() else "COMMITTED_SYNTHETIC_ONLY",
+    }
+    return municipios
