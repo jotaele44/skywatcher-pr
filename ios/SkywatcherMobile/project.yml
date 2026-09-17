@@ -29,6 +29,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_ENTITLEMENTS: Config/SkywatcherMobile.entitlements
     dependencies:
+      - sdk: libsqlite3.tbd
       - target: SkywatcherShare
   SkywatcherShare:
     type: app-extension
@@ -51,6 +52,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: org.prii.skywatcher.mobile.share
         CODE_SIGN_ENTITLEMENTS: Config/SkywatcherShare.entitlements
         SKIP_INSTALL: YES
+    dependencies:
+      - sdk: libsqlite3.tbd
   SkywatcherMobileTests:
     type: bundle.unit-test
     platform: iOS
