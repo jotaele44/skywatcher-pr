@@ -1,0 +1,9 @@
+{
+  "contract_version":"1.0.0",
+  "registry_authority":"thehub-pr/.federation/statistical-routing-manifest.json",
+  "repo":"skywatcher-pr",
+  "primary_domains":["Transportacion"],
+  "secondary_domains":["Geografia","Violencia y Justicia"],
+  "ingest_policy":"consume routed transportation, mobility and route-context datasets with source provenance intact",
+  "guardrails":["vehicle registry != aircraft registry","transport count != movement event","historical methodology break != continuous series","unknown != zero"]
+}
