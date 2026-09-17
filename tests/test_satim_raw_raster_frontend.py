@@ -1,7 +1,9 @@
 from pathlib import Path
 
-import numpy as np
-from PIL import Image
+import pytest
+
+np = pytest.importorskip("numpy")
+Image = pytest.importorskip("PIL.Image")
 
 from fr24.calibration.l5_tile_seam_shadow_calibration import classify_candidate_strict
 from fr24.calibration.satim_raw_raster_frontend import extract_raw_raster_candidates
