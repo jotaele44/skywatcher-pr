@@ -15,6 +15,7 @@ import Aircraft from '@/pages/Aircraft';
 import FR24Intake from '@/pages/FR24Intake';
 import RoutesPage from '@/pages/Routes';
 import Infrastructure from '@/pages/Infrastructure';
+import ILAPReviewLab from '@/pages/ILAPReviewLab';
 import Airports from '@/pages/Airports';
 import ManualReview from '@/pages/ManualReview';
 import ExportCenter from '@/pages/ExportCenter';
@@ -32,16 +33,10 @@ import { appParams } from '@/lib/app-params';
 const AuthenticatedApp = () => {
   const { appPublicSettings, isLoadingPublicSettings } = useAuth();
 
-  // Wait for public settings before routing. appPublicSettings is null until
-  // AuthContext.checkAppState() resolves, so routing on it early would treat a
-  // backend that reports requires_auth=true as diagnostic mode for one render —
-  // long enough to redirect a direct visit to /login away to /, after which the
-  // login page is unreachable because the URL has already changed.
   if (isLoadingPublicSettings) {
     return <LoadingState />;
   }
 
-  // Same signal AuthContext uses to decide whether authentication is required.
   const authRequired = Boolean(
     appPublicSettings?.public_settings?.requires_auth || appParams.requireAuth
   );
@@ -58,6 +53,7 @@ const AuthenticatedApp = () => {
             <Route path="/fr24" element={<FR24Intake />} />
             <Route path="/routes" element={<RoutesPage />} />
             <Route path="/infrastructure" element={<Infrastructure />} />
+            <Route path="/ilap-review" element={<ILAPReviewLab />} />
             <Route path="/airports" element={<Airports />} />
             <Route path="/review" element={<ManualReview />} />
             <Route path="/export" element={<ExportCenter />} />
@@ -66,11 +62,6 @@ const AuthenticatedApp = () => {
             <Route path="/analysis" element={<AnalysisLenses />} />
             <Route path="/spatial-truth" element={<SpatialTruth />} />
           </Route>
-          {/* Auth routes render only when authentication is actually required.
-              In diagnostic mode the backend implements no /auth/login,
-              /auth/register, /auth/verify-otp or /auth/password/* endpoint (they
-              404) and /api/auth/me returns 401, so these forms could never
-              complete a sign-in. Gate them on the same signal AuthContext uses. */}
           {authRequired ? (
             <>
               <Route path="/login" element={<Login />} />
