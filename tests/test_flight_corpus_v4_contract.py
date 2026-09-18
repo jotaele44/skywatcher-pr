@@ -41,6 +41,7 @@ def test_blockers_preserved():
 
 def test_v4_status_api_preserves_unknown_and_blockers():
     from fastapi.testclient import TestClient
+
     from server.backend.main import app
 
     response = TestClient(app).get("/api/flight-corpus/v4/status")
@@ -57,6 +58,7 @@ def test_v4_status_api_preserves_unknown_and_blockers():
 
 def test_v4_artifact_member_denominator():
     from fastapi.testclient import TestClient
+
     from server.backend.main import app
 
     response = TestClient(app).get("/api/flight-corpus/v4/artifact-members")
