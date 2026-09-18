@@ -11,9 +11,9 @@ wrongdoing, underground facilities, ownership, or causal linkage.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from math import isfinite
-from typing import Mapping
 
 ILAP_COMPONENTS = (
     "visual_structure_score",
