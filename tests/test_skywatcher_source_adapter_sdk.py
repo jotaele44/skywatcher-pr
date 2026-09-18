@@ -12,7 +12,10 @@ from scripts.source_adapters.sdk import (
     PayloadValidator,
     SourceAdapterError,
 )
-from scripts.source_adapters.sdk.core import require_redistribution_eligible, require_training_eligible
+from scripts.source_adapters.sdk.core import (
+    require_redistribution_eligible,
+    require_training_eligible,
+)
 
 
 def _policy(tmp_path: Path) -> AdapterPolicy:
