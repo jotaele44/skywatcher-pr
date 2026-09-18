@@ -1,0 +1,33 @@
+{
+  "schema_version": "federation.gui-backend-contract/1.0",
+  "repository": "Jotaele44/skywatcher-pr",
+  "source_commit": "39e1fb297e24cd9017167a8725b40e73dd0349e4",
+  "policy": {"require_zero_material_residue": true, "dimensions": ["executability", "semantic", "state", "auth", "data", "provenance", "device", "identity", "geometry", "authority"]},
+  "discovery": {
+    "backend_roots": ["server/backend", "src/skywatcher", "fr24", "desktop"],
+    "frontend_roots": ["frontend/src"],
+    "route_files": ["frontend/src/App.jsx"],
+    "navigation_files": ["frontend/src/components/skywatcher/Sidebar.jsx"],
+    "existing_gui_capability_manifests": [".federation/gui-capabilities.json"]
+  },
+  "authority": {
+    "semantic_authority": "aircraft-aviation-telemetry-flight-observation",
+    "mutation_authority": "skywatcher-domain-state-only",
+    "identity_authority": "aircraft-flight-track-and-observation-identities",
+    "geometry_authority": "track-geometry-producer-with-federated-spatial-consumption",
+    "provenance_authority": "aviation-provider-flight-track-and-observation-provenance"
+  },
+  "auth": {"mutating_route_policy": "require_guard_or_explicit_public", "guard_patterns": ["Depends\\(", "require_admin", "require_write", "_WRITE_GUARD", "write_token", "dependencies\\s*="], "explicit_public_mutations": []},
+  "provenance": {"required_fields_when_available": ["source_ref", "source_hash", "provider", "observed_at", "review_status"], "frontend_evidence_files": ["frontend/src/App.jsx", "frontend/src/lib/SkywatcherData.jsx", "frontend/src/components/skywatcher/drawers/DrawerHub.jsx"]},
+  "devices": {"desktop": true, "mobile_web": true, "native_ios": false, "native_evidence_files": [], "intentional_restrictions": []},
+  "backend_only_allowlist": [],
+  "gui_only_allowlist": [],
+  "state_claims": [],
+  "runtime_evidence": {
+    "data": {"state": "OPEN", "evidence": []},
+    "identity": {"state": "OPEN", "evidence": []},
+    "geometry": {"state": "OPEN", "evidence": []},
+    "device": {"state": "OPEN", "evidence": []}
+  },
+  "certification": {"state": "OPEN", "material_residue": ["Extend existing capability parity through telemetry identity, provenance, auth, and device runtime receipts."]}
+}
