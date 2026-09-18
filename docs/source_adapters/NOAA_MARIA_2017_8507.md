@@ -39,7 +39,11 @@ python -m scripts.source_adapters.noaa_maria_2017.cli fetch-pilot --output-root 
 Catalog access does not establish calibration-training or redistribution rights. Current policy is:
 
 - fetch: ALLOWED
-- training: UNKNOWN
-- redistribution: UNKNOWN
+- training: ALLOWED
+- redistribution: ALLOWED
 
-Therefore acquired pixels may be used only according to the separately adjudicated rights state; no calibration promotion is allowed while training remains UNKNOWN.
+Rights binding uses NOAA InPort item 52283 (Access Constraints: None) plus the federal Data.gov dataset record, which publishes CC0-1.0. The raw STAC license code `NLPL` is retained as a conflicting/source-specific observation rather than overwritten.
+
+## GSD contradiction
+
+The NOAA storm viewer describes the approximate GSD as ~25 cm, while NOAA InPort supplemental metadata states 15 cm. Both are preserved as source observations and the canonical GSD remains unresolved until the product-level metadata/processing lineage is adjudicated.
