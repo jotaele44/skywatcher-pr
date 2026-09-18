@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from scripts.source_adapters.sdk import AcquisitionRights, ImagerySourceEndpoint
 
-
 PROVIDERS: dict[str, ImagerySourceEndpoint] = {
     "NOAA_MARIA_2017": ImagerySourceEndpoint(
         source_id="NOAA_MARIA_2017",
