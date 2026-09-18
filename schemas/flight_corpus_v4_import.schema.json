@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Skywatcher Flight Corpus V4 Import Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "corpus_version",
+    "certification_state",
+    "source_artifact",
+    "denominators",
+    "datasets",
+    "blocked"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "skywatcher.flight_corpus.import.v1"
+    },
+    "corpus_version": {
+      "const": "V4"
+    },
+    "certification_state": {
+      "enum": [
+        "PROVISIONAL",
+        "PASS",
+        "BLOCKED",
+        "UNRESOLVED"
+      ]
+    },
+    "source_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256"
+      ],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "filename": {
+          "type": "string"
+        }
+      }
+    },
+    "denominators": {
+      "type": "object",
+      "required": [
+        "nonempty_logical_records",
+        "single_point_exclusions",
+        "trajectory_eligible",
+        "unordered_pair_denominator"
+      ],
+      "properties": {
+        "nonempty_logical_records": {
+          "const": 696
+        },
+        "single_point_exclusions": {
+          "const": 11
+        },
+        "trajectory_eligible": {
+          "const": 685
+        },
+        "unordered_pair_denominator": {
+          "const": 234270
+        }
+      }
+    },
+    "datasets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dataset_id",
+          "path",
+          "sha256",
+          "role",
+          "lineage_state"
+        ],
+        "properties": {
+          "dataset_id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "role": {
+            "enum": [
+              "RAW_LINEAGE_GEOMETRY",
+              "RELATIONAL_LEDGER",
+              "TEMPORAL_RECURRENCE",
+              "CONTRADICTION_LEDGER",
+              "EXCLUSION_LEDGER",
+              "CERTIFICATION_LEDGER",
+              "CANDIDATE_EVENTS"
+            ]
+          },
+          "lineage_state": {
+            "enum": [
+              "PASS",
+              "PROVISIONAL",
+              "BLOCKED"
+            ]
+          }
+        }
+      }
+    },
+    "blocked": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
