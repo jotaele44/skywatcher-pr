@@ -21,6 +21,18 @@ PROVIDERS: dict[str, ImagerySourceEndpoint] = {
         rights=AcquisitionRights(fetch="ALLOWED", training="UNKNOWN", redistribution="UNKNOWN"),
         notes="Catalog endpoint only; bind item metadata and product URL before raw acquisition.",
     ),
+    "NOAA_MARIA_2017_8507": ImagerySourceEndpoint(
+        source_id="NOAA_MARIA_2017_8507",
+        name="2017 NOAA NGS DSS Natural Color 8 Bit Imagery: Hurricane Maria",
+        url="https://chs.coast.noaa.gov/htdata/raster6/imagery/HurricaneMaria_2017_8507/stac/noaa_imagery_item_collection_m8507.json",
+        authority="NOAA National Geodetic Survey",
+        source_lineage_id="NOAA_MARIA_2017_8507_CATALOG",
+        imagery_provider="NOAA NGS",
+        product_id="8507",
+        imagery_epoch="2017-09-22/2017-09-26",
+        rights=AcquisitionRights(fetch="ALLOWED", training="UNKNOWN", redistribution="UNKNOWN"),
+        notes="590-TIFF public denominator frozen; item-level adapter assigns conservative acquisition-batch lineage. STAC date contradictions remain explicit.",
+    ),
     "NOAA_DIGITAL_COAST_IMAGERY": ImagerySourceEndpoint(
         source_id="NOAA_DIGITAL_COAST_IMAGERY",
         name="NOAA Digital Coast imagery",
