@@ -30,8 +30,8 @@ PROVIDERS: dict[str, ImagerySourceEndpoint] = {
         imagery_provider="NOAA NGS",
         product_id="8507",
         imagery_epoch="2017-09-22/2017-09-26",
-        rights=AcquisitionRights(fetch="ALLOWED", training="UNKNOWN", redistribution="UNKNOWN"),
-        notes="590-TIFF public denominator frozen; item-level adapter assigns conservative acquisition-batch lineage. STAC date contradictions remain explicit.",
+        rights=AcquisitionRights(fetch="ALLOWED", training="ALLOWED", redistribution="ALLOWED"),
+        notes="590-TIFF public denominator frozen; NOAA InPort states Access Constraints: None and the federal Data.gov record publishes CC0-1.0. Item-level adapter assigns conservative acquisition-batch lineage; STAC date and source-GSD contradictions remain explicit.",
     ),
     "NOAA_DIGITAL_COAST_IMAGERY": ImagerySourceEndpoint(
         source_id="NOAA_DIGITAL_COAST_IMAGERY",
