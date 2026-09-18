@@ -210,9 +210,9 @@ def build_payload_request(item: MariaItem) -> PayloadRequest:
         imagery_provider="NOAA NGS",
         product_id=item.item_id,
         imagery_epoch=item.filename_date_candidate if item.time_state == "MATCH" else "UNKNOWN",
-        rights=AcquisitionRights(fetch="ALLOWED", training="UNKNOWN", redistribution="UNKNOWN"),
+        rights=AcquisitionRights(fetch="ALLOWED", training="ALLOWED", redistribution="ALLOWED"),
         notes=(
-            "Raw STAC license code preserved separately; training/redistribution remain UNKNOWN until rights policy is bound. "
+            "Raw STAC license code is preserved separately. Dataset rights are bound through NOAA InPort (Access Constraints: None) plus the federal Data.gov record carrying CC0-1.0. "
             f"TIME_STATE={item.time_state}; filename_date_candidate={item.filename_date_candidate}; stac_datetime={item.stac_datetime}"
         ),
     )
