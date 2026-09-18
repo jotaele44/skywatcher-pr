@@ -61,6 +61,21 @@ FLIGHT_CORPUS_V4_DIR = ROOT / "data" / "flight_tracks" / "corpus_v4"
 
 
 
+app = FastAPI(
+    title="Skywatcher-PR Dashboard API",
+    description="Read-only federation entity API over committed Skywatcher artifacts.",
+    version="0.2.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.include_router(console_router)
+
 def _flight_corpus_v4_contract() -> dict[str, Any]:
     path = ROOT / "config" / "flight_corpus_v4.json"
     return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
@@ -89,20 +104,6 @@ def flight_corpus_v4_artifact_members() -> list[dict[str, Any]]:
         return []
     return json.loads(path.read_text(encoding="utf-8")).get("members", [])
 
-app = FastAPI(
-    title="Skywatcher-PR Dashboard API",
-    description="Read-only federation entity API over committed Skywatcher artifacts.",
-    version="0.2.0",
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-app.include_router(console_router)
 
 # Session-scoped mutations from the review UI; never written to disk.
 _overlay: dict[str, dict[str, dict[str, Any]]] = {}
