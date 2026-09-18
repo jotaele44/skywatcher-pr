@@ -20,8 +20,8 @@
       },
       "rights": {
         "fetch": "ALLOWED",
-        "training": "UNKNOWN",
-        "redistribution": "UNKNOWN"
+        "training": "ALLOWED",
+        "redistribution": "ALLOWED"
       },
       "review_status": "dry_run",
       "change_state": "NOT_FETCHED"
@@ -32,5 +32,10 @@
     "dry_run_records": 1,
     "unresolved_item_identity": 0
   },
-  "certification": "PASS_DRY_RUN_PLAN_ONLY"
+  "certification": "PASS_DRY_RUN_PLAN_ONLY",
+  "rights_binding": {
+    "state": "PASS",
+    "noaa_inport_access_constraints": "None",
+    "data_gov_license": "CC0-1.0"
+  }
 }
