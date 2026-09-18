@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
 from scripts.source_adapters.sdk import AcquisitionRights, ImagerySourceEndpoint, PayloadRequest
 
@@ -141,10 +142,7 @@ def _select_asset(feature: dict[str, Any]) -> tuple[str, dict[str, Any]]:
 
 
 def parse_stac_collection(document: str | bytes | dict[str, Any]) -> tuple[MariaItem, ...]:
-    if isinstance(document, (str, bytes)):
-        payload = json.loads(document)
-    else:
-        payload = document
+    payload = json.loads(document) if isinstance(document, (str, bytes)) else document
     if payload.get("type") != "FeatureCollection":
         raise ValueError("NOAA Maria STAC denominator must be a FeatureCollection")
     features = payload.get("features") or []
