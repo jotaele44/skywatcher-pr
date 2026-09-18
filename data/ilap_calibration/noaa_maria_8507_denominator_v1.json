@@ -1,0 +1,59 @@
+{
+  "schema_version": "noaa_maria_8507_denominator.v1",
+  "retrieved_utc": "2026-09-18T05:22:25Z",
+  "dataset_id": "8507",
+  "dataset_name": "2017 NOAA NGS DSS Natural Color 8 Bit Imagery: Hurricane Maria",
+  "source_index_url": "https://chs.coast.noaa.gov/htdata/raster6/imagery/HurricaneMaria_2017_8507/index.html",
+  "url_list_url": "https://chs.coast.noaa.gov/htdata/raster6/imagery/HurricaneMaria_2017_8507/urllist8507.txt",
+  "stac_item_collection_url": "https://chs.coast.noaa.gov/htdata/raster6/imagery/HurricaneMaria_2017_8507/stac/noaa_imagery_item_collection_m8507.json",
+  "published_total_size": "193G",
+  "published_approx_gsd_cm": 25,
+  "published_acquisition_window": [
+    "2017-09-22",
+    "2017-09-26"
+  ],
+  "url_list_total_lines": 1187,
+  "tiff_asset_count": 590,
+  "stac_item_json_count": 590,
+  "stac_index_count": 1,
+  "other_catalog_or_metadata_entries": 6,
+  "denominator_arithmetic": "6 + 590 + 1 + 590 = 1187",
+  "first_tiff_id": "20170922aC0643430w174500n",
+  "last_tiff_id": "20170926bC0655230w181030n",
+  "pilot": {
+    "item_id": "20170924bC0660430w183000n",
+    "published_size_mb": 3.99,
+    "bbox": [
+      -66.07510000000002,
+      18.4749,
+      -66.0499,
+      18.500100000000003
+    ],
+    "asset_type": "image/tiff",
+    "proj_epsg": 4326,
+    "proj_shape": [
+      18681,
+      18681
+    ],
+    "stac_license_raw": "NLPL",
+    "filename_date_candidate": "2017-09-24",
+    "stac_datetime": "2017-09-22T00:00:00Z",
+    "time_state": "CONTRADICTION_TIME",
+    "fetch_state": "PENDING_REPO_RUNTIME_NETWORK",
+    "sha256": null
+  },
+  "rights_state": {
+    "fetch": "ALLOWED",
+    "training": "UNKNOWN",
+    "redistribution": "UNKNOWN",
+    "note": "Preserve raw STAC license code and NOAA usage evidence separately; do not infer ML-training or redistribution rights from catalog accessibility alone."
+  },
+  "certification": {
+    "source_denominator": "PASS",
+    "one_to_one_tiff_stac_expectation": "PASS_BY_PUBLIC_URL_LIST_STRUCTURE",
+    "full_runtime_stac_parse": "OPEN_PENDING_REPO_RUNTIME_NETWORK",
+    "pilot_binary_fetch": "BLOCKED_CURRENT_EXECUTION_ENVIRONMENT",
+    "pilot_hash": "OPEN",
+    "training_promotion": "BLOCKED_RIGHTS_UNKNOWN"
+  }
+}
