@@ -1,0 +1,102 @@
+{
+  "contract_version": "skywatcher-aerial-environment-sources/1.0",
+  "role": "AERIAL_ENVIRONMENT_INTEGRATOR",
+  "policy": {
+    "source_authority_preserved": true,
+    "semantic_states": ["measured", "forecast", "modeled", "interpolated", "derived"],
+    "silent_interpolation": false,
+    "gis_cloud_runtime_dependency": false
+  },
+  "sources": [
+    {
+      "source_id": "noaa-awc-aviation-weather",
+      "family": "aviation_weather",
+      "provider": "NOAA/NWS Aviation Weather Center",
+      "authority_role": "source_authority",
+      "admission_status": "candidate_public_official",
+      "access_mode": "official_api",
+      "semantic_states_allowed": ["measured", "forecast"],
+      "redistribution_status": "unknown",
+      "terms_ref": "https://aviationweather.gov/data/api/",
+      "product_identity": "METAR, TAF, PIREP/AIREP, SIGMET/G-AIRMET",
+      "native_timezone": "UTC",
+      "expected_cadence": "product-specific",
+      "notes": "Preserve observation, forecast, pilot-report, and hazard-product semantics separately."
+    },
+    {
+      "source_id": "usgs-sjg-geomagnetism",
+      "family": "geomagnetism",
+      "provider": "U.S. Geological Survey Geomagnetism Program",
+      "authority_role": "source_authority",
+      "admission_status": "candidate_public_official",
+      "access_mode": "official_api",
+      "semantic_states_allowed": ["measured", "derived"],
+      "redistribution_status": "unknown",
+      "terms_ref": "https://www.usgs.gov/tools/web-service-geomagnetism-data",
+      "product_identity": "SJG observatory geomagnetic elements",
+      "native_timezone": "UTC",
+      "expected_cadence": "sampling-period dependent",
+      "notes": "Station observations must never be presented as an island-wide measured magnetic field."
+    },
+    {
+      "source_id": "epa-airnow-current",
+      "family": "air_quality",
+      "provider": "U.S. Environmental Protection Agency AirNow",
+      "authority_role": "source_authority",
+      "admission_status": "candidate_public_official",
+      "access_mode": "official_download",
+      "semantic_states_allowed": ["measured", "derived"],
+      "redistribution_status": "unknown",
+      "terms_ref": "https://www.airnow.gov/",
+      "product_identity": "near-real-time air-quality context",
+      "native_timezone": null,
+      "expected_cadence": "product-specific",
+      "notes": "Keep separate from regulatory/historical AQS records."
+    },
+    {
+      "source_id": "epa-aqs-historical",
+      "family": "air_quality",
+      "provider": "U.S. Environmental Protection Agency AQS/AirData",
+      "authority_role": "source_authority",
+      "admission_status": "candidate_public_official",
+      "access_mode": "official_api",
+      "semantic_states_allowed": ["measured", "derived"],
+      "redistribution_status": "unknown",
+      "terms_ref": "https://www.epa.gov/aqs",
+      "product_identity": "historical/regulatory air-quality measurements",
+      "native_timezone": null,
+      "expected_cadence": "dataset-specific",
+      "notes": "AQS is not a near-real-time feed; preserve QA/QC and averaging-period metadata."
+    },
+    {
+      "source_id": "noaa-ncei-tjua-nexrad",
+      "family": "weather_radar",
+      "provider": "NOAA National Centers for Environmental Information",
+      "authority_role": "source_authority",
+      "admission_status": "candidate_public_official",
+      "access_mode": "official_archive",
+      "semantic_states_allowed": ["measured", "derived"],
+      "redistribution_status": "unknown",
+      "terms_ref": "https://www.ncei.noaa.gov/products/radar/next-generation-weather-radar",
+      "product_identity": "TJUA NEXRAD Level II/III",
+      "native_timezone": "UTC",
+      "expected_cadence": "scan/product dependent",
+      "notes": "Native radar products and provider-rendered images remain distinct manifestations."
+    },
+    {
+      "source_id": "noaa-nesdis-goes-abi-glm",
+      "family": "satellite",
+      "provider": "NOAA/NESDIS",
+      "authority_role": "source_authority",
+      "admission_status": "candidate_public_official",
+      "access_mode": "official_archive",
+      "semantic_states_allowed": ["measured", "derived"],
+      "redistribution_status": "unknown",
+      "terms_ref": "https://www.nesdis.noaa.gov/our-satellites/currently-flying/goes-east-west/goes-r-series-data-products",
+      "product_identity": "GOES ABI and GLM products",
+      "native_timezone": "UTC",
+      "expected_cadence": "product-specific",
+      "notes": "Aerosol, cloud, lightning and other satellite products must retain their native product identities."
+    }
+  ]
+}
