@@ -1,0 +1,73 @@
+{
+  "schema_version": "skywatcher.flight_corpus.v4",
+  "status": "PROVISIONAL",
+  "denominators": {
+    "nonempty_logical_records": 696,
+    "single_point_exclusions": 11,
+    "trajectory_eligible": 685,
+    "unordered_pair_denominator": 234270,
+    "consensus_geometry_families": 45,
+    "consensus_family_tracks": 326,
+    "chaining_risk_families": 4
+  },
+  "trajectory_eligibility": {
+    "minimum_valid_spatial_observations": 2
+  },
+  "identity_dimensions": [
+    "AIRFRAME",
+    "REGISTRATION",
+    "CALLSIGN",
+    "FLIGHT_ID",
+    "SOURCE_FOLDER",
+    "OWNER",
+    "OPERATOR",
+    "MISSION"
+  ],
+  "evidence_states": [
+    "FACT",
+    "COMPUTED",
+    "BINDING",
+    "INFERENCE",
+    "ASSUMPTION",
+    "HYPOTHESIS",
+    "UNKNOWN"
+  ],
+  "certification_states": [
+    "PASS",
+    "FAIL",
+    "OPEN",
+    "BLOCKED",
+    "PROVISIONAL",
+    "AUDIT_ONLY",
+    "NONCANONICAL",
+    "CANDIDATE_NOT_IDENTITY",
+    "UNRESOLVED",
+    "SUPERSEDED"
+  ],
+  "interpretation_gates": {
+    "shared_airport_is_shared_mission": false,
+    "proximity_is_coordination": false,
+    "co_route_is_common_tasking": false,
+    "recurrent_geometry_is_mission": false,
+    "infrastructure_intersection_is_targeting": false,
+    "owner_is_operator": false,
+    "callsign_is_airframe": false
+  },
+  "promoted_candidates": [
+    {
+      "aircraft": [
+        "N196DM",
+        "N407PR"
+      ],
+      "date": "2025-09-12",
+      "classification": "REPEATED_AIRBORNE_CO_ROUTE_CANDIDATE",
+      "mission": "UNKNOWN",
+      "coordination": "UNKNOWN"
+    }
+  ],
+  "blocked": [
+    "N2JJ_RAW_SOURCE_LINEAGE",
+    "COMPLETE_ISLANDWIDE_ELECTRICAL_GRID_DENOMINATOR",
+    "HBAL_CROSS_IDENTIFIER_IDENTITY"
+  ]
+}
