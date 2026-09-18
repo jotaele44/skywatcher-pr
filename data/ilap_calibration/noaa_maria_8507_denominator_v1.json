@@ -69,5 +69,13 @@
     "noaa_inport_supplemental_gsd_cm": 15,
     "state": "CONTRADICTION_SOURCE_METADATA",
     "canonical_gsd_cm": null
+  },
+  "license_observations": {
+    "stac_license_raw": "NLPL",
+    "noaa_inport_access_constraints": "None",
+    "noaa_inport_use_constraints_summary": "fitness/temporal-change/litigation caveats; no reuse prohibition",
+    "federal_data_gov_license": "CC0-1.0",
+    "contradiction_class": "LICENSE_METADATA_VARIATION",
+    "adjudication": "DATASET_RIGHTS_BOUND_BY_NOAA_INPORT_AND_FEDERAL_CATALOG; RAW_STAC_CODE_PRESERVED"
   }
 }
