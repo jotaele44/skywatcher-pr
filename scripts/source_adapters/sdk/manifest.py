@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import csv
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict
 from pathlib import Path
-from typing import Iterable, Mapping, Sequence
 
 from .core import CertifiedFetchResult, CoverageSummary
 
@@ -25,7 +25,7 @@ class ManifestEngine:
 
     def write_source_manifest(self, rows: Iterable[Mapping[str, object]], filename: str = "source_manifest.csv") -> Path:
         materialized = [dict(row) for row in rows]
-        fields = list(dict.fromkeys(k for row in materialized for k in row.keys())) or ["source_id"]
+        fields = list(dict.fromkeys(k for row in materialized for k in row)) or ["source_id"]
         return self.write_csv(filename, materialized, fields)
 
     def write_fetch_receipts(self, records: Sequence[CertifiedFetchResult], filename: str = "fetch_receipts.csv") -> Path:
