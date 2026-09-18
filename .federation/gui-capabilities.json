@@ -77,7 +77,9 @@
           "GET /api/geo/tracks",
           "GET /api/geo/tracks/{icao24}.geojson",
           "GET /api/geo/municipios.geojson",
-          "GET /api/geo/municipios/observation_density.geojson"
+          "GET /api/geo/municipios/observation_density.geojson",
+          "GET /api/flight-corpus/v4/status",
+          "GET /api/flight-corpus/v4/artifact-members"
         ],
         "symbols": [
           "server/backend/main.py:geo_observations",
@@ -88,7 +90,9 @@
           "server/backend/main.py:geo_track_index",
           "server/backend/main.py:geo_track",
           "server/backend/main.py:geo_municipios",
-          "server/backend/main.py:geo_municipios_observation_density"
+          "server/backend/main.py:geo_municipios_observation_density",
+          "server/backend/main.py:flight_corpus_v4_status",
+          "server/backend/main.py:flight_corpus_v4_artifact_members"
         ]
       },
       "frontend": {
