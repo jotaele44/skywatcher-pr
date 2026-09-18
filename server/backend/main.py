@@ -57,6 +57,37 @@ ADSB_DB = Path(os.environ["SKYWATCHER_DB"]) if os.environ.get("SKYWATCHER_DB") e
 # this is checked-in reference boundary data, the same file already committed by
 # aguayluz-pr and ovnis-pr under the identical name→GEOID shape.
 MUNICIPIOS_PATH = ROOT / "data" / "geo" / "pr_municipios_boundaries.json"
+FLIGHT_CORPUS_V4_DIR = ROOT / "data" / "flight_tracks" / "corpus_v4"
+
+
+
+def _flight_corpus_v4_contract() -> dict[str, Any]:
+    path = ROOT / "config" / "flight_corpus_v4.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
+@app.get("/api/flight-corpus/v4/status")
+def flight_corpus_v4_status() -> dict[str, Any]:
+    contract = _flight_corpus_v4_contract()
+    artifact_path = FLIGHT_CORPUS_V4_DIR / "artifact_manifest.json"
+    artifact = json.loads(artifact_path.read_text(encoding="utf-8")) if artifact_path.is_file() else None
+    return {
+        "schema_version": contract.get("schema_version"),
+        "status": contract.get("status", "UNKNOWN"),
+        "denominators": contract.get("denominators", {}),
+        "blocked": contract.get("blocked", []),
+        "promoted_candidates": contract.get("promoted_candidates", []),
+        "artifact_bound": artifact is not None,
+        "artifact": artifact.get("artifact") if artifact else None,
+    }
+
+
+@app.get("/api/flight-corpus/v4/artifact-members")
+def flight_corpus_v4_artifact_members() -> list[dict[str, Any]]:
+    path = FLIGHT_CORPUS_V4_DIR / "artifact_manifest.json"
+    if not path.is_file():
+        return []
+    return json.loads(path.read_text(encoding="utf-8")).get("members", [])
 
 app = FastAPI(
     title="Skywatcher-PR Dashboard API",
