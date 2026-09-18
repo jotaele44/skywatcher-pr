@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Map, Plane, IdCard, Camera, Route as RouteIcon,
   Building2, TowerControl, ClipboardCheck, Share2, GaugeCircle,
-  Crosshair, ScanSearch, ScanEye,
+  Crosshair, ScanSearch, ScanEye, Layers3,
 } from "lucide-react";
 import { PROGRAM } from "@/lib/skywatcher";
 import brandMark from "@/assets/icon-64.png?inline";
@@ -17,6 +17,7 @@ const NAV = [
   { to: "/spatial-truth", label: "Aircraft Spatial Truth", icon: Crosshair },
   { to: "/routes", label: "Route-Line Mining", icon: RouteIcon },
   { to: "/infrastructure", label: "Infrastructure Links", icon: Building2 },
+  { to: "/ilap-review", label: "ILAP Visual Review", icon: Layers3 },
   { to: "/airports", label: "PR Airports", icon: TowerControl },
   { to: "/review", label: "Manual Review", icon: ClipboardCheck },
   { to: "/export", label: "Federation Export", icon: Share2 },
