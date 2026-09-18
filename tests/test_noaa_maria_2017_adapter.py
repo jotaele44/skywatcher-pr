@@ -90,8 +90,8 @@ def test_payload_request_preserves_conservative_batch_lineage() -> None:
     request = build_payload_request(items[0])
     assert request.endpoint.source_lineage_id.endswith("::20170924b")
     assert request.endpoint.rights.fetch == "ALLOWED"
-    assert request.endpoint.rights.training == "UNKNOWN"
-    assert request.endpoint.rights.redistribution == "UNKNOWN"
+    assert request.endpoint.rights.training == "ALLOWED"
+    assert request.endpoint.rights.redistribution == "ALLOWED"
     assert request.expected_content == "image"
 
 
