@@ -47,7 +47,8 @@
       "**/*.spec.*",
       "**/components/ui/**",
       "scripts/check_gui_parity.py",
-      "scripts/validate_flight_corpus_v4_import.py"
+      "scripts/validate_flight_corpus_v4_import.py",
+      "src/skywatcher/flight_corpus_v4.py"
     ]
   },
   "capabilities": [
