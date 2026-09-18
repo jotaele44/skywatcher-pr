@@ -1,42 +1,78 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, hashlib, json
+
+import argparse
+import hashlib
+import json
 from pathlib import Path
 
-ROOT=Path(__file__).resolve().parents[1]
-CONTRACT=ROOT/"config"/"flight_corpus_v4.json"
+ROOT = Path(__file__).resolve().parents[1]
+CONTRACT = ROOT / "config" / "flight_corpus_v4.json"
 
-def sha256(p:Path)->str:
-    h=hashlib.sha256()
-    with p.open("rb") as f:
-        for c in iter(lambda:f.read(1024*1024),b""): h.update(c)
-    return h.hexdigest()
 
-def main()->int:
-    ap=argparse.ArgumentParser()
-    ap.add_argument("manifest",type=Path)
-    ns=ap.parse_args()
-    m=json.loads(ns.manifest.read_text())
-    c=json.loads(CONTRACT.read_text())
-    assert m["schema_version"]=="skywatcher.flight_corpus.import.v1"
-    assert m["corpus_version"]=="V4"
-    d=m["denominators"]; cd=c["denominators"]
-    for k in ("nonempty_logical_records","single_point_exclusions","trajectory_eligible","unordered_pair_denominator"):
-        assert d[k]==cd[k],f"denominator mismatch: {k}"
-    assert d["trajectory_eligible"]==d["nonempty_logical_records"]-d["single_point_exclusions"]
-    assert d["unordered_pair_denominator"]==d["trajectory_eligible"]*(d["trajectory_eligible"]-1)//2
-    ids=set(); paths=set()
-    for row in m["datasets"]:
-        assert row["dataset_id"] not in ids,"duplicate dataset_id"
-        assert row["path"] not in paths,"duplicate dataset path"
-        ids.add(row["dataset_id"]); paths.add(row["path"])
-        p=(ns.manifest.parent/row["path"]).resolve()
-        assert p.is_file(),f"missing dataset: {row['path']}"
-        assert sha256(p)==row["sha256"],f"hash mismatch: {row['path']}"
-    required=set(c["blocked"])
-    assert required.issubset(set(m["blocked"])),"V4 blocker silently removed"
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("manifest", type=Path)
+    args = parser.parse_args()
+
+    manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+    contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
+
+    assert manifest["schema_version"] == "skywatcher.flight_corpus.import.v1"
+    assert manifest["corpus_version"] == "V4"
+
+    denominators = manifest["denominators"]
+    contract_denominators = contract["denominators"]
+    keys = (
+        "nonempty_logical_records",
+        "single_point_exclusions",
+        "trajectory_eligible",
+        "unordered_pair_denominator",
+    )
+    for key in keys:
+        assert denominators[key] == contract_denominators[key], (
+            f"denominator mismatch: {key}"
+        )
+
+    assert denominators["trajectory_eligible"] == (
+        denominators["nonempty_logical_records"]
+        - denominators["single_point_exclusions"]
+    )
+    assert denominators["unordered_pair_denominator"] == (
+        denominators["trajectory_eligible"]
+        * (denominators["trajectory_eligible"] - 1)
+        // 2
+    )
+
+    dataset_ids: set[str] = set()
+    dataset_paths: set[str] = set()
+    for row in manifest["datasets"]:
+        assert row["dataset_id"] not in dataset_ids, "duplicate dataset_id"
+        assert row["path"] not in dataset_paths, "duplicate dataset path"
+        dataset_ids.add(row["dataset_id"])
+        dataset_paths.add(row["path"])
+
+        path = (args.manifest.parent / row["path"]).resolve()
+        assert path.is_file(), f"missing dataset: {row['path']}"
+        assert sha256(path) == row["sha256"], f"hash mismatch: {row['path']}"
+
+    required_blockers = set(contract["blocked"])
+    assert required_blockers.issubset(set(manifest["blocked"])), (
+        "V4 blocker silently removed"
+    )
+
     print("FLIGHT_CORPUS_V4_IMPORT=PASS")
-    print(f"DATASETS={len(m['datasets'])}")
+    print(f"DATASETS={len(manifest['datasets'])}")
     return 0
 
-if __name__=="__main__": raise SystemExit(main())
+
+if __name__ == "__main__":
+    raise SystemExit(main())
