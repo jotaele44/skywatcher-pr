@@ -1,0 +1,14 @@
+{
+  "binding": "federation-external-render-provider-binding/1.0",
+  "repository": "skywatcher-pr",
+  "authority_repository": "spiderweb-pr",
+  "provider": "apple-mapkit",
+  "classification": "EXTERNAL_RENDER_PROVIDER",
+  "authority": "NONE",
+  "status": "PROVISIONAL",
+  "intended_uses": ["airport_context", "antenna_site_context", "facility_context", "static_observation_context"],
+  "excluded_until_adjudicated": ["fleet_management", "asset_tracking", "provider_based_live_aircraft_tracking"],
+  "canonical_data_effect": "NONE",
+  "requirements": ["NO_PROVIDER_PIXEL_PERSISTENCE", "NO_TILE_HARVEST", "ATTRIBUTION_VISIBLE", "FEDERATION_OVERLAYS_PROVIDER_INDEPENDENT", "OBSERVATIONS_VISUAL_CORROBORATION_ONLY", "APPLE_TRACKING_USE_POLICY_GATE", "CREDENTIALS_LAST"],
+  "live_enablement": "BLOCKED_UNTIL_SPIDERWEB_PROVIDER_PARITY_AND_TRACKING_POLICY_PASS"
+}
