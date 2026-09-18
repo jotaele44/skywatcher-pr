@@ -7,7 +7,6 @@
   "url_list_url": "https://chs.coast.noaa.gov/htdata/raster6/imagery/HurricaneMaria_2017_8507/urllist8507.txt",
   "stac_item_collection_url": "https://chs.coast.noaa.gov/htdata/raster6/imagery/HurricaneMaria_2017_8507/stac/noaa_imagery_item_collection_m8507.json",
   "published_total_size": "193G",
-  "published_approx_gsd_cm": 25,
   "published_acquisition_window": [
     "2017-09-22",
     "2017-09-26"
@@ -44,9 +43,17 @@
   },
   "rights_state": {
     "fetch": "ALLOWED",
-    "training": "UNKNOWN",
-    "redistribution": "UNKNOWN",
-    "note": "Preserve raw STAC license code and NOAA usage evidence separately; do not infer ML-training or redistribution rights from catalog accessibility alone."
+    "training": "ALLOWED",
+    "redistribution": "ALLOWED",
+    "binding_state": "PASS",
+    "evidence": [
+      "NOAA InPort item 52283: Access Constraints = None; Use Constraints are limitation/fitness/litigation warnings, not a reuse prohibition.",
+      "Federal Data.gov record for the dataset publishes license=https://creativecommons.org/publicdomain/zero/1.0/."
+    ],
+    "caveats": [
+      "Preserve NOAA credit and non-endorsement posture.",
+      "Do not confuse dataset license with the raw STAC item license code NLPL; retain both source observations."
+    ]
   },
   "certification": {
     "source_denominator": "PASS",
@@ -54,6 +61,13 @@
     "full_runtime_stac_parse": "OPEN_PENDING_REPO_RUNTIME_NETWORK",
     "pilot_binary_fetch": "BLOCKED_CURRENT_EXECUTION_ENVIRONMENT",
     "pilot_hash": "OPEN",
-    "training_promotion": "BLOCKED_RIGHTS_UNKNOWN"
+    "training_promotion": "RIGHTS_PASS_SUBSYSTEM_CALIBRATION_STILL_REQUIRED",
+    "gsd_identity": "UNRESOLVED_SOURCE_CONTRADICTION"
+  },
+  "gsd_observations": {
+    "storms_page_approx_gsd_cm": 25,
+    "noaa_inport_supplemental_gsd_cm": 15,
+    "state": "CONTRADICTION_SOURCE_METADATA",
+    "canonical_gsd_cm": null
   }
 }
