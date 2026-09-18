@@ -183,7 +183,7 @@ def extract_raw_raster_candidates(
             continue
         x1, y1, x2, y2 = bbox
         detection = {
-            "candidate_kind": "dark_radiometric_region",
+            "candidate_kind": "tonal_boundary",
             "geometry": {
                 "type": "Polygon",
                 "coordinates": [[
