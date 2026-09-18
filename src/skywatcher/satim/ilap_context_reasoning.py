@@ -6,10 +6,10 @@ mission from visual/spatial observations.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from math import isfinite
 from statistics import median
-from typing import Iterable, Mapping, Sequence
 
 CANDIDATE_FAMILIES = {
     "ILAP_VISUAL_LAYOUT_CANDIDATE",
