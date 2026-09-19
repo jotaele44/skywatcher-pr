@@ -209,5 +209,6 @@ export const federation = {
   connectors,
   asServiceRole: { entities, connectors },
   system,
+  ilap: { review: () => request('/ilap/review') },
   request,
 };
