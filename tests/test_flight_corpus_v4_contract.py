@@ -85,7 +85,7 @@ def test_v4_deep_interface_preserves_provenance_and_noninference():
     assert body["interpretation"]["candidate_is_coordination"] is False
 
 
-def test_v4_recurrence_fails_closed_without_local_bytes():
+def test_v4_recurrence_verifies_materialized_bytes():
     from fastapi.testclient import TestClient
 
     from server.backend.main import app
@@ -93,11 +93,28 @@ def test_v4_recurrence_fails_closed_without_local_bytes():
     client = TestClient(app)
     route = client.get("/api/flight-corpus/v4/route-family-recurrence").json()
     airport = client.get("/api/flight-corpus/v4/airport-edge-recurrence").json()
-    assert route["availability"] == "EXTERNAL_ARTIFACT_BOUND"
-    assert airport["availability"] == "EXTERNAL_ARTIFACT_BOUND"
-    assert route["rows"] == [] and route["row_count"] == 0
-    assert airport["rows"] == [] and airport["row_count"] == 0
+    assert route["availability"] == "SOURCE_BYTES_AVAILABLE"
+    assert airport["availability"] == "SOURCE_BYTES_AVAILABLE"
+    assert route["row_count"] == 123
+    assert airport["row_count"] == 233
+    assert len(route["rows"]) == 123
+    assert len(airport["rows"]) == 233
     assert route["member"]["sha256"] == "1938831c7c532fadd7ddea8730a39fc69738faa4a32ba54f7bfa86a92fad3b70"
     assert airport["member"]["sha256"] == "60d581529a40e6a78c4f8858978b670a94ac174f446fc481c98e8928405d940d"
     assert route["interpretation"]["recurrence_is_mission"] is False
     assert route["interpretation"]["derived_is_raw"] is False
+
+
+def test_v4_recurrence_filters_conserve_rows():
+    from fastapi.testclient import TestClient
+
+    from server.backend.main import app
+
+    client = TestClient(app)
+    all_rows = client.get("/api/flight-corpus/v4/route-family-recurrence").json()["rows"]
+    sep = client.get("/api/flight-corpus/v4/route-family-recurrence?month=2025-09").json()["rows"]
+    family = client.get("/api/flight-corpus/v4/route-family-recurrence?family=1").json()["rows"]
+    assert sep and all(row["utc_month"] == "2025-09" for row in sep)
+    assert family and all(str(row["consensus_family_id"]) == "1" for row in family)
+    assert len(sep) <= len(all_rows)
+    assert len(family) <= len(all_rows)
