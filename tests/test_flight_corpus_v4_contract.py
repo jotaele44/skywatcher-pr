@@ -160,8 +160,8 @@ def test_v4_family_split_summary_exact_bytes_and_semantics():
     assert body["availability"] == "SOURCE_BYTES_AVAILABLE"
     assert body["row_count"] == 46
     assert body["member"]["sha256"] == "9a0887d4a69a07cebf31b5161f300b18221a042a73034308624aafc227bce209"
-    assert body["rows"][0]["consensus_family_id"] == "-1"
-    assert body["rows"][0]["tracks"] == "359"
+    assert body["rows"][0]["consensus_family_id"] == -1
+    assert body["rows"][0]["tracks"] == 359
     assert body["interpretation"]["minus_one_is_canonical_family"] is False
     assert body["interpretation"]["family_is_identity"] is False
     assert body["interpretation"]["subfamily_is_mission"] is False
