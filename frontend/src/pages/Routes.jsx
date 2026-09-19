@@ -30,6 +30,9 @@ export default function Routes() {
   const [corpus, setCorpus] = useState(null);
   const [deepCorpus, setDeepCorpus] = useState(null);
   const [showProvenance, setShowProvenance] = useState(false);
+  const [recurrence, setRecurrence] = useState(null);
+  const [recurrenceMonth, setRecurrenceMonth] = useState("");
+  const [recurrenceFamily, setRecurrenceFamily] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -41,6 +44,14 @@ export default function Routes() {
       });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    federation.flightCorpusV4.routeFamilyRecurrence({ month: recurrenceMonth, family: recurrenceFamily })
+      .then((value) => { if (active) setRecurrence(value); })
+      .catch(() => { if (active) setRecurrence(null); });
+    return () => { active = false; };
+  }, [recurrenceMonth, recurrenceFamily]);
 
   const filtered = useMemo(() => {
     let rows = [...d.routes];
@@ -119,7 +130,24 @@ export default function Routes() {
         </Panel>
       )}
 
-      <PuertoRicoMapShell routes={filtered} airports={d.airports} observations={[]} assets={d.assets} height={280} title="Route-Line Segment Context" />
+      {recurrence && (
+        <Panel title="V4 Temporal Route-Family Recurrence">
+          <div className="flex flex-wrap gap-3">
+            <input value={recurrenceMonth} onChange={(e) => setRecurrenceMonth(e.target.value)} placeholder="Month (YYYY-MM)" className="rounded border border-border bg-background px-3 py-2 text-xs" />
+            <input value={recurrenceFamily} onChange={(e) => setRecurrenceFamily(e.target.value)} placeholder="Family ID" className="rounded border border-border bg-background px-3 py-2 text-xs" />
+            <span className="self-center text-xs text-muted-foreground">{recurrence.row_count} rows · {recurrence.availability}</span>
+          </div>
+          <div className="mt-3 overflow-x-auto rounded border border-border">
+            <table className="w-full text-xs">
+              <thead><tr className="bg-secondary/40 text-left"><th className="p-2">Month</th><th className="p-2">Family</th><th className="p-2">Tracks</th></tr></thead>
+              <tbody>{(recurrence.rows || []).map((row, index) => <tr key={row.utc_month + "-" + row.consensus_family_id + "-" + index} className="border-t border-border/50"><td className="p-2 font-mono">{row.utc_month}</td><td className="p-2 font-mono">{row.consensus_family_id}</td><td className="p-2 font-mono">{row.tracks}</td></tr>)}</tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[10px] text-muted-foreground">Source member SHA-256: {recurrence.member?.sha256 || "UNKNOWN"}. These are DERIVED recurrence counts, not RAW observations and not mission classifications.</p>
+        </Panel>
+      )}
+
+            <PuertoRicoMapShell routes={filtered} airports={d.airports} observations={[]} assets={d.assets} height={280} title="Route-Line Segment Context" />
 
       <Panel title="Route Clusters" icon={Layers}>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
