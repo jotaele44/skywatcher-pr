@@ -178,9 +178,22 @@ def flight_corpus_v4_route_family_recurrence(
 @app.get("/api/flight-corpus/v4/airport-edge-recurrence")
 def flight_corpus_v4_airport_edge_recurrence(
     month: str | None = Query(default=None),
+    departure: str | None = Query(default=None),
+    arrival: str | None = Query(default=None),
 ) -> dict[str, Any]:
     result = _v4_recurrence_rows("airport_edge_monthly_recurrence.csv", month, None)
-    result["interpretation"] = {"recurrence_is_mission": False, "derived_is_raw": False}
+    rows = result["rows"]
+    if departure is not None:
+        rows = [row for row in rows if str(row.get("departure") or "") == departure]
+    if arrival is not None:
+        rows = [row for row in rows if str(row.get("arrival") or "") == arrival]
+    result["rows"] = rows
+    result["row_count"] = len(rows)
+    result["interpretation"] = {
+        "recurrence_is_mission": False,
+        "derived_is_raw": False,
+        "blank_airport_is_no_airport": False,
+    }
     return result
 
 
