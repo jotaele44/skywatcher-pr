@@ -275,6 +275,28 @@
           "tests/test_gui_parity.py"
         ]
       }
+    },
+    {
+      "id": "ilap-calibration-validator-internals",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "ILAP calibration corpus loading, validation, and CLI execution are fail-closed certification machinery. They validate analytical inputs and do not constitute a standalone user-facing GUI workflow.",
+      "analysis": {
+        "files": [
+          "scripts/validate_ilap_calibration_corpus.py"
+        ],
+        "symbols": [
+          "scripts/validate_ilap_calibration_corpus.py:load",
+          "scripts/validate_ilap_calibration_corpus.py:validate",
+          "scripts/validate_ilap_calibration_corpus.py:main"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
     }
   ],
   "exceptions": []
