@@ -149,3 +149,19 @@ def test_v4_family_provenance_preserves_superseded_discovery():
     assert [row["v3_family"] for row in body["superseded_families"]] == [1, 2, 3, 4]
     assert body["split_member"]["sha256"] == "b85b3d5c326f150a1d2f851d517b4c7ede3d26f04426ac80470b5c08778a3a88"
     assert body["summary_member"]["sha256"] == "9a0887d4a69a07cebf31b5161f300b18221a042a73034308624aafc227bce209"
+
+
+def test_v4_family_split_summary_exact_bytes_and_semantics():
+    from fastapi.testclient import TestClient
+
+    from server.backend.main import app
+
+    body = TestClient(app).get("/api/flight-corpus/v4/family-split-summary").json()
+    assert body["availability"] == "SOURCE_BYTES_AVAILABLE"
+    assert body["row_count"] == 46
+    assert body["member"]["sha256"] == "9a0887d4a69a07cebf31b5161f300b18221a042a73034308624aafc227bce209"
+    assert body["rows"][0]["consensus_family_id"] == "-1"
+    assert body["rows"][0]["tracks"] == "359"
+    assert body["interpretation"]["minus_one_is_canonical_family"] is False
+    assert body["interpretation"]["family_is_identity"] is False
+    assert body["interpretation"]["subfamily_is_mission"] is False
