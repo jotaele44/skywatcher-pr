@@ -197,6 +197,27 @@ def flight_corpus_v4_airport_edge_recurrence(
     return result
 
 
+@app.get("/api/flight-corpus/v4/family-provenance")
+def flight_corpus_v4_family_provenance() -> dict[str, Any]:
+    artifact_path = FLIGHT_CORPUS_V4_DIR / "artifact_manifest.json"
+    artifact = json.loads(artifact_path.read_text(encoding="utf-8")) if artifact_path.is_file() else {}
+    by_path = {row["path"]: row for row in artifact.get("members", [])}
+    return {
+        "methodology": "V3_DBSCAN_DISCOVERY_TO_V4_COMPLETE_LINK_ADJUDICATION",
+        "discovery_is_identity": False,
+        "subfamily_is_mission": False,
+        "superseded_families": [
+            {"v3_family": 1, "v3_tracks": 122, "v4_subfamilies": 5, "largest_v4_subfamily": 61},
+            {"v3_family": 2, "v3_tracks": 29, "v4_subfamilies": 2, "largest_v4_subfamily": 25},
+            {"v3_family": 3, "v3_tracks": 26, "v4_subfamilies": 3, "largest_v4_subfamily": 21},
+            {"v3_family": 4, "v3_tracks": 17, "v4_subfamilies": 3, "largest_v4_subfamily": 10},
+        ],
+        "split_member": by_path.get("complete_link_family_split.csv"),
+        "summary_member": by_path.get("complete_link_family_split_summary.csv"),
+        "state": "SUPERSEDED_BOUNDARIES",
+    }
+
+
 # Session-scoped mutations from the review UI; never written to disk.
 _overlay: dict[str, dict[str, dict[str, Any]]] = {}
 _created: dict[str, list[dict[str, Any]]] = {}

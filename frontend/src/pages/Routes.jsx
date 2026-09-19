@@ -37,6 +37,7 @@ export default function Routes() {
   const [airportMonth, setAirportMonth] = useState("");
   const [departure, setDeparture] = useState("");
   const [arrival, setArrival] = useState("");
+  const [familyProvenance, setFamilyProvenance] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -64,6 +65,14 @@ export default function Routes() {
       .catch(() => { if (active) setAirportRecurrence(null); });
     return () => { active = false; };
   }, [airportMonth, departure, arrival]);
+
+  useEffect(() => {
+    let active = true;
+    federation.flightCorpusV4.familyProvenance()
+      .then((value) => { if (active) setFamilyProvenance(value); })
+      .catch(() => { if (active) setFamilyProvenance(null); });
+    return () => { active = false; };
+  }, []);
 
   const filtered = useMemo(() => {
     let rows = [...d.routes];
@@ -174,6 +183,16 @@ export default function Routes() {
             </table>
           </div>
           <p className="mt-2 text-[10px] text-muted-foreground">Blank departure/arrival values render as UNKNOWN; they do not establish that no airport existed. Source member SHA-256: {airportRecurrence.member?.sha256 || "UNKNOWN"}.</p>
+        </Panel>
+      )}
+
+            {familyProvenance && (
+        <Panel title="V4 Route-Family Methodology Provenance">
+          <p className="text-xs"><strong>{familyProvenance.state}</strong> · {familyProvenance.methodology}</p>
+          <div className="mt-3 overflow-x-auto rounded border border-border">
+            <table className="w-full text-xs"><thead><tr className="bg-secondary/40 text-left"><th className="p-2">V3 family</th><th className="p-2">V3 tracks</th><th className="p-2">V4 subfamilies</th><th className="p-2">Largest V4</th></tr></thead><tbody>{familyProvenance.superseded_families.map((row) => <tr key={row.v3_family} className="border-t border-border/50"><td className="p-2 font-mono">{row.v3_family}</td><td className="p-2">{row.v3_tracks}</td><td className="p-2">{row.v4_subfamilies}</td><td className="p-2">{row.largest_v4_subfamily}</td></tr>)}</tbody></table>
+          </div>
+          <p className="mt-2 text-[10px] text-muted-foreground">Split source SHA-256: {familyProvenance.split_member?.sha256 || "UNKNOWN"}. V3 density families remain historical discovery outputs; V4 conservative subfamilies do not establish route identity, mission, operator, or purpose.</p>
         </Panel>
       )}
 
