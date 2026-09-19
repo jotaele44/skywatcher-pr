@@ -28,12 +28,17 @@ export default function Routes() {
   const [q, setQ] = useState("");
   const [review, setReview] = useState("all");
   const [corpus, setCorpus] = useState(null);
+  const [deepCorpus, setDeepCorpus] = useState(null);
+  const [showProvenance, setShowProvenance] = useState(false);
 
   useEffect(() => {
     let active = true;
-    federation.flightCorpusV4.status()
-      .then((value) => { if (active) setCorpus(value); })
-      .catch(() => { if (active) setCorpus(null); });
+    Promise.allSettled([federation.flightCorpusV4.status(), federation.flightCorpusV4.deepInterface()])
+      .then(([status, deep]) => {
+        if (!active) return;
+        setCorpus(status.status === "fulfilled" ? status.value : null);
+        setDeepCorpus(deep.status === "fulfilled" ? deep.value : null);
+      });
     return () => { active = false; };
   }, []);
 
@@ -86,7 +91,31 @@ export default function Routes() {
               ))}
             </div>
           </div>
-          <p className="mt-3 text-[10px] text-muted-foreground">Candidate geometry and co-route evidence do not establish mission, coordination, operator, or targeting.</p>
+          {deepCorpus && (
+            <div className="mt-4 border-t border-border pt-3">
+              <div className="flex flex-wrap gap-4 text-xs">
+                <span>Identity/source contradictions: <strong>{deepCorpus.contradiction_state?.identity_source_contradictions_v2 ?? "UNKNOWN"}</strong> · {deepCorpus.contradiction_state?.adjudication}</span>
+                <span>Single-point exclusions: <strong>{deepCorpus.exclusion_state?.single_point_nontrajectory_records ?? "UNKNOWN"}</strong></span>
+                <span>Temporal recurrence: <strong>{deepCorpus.temporal_recurrence?.availability ?? "UNKNOWN"}</strong></span>
+              </div>
+              <button type="button" onClick={() => setShowProvenance((value) => !value)} className="mt-3 rounded border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/40">
+                {showProvenance ? "Hide provenance" : "Inspect provenance"}
+              </button>
+              {showProvenance && (
+                <div className="mt-3 max-h-64 overflow-auto rounded border border-border">
+                  <table className="w-full text-left text-[10px]">
+                    <thead><tr className="bg-secondary/40"><th className="p-2">Member</th><th className="p-2">Bytes</th><th className="p-2">SHA-256</th></tr></thead>
+                    <tbody>{(deepCorpus.members || []).map((member) => <tr key={member.path} className="border-t border-border/50"><td className="p-2 font-mono">{member.path}</td><td className="p-2 font-mono">{member.size_bytes}</td><td className="p-2 font-mono">{member.sha256}</td></tr>)}</tbody>
+                  </table>
+                </div>
+              )}
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 text-[10px] text-muted-foreground">
+                <p>Route-family recurrence member: {deepCorpus.temporal_recurrence?.route_family_member?.path || "BLOCKED"}</p>
+                <p>Airport-edge recurrence member: {deepCorpus.temporal_recurrence?.airport_edge_member?.path || "BLOCKED"}</p>
+              </div>
+            </div>
+          )}
+          <p className="mt-3 text-[10px] text-muted-foreground">Candidate geometry, temporal recurrence, and co-route evidence do not establish mission, coordination, operator, or targeting.</p>
         </Panel>
       )}
 

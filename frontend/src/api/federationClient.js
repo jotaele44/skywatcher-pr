@@ -195,6 +195,7 @@ const connectors = {
 const flightCorpusV4 = {
   status: () => request('/flight-corpus/v4/status'),
   artifactMembers: () => request('/flight-corpus/v4/artifact-members'),
+  deepInterface: () => request('/flight-corpus/v4/deep-interface'),
 };
 
 const system = {
