@@ -1,0 +1,77 @@
+{
+  "schema_version": "skywatcher.flight_corpus.artifact_manifest.v1",
+  "corpus_version": "V4",
+  "artifact": {
+    "filename": "skywatcher_flight_corpus_v4.zip",
+    "sha256": "eebbf64baced4a2f7e325627a64ab75b01b340ef1ac9b07a2097b91ec95b90f8",
+    "member_count": 13,
+    "uncompressed_bytes": 11658795
+  },
+  "members": [
+    {
+      "path": "complete_link_family_split.csv",
+      "size_bytes": 49923,
+      "sha256": "b85b3d5c326f150a1d2f851d517b4c7ede3d26f04426ac80470b5c08778a3a88"
+    },
+    {
+      "path": "signature_exclusion_audit.csv",
+      "size_bytes": 3109,
+      "sha256": "d987dc96db5bea102e594e95c97c44b8353577b9837f751cd92ac9d0a9a9b84b"
+    },
+    {
+      "path": "consensus_route_family_tracks.geojson",
+      "size_bytes": 2410060,
+      "sha256": "8edd6b3ae3a1c29f80cf4ded8ed57eb09150107b12f61fbb1c00f6808421a48f"
+    },
+    {
+      "path": "SHA256SUMS_V4.txt",
+      "size_bytes": 1205,
+      "sha256": "4edddfdab42727eb69f94250bc60979b2dca6bfe7274ec402926e72d19b38805"
+    },
+    {
+      "path": "priority_aircraft_geometry_census.csv",
+      "size_bytes": 37920,
+      "sha256": "e9a36e58e5b2c236b5d87ec689312586787db93f9a31e37c3316de321052bf91"
+    },
+    {
+      "path": "summary_v4.json",
+      "size_bytes": 494,
+      "sha256": "d2dc5295e4fd4fa74a7674c6c789380ef678470fcc765cb545983e690e6cdd9e"
+    },
+    {
+      "path": "airport_edge_monthly_recurrence.csv",
+      "size_bytes": 4019,
+      "sha256": "60d581529a40e6a78c4f8858978b670a94ac174f446fc481c98e8928405d940d"
+    },
+    {
+      "path": "complete_link_family_split_summary.csv",
+      "size_bytes": 477,
+      "sha256": "9a0887d4a69a07cebf31b5161f300b18221a042a73034308624aafc227bce209"
+    },
+    {
+      "path": "route_family_monthly_recurrence.csv",
+      "size_bytes": 1602,
+      "sha256": "1938831c7c532fadd7ddea8730a39fc69738faa4a32ba54f7bfa86a92fad3b70"
+    },
+    {
+      "path": "airport_edge_temporal_manifestations.csv",
+      "size_bytes": 49299,
+      "sha256": "2dfb2ed8c167cac9c9de040d4dd97f48e3534487db1328f3ee79c96c4b6d634c"
+    },
+    {
+      "path": "raw_track_geometries.geojson",
+      "size_bytes": 8863489,
+      "sha256": "a0218ef704fbf1ff931420a9a1a40940aec1b6c9988502ebba841ad5112aba53"
+    },
+    {
+      "path": "N196DM_N407PR_original_observations_2025-09-12.csv",
+      "size_bytes": 233670,
+      "sha256": "c417b695c1bd23a9bed4008b1f908775554510cbd510e8c713ab3fde760e374d"
+    },
+    {
+      "path": "CERTIFICATION_REPORT_V4.txt",
+      "size_bytes": 3528,
+      "sha256": "a0540554f3fb5fb12d21fcbb7040328960f0e2960d506b4d01b5ced397626189"
+    }
+  ]
+}
