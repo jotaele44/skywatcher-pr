@@ -189,6 +189,33 @@
           "tests/test_server_smoke.py"
         ]
       }
+    },
+    {
+      "id": "centinelas-handoff-receiver",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "The Centinelas handoff receiver is internal federation transport and integrity machinery, not a user-facing analytical function. It validates routed signal envelopes, enforces deterministic idempotency, preserves collision evidence, and records identity_effect=NONE. Exposing ingest, validate_envelope, or main as GUI controls would duplicate an internal transport boundary and incorrectly imply that signal receipt is an aviation-domain or identity decision.",
+      "analysis": {
+        "files": [
+          "scripts/ingest_centinelas_handoff.py"
+        ],
+        "symbols": [
+          "scripts/ingest_centinelas_handoff.py:ingest",
+          "scripts/ingest_centinelas_handoff.py:main",
+          "scripts/ingest_centinelas_handoff.py:validate_envelope"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_centinelas_handoff_integrity.py"
+        ]
+      },
+      "candidate_ids": [
+        "analysis_symbol:scripts/ingest_centinelas_handoff.py:ingest",
+        "analysis_symbol:scripts/ingest_centinelas_handoff.py:main",
+        "analysis_symbol:scripts/ingest_centinelas_handoff.py:validate_envelope"
+      ]
     }
   ],
   "exceptions": []
