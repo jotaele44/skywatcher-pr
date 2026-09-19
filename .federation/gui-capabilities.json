@@ -232,6 +232,49 @@
           "frontend/tests/gui-parity.spec.mjs"
         ]
       }
+    },
+    {
+      "id": "source-adapter-acquisition-internals",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Source-adapter discovery, rights enforcement, payload validation, certified fetching, provider registry, manifest generation, and coverage summarization are acquisition/provenance machinery. They support user-facing analysis but are not standalone GUI workflows; CLI entry points remain implementation interfaces.",
+      "analysis": {
+        "files": [
+          "scripts/source_adapters/noaa_maria_2017/adapter.py",
+          "scripts/source_adapters/provider_registry.py",
+          "scripts/source_adapters/sdk/core.py",
+          "scripts/source_adapters/sdk/download.py",
+          "scripts/source_adapters/sdk/manifest.py"
+        ],
+        "symbols": [
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:MariaItem",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:UrlListDenominator",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:parse_stac_items",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:parse_url_list",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:build_dry_run",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:build_payload_requests",
+          "scripts/source_adapters/provider_registry.py:PROVIDERS",
+          "scripts/source_adapters/sdk/core.py:AcquisitionRights",
+          "scripts/source_adapters/sdk/core.py:AdapterPolicy",
+          "scripts/source_adapters/sdk/core.py:PayloadRequest",
+          "scripts/source_adapters/sdk/core.py:require_redistribution_eligible",
+          "scripts/source_adapters/sdk/core.py:require_training_eligible",
+          "scripts/source_adapters/sdk/download.py:CertifiedFetchResult",
+          "scripts/source_adapters/sdk/download.py:CoverageSummary",
+          "scripts/source_adapters/sdk/download.py:PayloadValidator",
+          "scripts/source_adapters/sdk/download.py:CertifiedFetchEngine",
+          "scripts/source_adapters/sdk/manifest.py:build_manifest_rows",
+          "scripts/source_adapters/sdk/manifest.py:write_manifest_csv",
+          "scripts/source_adapters/sdk/manifest.py:summarize_coverage"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_skywatcher_source_adapter_sdk.py",
+          "tests/test_gui_parity.py"
+        ]
+      }
     }
   ],
   "exceptions": []
