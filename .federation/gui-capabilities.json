@@ -187,6 +187,51 @@
           "tests/test_server_smoke.py"
         ]
       }
+    },
+    {
+      "id": "ilap-visual-review",
+      "classification": "analysis",
+      "status": "active",
+      "requires_terminal": false,
+      "backend": {
+        "files": [
+          "server/backend/main.py"
+        ],
+        "endpoints": [
+          "GET /api/ilap/review",
+          "POST /api/entities/ILAPReviewAnnotations"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/ilap-review"
+        ],
+        "e2e_routes": [
+          "/ilap-review"
+        ],
+        "components": [
+          "frontend/src/api/federationClient.js",
+          "frontend/src/pages/ILAPReviewLab.jsx",
+          "frontend/src/components/skywatcher/IlapAnnotationPalette.jsx",
+          "frontend/src/components/skywatcher/TemporalImageStackViewer.jsx",
+          "frontend/src/components/skywatcher/CandidateExplainabilityPane.jsx",
+          "frontend/src/components/skywatcher/MultiAnalystComparison.jsx"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_ilap_review_api.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      }
     }
   ],
   "exceptions": []
