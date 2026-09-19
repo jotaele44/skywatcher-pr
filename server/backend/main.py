@@ -105,6 +105,37 @@ def flight_corpus_v4_artifact_members() -> list[dict[str, Any]]:
     return json.loads(path.read_text(encoding="utf-8")).get("members", [])
 
 
+@app.get("/api/flight-corpus/v4/deep-interface")
+def flight_corpus_v4_deep_interface() -> dict[str, Any]:
+    artifact_path = FLIGHT_CORPUS_V4_DIR / "artifact_manifest.json"
+    artifact = json.loads(artifact_path.read_text(encoding="utf-8")) if artifact_path.is_file() else {}
+    members = artifact.get("members", [])
+    by_path = {row["path"]: row for row in members}
+    contract = _flight_corpus_v4_contract()
+    return {
+        "artifact": artifact.get("artifact"),
+        "members": members,
+        "contradiction_state": {
+            "identity_source_contradictions_v2": 47,
+            "adjudication": "SUPERSEDED_BY_V4_BOUNDED_ADJUDICATION",
+        },
+        "exclusion_state": {
+            "single_point_nontrajectory_records": contract.get("denominators", {}).get("single_point_exclusions", 0),
+            "audit_member": by_path.get("signature_exclusion_audit.csv"),
+        },
+        "temporal_recurrence": {
+            "route_family_member": by_path.get("route_family_monthly_recurrence.csv"),
+            "airport_edge_member": by_path.get("airport_edge_monthly_recurrence.csv"),
+            "availability": "EXTERNAL_ARTIFACT_BOUND",
+        },
+        "blocked": contract.get("blocked", []),
+        "interpretation": {
+            "route_recurrence_is_mission": False,
+            "candidate_is_coordination": False,
+        },
+    }
+
+
 # Session-scoped mutations from the review UI; never written to disk.
 _overlay: dict[str, dict[str, dict[str, Any]]] = {}
 _created: dict[str, list[dict[str, Any]]] = {}
