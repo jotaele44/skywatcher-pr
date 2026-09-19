@@ -83,7 +83,8 @@
           "GET /api/flight-corpus/v4/deep-interface",
           "GET /api/flight-corpus/v4/route-family-recurrence",
           "GET /api/flight-corpus/v4/airport-edge-recurrence",
-          "GET /api/flight-corpus/v4/family-provenance"
+          "GET /api/flight-corpus/v4/family-provenance",
+          "GET /api/flight-corpus/v4/family-split-summary"
         ],
         "symbols": [
           "server/backend/main.py:geo_observations",
@@ -100,7 +101,8 @@
           "server/backend/main.py:flight_corpus_v4_deep_interface",
           "server/backend/main.py:flight_corpus_v4_route_family_recurrence",
           "server/backend/main.py:flight_corpus_v4_airport_edge_recurrence",
-          "server/backend/main.py:flight_corpus_v4_family_provenance"
+          "server/backend/main.py:flight_corpus_v4_family_provenance",
+          "server/backend/main.py:flight_corpus_v4_family_split_summary"
         ]
       },
       "frontend": {
