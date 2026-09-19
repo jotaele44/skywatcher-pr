@@ -21,7 +21,8 @@ jobs:
           CENTINELAS_CLIENT_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
           EXPECTED_TARGET: skywatcher-pr
         run: python3 scripts/ingest_centinelas_handoff.py
-      - name: Persist receipt
+      - name: Persist receipt or collision evidence
+        if: always()
         run: |
           git config user.name centinelas-handoff-bot
           git config user.email actions@users.noreply.github.com
