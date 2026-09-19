@@ -192,6 +192,11 @@ const connectors = {
   getConnection: (name) => request(`/connectors/${encode(name)}/connection`),
 };
 
+const flightCorpusV4 = {
+  status: () => request('/flight-corpus/v4/status'),
+  artifactMembers: () => request('/flight-corpus/v4/artifact-members'),
+};
+
 const system = {
   publicSettings: () => request('/apps/public-settings').catch(() => ({
     id: appParams.appId,
@@ -209,5 +214,6 @@ export const federation = {
   connectors,
   asServiceRole: { entities, connectors },
   system,
+  flightCorpusV4,
   request,
 };
