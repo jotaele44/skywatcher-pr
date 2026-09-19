@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Route as RouteIcon, Layers } from "lucide-react";
 import { useSkywatcher } from "@/lib/SkywatcherData";
 import { useDrawers } from "@/components/skywatcher/drawers/DrawerHub";
@@ -13,6 +13,7 @@ import EmptyState from "@/components/skywatcher/EmptyState";
 import LoadingState from "@/components/skywatcher/LoadingState";
 import { Toolbar, SearchInput, FilterSelect } from "@/components/skywatcher/Toolbar";
 import { REVIEW_STATUS } from "@/lib/skywatcher";
+import { federation } from "@/api/federationClient";
 
 const REVIEW_OPTS = [
   { value: "all", label: "All review states" },
@@ -26,6 +27,15 @@ export default function Routes() {
   const { open } = useDrawers();
   const [q, setQ] = useState("");
   const [review, setReview] = useState("all");
+  const [corpus, setCorpus] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    federation.flightCorpusV4.status()
+      .then((value) => { if (active) setCorpus(value); })
+      .catch(() => { if (active) setCorpus(null); });
+    return () => { active = false; };
+  }, []);
 
   const filtered = useMemo(() => {
     let rows = [...d.routes];
@@ -51,6 +61,34 @@ export default function Routes() {
     <div className="space-y-5">
       <PageHeader title="Route-Line Mining" subtitle="Route-line-segment mining outputs & cluster analysis" icon={RouteIcon} />
       <DiagnosticNoticeBanner />
+
+      {corpus && (
+        <Panel title="Flight Corpus V4 — Evidence State">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div><p className="text-[10px] uppercase text-muted-foreground">Certification</p><p className="font-mono font-bold">{corpus.status}</p></div>
+            <div><p className="text-[10px] uppercase text-muted-foreground">Trajectory eligible</p><p className="font-mono font-bold">{corpus.denominators?.trajectory_eligible ?? "UNKNOWN"}</p></div>
+            <div><p className="text-[10px] uppercase text-muted-foreground">Pair denominator</p><p className="font-mono font-bold">{corpus.denominators?.unordered_pair_denominator ?? "UNKNOWN"}</p></div>
+            <div><p className="text-[10px] uppercase text-muted-foreground">Artifact</p><p className="font-mono text-xs">{corpus.artifact_bound ? "BOUND" : "UNKNOWN"}</p></div>
+          </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Blocked / unresolved vectors</p>
+              <ul className="space-y-1 font-mono text-xs">{(corpus.blocked || []).map((item) => <li key={item}>{item}</li>)}</ul>
+            </div>
+            <div>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Candidate events</p>
+              {(corpus.promoted_candidates || []).map((candidate) => (
+                <div key={candidate.aircraft?.join("-") + candidate.date} className="rounded border border-border p-2 text-xs">
+                  <p className="font-mono font-semibold">{candidate.aircraft?.join(" ↔ ")} · {candidate.date}</p>
+                  <p>{candidate.classification}</p>
+                  <p className="text-muted-foreground">Mission: {candidate.mission || "UNKNOWN"} · Coordination: {candidate.coordination || "UNKNOWN"}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="mt-3 text-[10px] text-muted-foreground">Candidate geometry and co-route evidence do not establish mission, coordination, operator, or targeting.</p>
+        </Panel>
+      )}
 
       <PuertoRicoMapShell routes={filtered} airports={d.airports} observations={[]} assets={d.assets} height={280} title="Route-Line Segment Context" />
 
