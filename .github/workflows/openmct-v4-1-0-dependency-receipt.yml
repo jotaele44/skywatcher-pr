@@ -22,12 +22,12 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout operator branch
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 1
 
       - name: Checkout certified foundation head
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: 7400a4ec0551617bdbfa966ca1907954ccb14b4b
           path: certified-head
