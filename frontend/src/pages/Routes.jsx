@@ -33,6 +33,10 @@ export default function Routes() {
   const [recurrence, setRecurrence] = useState(null);
   const [recurrenceMonth, setRecurrenceMonth] = useState("");
   const [recurrenceFamily, setRecurrenceFamily] = useState("");
+  const [airportRecurrence, setAirportRecurrence] = useState(null);
+  const [airportMonth, setAirportMonth] = useState("");
+  const [departure, setDeparture] = useState("");
+  const [arrival, setArrival] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -52,6 +56,14 @@ export default function Routes() {
       .catch(() => { if (active) setRecurrence(null); });
     return () => { active = false; };
   }, [recurrenceMonth, recurrenceFamily]);
+
+  useEffect(() => {
+    let active = true;
+    federation.flightCorpusV4.airportEdgeRecurrence({ month: airportMonth, departure, arrival })
+      .then((value) => { if (active) setAirportRecurrence(value); })
+      .catch(() => { if (active) setAirportRecurrence(null); });
+    return () => { active = false; };
+  }, [airportMonth, departure, arrival]);
 
   const filtered = useMemo(() => {
     let rows = [...d.routes];
@@ -144,6 +156,24 @@ export default function Routes() {
             </table>
           </div>
           <p className="mt-2 text-[10px] text-muted-foreground">Source member SHA-256: {recurrence.member?.sha256 || "UNKNOWN"}. These are DERIVED recurrence counts, not RAW observations and not mission classifications.</p>
+        </Panel>
+      )}
+
+            {airportRecurrence && (
+        <Panel title="V4 Airport-Edge Recurrence">
+          <div className="flex flex-wrap gap-3">
+            <input value={airportMonth} onChange={(e) => setAirportMonth(e.target.value)} placeholder="Month (YYYY-MM)" className="rounded border border-border bg-background px-3 py-2 text-xs" />
+            <input value={departure} onChange={(e) => setDeparture(e.target.value)} placeholder="Departure code" className="rounded border border-border bg-background px-3 py-2 text-xs" />
+            <input value={arrival} onChange={(e) => setArrival(e.target.value)} placeholder="Arrival code" className="rounded border border-border bg-background px-3 py-2 text-xs" />
+            <span className="self-center text-xs text-muted-foreground">{airportRecurrence.row_count} rows · {airportRecurrence.availability}</span>
+          </div>
+          <div className="mt-3 max-h-72 overflow-auto rounded border border-border">
+            <table className="w-full text-xs">
+              <thead><tr className="bg-secondary/40 text-left"><th className="p-2">Month</th><th className="p-2">Departure</th><th className="p-2">Arrival</th><th className="p-2">Manifestations</th></tr></thead>
+              <tbody>{(airportRecurrence.rows || []).map((row, index) => <tr key={row.utc_month + "-" + row.departure + "-" + row.arrival + "-" + index} className="border-t border-border/50"><td className="p-2 font-mono">{row.utc_month}</td><td className="p-2 font-mono">{row.departure || "UNKNOWN"}</td><td className="p-2 font-mono">{row.arrival || "UNKNOWN"}</td><td className="p-2 font-mono">{row.manifestations}</td></tr>)}</tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[10px] text-muted-foreground">Blank departure/arrival values render as UNKNOWN; they do not establish that no airport existed. Source member SHA-256: {airportRecurrence.member?.sha256 || "UNKNOWN"}.</p>
         </Panel>
       )}
 
