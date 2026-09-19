@@ -118,3 +118,20 @@ def test_v4_recurrence_filters_conserve_rows():
     assert family and all(str(row["consensus_family_id"]) == "1" for row in family)
     assert len(sep) <= len(all_rows)
     assert len(family) <= len(all_rows)
+
+
+def test_v4_airport_filters_preserve_unknown_semantics():
+    from fastapi.testclient import TestClient
+
+    from server.backend.main import app
+
+    client = TestClient(app)
+    all_result = client.get("/api/flight-corpus/v4/airport-edge-recurrence").json()
+    sig = client.get("/api/flight-corpus/v4/airport-edge-recurrence?departure=SIG").json()
+    sep = client.get("/api/flight-corpus/v4/airport-edge-recurrence?month=2025-09").json()
+    assert all_result["row_count"] == 233
+    assert sig["rows"] and all(row["departure"] == "SIG" for row in sig["rows"])
+    assert sep["rows"] and all(row["utc_month"] == "2025-09" for row in sep["rows"])
+    assert sig["row_count"] <= all_result["row_count"]
+    assert sep["row_count"] <= all_result["row_count"]
+    assert all_result["interpretation"]["blank_airport_is_no_airport"] is False
