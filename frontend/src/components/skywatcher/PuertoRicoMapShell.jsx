@@ -140,7 +140,10 @@ export default function PuertoRicoMapShell({
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
+    let styleInitializationStarted = false;
     map.on("style.load", async () => {
+      if (styleInitializationStarted) return;
+      styleInitializationStarted = true;
       const { observations: obs, airports: apt, assets: ast, routes: rte } = propsRef.current;
 
       map.addSource("routes", { type: "geojson", data: toLineCollection(rte) });
