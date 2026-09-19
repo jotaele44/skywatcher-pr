@@ -135,3 +135,17 @@ def test_v4_airport_filters_preserve_unknown_semantics():
     assert sig["row_count"] <= all_result["row_count"]
     assert sep["row_count"] <= all_result["row_count"]
     assert all_result["interpretation"]["blank_airport_is_no_airport"] is False
+
+
+def test_v4_family_provenance_preserves_superseded_discovery():
+    from fastapi.testclient import TestClient
+
+    from server.backend.main import app
+
+    body = TestClient(app).get("/api/flight-corpus/v4/family-provenance").json()
+    assert body["state"] == "SUPERSEDED_BOUNDARIES"
+    assert body["discovery_is_identity"] is False
+    assert body["subfamily_is_mission"] is False
+    assert [row["v3_family"] for row in body["superseded_families"]] == [1, 2, 3, 4]
+    assert body["split_member"]["sha256"] == "b85b3d5c326f150a1d2f851d517b4c7ede3d26f04426ac80470b5c08778a3a88"
+    assert body["summary_member"]["sha256"] == "9a0887d4a69a07cebf31b5161f300b18221a042a73034308624aafc227bce209"
