@@ -231,6 +231,20 @@
         "e2e": [
           "frontend/tests/gui-parity.spec.mjs"
         ]
+      },
+      "analysis": {
+        "files": [
+          "fr24/calibration/satim_raw_raster_frontend.py",
+          "src/skywatcher/satim/ilap_context_reasoning.py",
+          "src/skywatcher/satim/ilap_scene_reasoning.py"
+        ],
+        "symbols": [
+          "fr24/calibration/satim_raw_raster_frontend.py:extract_raw_raster_candidates",
+          "src/skywatcher/satim/ilap_context_reasoning.py:assess_visibility",
+          "src/skywatcher/satim/ilap_context_reasoning.py:contextual_percentile",
+          "src/skywatcher/satim/ilap_context_reasoning.py:build_explainability_packet",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:build_ilap_feature_vector"
+        ]
       }
     },
     {
@@ -290,6 +304,61 @@
           "scripts/validate_ilap_calibration_corpus.py:load",
           "scripts/validate_ilap_calibration_corpus.py:validate",
           "scripts/validate_ilap_calibration_corpus.py:main"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
+    },
+    {
+      "id": "ilap-reasoning-internals",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "ILAP contextual and scene-reasoning dataclasses, validators, normalization helpers, and low-level deterministic metrics are implementation primitives. Review-relevant composed outputs remain bound to the human-facing ilap-visual-review capability rather than exposing each primitive as a GUI control.",
+      "analysis": {
+        "files": [
+          "src/skywatcher/satim/ilap_context_reasoning.py",
+          "src/skywatcher/satim/ilap_scene_reasoning.py"
+        ],
+        "symbols": [
+          "src/skywatcher/satim/ilap_context_reasoning.py:SourceRef",
+          "src/skywatcher/satim/ilap_context_reasoning.py:ComparisonSet",
+          "src/skywatcher/satim/ilap_context_reasoning.py:VisibilityAssessment",
+          "src/skywatcher/satim/ilap_context_reasoning.py:AnnotationRecord",
+          "src/skywatcher/satim/ilap_context_reasoning.py:ExplainabilityPacket",
+          "src/skywatcher/satim/ilap_context_reasoning.py:independent_source_count",
+          "src/skywatcher/satim/ilap_context_reasoning.py:validate_negative_observation_state",
+          "src/skywatcher/satim/ilap_context_reasoning.py:validate_instance_relation_state",
+          "src/skywatcher/satim/ilap_context_reasoning.py:validate_annotation",
+          "src/skywatcher/satim/ilap_context_reasoning.py:normalize_candidate_families",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:AccessibilityInputs",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:VehicleBaseline",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:IlapFeatureVector",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:network_detour_ratio",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:vehicle_count_summary"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
+    },
+    {
+      "id": "satim-raw-raster-config",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "RawRasterConfig is a detector configuration value object. The user-relevant extraction operation is bound to ilap-visual-review; the configuration object itself is not a standalone GUI capability.",
+      "analysis": {
+        "files": [
+          "fr24/calibration/satim_raw_raster_frontend.py"
+        ],
+        "symbols": [
+          "fr24/calibration/satim_raw_raster_frontend.py:RawRasterConfig"
         ]
       },
       "tests": {
