@@ -66,3 +66,20 @@ def test_v4_artifact_member_denominator():
     members = response.json()
     assert len(members) == 13
     assert len({row["path"] for row in members}) == 13
+
+
+def test_v4_deep_interface_preserves_provenance_and_noninference():
+    from fastapi.testclient import TestClient
+
+    from server.backend.main import app
+
+    response = TestClient(app).get("/api/flight-corpus/v4/deep-interface")
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["members"]) == 13
+    assert body["exclusion_state"]["single_point_nontrajectory_records"] == 11
+    assert body["contradiction_state"]["identity_source_contradictions_v2"] == 47
+    assert body["temporal_recurrence"]["availability"] == "EXTERNAL_ARTIFACT_BOUND"
+    assert body["temporal_recurrence"]["route_family_member"]["sha256"] == "1938831c7c532fadd7ddea8730a39fc69738faa4a32ba54f7bfa86a92fad3b70"
+    assert body["interpretation"]["route_recurrence_is_mission"] is False
+    assert body["interpretation"]["candidate_is_coordination"] is False
