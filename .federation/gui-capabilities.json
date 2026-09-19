@@ -80,7 +80,9 @@
           "GET /api/geo/municipios/observation_density.geojson",
           "GET /api/flight-corpus/v4/status",
           "GET /api/flight-corpus/v4/artifact-members",
-          "GET /api/flight-corpus/v4/deep-interface"
+          "GET /api/flight-corpus/v4/deep-interface",
+          "GET /api/flight-corpus/v4/route-family-recurrence",
+          "GET /api/flight-corpus/v4/airport-edge-recurrence"
         ],
         "symbols": [
           "server/backend/main.py:geo_observations",
@@ -94,7 +96,9 @@
           "server/backend/main.py:geo_municipios_observation_density",
           "server/backend/main.py:flight_corpus_v4_status",
           "server/backend/main.py:flight_corpus_v4_artifact_members",
-          "server/backend/main.py:flight_corpus_v4_deep_interface"
+          "server/backend/main.py:flight_corpus_v4_deep_interface",
+          "server/backend/main.py:flight_corpus_v4_route_family_recurrence",
+          "server/backend/main.py:flight_corpus_v4_airport_edge_recurrence"
         ]
       },
       "frontend": {

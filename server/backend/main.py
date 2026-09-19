@@ -136,6 +136,54 @@ def flight_corpus_v4_deep_interface() -> dict[str, Any]:
     }
 
 
+def _verified_v4_member(name: str) -> tuple[Path | None, dict[str, Any] | None, str]:
+    manifest_path = FLIGHT_CORPUS_V4_DIR / "artifact_manifest.json"
+    if not manifest_path.is_file():
+        return None, None, "BLOCKED"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    member = next((row for row in manifest.get("members", []) if row.get("path") == name), None)
+    if member is None:
+        return None, None, "BLOCKED"
+    path = FLIGHT_CORPUS_V4_DIR / name
+    if not path.is_file():
+        return None, member, "EXTERNAL_ARTIFACT_BOUND"
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != member["sha256"]:
+        raise HTTPException(status_code=409, detail=f"V4 member hash mismatch: {name}")
+    return path, member, "SOURCE_BYTES_AVAILABLE"
+
+
+def _v4_recurrence_rows(name: str, month: str | None, family: str | None) -> dict[str, Any]:
+    path, member, availability = _verified_v4_member(name)
+    if path is None:
+        return {"availability": availability, "member": member, "rows": [], "row_count": 0}
+    rows = read_csv(path)
+    if month is not None:
+        rows = [row for row in rows if str(row.get("month") or row.get("year_month") or row.get("utc_month")) == month]
+    if family is not None:
+        rows = [row for row in rows if str(row.get("consensus_family_id") or row.get("family_id")) == family]
+    return {"availability": availability, "member": member, "rows": rows, "row_count": len(rows)}
+
+
+@app.get("/api/flight-corpus/v4/route-family-recurrence")
+def flight_corpus_v4_route_family_recurrence(
+    month: str | None = Query(default=None),
+    family: str | None = Query(default=None),
+) -> dict[str, Any]:
+    result = _v4_recurrence_rows("route_family_monthly_recurrence.csv", month, family)
+    result["interpretation"] = {"recurrence_is_mission": False, "derived_is_raw": False}
+    return result
+
+
+@app.get("/api/flight-corpus/v4/airport-edge-recurrence")
+def flight_corpus_v4_airport_edge_recurrence(
+    month: str | None = Query(default=None),
+) -> dict[str, Any]:
+    result = _v4_recurrence_rows("airport_edge_monthly_recurrence.csv", month, None)
+    result["interpretation"] = {"recurrence_is_mission": False, "derived_is_raw": False}
+    return result
+
+
 # Session-scoped mutations from the review UI; never written to disk.
 _overlay: dict[str, dict[str, dict[str, Any]]] = {}
 _created: dict[str, list[dict[str, Any]]] = {}
