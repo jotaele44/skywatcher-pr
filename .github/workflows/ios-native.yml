@@ -3,6 +3,7 @@ name: iOS Native Analyzer
 on:
   push:
     branches:
+      - "main"
       - "agent/native-ios-screenshot-analyzer"
     paths:
       - "ios/SkywatcherMobile/**"
@@ -30,11 +31,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Bind execution identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          printf 'GITHUB_SHA=%s\n' "$GITHUB_SHA"
+
       - name: Toolchain inventory
         run: |
           set -euo pipefail
-          xcodebuild -version
-          swift --version
+          xcodebuild -version | tee /tmp/xcode-version.txt
+          swift --version | tee /tmp/swift-version.txt
           xcrun simctl list devices available
 
       - name: Install XcodeGen
@@ -79,11 +86,13 @@ jobs:
       - name: Run unit tests
         run: |
           set -euo pipefail
+          mkdir -p build
           xcodebuild \
             -project SkywatcherMobile.xcodeproj \
             -scheme SkywatcherMobile \
             -configuration Debug \
             -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
+            -resultBundlePath "$PWD/build/TestResults.xcresult" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             test
@@ -116,6 +125,63 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent build/SkywatcherMobile.xcarchive build/SkywatcherMobile-unsigned-xcarchive.zip
           shasum -a 256 build/SkywatcherMobile-unsigned-xcarchive.zip | tee build/SHA256SUMS.txt
 
+      - name: Self-certify unsigned archive
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, plistlib, struct, subprocess
+          from pathlib import Path
+
+          root = Path("build/SkywatcherMobile.xcarchive")
+          app = root / "Products/Applications/SkywatcherMobile.app"
+          appex = app / "PlugIns/SkywatcherShare.appex"
+          assert app.is_dir(), app
+          assert appex.is_dir(), appex
+
+          def plist(path):
+              with open(path, "rb") as f:
+                  return plistlib.load(f)
+
+          app_info = plist(app / "Info.plist")
+          ext_info = plist(appex / "Info.plist")
+          assert app_info["CFBundleIdentifier"] == "org.prii.skywatcher.mobile"
+          assert ext_info["CFBundleIdentifier"] == "org.prii.skywatcher.mobile.share"
+          ext = ext_info["NSExtension"]
+          assert ext["NSExtensionPointIdentifier"] == "com.apple.share-services"
+          assert ext["NSExtensionPrincipalClass"] == "SkywatcherShare.ShareViewController"
+          assert ext["NSExtensionAttributes"]["NSExtensionActivationRule"]["NSExtensionActivationSupportsImageWithMaxCount"] == 1
+
+          assert not list(root.rglob("embedded.mobileprovision"))
+          assert not [p for p in root.rglob("_CodeSignature") if p.is_dir()]
+
+          binaries = [app / "SkywatcherMobile", appex / "SkywatcherShare"]
+          for binary in binaries:
+              out = subprocess.check_output(["otool", "-l", str(binary)], text=True)
+              assert "LC_CODE_SIGNATURE" not in out, binary
+
+          archive_zip = Path("build/SkywatcherMobile-unsigned-xcarchive.zip")
+          digest = hashlib.sha256(archive_zip.read_bytes()).hexdigest()
+          sha_line = Path("build/SHA256SUMS.txt").read_text().strip().split()[0]
+          assert digest == sha_line
+
+          receipt = {
+              "schema": "skywatcher.ios.unsigned-certification.v1",
+              "github_sha": os.environ["GITHUB_SHA"],
+              "archive_sha256": digest,
+              "app_bundle_id": app_info["CFBundleIdentifier"],
+              "extension_bundle_id": ext_info["CFBundleIdentifier"],
+              "extension_point": ext["NSExtensionPointIdentifier"],
+              "embedded_mobileprovision_count": 0,
+              "codesignature_directory_count": 0,
+              "lc_code_signature_count": 0,
+              "status": "PASS"
+          }
+          Path("build/unsigned-certification.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
       - name: Upload unsigned archive evidence
         uses: actions/upload-artifact@v4
         with:
@@ -123,5 +189,7 @@ jobs:
           path: |
             ios/SkywatcherMobile/build/SkywatcherMobile-unsigned-xcarchive.zip
             ios/SkywatcherMobile/build/SHA256SUMS.txt
+            ios/SkywatcherMobile/build/unsigned-certification.json
+            ios/SkywatcherMobile/build/TestResults.xcresult
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
