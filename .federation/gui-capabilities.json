@@ -211,7 +211,10 @@
         ],
         "endpoints": [
           "GET /api/ilap/review",
-          "POST /api/entities/ILAPReviewAnnotations"
+          "POST /api/entities/{entity_name}"
+        ],
+        "symbols": [
+          "server/backend/main.py:ilap_review_payload"
         ]
       },
       "frontend": {
@@ -271,7 +274,10 @@
           "scripts/source_adapters/provider_registry.py",
           "scripts/source_adapters/sdk/core.py",
           "scripts/source_adapters/sdk/download.py",
-          "scripts/source_adapters/sdk/manifest.py"
+          "scripts/source_adapters/sdk/manifest.py",
+          "scripts/source_adapters/noaa_maria_2017/__init__.py",
+          "scripts/source_adapters/noaa_maria_2017/cli.py",
+          "scripts/source_adapters/sdk/__init__.py"
         ],
         "symbols": [
           "scripts/source_adapters/noaa_maria_2017/adapter.py:MariaItem",
@@ -292,7 +298,22 @@
           "scripts/source_adapters/sdk/download.py:CertifiedFetchEngine",
           "scripts/source_adapters/sdk/manifest.py:build_manifest_rows",
           "scripts/source_adapters/sdk/manifest.py:write_manifest_csv",
-          "scripts/source_adapters/sdk/manifest.py:summarize_coverage"
+          "scripts/source_adapters/sdk/manifest.py:summarize_coverage",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:build_dry_run_plan",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:build_payload_request",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:discover_from_documents",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:parse_stac_collection",
+          "scripts/source_adapters/noaa_maria_2017/cli.py:discover",
+          "scripts/source_adapters/noaa_maria_2017/cli.py:dry_run",
+          "scripts/source_adapters/noaa_maria_2017/cli.py:fetch_pilot",
+          "scripts/source_adapters/noaa_maria_2017/cli.py:main",
+          "scripts/source_adapters/provider_registry.py:get_provider",
+          "scripts/source_adapters/sdk/core.py:CertifiedFetchResult",
+          "scripts/source_adapters/sdk/core.py:CoverageSummary",
+          "scripts/source_adapters/sdk/core.py:ImagerySourceEndpoint",
+          "scripts/source_adapters/sdk/core.py:SourceAdapterError",
+          "scripts/source_adapters/sdk/download.py:utc_now",
+          "scripts/source_adapters/sdk/manifest.py:ManifestEngine"
         ]
       },
       "tests": {
