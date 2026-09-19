@@ -199,6 +199,185 @@
           "tests/test_server_smoke.py"
         ]
       }
+    },
+    {
+      "id": "ilap-visual-review",
+      "classification": "analysis",
+      "status": "active",
+      "requires_terminal": false,
+      "backend": {
+        "files": [
+          "server/backend/main.py"
+        ],
+        "endpoints": [
+          "GET /api/ilap/review",
+          "POST /api/entities/ILAPReviewAnnotations"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/ilap-review"
+        ],
+        "e2e_routes": [
+          "/ilap-review"
+        ],
+        "components": [
+          "frontend/src/api/federationClient.js",
+          "frontend/src/pages/ILAPReviewLab.jsx",
+          "frontend/src/components/skywatcher/IlapAnnotationPalette.jsx",
+          "frontend/src/components/skywatcher/TemporalImageStackViewer.jsx",
+          "frontend/src/components/skywatcher/CandidateExplainabilityPane.jsx",
+          "frontend/src/components/skywatcher/MultiAnalystComparison.jsx"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_ilap_review_api.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      },
+      "analysis": {
+        "files": [
+          "fr24/calibration/satim_raw_raster_frontend.py",
+          "src/skywatcher/satim/ilap_context_reasoning.py",
+          "src/skywatcher/satim/ilap_scene_reasoning.py"
+        ],
+        "symbols": [
+          "fr24/calibration/satim_raw_raster_frontend.py:extract_raw_raster_candidates",
+          "src/skywatcher/satim/ilap_context_reasoning.py:assess_visibility",
+          "src/skywatcher/satim/ilap_context_reasoning.py:contextual_percentile",
+          "src/skywatcher/satim/ilap_context_reasoning.py:build_explainability_packet",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:build_ilap_feature_vector"
+        ]
+      }
+    },
+    {
+      "id": "source-adapter-acquisition-internals",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Source-adapter discovery, rights enforcement, payload validation, certified fetching, provider registry, manifest generation, and coverage summarization are acquisition/provenance machinery. They support user-facing analysis but are not standalone GUI workflows; CLI entry points remain implementation interfaces.",
+      "analysis": {
+        "files": [
+          "scripts/source_adapters/noaa_maria_2017/adapter.py",
+          "scripts/source_adapters/provider_registry.py",
+          "scripts/source_adapters/sdk/core.py",
+          "scripts/source_adapters/sdk/download.py",
+          "scripts/source_adapters/sdk/manifest.py"
+        ],
+        "symbols": [
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:MariaItem",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:UrlListDenominator",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:parse_stac_items",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:parse_url_list",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:build_dry_run",
+          "scripts/source_adapters/noaa_maria_2017/adapter.py:build_payload_requests",
+          "scripts/source_adapters/provider_registry.py:PROVIDERS",
+          "scripts/source_adapters/sdk/core.py:AcquisitionRights",
+          "scripts/source_adapters/sdk/core.py:AdapterPolicy",
+          "scripts/source_adapters/sdk/core.py:PayloadRequest",
+          "scripts/source_adapters/sdk/core.py:require_redistribution_eligible",
+          "scripts/source_adapters/sdk/core.py:require_training_eligible",
+          "scripts/source_adapters/sdk/download.py:CertifiedFetchResult",
+          "scripts/source_adapters/sdk/download.py:CoverageSummary",
+          "scripts/source_adapters/sdk/download.py:PayloadValidator",
+          "scripts/source_adapters/sdk/download.py:CertifiedFetchEngine",
+          "scripts/source_adapters/sdk/manifest.py:build_manifest_rows",
+          "scripts/source_adapters/sdk/manifest.py:write_manifest_csv",
+          "scripts/source_adapters/sdk/manifest.py:summarize_coverage"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_skywatcher_source_adapter_sdk.py",
+          "tests/test_gui_parity.py"
+        ]
+      }
+    },
+    {
+      "id": "ilap-calibration-validator-internals",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "ILAP calibration corpus loading, validation, and CLI execution are fail-closed certification machinery. They validate analytical inputs and do not constitute a standalone user-facing GUI workflow.",
+      "analysis": {
+        "files": [
+          "scripts/validate_ilap_calibration_corpus.py"
+        ],
+        "symbols": [
+          "scripts/validate_ilap_calibration_corpus.py:load",
+          "scripts/validate_ilap_calibration_corpus.py:validate",
+          "scripts/validate_ilap_calibration_corpus.py:main"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
+    },
+    {
+      "id": "ilap-reasoning-internals",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "ILAP contextual and scene-reasoning dataclasses, validators, normalization helpers, and low-level deterministic metrics are implementation primitives. Review-relevant composed outputs remain bound to the human-facing ilap-visual-review capability rather than exposing each primitive as a GUI control.",
+      "analysis": {
+        "files": [
+          "src/skywatcher/satim/ilap_context_reasoning.py",
+          "src/skywatcher/satim/ilap_scene_reasoning.py"
+        ],
+        "symbols": [
+          "src/skywatcher/satim/ilap_context_reasoning.py:SourceRef",
+          "src/skywatcher/satim/ilap_context_reasoning.py:ComparisonSet",
+          "src/skywatcher/satim/ilap_context_reasoning.py:VisibilityAssessment",
+          "src/skywatcher/satim/ilap_context_reasoning.py:AnnotationRecord",
+          "src/skywatcher/satim/ilap_context_reasoning.py:ExplainabilityPacket",
+          "src/skywatcher/satim/ilap_context_reasoning.py:independent_source_count",
+          "src/skywatcher/satim/ilap_context_reasoning.py:validate_negative_observation_state",
+          "src/skywatcher/satim/ilap_context_reasoning.py:validate_instance_relation_state",
+          "src/skywatcher/satim/ilap_context_reasoning.py:validate_annotation",
+          "src/skywatcher/satim/ilap_context_reasoning.py:normalize_candidate_families",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:AccessibilityInputs",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:VehicleBaseline",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:IlapFeatureVector",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:network_detour_ratio",
+          "src/skywatcher/satim/ilap_scene_reasoning.py:vehicle_count_summary"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
+    },
+    {
+      "id": "satim-raw-raster-config",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "RawRasterConfig is a detector configuration value object. The user-relevant extraction operation is bound to ilap-visual-review; the configuration object itself is not a standalone GUI capability.",
+      "analysis": {
+        "files": [
+          "fr24/calibration/satim_raw_raster_frontend.py"
+        ],
+        "symbols": [
+          "fr24/calibration/satim_raw_raster_frontend.py:RawRasterConfig"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
     }
   ],
   "exceptions": []
