@@ -196,6 +196,8 @@ const flightCorpusV4 = {
   status: () => request('/flight-corpus/v4/status'),
   artifactMembers: () => request('/flight-corpus/v4/artifact-members'),
   deepInterface: () => request('/flight-corpus/v4/deep-interface'),
+  routeFamilyRecurrence: (params = {}) => request(`/flight-corpus/v4/route-family-recurrence${queryString(params)}`),
+  airportEdgeRecurrence: (params = {}) => request(`/flight-corpus/v4/airport-edge-recurrence${queryString(params)}`),
 };
 
 const system = {
