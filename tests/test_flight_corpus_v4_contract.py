@@ -83,3 +83,21 @@ def test_v4_deep_interface_preserves_provenance_and_noninference():
     assert body["temporal_recurrence"]["route_family_member"]["sha256"] == "1938831c7c532fadd7ddea8730a39fc69738faa4a32ba54f7bfa86a92fad3b70"
     assert body["interpretation"]["route_recurrence_is_mission"] is False
     assert body["interpretation"]["candidate_is_coordination"] is False
+
+
+def test_v4_recurrence_fails_closed_without_local_bytes():
+    from fastapi.testclient import TestClient
+
+    from server.backend.main import app
+
+    client = TestClient(app)
+    route = client.get("/api/flight-corpus/v4/route-family-recurrence").json()
+    airport = client.get("/api/flight-corpus/v4/airport-edge-recurrence").json()
+    assert route["availability"] == "EXTERNAL_ARTIFACT_BOUND"
+    assert airport["availability"] == "EXTERNAL_ARTIFACT_BOUND"
+    assert route["rows"] == [] and route["row_count"] == 0
+    assert airport["rows"] == [] and airport["row_count"] == 0
+    assert route["member"]["sha256"] == "1938831c7c532fadd7ddea8730a39fc69738faa4a32ba54f7bfa86a92fad3b70"
+    assert airport["member"]["sha256"] == "60d581529a40e6a78c4f8858978b670a94ac174f446fc481c98e8928405d940d"
+    assert route["interpretation"]["recurrence_is_mission"] is False
+    assert route["interpretation"]["derived_is_raw"] is False
