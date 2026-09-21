@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from satim_engine.tracks import EmptyTrackFile, NonTrackCSV, parse_csv_track, parse_kml_coordinates
+from satim_engine.tracks import NonTrackCSV, parse_csv_track, parse_kml_coordinates
 
 
 def test_parse_lat_lon_aliases(tmp_path):
@@ -65,7 +65,7 @@ def test_parse_segment_table_as_ordered_endpoints(tmp_path):
 def test_fr24_empty_track_is_not_header_failure(tmp_path):
     f = tmp_path / "empty.csv"
     f.write_text("Timestamp,UTC,Callsign,Position,Altitude,Speed,Direction\n")
-    with pytest.raises(EmptyTrackFile, match="Empty track"):
+    with pytest.raises(NonTrackCSV, match="Empty track"):
         parse_csv_track(str(f))
 
 
@@ -135,5 +135,5 @@ def test_metadata_only_kml_is_empty_track(tmp_path):
         '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>'
         "<name>metadata only</name></Document></kml>"
     )
-    with pytest.raises(EmptyTrackFile, match="Empty track"):
+    with pytest.raises(NonTrackCSV, match="Empty track"):
         parse_kml_coordinates(str(f))
