@@ -12,7 +12,7 @@ from .pairing import build_pairing_ledger
 from .plugins.gis_join import bbox_context_join
 from .plugins.visual_ocr import extract_visual_metadata
 from .scoring import score_tracks
-from .tracks import EmptyTrackFile, NonTrackCSV, parse_csv_track, parse_gpx_coordinates, parse_kml_coordinates
+from .tracks import NonTrackCSV, parse_csv_track, parse_gpx_coordinates, parse_kml_coordinates
 
 
 def parse_track_file(path: Path) -> pd.DataFrame:
@@ -38,10 +38,11 @@ def run(input_dir: str, output_dir: str, config_path: str | None = None) -> None
         try:
             df = parse_track_file(p)
             track_dfs.append(df)
-        except EmptyTrackFile as e:
-            empty_tracks.append({"path": str(p), "reason": str(e)})
         except NonTrackCSV as e:
-            skipped.append({"path": str(p), "reason": str(e)})
+            if str(e).startswith("Empty track:"):
+                empty_tracks.append({"path": str(p), "reason": str(e)})
+            else:
+                skipped.append({"path": str(p), "reason": str(e)})
         except Exception as e:
             errors.append({"path": str(p), "error": str(e)})
 
