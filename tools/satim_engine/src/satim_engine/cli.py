@@ -12,7 +12,7 @@ from .pairing import build_pairing_ledger
 from .plugins.gis_join import bbox_context_join
 from .plugins.visual_ocr import extract_visual_metadata
 from .scoring import score_tracks
-from .tracks import NonTrackCSV, parse_csv_track, parse_gpx_coordinates, parse_kml_coordinates
+from .tracks import EmptyTrackFile, NonTrackCSV, parse_csv_track, parse_gpx_coordinates, parse_kml_coordinates
 
 
 def parse_track_file(path: Path) -> pd.DataFrame:
@@ -32,12 +32,14 @@ def run(input_dir: str, output_dir: str, config_path: str | None = None) -> None
     extracted = extract_zips(input_dir, output_dir)
     manifest = build_manifest(extracted)
     manifest.to_csv(out / "SATIM_MASTER_FILE_MANIFEST.csv", index=False)
-    track_dfs, errors, skipped = [], [], []
+    track_dfs, errors, skipped, empty_tracks = [], [], [], []
     for _, r in manifest[manifest.role == "track_candidate"].iterrows():
         p = Path(r.path)
         try:
             df = parse_track_file(p)
             track_dfs.append(df)
+        except EmptyTrackFile as e:
+            empty_tracks.append({"path": str(p), "reason": str(e)})
         except NonTrackCSV as e:
             skipped.append({"path": str(p), "reason": str(e)})
         except Exception as e:
@@ -64,11 +66,13 @@ def run(input_dir: str, output_dir: str, config_path: str | None = None) -> None
     pairing.to_csv(out / "SATIM_PAIRING_LEDGER.csv", index=False)
     pd.DataFrame(errors).to_csv(out / "SATIM_ERROR_LEDGER.csv", index=False)
     pd.DataFrame(skipped).to_csv(out / "SATIM_SKIPPED_NONTRACK_CSV_LEDGER.csv", index=False)
+    pd.DataFrame(empty_tracks).to_csv(out / "SATIM_EMPTY_TRACK_LEDGER.csv", index=False)
     (out / "SATIM_RUN_REPORT.md").write_text(
         f"# SATIM production run report\n\n"
         f"Files: {len(manifest)}\n"
         f"Track files parsed: {len(clean_track_dfs)}\n"
         f"Non-track CSV skipped: {len(skipped)}\n"
+        f"Empty track files: {len(empty_tracks)}\n"
         f"Parser errors: {len(errors)}\n"
         f"Visual OCR rows: {len(visual_rows)}\n"
         f"Pairing rows: {len(pairing)}\n"
