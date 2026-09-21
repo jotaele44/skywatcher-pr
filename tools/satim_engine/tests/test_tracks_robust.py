@@ -75,7 +75,7 @@ def test_invalid_fr24_position_rows_fail_closed(tmp_path):
         "Timestamp,UTC,Callsign,Position,Altitude,Speed,Direction\n"
         '1,2026-01-01T00:00:00Z,N1,"181,-200",100,10,90\n'
     )
-    with pytest.raises(NonTrackCSV, match="Empty track"):
+    with pytest.raises(NonTrackCSV, match="no valid coordinate rows"):
         parse_csv_track(str(f))
 
 
