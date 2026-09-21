@@ -29,10 +29,6 @@ class NonTrackCSV(ValueError):
     """Raised when a CSV is valid but does not contain usable track coordinates."""
 
 
-class EmptyTrackFile(ValueError):
-    """Raised when a supported track manifestation contains zero observations."""
-
-
 def _norm(value: object) -> str:
     return str(value).strip().lower().replace(" ", "_")
 
@@ -152,7 +148,7 @@ def _parse_segment_table(df: pd.DataFrame, path: str) -> pd.DataFrame | None:
 def parse_csv_track(path: str) -> pd.DataFrame:
     df = _read_csv_robust(path)
     if df.empty:
-        raise EmptyTrackFile(f"Empty track: no observations in {path}")
+        raise NonTrackCSV(f"Empty track: no observations in {path}")
 
     segment = _parse_segment_table(df, path)
     if segment is not None:
@@ -176,7 +172,7 @@ def parse_csv_track(path: str) -> pd.DataFrame:
 def _empty_track_frame(rows: list[dict], path: str) -> pd.DataFrame:
     df = pd.DataFrame(rows)
     if df.empty:
-        raise EmptyTrackFile(f"Empty track: no coordinates in {path}")
+        raise NonTrackCSV(f"Empty track: no coordinates in {path}")
     for col, default in {
         "timestamp": pd.NaT,
         "speed": pd.NA,
