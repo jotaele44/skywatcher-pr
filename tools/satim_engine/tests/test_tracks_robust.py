@@ -1,5 +1,5 @@
-import pandas as pd
 import pytest
+import pandas as pd
 
 from satim_engine.tracks import NonTrackCSV, parse_csv_track, parse_kml_coordinates
 
