@@ -78,7 +78,6 @@ def _read_csv_robust(path: str) -> pd.DataFrame:
                 skiprows=header_row,
                 sep=None,
                 engine="python",
-                low_memory=False,
             )
         except NonTrackCSV:
             raise
