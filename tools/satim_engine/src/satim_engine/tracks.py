@@ -59,7 +59,7 @@ def _read_csv_robust(path: str) -> pd.DataFrame:
     last = None
     for enc in ["utf-8-sig", "utf-8", "cp1252", "latin1"]:
         try:
-            with open(path, "r", encoding=enc, errors="strict", newline="") as fh:
+            with open(path, encoding=enc, errors="strict", newline="") as fh:
                 header_row = None
                 for idx, line in enumerate(fh):
                     if idx >= _HEADER_SCAN_ROWS:
