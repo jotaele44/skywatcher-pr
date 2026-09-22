@@ -7,6 +7,7 @@ import MetricCard from "@/components/skywatcher/MetricCard";
 import PageHeader from "@/components/skywatcher/PageHeader";
 import Panel from "@/components/skywatcher/Panel";
 import PuertoRicoMapShell from "@/components/skywatcher/PuertoRicoMapShell";
+import SpatialFlightRenderer from "@/components/skywatcher/SpatialFlightRenderer";
 import StatusChip from "@/components/skywatcher/StatusChip";
 
 const markerTone = (status) => {
@@ -31,6 +32,7 @@ const fixed = (value, digits = 1) =>
 
 export default function SpatialTruth() {
   const data = useSkywatcher();
+  const [localFlightRoutes, setLocalFlightRoutes] = React.useState([]);
   if (data.loading) return <LoadingState />;
 
   const observations = data.spatialObservations;
@@ -108,14 +110,19 @@ export default function SpatialTruth() {
         </p>
       </Panel>
 
+      <SpatialFlightRenderer onRoutes={setLocalFlightRoutes} />
+
       <PuertoRicoMapShell
         observations={mapObservations}
         airports={data.airports}
+        routes={localFlightRoutes}
         height={290}
         title={
-          observations.length > mapObservations.length
-            ? "Bounded-error RLSM aircraft positions (latest 1,000)"
-            : "Bounded-error RLSM aircraft positions"
+          localFlightRoutes.length
+            ? `Local flight layers · ${localFlightRoutes.length} rendered segments`
+            : observations.length > mapObservations.length
+              ? "Bounded-error RLSM aircraft positions (latest 1,000)"
+              : "Bounded-error RLSM aircraft positions"
         }
         diagnostic={false}
       />

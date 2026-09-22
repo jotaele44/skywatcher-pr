@@ -154,7 +154,8 @@
           "frontend/src/pages/SpatialTruth.jsx",
           "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.jsx",
-          "frontend/src/components/skywatcher/TrackTimeScrubber.jsx"
+          "frontend/src/components/skywatcher/TrackTimeScrubber.jsx",
+          "frontend/src/components/skywatcher/SpatialFlightRenderer.jsx"
         ],
         "discoverability": [
           "frontend/src/components/skywatcher/Sidebar.jsx"
@@ -174,7 +175,8 @@
         "unit": [
           "frontend/src/lib/app-params.test.js",
           "frontend/src/components/skywatcher/PuertoRicoMapShell.test.jsx",
-          "frontend/src/components/skywatcher/SpatialToolsPanel.test.jsx"
+          "frontend/src/components/skywatcher/SpatialToolsPanel.test.jsx",
+          "frontend/src/components/skywatcher/SpatialFlightRenderer.test.jsx"
         ],
         "e2e": [
           "frontend/tests/gui-parity.spec.mjs"
