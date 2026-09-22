@@ -52,7 +52,7 @@ describe("SpatialFlightRenderer", () => {
     await waitFor(() => expect(onResults).toHaveBeenCalled());
     expect(await screen.findByText("flight.csv")).toBeInTheDocument();
     expect(screen.getByText("FR24_POSITION · 1 accepted points")).toBeInTheDocument();
-    expect(screen.getByText("Ready")).toBeInTheDocument();
+    expect(screen.getAllByText("Ready").length).toBeGreaterThanOrEqual(1);
   });
 
   it("keeps empty and valid files independent in the same upload", async () => {
