@@ -25,6 +25,7 @@ import sqlite3
 import sys
 import uuid
 from collections import Counter
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -507,9 +508,10 @@ def load_observations() -> list[dict[str, Any]]:
         row["artifact_sha256"] = None
         row["ingest_adapter"] = "dashboard:AirspaceObservations"
         row = normalize_observation(row)
-        provenance, qa_flags = build_provenance(row)
-        row["provenance"] = provenance
-        row["qa_flags"] = sorted(set(list(row.get("qa_flags") or []) + qa_flags))
+        # normalize_observation() already computed row["qa_flags"] via build_provenance();
+        # the only thing still needed here is the provenance dict itself, which
+        # normalize_observation() does not attach to the row.
+        row["provenance"], _ = build_provenance(row)
         output.append(row)
     return output + load_rlsm_spatial_observations()
 
@@ -792,7 +794,22 @@ STATIC_EMPTY_REASONS = {
 }
 
 
-def entity_availability(name: str) -> dict[str, Any]:
+def _merged_rows(name: str, loader: Callable[[], list[dict[str, Any]]] | None) -> list[dict[str, Any]]:
+    """Loader rows plus session-created rows, with overlay patches applied.
+
+    Shared by ``entity_availability()`` and ``entity_rows()`` so the
+    ``X-Skywatcher-*`` availability headers and the response body are always
+    computed from the same rows.
+    """
+    rows = loader() if loader else []
+    rows = rows + list(_created.get(name, []))
+    patches = _overlay.get(name, {})
+    if patches:
+        rows = [{**row, **patches.get(str(row.get("id")), {})} for row in rows]
+    return rows
+
+
+def entity_availability(name: str, rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     snapshot = RepositoryRegistry(ROOT).entity_snapshot(name)
     if snapshot is not None:
         return snapshot.as_status()
@@ -808,7 +825,8 @@ def entity_availability(name: str) -> dict[str, Any]:
             "warnings": [],
             "artifacts": [],
         }
-    rows = loader()
+    if rows is None:
+        rows = _merged_rows(name, loader)
     return {
         "repository": name,
         "status": "available" if rows else "unavailable_no_artifact",
@@ -834,13 +852,7 @@ def set_availability_headers(response: Response, availability: dict[str, Any]) -
 
 
 def entity_rows(name: str) -> list[dict[str, Any]]:
-    loader = LOADERS.get(name)
-    rows = loader() if loader else []
-    rows = rows + list(_created.get(name, []))
-    patches = _overlay.get(name, {})
-    if patches:
-        rows = [{**row, **patches.get(str(row.get("id")), {})} for row in rows]
-    return rows
+    return _merged_rows(name, LOADERS.get(name))
 
 
 def sort_rows(rows: list[dict[str, Any]], sort: str) -> list[dict[str, Any]]:
@@ -951,20 +963,21 @@ def list_entities(
     sort: str = Query("-created_date"),
     limit: int = Query(500),
 ) -> list[dict[str, Any]]:
-    availability = entity_availability(entity_name)
+    rows = entity_rows(entity_name)
+    availability = entity_availability(entity_name, rows)
     set_availability_headers(response, availability)
-    return sort_rows(entity_rows(entity_name), sort)[: max(limit, 0)]
+    return sort_rows(rows, sort)[: max(limit, 0)]
 
 
 @app.post("/api/entities/{entity_name}/filter")
 def filter_entities(
     entity_name: str, response: Response, payload: dict[str, Any] | None = None
 ) -> list[dict[str, Any]]:
-    availability = entity_availability(entity_name)
+    rows = entity_rows(entity_name)
+    availability = entity_availability(entity_name, rows)
     set_availability_headers(response, availability)
     payload = payload or {}
     filters = payload.get("filters") or {}
-    rows = entity_rows(entity_name)
     for key, expected in filters.items():
         rows = [row for row in rows if row.get(key) == expected]
     limit = int(payload.get("limit") or 500)
