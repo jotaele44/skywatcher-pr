@@ -780,6 +780,7 @@ LOADERS = {
     "FR24Captures": lambda: load_repository_entity("fr24_captures"),
     "RouteSegments": lambda: load_repository_entity("route_segments"),
     "ManualReviewItems": lambda: load_repository_entity("manual_review_items"),
+    "ILAPReviewAnnotations": list,
     "InfrastructureAssets": list,
     "AirspaceAssetLinks": list,
     "FederationSyncEvents": list,
@@ -875,6 +876,35 @@ def public_settings() -> dict[str, Any]:
             "requires_auth": False,
             "mode": "diagnostic",
             "write_token_required": bool(_WRITE_TOKEN),
+        },
+    }
+
+
+@app.get("/api/ilap/review")
+def ilap_review_payload() -> dict[str, Any]:
+    """Compose the bounded ILAP review surface without synthesizing evidence."""
+    annotations = entity_rows("ILAPReviewAnnotations")
+    return {
+        "candidate": None,
+        "frames": [],
+        "analysts": sorted({
+            str(row.get("analyst_or_system_id"))
+            for row in annotations
+            if row.get("analyst_or_system_id")
+        }),
+        "annotations": annotations,
+        "comparisons": [],
+        "availability": {
+            "candidate": "OPEN",
+            "frames": "OPEN",
+            "annotations": "AVAILABLE" if annotations else "OPEN",
+            "comparisons": "OPEN",
+        },
+        "guardrails": {
+            "review_only": True,
+            "derived_annotations": True,
+            "source_imagery_immutable": True,
+            "synthetic_evidence": False,
         },
     }
 

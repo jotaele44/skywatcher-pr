@@ -219,5 +219,6 @@ export const federation = {
   asServiceRole: { entities, connectors },
   system,
   flightCorpusV4,
+  ilap: { review: () => request('/ilap/review') },
   request,
 };

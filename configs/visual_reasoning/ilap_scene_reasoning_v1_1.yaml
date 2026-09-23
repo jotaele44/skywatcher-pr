@@ -1,0 +1,186 @@
+schema_version: ilap.scene_reasoning.v1_1
+status: CANDIDATE_CANONICAL
+
+candidate_families:
+  - ILAP_VISUAL_LAYOUT_CANDIDATE
+  - ILAP_ACCESSIBILITY_CANDIDATE
+  - ILAP_HYDRO_CONTEXT_CANDIDATE
+  - ILAP_INFRASTRUCTURE_CANDIDATE
+  - ILAP_TEMPORAL_CHANGE_CANDIDATE
+  - ILAP_ACTIVITY_ANOMALY_CANDIDATE
+  - ILAP_AIRSPACE_CORRELATION_CANDIDATE
+
+instance_relation_states:
+  - SAME_OBJECT
+  - POSSIBLE_SAME_OBJECT
+  - SPLIT
+  - MERGED
+  - MISSING_FROM_VIEW
+  - BELOW_RESOLUTION
+  - UNRESOLVED
+
+negative_observation_states:
+  - OBSERVED_ABSENT
+  - NOT_VISIBLE_OCCLUDED
+  - NOT_VISIBLE_OUT_OF_FRAME
+  - BELOW_RESOLUTION
+  - NOT_MEASURED
+  - UNKNOWN
+
+site_visibility_states:
+  - COMPLETE
+  - MOSTLY_VISIBLE
+  - PARTIALLY_VISIBLE
+  - HEAVILY_OCCLUDED
+  - UNKNOWN_EXTENT
+
+functional_morphology_states:
+  - RESIDENTIAL_LIKE
+  - AGRICULTURAL_LIKE
+  - INDUSTRIAL_LIKE
+  - UTILITY_LIKE
+  - INSTITUTIONAL_LIKE
+  - STORAGE_LIKE
+  - MIXED_USE_LIKE
+  - UNRESOLVED
+
+path_network_states:
+  - AGRICULTURAL_ROWS
+  - SERVICE_PATH_NETWORK
+  - TRAIL_NETWORK
+  - DRAINAGE_NETWORK
+  - TERRACING
+  - EROSIONAL_GULLIES
+  - UNRESOLVED
+
+compound_centrality_states:
+  - CENTRAL
+  - EDGE_LOCATED
+  - DISTRIBUTED
+  - LINEAR
+  - CLUSTERED
+  - DISPERSED
+  - UNRESOLVED
+
+temporal_change_states:
+  - NO_CHANGE
+  - CLEARING
+  - GRADING
+  - FOUNDATION
+  - STRUCTURE_ADDITION
+  - ROAD_EXTENSION
+  - VEGETATION_REMOVAL
+  - REVEGETATION
+  - DEMOLITION
+  - WATER_CHANGE
+  - VEHICLE_CHANGE
+  - UNKNOWN_CHANGE
+
+context_rings_m:
+  status: SCHEMA_DEFAULT_NOT_CALIBRATED_THRESHOLD
+  values: [[0, 50], [50, 250], [250, 1000], [1000, 5000]]
+  rule: GROUND_REGISTRATION_REQUIRED
+
+color_annotation_registry:
+  GREEN:
+    class_family: VEGETATION
+    examples: [PALM_LIKE_CROWN, PALM_CLUSTER, TREE]
+  BLUE:
+    class_family: BUILDING_ROOF
+    examples: [ROOF_CANDIDATE, BLUE_ROOF_CANDIDATE]
+  RED:
+    class_family: MANAGED_LAND_EARTHWORK
+    examples: [MANAGED_PARCEL_CANDIDATE, CULTIVATED_LAYOUT_CANDIDATE, EARTHWORK]
+  CYAN:
+    class_family: HYDROGRAPHY
+    examples: [WATERBODY_CANDIDATE, CHANNEL, WETLAND]
+  ORANGE:
+    class_family: VEHICLE_ACTIVITY
+    examples: [VEHICLE_CANDIDATE, PARKING_AREA]
+  YELLOW:
+    class_family: ACCESS
+    examples: [ROAD, TRAIL, INTERNAL_PATH, ACCESS_POINT]
+  PURPLE:
+    class_family: INFRASTRUCTURE
+    examples: [UTILITY, TANK, TOWER]
+  BROWN:
+    class_family: EXTRACTIVE_DISTURBANCE
+    examples: [QUARRY, EXCAVATION, CUT_FILL]
+  GRAY:
+    class_family: ARTIFACT_OR_UI
+    examples: [UI_OVERLAY, RENDER_ARTIFACT, UNRESOLVED_ARTIFACT]
+  WHITE:
+    class_family: CONTROL_REFERENCE
+    examples: [CONTROL_POINT, REFERENCE_FEATURE]
+
+color_rules:
+  color_is_ui_encoding_only: true
+  color_is_not_evidence: true
+  class_color_is_not_evidence_state: true
+  analyst_markup_is_not_ground_truth: true
+  original_unmarked_source_immutable: true
+  marked_source_is_derived_artifact: true
+
+comparison_population_requirements:
+  required_fields:
+    - comparison_set_id
+    - selection_rule
+    - n
+    - geography
+    - terrain_or_landuse_strata
+    - imagery_provider_constraints
+    - imagery_epoch_constraints
+    - exclusions
+  no_comparison_population_state: ABSTAIN_INSUFFICIENT_EVIDENCE
+
+explainability_required_fields:
+  - WHY_FLAGGED
+  - WHAT_WAS_OBSERVED
+  - WHAT_WAS_NOT_OBSERVED
+  - WHAT_REMAINS_UNKNOWN
+  - SUPPORTING_EVIDENCE
+  - CONTRADICTING_EVIDENCE
+  - WHAT_WOULD_FALSIFY_IT
+  - WHAT_DATA_IS_NEEDED_NEXT
+  - COMPARISON_SET
+  - SOURCE_LINEAGE
+
+parameters:
+  local_anomaly_threshold:
+    state: CALIBRATION_REQUIRED
+  persistent_instance_iou_min:
+    state: CALIBRATION_REQUIRED
+  persistent_instance_hausdorff_max:
+    state: CALIBRATION_REQUIRED
+  visibility_complete_min:
+    state: CALIBRATION_REQUIRED
+  visibility_heavily_occluded_min:
+    state: CALIBRATION_REQUIRED
+  path_network_class_thresholds:
+    state: CALIBRATION_REQUIRED
+  visual_exposure_weights:
+    state: CALIBRATION_REQUIRED
+  access_redundancy_weights:
+    state: CALIBRATION_REQUIRED
+  candidate_family_promotion_thresholds:
+    state: CALIBRATION_REQUIRED
+  composite_ilap_weights:
+    state: CALIBRATION_REQUIRED
+    enabled: false
+
+hard_invariants:
+  UNKNOWN_NE_ZERO: true
+  VISUAL_INTEREST_NE_UNUSUALNESS: true
+  UNUSUALNESS_NE_PURPOSE: true
+  NOT_VISIBLE_NE_ABSENT: true
+  HAND_DRAWN_BOUNDARY_NE_EXACT_GEOMETRY: true
+  PERSISTENCE_NE_IDENTITY: true
+  SIMILARITY_NE_EQUIVALENCE: true
+  NEAREST_NE_IDENTITY: true
+  LOCAL_BASELINE_REQUIRED_FOR_ANOMALY: true
+  HUMAN_AND_MACHINE_EVIDENCE_SEPARATE: true
+  SAME_PROVIDER_REPEAT_NE_INDEPENDENT_CORROBORATION: true
+  DERIVED_IMAGE_NE_INDEPENDENT_SOURCE: true
+  FORESTED_NE_HARD_TO_REACH: true
+  ACCESS_FRICTION_NE_CONCEALMENT: true
+  CANDIDATE_FAMILY_NE_FACILITY_IDENTITY: true

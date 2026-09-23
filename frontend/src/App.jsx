@@ -15,6 +15,7 @@ import Aircraft from '@/pages/Aircraft';
 import FR24Intake from '@/pages/FR24Intake';
 import RoutesPage from '@/pages/Routes';
 import Infrastructure from '@/pages/Infrastructure';
+import ILAPReviewLab from '@/pages/ILAPReviewLab';
 import Airports from '@/pages/Airports';
 import ManualReview from '@/pages/ManualReview';
 import ExportCenter from '@/pages/ExportCenter';
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
             <Route path="/fr24" element={<FR24Intake />} />
             <Route path="/routes" element={<RoutesPage />} />
             <Route path="/infrastructure" element={<Infrastructure />} />
+            <Route path="/ilap-review" element={<ILAPReviewLab />} />
             <Route path="/airports" element={<Airports />} />
             <Route path="/review" element={<ManualReview />} />
             <Route path="/export" element={<ExportCenter />} />
