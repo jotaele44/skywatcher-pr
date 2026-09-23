@@ -4,4 +4,4 @@
 # natural-language wrapper:
 #     pip install -r requirements-llm.txt
 # and set ANTHROPIC_API_KEY (see .env.example).
-anthropic>=0.39
+anthropic>=1.7.0
