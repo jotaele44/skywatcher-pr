@@ -34,6 +34,14 @@ DEFAULT_BBOX = [PR_LON_MIN, PR_LAT_MIN, PR_LON_MAX, PR_LAT_MAX]
 # ── Fetch settings ───────────────────────────────────────────────────────────
 FETCH_TIMEOUT_S = int(os.getenv("ADSB_FETCH_TIMEOUT", "30"))
 POLL_INTERVAL_S = int(os.getenv("ADSB_POLL_INTERVAL", "300"))
+# Mirrors imagery/config.py's FETCH_RETRIES: total attempts, not extra retries.
+FETCH_RETRIES = int(os.getenv("ADSB_FETCH_RETRIES", "3"))
+
+# ── Retention ─────────────────────────────────────────────────────────────────
+# adsb_state_vectors is append-only by design (see schemas/adsb_state_vectors.sql)
+# — no row is ever updated in place. This bounds long-term growth instead: each
+# persist_batch() call prunes rows older than RETENTION_DAYS. 0 disables pruning.
+RETENTION_DAYS = int(os.getenv("ADSB_RETENTION_DAYS", "30"))
 
 # ── OpenSky Network (OAuth2 client credentials; blank = anonymous access) ────
 OPENSKY_CLIENT_ID = os.getenv("OPENSKY_CLIENT_ID", "")

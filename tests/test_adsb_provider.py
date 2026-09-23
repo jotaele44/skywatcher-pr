@@ -14,6 +14,7 @@ import pytest
 
 pytest.importorskip("opensky_api")
 
+from adsb import config
 from adsb.providers import ProviderError, get_provider
 from adsb.providers.opensky import OpenSkyProvider
 
@@ -107,13 +108,38 @@ def test_fetch_states_empty_response(monkeypatch):
 
 def test_fetch_states_wraps_client_errors(monkeypatch):
     prov = OpenSkyProvider()
+    monkeypatch.setattr("adsb.providers.opensky.time.sleep", lambda _seconds: None)
+
+    calls = {"n": 0}
 
     def boom(bbox=()):
+        calls["n"] += 1
         raise OSError("network unreachable")
 
     monkeypatch.setattr(prov, "_client", lambda: SimpleNamespace(get_states=boom))
     with pytest.raises(ProviderError):
         prov.fetch_states(PR_BBOX)
+    # Retries every attempt before giving up, rather than failing the cycle
+    # on the first transient error.
+    assert calls["n"] == config.FETCH_RETRIES
+
+
+def test_fetch_states_retries_then_succeeds(monkeypatch):
+    prov = OpenSkyProvider()
+    monkeypatch.setattr("adsb.providers.opensky.time.sleep", lambda _seconds: None)
+
+    calls = {"n": 0}
+
+    def flaky(bbox=()):
+        calls["n"] += 1
+        if calls["n"] < config.FETCH_RETRIES:
+            raise OSError("network unreachable")
+        return FakeStatesResponse([_fake_state()])
+
+    monkeypatch.setattr(prov, "_client", lambda: SimpleNamespace(get_states=flaky))
+    states = prov.fetch_states(PR_BBOX)
+    assert len(states) == 1
+    assert calls["n"] == config.FETCH_RETRIES
 
 
 def test_client_used_anonymously_without_credentials():

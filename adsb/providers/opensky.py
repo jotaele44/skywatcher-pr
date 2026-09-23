@@ -12,6 +12,8 @@ Install: pip install "git+https://github.com/openskynetwork/opensky-api.git#subd
 
 from __future__ import annotations
 
+import time
+
 from .. import config
 from ..models import StateVector
 from .base import AdsbProvider, ProviderError
@@ -59,15 +61,27 @@ class OpenSkyProvider(AdsbProvider):
         # OpenSky's bbox order is (min_lat, max_lat, min_lon, max_lon) —
         # different from this repo's (west, south, east, north) convention.
         opensky_bbox = (south, north, west, east)
-        try:
-            response = self._client().get_states(bbox=opensky_bbox)
-        except ProviderError:
-            raise
-        except Exception as exc:  # noqa: BLE001 - client raises plain Exception/OSError
-            raise ProviderError(f"opensky get_states failed: {exc}") from exc
-        if response is None or response.states is None:
-            return []
-        return [self._to_state_vector(s) for s in response.states]
+        # Retry/backoff mirrors imagery/providers/base.py's _request: a single
+        # dropped connection on a 15-minute cron must not drop the whole cycle.
+        # ProviderError is not retried — it means misconfiguration (e.g. the
+        # opensky-api package isn't installed), which a retry can't fix.
+        last_exc: Exception | None = None
+        for attempt in range(config.FETCH_RETRIES):
+            try:
+                response = self._client().get_states(bbox=opensky_bbox)
+            except ProviderError:
+                raise
+            except Exception as exc:  # noqa: BLE001 - client raises plain Exception/OSError
+                last_exc = exc
+                if attempt < config.FETCH_RETRIES - 1:
+                    time.sleep(1.5 * (attempt + 1))
+                continue
+            if response is None or response.states is None:
+                return []
+            return [self._to_state_vector(s) for s in response.states]
+        raise ProviderError(
+            f"opensky get_states failed after {config.FETCH_RETRIES} attempts: {last_exc}"
+        )
 
     def _to_state_vector(self, s) -> StateVector:
         return StateVector(

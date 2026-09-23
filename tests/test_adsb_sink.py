@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
+from adsb import config
 from adsb.models import StateVector
 from adsb.sink import persist_batch
 from skywatcher.fr24 import database as db
@@ -85,3 +88,62 @@ def test_persist_batch_empty_list(tmp_path):
     result = persist_batch([], db_path=dbp)
     assert result["persisted"] is True
     assert result["n_written"] == 0
+
+
+def test_persist_batch_prunes_rows_past_retention(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "RETENTION_DAYS", 1)
+    dbp = tmp_path / "s.db"
+    persist_batch([_state()], db_path=dbp)
+
+    stale_polled_at = (datetime.now(timezone.utc) - timedelta(days=5)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    conn = db.connect(dbp)
+    try:
+        conn.execute(
+            "UPDATE adsb_state_vectors SET polled_at = ? WHERE icao24 = ?",
+            (stale_polled_at, "a1b2c3"),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    # The next poll's pruning pass should remove the now-stale row and keep
+    # only what the fresh batch just wrote.
+    result = persist_batch([_state(icao24="d4e5f6")], db_path=dbp)
+    assert result["persisted"] is True
+
+    conn = db.connect(dbp, readonly=True)
+    try:
+        rows = conn.execute("SELECT icao24 FROM adsb_state_vectors").fetchall()
+        assert {r["icao24"] for r in rows} == {"d4e5f6"}
+    finally:
+        conn.close()
+
+
+def test_persist_batch_retention_disabled_keeps_old_rows(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "RETENTION_DAYS", 0)
+    dbp = tmp_path / "s.db"
+    persist_batch([_state()], db_path=dbp)
+
+    stale_polled_at = (datetime.now(timezone.utc) - timedelta(days=365)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    conn = db.connect(dbp)
+    try:
+        conn.execute(
+            "UPDATE adsb_state_vectors SET polled_at = ? WHERE icao24 = ?",
+            (stale_polled_at, "a1b2c3"),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    persist_batch([_state(icao24="d4e5f6")], db_path=dbp)
+
+    conn = db.connect(dbp, readonly=True)
+    try:
+        n = conn.execute("SELECT COUNT(*) AS n FROM adsb_state_vectors").fetchone()["n"]
+        assert n == 2
+    finally:
+        conn.close()
