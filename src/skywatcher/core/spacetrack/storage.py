@@ -139,6 +139,14 @@ class SpaceTrackStore:
         _atomic_write(current_path, payload)
         return version_path, digest
 
+    def load_materialization(self, name: str) -> Any | None:
+        if not name or any(part in name for part in ("/", "\\", "..")):
+            raise ValueError("materialization name must be a simple path-safe token")
+        path = self.root / "materialized" / name / "current.json"
+        if not path.exists():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+
     def save_schema(self, snapshot: SchemaSnapshot, *, accepted: bool) -> Path:
         payload = _canonical_json(asdict(snapshot))
         version_path = (
