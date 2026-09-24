@@ -13,6 +13,7 @@ from .contracts import get_source_contract
 from .models import Watermark
 
 _BASE_URL = "https://www.space-track.org"
+_CURATED_FAVORITES = {"Navigation", "Special_Interest", "Visible", "Weather"}
 
 
 def _segment(value: object) -> str:
@@ -30,6 +31,7 @@ class SpaceTrackQuery:
     metadata: bool = False
     emptyresult_show: bool = True
     limit: int | None = None
+    path_override: str | None = None
 
     def with_filter(self, predicate: str, value: object) -> SpaceTrackQuery:
         return replace(self, filters=(*self.filters, (predicate, str(value))))
@@ -41,6 +43,9 @@ class SpaceTrackQuery:
         return replace(self, predicates=tuple(predicates))
 
     def to_path(self) -> str:
+        if self.path_override is not None:
+            return self.path_override
+
         parts = [self.controller, "query", "class", self.api_class]
         for predicate, value in self.filters:
             parts.extend((_segment(predicate), _segment(value)))
@@ -71,6 +76,22 @@ def build_incremental_query(
     output_format: str = "json",
 ) -> SpaceTrackQuery:
     contract = get_source_contract(source_id)
+
+    if source_id == "publicfiles":
+        return SpaceTrackQuery(
+            controller=contract.controller,
+            api_class=contract.api_class,
+            format="",
+            emptyresult_show=False,
+            path_override="/publicfiles/query/class/loadpublicdata",
+        )
+
+    if source_id == "publicfile_download":
+        raise ValueError("use build_publicfile_download_url() for named public-file downloads")
+
+    if source_id == "curated_favorites":
+        raise ValueError("use build_curated_favorites_query() with an explicit collection")
+
     query = SpaceTrackQuery(
         controller=contract.controller,
         api_class=contract.api_class,
@@ -78,11 +99,12 @@ def build_incremental_query(
     )
 
     if source_id == "gp":
-        return (
-            query.with_filter("DECAY_DATE", "null-val")
-            .with_filter("CREATION_DATE", ">now-0.042")
-            .with_order("GP_ID asc")
-        )
+        query = query.with_filter("DECAY_DATE", "null-val")
+        if watermark is None:
+            return query.with_filter("EPOCH", ">now-10").with_order("GP_ID asc")
+        return query.with_filter(
+            "CREATION_DATE", f">{watermark.value}"
+        ).with_order("GP_ID asc")
 
     if source_id == "satcat" and watermark is not None:
         return query.with_filter("FILE", f">{watermark.value}").with_order("FILE asc")
@@ -112,3 +134,30 @@ def build_incremental_query(
         return query.with_filter("CREATED", value).with_order("CREATED asc")
 
     return query
+
+
+def build_curated_favorites_query(
+    collection: str,
+    *,
+    output_format: str = "json",
+) -> SpaceTrackQuery:
+    if collection not in _CURATED_FAVORITES:
+        allowed = ", ".join(sorted(_CURATED_FAVORITES))
+        raise ValueError(f"unknown curated favorites collection {collection!r}; expected {allowed}")
+    return (
+        SpaceTrackQuery(
+            controller="basicspacedata",
+            api_class="gp",
+            format=output_format,
+        )
+        .with_filter("favorites", collection)
+        .with_filter("EPOCH", ">now-10")
+        .with_order("GP_ID asc")
+    )
+
+
+def build_publicfile_download_url(name: str) -> str:
+    cleaned = name.strip()
+    if not cleaned:
+        raise ValueError("public-file name is required")
+    return f"{_BASE_URL}/publicfiles/query/class/download?name={quote(cleaned, safe='')}"
