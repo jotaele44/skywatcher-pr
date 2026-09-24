@@ -157,10 +157,12 @@ class RateGate:
             return False, "GLOBAL_PER_HOUR"
 
         contract = get_source_contract(source_id)
+        history = self._by_source.setdefault(source_id, deque())
+        if contract.one_time_only and history:
+            return False, "ONE_TIME_ONLY"
         if contract.max_requests_per_hour is None:
             return True, None
 
-        history = self._by_source.setdefault(source_id, deque())
         self._trim(history, current - timedelta(days=8))
         if history:
             minimum_interval = timedelta(hours=1 / contract.max_requests_per_hour)
