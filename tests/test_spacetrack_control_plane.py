@@ -8,7 +8,12 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from skywatcher.core.spacetrack.adapters import normalize_decay, normalize_gp
+from skywatcher.core.spacetrack.certification import (
+    certify_local_runtime,
+    certify_static_contracts,
+)
 from skywatcher.core.spacetrack.collector import SpaceTrackCollector
+from skywatcher.core.spacetrack.contradictions import ContradictionRegister
 from skywatcher.core.spacetrack.contracts import SOURCE_CONTRACTS, get_source_contract
 from skywatcher.core.spacetrack.control_plane import (
     archive_snapshot,
@@ -31,6 +36,7 @@ from skywatcher.core.spacetrack.models import (
     Watermark,
 )
 from skywatcher.core.spacetrack.query import build_incremental_query
+from skywatcher.core.spacetrack.reentry import materialize_reentry_events
 from skywatcher.core.spacetrack.storage import SpaceTrackStore
 from skywatcher.core.spacetrack.transport import TransportResponse
 
@@ -385,6 +391,109 @@ def test_decay_precedence_mapping_is_explicit():
     assert classify_decay_stage(2) == "DECAY_ANNOUNCEMENT"
     assert classify_decay_stage("1") == "SATCAT_CURRENT_DECAY"
     assert classify_decay_stage(None) == "UNRESOLVED"
+
+
+
+def test_contradiction_register_preserves_superseded_observation():
+    register = ContradictionRegister()
+    first = register.add("IDENTITY", "NORAD_CAT_ID:1", ("A", "B"))
+    replacement = register.add("IDENTITY", "NORAD_CAT_ID:1", ("A", "C"))
+    superseded = register.supersede(first.contradiction_id, by_id=replacement.contradiction_id)
+
+    assert superseded.state is CertificationState.SUPERSEDED
+    assert superseded.superseded_by == replacement.contradiction_id
+    assert len(register.all()) == 2
+    assert register.unresolved() == (replacement,)
+
+
+def test_reentry_materializer_uses_historical_stage_not_prediction():
+    decay_rows = [
+        normalize_decay(
+            {
+                "NORAD_CAT_ID": "49277",
+                "MSG_EPOCH": "2022-08-25 06:04:02",
+                "DECAY_EPOCH": "2022-08-30 0:00:00",
+                "SOURCE": "60day_msg",
+                "PRECEDENCE": 4,
+            }
+        ),
+        normalize_decay(
+            {
+                "NORAD_CAT_ID": "49277",
+                "MSG_EPOCH": "2022-08-31 16:11:00",
+                "DECAY_EPOCH": "2022-08-30 0:00:00",
+                "SOURCE": "decay_msg",
+                "PRECEDENCE": 2,
+            }
+        ),
+        normalize_decay(
+            {
+                "NORAD_CAT_ID": "49277",
+                "MSG_EPOCH": "2026-07-29 18:59:26",
+                "DECAY_EPOCH": "2022-08-30 0:00:00",
+                "SOURCE": "satcat",
+                "PRECEDENCE": 1,
+            }
+        ),
+    ]
+    tip_rows = [
+        {
+            "norad_cat_id": "49277",
+            "message_epoch": "2022-08-30 10:00:00",
+            "predicted_decay_epoch": "2022-08-30 12:00:00",
+            "raw": {"ID": "TIP-1"},
+        }
+    ]
+
+    events, contradictions = materialize_reentry_events(decay_rows, tip_rows)
+
+    assert contradictions == ()
+    assert len(events) == 1
+    event = events[0]
+    assert event.canonical_decay_date == "2022-08-30"
+    assert event.temporal_precision == "DATE"
+    assert len(event.assertions) == 4
+    assert any(row.role == "PREDICTION" for row in event.assertions)
+    assert any(row.role == "HISTORICAL" for row in event.assertions)
+
+
+def test_reentry_materializer_fails_closed_on_conflicting_historical_dates():
+    decay_rows = [
+        normalize_decay(
+            {
+                "NORAD_CAT_ID": "49277",
+                "DECAY_EPOCH": "2022-08-30 0:00:00",
+                "SOURCE": "satcat",
+                "PRECEDENCE": 1,
+            }
+        ),
+        normalize_decay(
+            {
+                "NORAD_CAT_ID": "49277",
+                "DECAY_EPOCH": "2022-08-31 0:00:00",
+                "SOURCE": "satcat",
+                "PRECEDENCE": 1,
+            }
+        ),
+    ]
+
+    events, contradictions = materialize_reentry_events(decay_rows, [])
+
+    assert events[0].canonical_decay_date is None
+    assert len(contradictions) == 1
+    assert contradictions[0].category == "TIME"
+
+
+def test_static_contract_certification_passes():
+    report = certify_static_contracts()
+    assert report.state is CertificationState.PASS
+    assert all(gate.state is CertificationState.PASS for gate in report.gates)
+
+
+def test_runtime_certification_is_blocked_without_authenticated_evidence(tmp_path):
+    report = certify_local_runtime(SpaceTrackStore(tmp_path))
+    assert report.state is CertificationState.BLOCKED
+    assert "LIVE_AUTHENTICATED_ACQUISITION" in report.unresolved
 
 
 def test_prcunar2_decay_history_retains_all_assertions_without_latest_row_collapse():
