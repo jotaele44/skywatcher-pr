@@ -296,6 +296,53 @@
           "tests/test_spacetrack_control_plane.py"
         ]
       }
+    },
+    {
+      "id": "space-track-source-control",
+      "classification": "analysis",
+      "status": "active",
+      "requires_terminal": false,
+      "backend": {
+        "files": [
+          "server/backend/spacetrack_router.py"
+        ],
+        "endpoints": [
+          "GET /api/space-track/status",
+          "GET /api/space-track/objects",
+          "GET /api/space-track/reentry"
+        ],
+        "symbols": [
+          "server/backend/spacetrack_router.py:space_track_status",
+          "server/backend/spacetrack_router.py:space_track_objects",
+          "server/backend/spacetrack_router.py:space_track_reentry"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/space-track"
+        ],
+        "e2e_routes": [
+          "/space-track"
+        ],
+        "components": [
+          "frontend/src/pages/SpaceTrackControl.jsx",
+          "frontend/src/api/federationClient.js"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_spacetrack_endpoints.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      }
     }
   ],
   "exceptions": []
