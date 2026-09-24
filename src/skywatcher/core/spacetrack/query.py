@@ -122,6 +122,7 @@ def build_incremental_query(
     if source_id == "decay_60day":
         return (
             query.with_filter("SOURCE", "60day_msg")
+            .with_filter("DECAY_EPOCH", "now--now+60")
             .with_order("NORAD_CAT_ID asc", "MSG_EPOCH asc")
         )
 
