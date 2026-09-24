@@ -132,7 +132,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         "Weekly 60-day decay prediction denominator.",
         1 / (24 * 7),
         True,
-        "MSG_EPOCH",
+        None,
         "reentry_prediction",
         DistributionClass.ACCOUNT_ONLY,
         ("Acquire no more than weekly, preferably Wednesday after 17:00 UTC.",),
