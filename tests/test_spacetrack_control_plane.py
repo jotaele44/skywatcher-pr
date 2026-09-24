@@ -1,0 +1,387 @@
+from __future__ import annotations
+
+import io
+import json
+import zipfile
+from datetime import datetime, timedelta, timezone
+
+import pytest
+
+from skywatcher.core.spacetrack.adapters import normalize_decay, normalize_gp
+from skywatcher.core.spacetrack.collector import SpaceTrackCollector
+from skywatcher.core.spacetrack.contracts import SOURCE_CONTRACTS, get_source_contract
+from skywatcher.core.spacetrack.control_plane import (
+    RateGate,
+    SpaceTrackControlPlane,
+    archive_snapshot,
+    classify_archive_equivalence,
+    classify_decay_stage,
+    schema_snapshot,
+    set_comparison,
+    source_arithmetic,
+)
+from skywatcher.core.spacetrack.models import (
+    CertificationState,
+    DistributionClass,
+    Manifestation,
+    Watermark,
+)
+from skywatcher.core.spacetrack.query import build_incremental_query
+from skywatcher.core.spacetrack.storage import SpaceTrackStore
+from skywatcher.core.spacetrack.transport import TransportResponse
+
+
+UTC = timezone.utc
+
+
+class FakeTransport:
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.urls = []
+
+    def get(self, url: str) -> TransportResponse:
+        self.urls.append(url)
+        if not self.responses:
+            raise AssertionError("unexpected transport call")
+        return self.responses.pop(0)
+
+
+def _json_response(payload, status=200):
+    return TransportResponse(
+        status=status,
+        body=json.dumps(payload).encode("utf-8"),
+        headers={"content-type": "application/json"},
+    )
+
+
+def _zip_bytes(path: str, content: bytes, *, compression: int) -> bytes:
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", compression=compression) as archive:
+        archive.writestr(path, content)
+    return out.getvalue()
+
+
+def test_source_denominator_contains_required_v1_classes():
+    ids = {row.source_id for row in SOURCE_CONTRACTS}
+    assert {
+        "satcat",
+        "satcat_change",
+        "satcat_debut",
+        "gp",
+        "gp_history",
+        "decay",
+        "decay_60day",
+        "tip",
+        "cdm_public",
+        "publicfiles",
+        "organization",
+        "boxscore",
+        "launch_site",
+        "announcement",
+        "curated_favorites",
+    } <= ids
+
+
+def test_space_track_manifestations_fail_closed_for_redistribution():
+    assert get_source_contract("satcat").distribution_class is DistributionClass.ACCOUNT_ONLY
+    assert get_source_contract("publicfiles").distribution_class is DistributionClass.ACCOUNT_ONLY
+
+    control = SpaceTrackControlPlane()
+    manifestation = Manifestation(
+        source_id="satcat",
+        controller="basicspacedata",
+        query="q",
+        retrieved_utc="2026-09-24T19:00:00Z",
+        raw_sha256="a" * 64,
+        byte_count=1,
+        row_count=1,
+        schema_sha256=None,
+        distribution_class=DistributionClass.ACCOUNT_ONLY,
+    )
+    with pytest.raises(PermissionError):
+        control.assert_redistributable(manifestation)
+
+
+def test_gp_query_is_bulk_current_propagable_and_omm_capable():
+    query = build_incremental_query("gp", output_format="xml")
+    url = query.to_url()
+    assert "/class/gp/" in url
+    assert "/DECAY_DATE/null-val/" in url
+    assert "/CREATION_DATE/%3Enow-0.042/" in url
+    assert "/orderby/GP_ID%20asc/" in url
+    assert "/format/xml/" in url
+
+
+def test_incremental_queries_use_source_specific_watermarks():
+    satcat = build_incremental_query("satcat", Watermark("satcat", "FILE", "9250"))
+    assert "/FILE/%3E9250/" in satcat.to_url()
+
+    debut = build_incremental_query(
+        "satcat_debut",
+        Watermark("satcat_debut", "DEBUT", "2026-09-23"),
+    )
+    assert "/DEBUT/%3E2026-09-23/" in debut.to_url()
+
+    tip = build_incremental_query(
+        "tip",
+        Watermark("tip", "INSERT_EPOCH", "2026-09-24 18:00:00"),
+    )
+    assert "/INSERT_EPOCH/%3E2026-09-24%2018%3A00%3A00/" in tip.to_url()
+
+
+def test_rate_gate_enforces_source_cadence_and_global_only_schema_calls():
+    gate = RateGate()
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+
+    gate.record_global(now)
+    allowed, reason = gate.can_request("gp", now)
+    assert allowed is True
+    assert reason is None
+
+    gate.record("gp", now)
+    allowed, reason = gate.can_request("gp", now + timedelta(minutes=30))
+    assert allowed is False
+    assert reason == "SOURCE_CADENCE"
+    allowed, reason = gate.can_request("gp", now + timedelta(hours=1))
+    assert allowed is True
+    assert reason is None
+
+
+def test_gp_history_is_one_time_only_per_control_plane_run():
+    gate = RateGate()
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+    gate.record("gp_history", now)
+    allowed, reason = gate.can_request("gp_history", now + timedelta(days=365))
+    assert allowed is False
+    assert reason == "ONE_TIME_ONLY"
+
+
+def test_publicfiles_cadence_is_eight_hours():
+    gate = RateGate()
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+    gate.record("publicfiles", now)
+    assert gate.can_request("publicfiles", now + timedelta(hours=7, minutes=59))[0] is False
+    assert gate.can_request("publicfiles", now + timedelta(hours=8))[0] is True
+
+
+def test_schema_drift_blocks_normalized_promotion():
+    control = SpaceTrackControlPlane()
+    first = schema_snapshot(
+        "satcat",
+        [{"name": "NORAD_CAT_ID"}, {"name": "SATNAME"}],
+        "2026-09-24T19:00:00Z",
+    )
+    same = schema_snapshot(
+        "satcat",
+        [{"name": "NORAD_CAT_ID"}, {"name": "SATNAME"}],
+        "2026-09-24T20:00:00Z",
+    )
+    changed = schema_snapshot(
+        "satcat",
+        [{"name": "NORAD_CAT_ID"}, {"name": "SATNAME"}, {"name": "NEW_FIELD"}],
+        "2026-09-24T21:00:00Z",
+    )
+
+    assert control.register_schema(first) is True
+    assert control.schema_promotion_allowed("satcat") is True
+    assert control.register_schema(same) is True
+    assert control.schema_promotion_allowed("satcat") is True
+    assert control.register_schema(changed) is False
+    assert control.schema_promotion_allowed("satcat") is False
+
+
+def test_archive_identity_classification_distinguishes_recompression_and_paths():
+    stored = _zip_bytes("ephemeris.oem", b"same payload", compression=zipfile.ZIP_STORED)
+    deflated = _zip_bytes("ephemeris.oem", b"same payload", compression=zipfile.ZIP_DEFLATED)
+    renamed = _zip_bytes("renamed.oem", b"same payload", compression=zipfile.ZIP_DEFLATED)
+    changed = _zip_bytes("ephemeris.oem", b"different", compression=zipfile.ZIP_DEFLATED)
+
+    a = archive_snapshot(stored)
+    b = archive_snapshot(deflated)
+    c = archive_snapshot(renamed)
+    d = archive_snapshot(changed)
+
+    assert classify_archive_equivalence(a, a) == "BYTE_IDENTICAL"
+    assert classify_archive_equivalence(a, b) == "PURE_RECOMPRESSION"
+    assert classify_archive_equivalence(a, c) == "SAME_PAYLOADS_DIFFERENT_PATHS"
+    assert classify_archive_equivalence(a, d) == "DISTINCT_PAYLOADS"
+
+
+def test_source_arithmetic_fails_closed():
+    assert source_arithmetic(10, 8, 2).closes is True
+    with pytest.raises(ValueError):
+        source_arithmetic(10, 8, 1)
+
+
+def test_cross_source_set_comparison_preserves_full_difference_sets():
+    result = set_comparison(
+        [{"NORAD_CAT_ID": "1"}, {"NORAD_CAT_ID": "2"}],
+        [{"NORAD_CAT_ID": "2"}, {"NORAD_CAT_ID": "3"}],
+    )
+    assert result == {
+        "intersection": {"2"},
+        "a_only": {"1"},
+        "b_only": {"3"},
+        "union": {"1", "2", "3"},
+        "symmetric_difference": {"1", "3"},
+    }
+
+
+def test_nine_digit_norad_id_is_preserved_as_string():
+    normalized = normalize_gp(
+        {
+            "GP_ID": "900000001",
+            "NORAD_CAT_ID": "123456789",
+            "OBJECT_ID": "2026-001A",
+            "EPOCH": "2026-09-24T19:00:00.000000",
+        }
+    )
+    assert normalized["norad_cat_id"] == "123456789"
+    assert normalized["raw"]["NORAD_CAT_ID"] == "123456789"
+
+
+def test_decay_precedence_mapping_is_explicit():
+    assert classify_decay_stage(4) == "SIXTY_DAY_PREDICTION"
+    assert classify_decay_stage("3") == "TIP_PREDICTION"
+    assert classify_decay_stage(2) == "DECAY_ANNOUNCEMENT"
+    assert classify_decay_stage("1") == "SATCAT_CURRENT_DECAY"
+    assert classify_decay_stage(None) == "UNRESOLVED"
+
+
+def test_prcunar2_decay_history_retains_all_assertions_without_latest_row_collapse():
+    rows = [
+        {
+            "NORAD_CAT_ID": "49277",
+            "SATNAME": "PRCUNAR2",
+            "INTLDES": "1998-067SW",
+            "COUNTRY": "PRI",
+            "MSG_EPOCH": "2026-07-29 18:59:26",
+            "DECAY_EPOCH": "2022-08-30 0:00:00",
+            "SOURCE": "satcat",
+            "PRECEDENCE": 1,
+        },
+        {
+            "NORAD_CAT_ID": "49277",
+            "SATNAME": "PRCUNAR2",
+            "INTLDES": "1998-067SW",
+            "COUNTRY": "PRI",
+            "MSG_EPOCH": "2022-08-31 16:11:00",
+            "DECAY_EPOCH": "2022-08-30 0:00:00",
+            "SOURCE": "decay_msg",
+            "PRECEDENCE": 2,
+        },
+        {
+            "NORAD_CAT_ID": "49277",
+            "MSG_EPOCH": "2022-07-13 22:01:24",
+            "DECAY_EPOCH": "2022-09-01 0:00:00",
+            "SOURCE": "60day_msg",
+            "PRECEDENCE": 4,
+        },
+        {
+            "NORAD_CAT_ID": "49277",
+            "MSG_EPOCH": "2022-07-20 21:38:34",
+            "DECAY_EPOCH": "2022-08-28 0:00:00",
+            "SOURCE": "60day_msg",
+            "PRECEDENCE": 4,
+        },
+        {
+            "NORAD_CAT_ID": "49277",
+            "MSG_EPOCH": "2022-07-28 02:27:23",
+            "DECAY_EPOCH": "2022-09-04 0:00:00",
+            "SOURCE": "60day_msg",
+            "PRECEDENCE": 4,
+        },
+        {
+            "NORAD_CAT_ID": "49277",
+            "MSG_EPOCH": "2022-08-04 01:26:01",
+            "DECAY_EPOCH": "2022-09-04 0:00:00",
+            "SOURCE": "60day_msg",
+            "PRECEDENCE": 4,
+        },
+        {
+            "NORAD_CAT_ID": "49277",
+            "MSG_EPOCH": "2022-08-11 01:06:43",
+            "DECAY_EPOCH": "2022-08-31 0:00:00",
+            "SOURCE": "60day_msg",
+            "PRECEDENCE": 4,
+        },
+        {
+            "NORAD_CAT_ID": "49277",
+            "MSG_EPOCH": "2022-08-19 03:40:16",
+            "DECAY_EPOCH": "2022-08-29 0:00:00",
+            "SOURCE": "60day_msg",
+            "PRECEDENCE": 4,
+        },
+        {
+            "NORAD_CAT_ID": "49277",
+            "MSG_EPOCH": "2022-08-25 06:04:02",
+            "DECAY_EPOCH": "2022-08-30 0:00:00",
+            "SOURCE": "60day_msg",
+            "PRECEDENCE": 4,
+        },
+    ]
+
+    normalized = [normalize_decay(row) for row in rows]
+    assert len(normalized) == 9
+    assert sum(row["assertion_role"] == "PREDICTION" for row in normalized) == 7
+    assert sum(row["assertion_role"] == "HISTORICAL" for row in normalized) == 2
+    assert {
+        row["decay_epoch"]
+        for row in normalized
+        if row["assertion_role"] == "HISTORICAL"
+    } == {"2022-08-30 0:00:00"}
+    assert normalized[0]["raw"]["MSG_EPOCH"] == "2026-07-29 18:59:26"
+
+
+def test_collector_freezes_raw_bytes_but_blocks_normalization_without_schema(tmp_path):
+    transport = FakeTransport(
+        [_json_response([{"NORAD_CAT_ID": "49277", "SATNAME": "PRCUNAR2"}])]
+    )
+    store = SpaceTrackStore(tmp_path)
+    collector = SpaceTrackCollector(transport=transport, store=store)
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+
+    result = collector.collect_json("satcat", now=now)
+    assert result.state is CertificationState.PROVISIONAL
+    assert result.blocker == "SCHEMA_UNVERIFIED_OR_DRIFTED"
+    assert len(result.rows) == 1
+    assert result.normalized_rows == ()
+    assert result.manifestation is not None
+    raw_path = (
+        tmp_path
+        / "raw"
+        / "satcat"
+        / result.manifestation.raw_sha256
+        / "payload.bin"
+    )
+    assert raw_path.exists()
+
+
+def test_collector_promotes_only_after_modeldef_baseline(tmp_path):
+    transport = FakeTransport(
+        [
+            _json_response([{"name": "NORAD_CAT_ID"}, {"name": "SATNAME"}]),
+            _json_response([{"NORAD_CAT_ID": "49277", "SATNAME": "PRCUNAR2"}]),
+        ]
+    )
+    store = SpaceTrackStore(tmp_path)
+    collector = SpaceTrackCollector(transport=transport, store=store)
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+
+    assert collector.capture_modeldef("satcat", now=now) is True
+    result = collector.collect_json("satcat", now=now)
+    assert result.state is CertificationState.PASS
+    assert result.normalized_rows[0]["norad_cat_id"] == "49277"
+
+
+def test_collector_classifies_unauthorized_controller_without_guessing(tmp_path):
+    transport = FakeTransport([_json_response({"detail": "forbidden"}, status=403)])
+    collector = SpaceTrackCollector(
+        transport=transport,
+        store=SpaceTrackStore(tmp_path),
+    )
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+
+    result = collector.collect_json("organization", now=now)
+    assert result.state is CertificationState.BLOCKED
+    assert result.blocker == "UNAUTHORIZED"
