@@ -31,13 +31,13 @@ class SpaceTrackQuery:
     emptyresult_show: bool = True
     limit: int | None = None
 
-    def with_filter(self, predicate: str, value: object) -> "SpaceTrackQuery":
+    def with_filter(self, predicate: str, value: object) -> SpaceTrackQuery:
         return replace(self, filters=(*self.filters, (predicate, str(value))))
 
-    def with_order(self, *terms: str) -> "SpaceTrackQuery":
+    def with_order(self, *terms: str) -> SpaceTrackQuery:
         return replace(self, order_by=tuple(terms))
 
-    def with_predicates(self, *predicates: str) -> "SpaceTrackQuery":
+    def with_predicates(self, *predicates: str) -> SpaceTrackQuery:
         return replace(self, predicates=tuple(predicates))
 
     def to_path(self) -> str:
