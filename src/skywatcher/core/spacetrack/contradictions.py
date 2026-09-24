@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import replace
-from typing import Iterable
 
 from .control_plane import logical_json_sha256
 from .models import CertificationState, ContradictionRecord
