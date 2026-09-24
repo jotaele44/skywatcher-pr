@@ -104,22 +104,24 @@ class SpaceTrackStore:
             _atomic_write(path, payload)
         return path
 
-    def save_schema(self, snapshot: SchemaSnapshot) -> Path:
+    def save_schema(self, snapshot: SchemaSnapshot, *, accepted: bool) -> Path:
         payload = _canonical_json(asdict(snapshot))
         version_path = (
             self.root
             / "schemas"
             / snapshot.source_id
+            / "observed"
             / f"{snapshot.canonical_sha256}.json"
         )
         if not version_path.exists():
             _atomic_write(version_path, payload)
-        current_path = self.root / "schemas" / snapshot.source_id / "current.json"
-        _atomic_write(current_path, payload)
+        if accepted:
+            accepted_path = self.root / "schemas" / snapshot.source_id / "accepted.json"
+            _atomic_write(accepted_path, payload)
         return version_path
 
     def load_schema(self, source_id: str) -> SchemaSnapshot | None:
-        path = self.root / "schemas" / source_id / "current.json"
+        path = self.root / "schemas" / source_id / "accepted.json"
         if not path.exists():
             return None
         payload = json.loads(path.read_text(encoding="utf-8"))
