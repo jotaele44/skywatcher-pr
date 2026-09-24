@@ -33,6 +33,7 @@ def normalize_satcat(row: dict[str, Any]) -> dict[str, Any]:
         "launch_date": _string_or_none(raw.get("LAUNCH") or raw.get("LAUNCH_DATE")),
         "decay_date": _string_or_none(raw.get("DECAY") or raw.get("DECAY_DATE")),
         "comment_code": _string_or_none(raw.get("COMMENTCODE")),
+        "debut": _string_or_none(raw.get("DEBUT")),
         "raw": raw,
     }
 
@@ -58,6 +59,9 @@ def normalize_gp(row: dict[str, Any]) -> dict[str, Any]:
         "ephemeris_type": raw.get("EPHEMERIS_TYPE"),
         "element_set_no": raw.get("ELEMENT_SET_NO"),
         "rev_at_epoch": raw.get("REV_AT_EPOCH"),
+        "object_type": _string_or_none(raw.get("OBJECT_TYPE")),
+        "country_code": _string_or_none(raw.get("COUNTRY_CODE")),
+        "decay_date": _string_or_none(raw.get("DECAY_DATE")),
         "raw": raw,
     }
 
@@ -105,6 +109,15 @@ def normalize_tip(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def normalize_cdm(row: dict[str, Any]) -> dict[str, Any]:
+    raw = _raw_copy(row)
+    return {
+        "created": _string_or_none(raw.get("CREATED")),
+        "tca": _string_or_none(raw.get("TCA")),
+        "raw": raw,
+    }
+
+
 def normalize_publicfile(row: dict[str, Any]) -> dict[str, Any]:
     raw = _raw_copy(row)
     return {
@@ -140,7 +153,9 @@ def normalize_rows(source_id: str, rows: Iterable[dict[str, Any]]) -> list[dict[
         "decay": normalize_decay,
         "decay_60day": normalize_decay,
         "tip": normalize_tip,
+        "cdm_public": normalize_cdm,
         "publicfiles": normalize_publicfile,
+        "curated_favorites": normalize_gp,
     }
     normalizer = dispatch.get(source_id)
     if normalizer is None:
