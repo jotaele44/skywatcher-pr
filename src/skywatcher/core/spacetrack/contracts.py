@@ -1,8 +1,8 @@
 """Source and controller contracts for Space-Track Integration v1.
 
 The values in this module are operational policy, not inferred identity facts.
-They encode the public API guidance current at the v1 baseline and make rate
-and retention rules executable so callers cannot silently over-query the service.
+They encode the public API guidance current at the v1 baseline and make rate,
+retention, and idempotency rules executable.
 """
 
 from __future__ import annotations
@@ -32,7 +32,9 @@ class SourceContract:
     canonical_role: str
     distribution_class: DistributionClass
     notes: tuple[str, ...] = ()
-    one_time_only: bool = False
+    query_once: bool = False
+    window_limit_count: int | None = None
+    window_seconds: int | None = None
 
 
 CONTROLLER_CONTRACTS: tuple[ControllerContract, ...] = (
@@ -63,7 +65,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         (
             "Use FILE watermark deltas after an initial full baseline.",
             "NAME_ONLY is never sufficient identity evidence.",
-            "RCSVALUE semantics changed on 2026-05-28 and require semantic versioning.",
+            "RCSVALUE semantics changed on 2026-05-28 and requires semantic versioning.",
         ),
     ),
     SourceContract(
@@ -102,9 +104,10 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         "current_orbit",
         DistributionClass.ACCOUNT_ONLY,
         (
+            "Initial baseline uses all propagable recent-epoch objects.",
+            "Subsequent acquisition advances by CREATION_DATE watermark.",
             "OMM logical fields are canonical; TLE/3LE are compatibility manifestations.",
             "Do not poll one object at a time.",
-            "Prefer propagable on-orbit filter: DECAY_DATE null and recent EPOCH.",
         ),
     ),
     SourceContract(
@@ -146,7 +149,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         DistributionClass.ACCOUNT_ONLY,
         (
             "LAT/LON are predicted 10-km crossing coordinates, not impact coordinates.",
-            "For an object within 12h of reentry, source guidance permits 10-minute checks.",
+            "A separate final-12-hour watch may use the source-authorized 10-minute cadence.",
         ),
     ),
     SourceContract(
@@ -160,10 +163,26 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         None,
         "operator_ephemeris_or_public_product",
         DistributionClass.ACCOUNT_ONLY,
+        ("Inventory at most once every eight hours.",),
+    ),
+    SourceContract(
+        "publicfile_download",
+        "publicfiles",
+        "download",
+        "P0",
+        "One named public-file payload.",
+        None,
+        True,
+        None,
+        "operator_ephemeris_or_public_product",
+        DistributionClass.ACCOUNT_ONLY,
         (
-            "Download each file once and retain locally.",
-            "Inspect ZIP outer identity and every member identity independently.",
+            "Persist each named file locally and do not fetch the same download query twice.",
+            "Do not download more than 10 public files per 15 minutes.",
         ),
+        True,
+        10,
+        15 * 60,
     ),
     SourceContract(
         "gp_history",
@@ -177,7 +196,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         "historical_orbit",
         DistributionClass.ACCOUNT_ONLY,
         (
-            "One-time bounded/ad-hoc retrieval only.",
+            "Each bounded historical query is acquired once and retained locally.",
             "Use bulk yearly archives for large date/object ranges.",
             "Never use GP_HISTORY as a current ephemeris feed.",
         ),
