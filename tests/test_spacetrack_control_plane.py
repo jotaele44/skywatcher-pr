@@ -20,6 +20,10 @@ from skywatcher.core.spacetrack.control_plane import (
     source_arithmetic,
     SpaceTrackControlPlane,
 )
+from skywatcher.core.spacetrack.materialize import (
+    materialize_space_objects,
+    materialize_stored_space_objects,
+)
 from skywatcher.core.spacetrack.models import (
     CertificationState,
     DistributionClass,
@@ -119,6 +123,17 @@ def test_gp_query_advances_from_creation_date_watermark():
         Watermark("gp", "CREATION_DATE", "2026-09-24 18:59:00"),
     )
     assert "/CREATION_DATE/%3E2026-09-24%2018%3A59%3A00/" in query.to_url()
+
+
+def test_publicfiles_and_sixty_day_queries_are_bounded():
+    publicfiles = build_incremental_query("publicfiles")
+    assert publicfiles.to_url() == (
+        "https://www.space-track.org/publicfiles/query/class/loadpublicdata"
+    )
+
+    sixty_day = build_incremental_query("decay_60day").to_url()
+    assert "/SOURCE/60day_msg/" in sixty_day
+    assert "/DECAY_EPOCH/now--now%2B60/" in sixty_day
 
 
 def test_incremental_queries_use_source_specific_watermarks():
@@ -293,6 +308,77 @@ def test_nine_digit_norad_id_is_preserved_as_string():
     assert normalized["raw"]["NORAD_CAT_ID"] == "123456789"
 
 
+
+def test_materializer_uses_stable_ids_and_preserves_aliases_without_name_merge():
+    satcat = [
+        {
+            "norad_cat_id": "49277",
+            "object_id": "1998-067SW",
+            "object_name": "PRCUNAR2",
+            "raw": {"FILE": "9250"},
+        },
+        {
+            "norad_cat_id": "49277",
+            "object_id": "1998-067SW",
+            "object_name": "PR-CuNaR2",
+            "raw": {"FILE": "9251"},
+        },
+    ]
+    gp = [
+        {
+            "gp_id": "10",
+            "norad_cat_id": "49277",
+            "object_id": "1998-067SW",
+            "object_name": "PRCUNAR2",
+            "creation_date": "2022-08-29 12:00:00",
+            "raw": {},
+        }
+    ]
+
+    result = materialize_space_objects(satcat, gp)
+
+    assert result.object_count == 1
+    assert result.unmatched_satcat == ()
+    assert result.unmatched_gp == ()
+    obj = result.objects[0]
+    assert obj.catalog_key == "space-track:norad:49277"
+    assert obj.identity_state is CertificationState.PASS
+    assert obj.satcat_row["raw"]["FILE"] == "9251"
+    assert obj.gp_row["gp_id"] == "10"
+    assert obj.aliases == ("PR-CuNaR2", "PRCUNAR2")
+
+
+def test_materializer_fails_closed_on_identifier_cardinality_conflict():
+    satcat = [
+        {
+            "norad_cat_id": "49277",
+            "object_id": "1998-067SW",
+            "object_name": "PRCUNAR2",
+            "raw": {"FILE": "9250"},
+        },
+        {
+            "norad_cat_id": "49277",
+            "object_id": "DIFFERENT-ID",
+            "object_name": "PRCUNAR2",
+            "raw": {"FILE": "9251"},
+        },
+    ]
+
+    result = materialize_space_objects(satcat, [])
+
+    assert result.objects[0].identity_state is CertificationState.UNRESOLVED
+    assert any(item.category == "IDENTITY" for item in result.contradictions)
+
+
+def test_materializer_does_not_merge_name_only_rows():
+    satcat = [
+        {"norad_cat_id": None, "object_id": None, "object_name": "SAME NAME", "raw": {}},
+        {"norad_cat_id": None, "object_id": None, "object_name": "SAME NAME", "raw": {}},
+    ]
+    result = materialize_space_objects(satcat, [])
+    assert result.object_count == 0
+
+
 def test_decay_precedence_mapping_is_explicit():
     assert classify_decay_stage(4) == "SIXTY_DAY_PREDICTION"
     assert classify_decay_stage("3") == "TIP_PREDICTION"
@@ -427,6 +513,75 @@ def test_collector_promotes_only_after_modeldef_baseline(tmp_path):
     result = collector.collect_json("satcat", now=now)
     assert result.state is CertificationState.PASS
     assert result.normalized_rows[0]["norad_cat_id"] == "49277"
+
+
+
+def test_missing_incremental_watermark_blocks_persistence(tmp_path):
+    transport = FakeTransport(
+        [
+            _json_response([{"name": "NORAD_CAT_ID"}, {"name": "CREATION_DATE"}]),
+            _json_response([{"NORAD_CAT_ID": "49277", "EPOCH": "2022-08-29"}]),
+        ]
+    )
+    store = SpaceTrackStore(tmp_path)
+    collector = SpaceTrackCollector(transport=transport, store=store)
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+
+    assert collector.capture_modeldef("gp", now=now) is True
+    result = collector.collect_json("gp", now=now)
+
+    assert result.state is CertificationState.PROVISIONAL
+    assert result.blocker == "WATERMARK_MISSING"
+    assert store.load_watermark("gp") is None
+    assert store.load_normalized_batches("gp") == ()
+
+
+def test_stored_batches_materialize_into_frozen_current_view(tmp_path):
+    transport = FakeTransport(
+        [
+            _json_response([{"name": "NORAD_CAT_ID"}, {"name": "FILE"}]),
+            _json_response([{"name": "NORAD_CAT_ID"}, {"name": "CREATION_DATE"}]),
+            _json_response(
+                [
+                    {
+                        "NORAD_CAT_ID": "49277",
+                        "INTLDES": "1998-067SW",
+                        "SATNAME": "PRCUNAR2",
+                        "FILE": "9251",
+                    }
+                ]
+            ),
+            _json_response(
+                [
+                    {
+                        "GP_ID": "100",
+                        "NORAD_CAT_ID": "49277",
+                        "OBJECT_ID": "1998-067SW",
+                        "OBJECT_NAME": "PRCUNAR2",
+                        "CREATION_DATE": "2026-09-24 18:59:00",
+                        "EPOCH": "2026-09-24 18:00:00",
+                    }
+                ]
+            ),
+        ]
+    )
+    store = SpaceTrackStore(tmp_path)
+    collector = SpaceTrackCollector(transport=transport, store=store)
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+
+    assert collector.capture_modeldef("satcat", now=now) is True
+    assert collector.capture_modeldef("gp", now=now) is True
+    assert collector.collect_json("satcat", now=now).state is CertificationState.PASS
+    assert collector.collect_json("gp", now=now).state is CertificationState.PASS
+
+    result, digest = materialize_stored_space_objects(store)
+    frozen = store.load_materialization("space_objects")
+
+    assert len(digest) == 64
+    assert result.object_count == 1
+    assert result.objects[0].norad_cat_id == "49277"
+    assert frozen["object_count"] == 1
+    assert frozen["objects"][0]["norad_cat_id"] == "49277"
 
 
 def test_gp_history_reuses_frozen_query_instead_of_redownloading(tmp_path):
