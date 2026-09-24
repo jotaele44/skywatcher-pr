@@ -116,6 +116,7 @@ class ContradictionRecord:
     key: str
     observations: tuple[str, ...]
     state: CertificationState = CertificationState.UNRESOLVED
+    superseded_by: str | None = None
 
 
 @dataclass(frozen=True)
@@ -148,3 +149,41 @@ class MaterializationResult:
     unmatched_gp: tuple[str, ...]
     contradictions: tuple[ContradictionRecord, ...]
     objects: tuple[SpaceObjectView, ...]
+
+
+@dataclass(frozen=True)
+class TemporalAssertion:
+    assertion_id: str
+    catalog_key: str
+    norad_cat_id: str
+    source_id: str
+    assertion_type: str
+    role: str
+    message_epoch: str | None
+    effective_epoch: str | None
+    raw: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ReentryEventView:
+    catalog_key: str
+    norad_cat_id: str
+    canonical_decay_date: str | None
+    temporal_precision: str | None
+    assertions: tuple[TemporalAssertion, ...]
+    contradictions: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class GateResult:
+    gate: str
+    state: CertificationState
+    detail: str
+
+
+@dataclass(frozen=True)
+class SpaceTrackCertificationReport:
+    scope: str
+    state: CertificationState
+    gates: tuple[GateResult, ...]
+    unresolved: tuple[str, ...]
