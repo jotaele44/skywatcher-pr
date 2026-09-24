@@ -204,6 +204,145 @@
           "tests/test_server_smoke.py"
         ]
       }
+    },
+    {
+      "id": "space-track-control-plane",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Read-only acquisition, provenance, schema, rate-limit, normalization, and immutable-storage infrastructure. It exposes no standalone human workflow; future Space-Track dashboard/status capabilities must be separately GUI-mapped when API endpoints are added.",
+      "backend": {
+        "files": [
+          "src/skywatcher/core/spacetrack/__init__.py",
+          "src/skywatcher/core/spacetrack/adapters.py",
+          "src/skywatcher/core/spacetrack/certification.py",
+          "src/skywatcher/core/spacetrack/collector.py",
+          "src/skywatcher/core/spacetrack/contradictions.py",
+          "src/skywatcher/core/spacetrack/contracts.py",
+          "src/skywatcher/core/spacetrack/control_plane.py",
+          "src/skywatcher/core/spacetrack/materialize.py",
+          "src/skywatcher/core/spacetrack/models.py",
+          "src/skywatcher/core/spacetrack/query.py",
+          "src/skywatcher/core/spacetrack/reentry.py",
+          "src/skywatcher/core/spacetrack/storage.py",
+          "src/skywatcher/core/spacetrack/transport.py"
+        ],
+        "symbols": [
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_satcat",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_gp",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_decay",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_tip",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_cdm",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_publicfile",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_catalog_change",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_rows",
+          "src/skywatcher/core/spacetrack/certification.py:certify_static_contracts",
+          "src/skywatcher/core/spacetrack/certification.py:certify_local_runtime",
+          "src/skywatcher/core/spacetrack/collector.py:CollectionResult",
+          "src/skywatcher/core/spacetrack/collector.py:DownloadResult",
+          "src/skywatcher/core/spacetrack/collector.py:SpaceTrackCollector",
+          "src/skywatcher/core/spacetrack/contradictions.py:ContradictionRegister",
+          "src/skywatcher/core/spacetrack/contracts.py:ControllerContract",
+          "src/skywatcher/core/spacetrack/contracts.py:SourceContract",
+          "src/skywatcher/core/spacetrack/contracts.py:get_source_contract",
+          "src/skywatcher/core/spacetrack/control_plane.py:logical_json_sha256",
+          "src/skywatcher/core/spacetrack/control_plane.py:raw_sha256",
+          "src/skywatcher/core/spacetrack/control_plane.py:classify_decay_stage",
+          "src/skywatcher/core/spacetrack/control_plane.py:source_arithmetic",
+          "src/skywatcher/core/spacetrack/control_plane.py:archive_snapshot",
+          "src/skywatcher/core/spacetrack/control_plane.py:classify_archive_equivalence",
+          "src/skywatcher/core/spacetrack/control_plane.py:schema_snapshot",
+          "src/skywatcher/core/spacetrack/control_plane.py:RateGate",
+          "src/skywatcher/core/spacetrack/control_plane.py:SpaceTrackControlPlane",
+          "src/skywatcher/core/spacetrack/control_plane.py:distinct_ids",
+          "src/skywatcher/core/spacetrack/control_plane.py:set_comparison",
+          "src/skywatcher/core/spacetrack/materialize.py:resolve_identity_bindings",
+          "src/skywatcher/core/spacetrack/materialize.py:materialize_space_objects",
+          "src/skywatcher/core/spacetrack/materialize.py:materialize_stored_space_objects",
+          "src/skywatcher/core/spacetrack/models.py:CertificationState",
+          "src/skywatcher/core/spacetrack/models.py:CapabilityState",
+          "src/skywatcher/core/spacetrack/models.py:DistributionClass",
+          "src/skywatcher/core/spacetrack/models.py:Watermark",
+          "src/skywatcher/core/spacetrack/models.py:Manifestation",
+          "src/skywatcher/core/spacetrack/models.py:SourceArithmetic",
+          "src/skywatcher/core/spacetrack/models.py:ArchiveMember",
+          "src/skywatcher/core/spacetrack/models.py:ArchiveSnapshot",
+          "src/skywatcher/core/spacetrack/models.py:SchemaSnapshot",
+          "src/skywatcher/core/spacetrack/models.py:CapabilityObservation",
+          "src/skywatcher/core/spacetrack/models.py:NormalizedBatch",
+          "src/skywatcher/core/spacetrack/models.py:ContradictionRecord",
+          "src/skywatcher/core/spacetrack/models.py:IdentityBinding",
+          "src/skywatcher/core/spacetrack/models.py:SpaceObjectView",
+          "src/skywatcher/core/spacetrack/models.py:MaterializationResult",
+          "src/skywatcher/core/spacetrack/models.py:TemporalAssertion",
+          "src/skywatcher/core/spacetrack/models.py:ReentryEventView",
+          "src/skywatcher/core/spacetrack/models.py:GateResult",
+          "src/skywatcher/core/spacetrack/models.py:SpaceTrackCertificationReport",
+          "src/skywatcher/core/spacetrack/query.py:SpaceTrackQuery",
+          "src/skywatcher/core/spacetrack/query.py:build_incremental_query",
+          "src/skywatcher/core/spacetrack/query.py:build_curated_favorites_query",
+          "src/skywatcher/core/spacetrack/query.py:build_publicfile_download_url",
+          "src/skywatcher/core/spacetrack/reentry.py:build_reentry_assertions",
+          "src/skywatcher/core/spacetrack/reentry.py:materialize_reentry_events",
+          "src/skywatcher/core/spacetrack/reentry.py:materialize_stored_reentry_events",
+          "src/skywatcher/core/spacetrack/storage.py:SpaceTrackStore",
+          "src/skywatcher/core/spacetrack/transport.py:TransportResponse",
+          "src/skywatcher/core/spacetrack/transport.py:ReadOnlyTransport",
+          "src/skywatcher/core/spacetrack/transport.py:UrlLibReadOnlyTransport"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_spacetrack_control_plane.py"
+        ]
+      }
+    },
+    {
+      "id": "space-track-source-control",
+      "classification": "analysis",
+      "status": "active",
+      "requires_terminal": false,
+      "backend": {
+        "files": [
+          "server/backend/spacetrack_router.py"
+        ],
+        "endpoints": [
+          "GET /api/space-track/status",
+          "GET /api/space-track/objects",
+          "GET /api/space-track/reentry"
+        ],
+        "symbols": [
+          "server/backend/spacetrack_router.py:space_track_status",
+          "server/backend/spacetrack_router.py:space_track_objects",
+          "server/backend/spacetrack_router.py:space_track_reentry"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/space-track"
+        ],
+        "e2e_routes": [
+          "/space-track"
+        ],
+        "components": [
+          "frontend/src/pages/SpaceTrackControl.jsx",
+          "frontend/src/api/federationClient.js"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_spacetrack_endpoints.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      }
     }
   ],
   "exceptions": []

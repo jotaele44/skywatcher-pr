@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Map, Plane, IdCard, Camera, Route as RouteIcon,
   Building2, TowerControl, ClipboardCheck, Share2, GaugeCircle,
-  Crosshair, ScanSearch, ScanEye,
+  Crosshair, ScanSearch, ScanEye, Satellite,
 } from "lucide-react";
 import { PROGRAM } from "@/lib/skywatcher";
 import brandMark from "@/assets/icon-64.png?inline";
@@ -23,6 +23,7 @@ const NAV = [
   { to: "/readiness", label: "Readiness / Blockers", icon: GaugeCircle },
   { to: "/calibration", label: "SATIM Calibration", icon: ScanSearch },
   { to: "/analysis", label: "Analysis Lenses", icon: ScanEye },
+  { to: "/space-track", label: "Space-Track Control", icon: Satellite },
 ];
 
 export default function Sidebar({ onNavigate }) {

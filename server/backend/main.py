@@ -43,6 +43,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
+from server.backend.spacetrack_router import router as spacetrack_router
+
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
 EXPORTS_DIR = ROOT / "exports"
 SYNTHETIC_PACKAGE = EXPORTS_DIR / "examples" / "synthetic_airspace_package"
@@ -76,6 +78,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(console_router)
+app.include_router(spacetrack_router)
 
 def _flight_corpus_v4_contract() -> dict[str, Any]:
     path = ROOT / "config" / "flight_corpus_v4.json"
