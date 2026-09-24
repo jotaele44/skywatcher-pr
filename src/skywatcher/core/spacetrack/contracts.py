@@ -58,7 +58,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         "FILE",
         "catalog_identity",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
         (
             "Use FILE watermark deltas after an initial full baseline.",
             "NAME_ONLY is never sufficient identity evidence.",
@@ -75,7 +75,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         None,
         "catalog_event",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
     ),
     SourceContract(
         "satcat_debut",
@@ -87,7 +87,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         "DEBUT",
         "catalog_event",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
     ),
     SourceContract(
         "gp",
@@ -99,7 +99,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         "GP_ID",
         "current_orbit",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
         (
             "OMM logical fields are canonical; TLE/3LE are compatibility manifestations.",
             "Do not poll one object at a time.",
@@ -116,7 +116,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         "MSG_EPOCH",
         "reentry_event",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
         ("Preserve every row and PRECEDENCE stage; never latest-row-collapse.",),
     ),
     SourceContract(
@@ -129,7 +129,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         "INSERT_EPOCH",
         "reentry_event",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
         (
             "LAT/LON are predicted 10-km crossing coordinates, not impact coordinates.",
             "For an object within 12h of reentry, source guidance permits 10-minute checks.",
@@ -145,7 +145,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         None,
         "operator_ephemeris_or_public_product",
-        DistributionClass.PUBLIC_FILE,
+        DistributionClass.ACCOUNT_ONLY,
         (
             "Download each file once and retain locally.",
             "Inspect ZIP outer identity and every member identity independently.",
@@ -161,7 +161,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         None,
         "historical_orbit",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
         (
             "One-time bounded/ad-hoc retrieval only.",
             "Use bulk yearly archives for large date/object ranges.",
@@ -178,7 +178,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         "CREATED",
         "conjunction_event",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
         ("Upstream history is bounded; local append-only retention is required.",),
     ),
     SourceContract(
@@ -204,7 +204,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         None,
         "aggregate_context",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
     ),
     SourceContract(
         "launch_site",
@@ -216,7 +216,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         None,
         "reference",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
     ),
     SourceContract(
         "announcement",
@@ -228,7 +228,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         None,
         "source_service_event",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
     ),
     SourceContract(
         "curated_favorites",
@@ -240,7 +240,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         None,
         "collection_membership",
-        DistributionClass.BASIC_SSA_CITABLE,
+        DistributionClass.ACCOUNT_ONLY,
         ("Membership is metadata/discovery context, never identity proof.",),
     ),
 )
