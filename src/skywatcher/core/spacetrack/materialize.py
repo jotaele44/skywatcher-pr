@@ -8,8 +8,9 @@ Conflicting stable identifiers remain unresolved and are preserved explicitly.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import asdict
-from typing import Any, Iterable
+from typing import Any
 
 from .control_plane import logical_json_sha256
 from .models import (
