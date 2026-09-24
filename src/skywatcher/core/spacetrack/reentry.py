@@ -7,8 +7,9 @@ date is only derived from historical stages and never from a prediction.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import asdict
-from typing import Any, Iterable
+from typing import Any
 
 from .contradictions import ContradictionRegister
 from .control_plane import logical_json_sha256
