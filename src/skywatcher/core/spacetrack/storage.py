@@ -10,7 +10,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from .models import Manifestation, SchemaSnapshot, Watermark
+from .models import Manifestation, NormalizedBatch, SchemaSnapshot, Watermark
 
 
 def _atomic_write(path: Path, payload: bytes) -> None:
@@ -103,6 +103,41 @@ class SpaceTrackStore:
         if not path.exists():
             _atomic_write(path, payload)
         return path
+
+
+    def freeze_normalized(self, batch: NormalizedBatch) -> Path:
+        payload = _canonical_json(asdict(batch))
+        batch_id = hashlib.sha256(payload).hexdigest()
+        path = self.root / "normalized" / batch.source_id / f"{batch_id}.json"
+        if path.exists() and path.read_bytes() != payload:
+            raise RuntimeError("normalized batch identity collision")
+        if not path.exists():
+            _atomic_write(path, payload)
+        return path
+
+    def load_normalized_batches(self, source_id: str) -> tuple[NormalizedBatch, ...]:
+        root = self.root / "normalized" / source_id
+        if not root.exists():
+            return ()
+        batches: list[NormalizedBatch] = []
+        for path in sorted(root.glob("*.json")):
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["rows"] = tuple(dict(row) for row in payload.get("rows", ()))
+            batches.append(NormalizedBatch(**payload))
+        batches.sort(key=lambda item: (item.retrieved_utc, item.raw_sha256))
+        return tuple(batches)
+
+    def freeze_materialization(self, name: str, value: Any) -> tuple[Path, str]:
+        if not name or any(part in name for part in ("/", "\\", "..")):
+            raise ValueError("materialization name must be a simple path-safe token")
+        payload = _canonical_json(value)
+        digest = hashlib.sha256(payload).hexdigest()
+        version_path = self.root / "materialized" / name / f"{digest}.json"
+        if not version_path.exists():
+            _atomic_write(version_path, payload)
+        current_path = self.root / "materialized" / name / "current.json"
+        _atomic_write(current_path, payload)
+        return version_path, digest
 
     def save_schema(self, snapshot: SchemaSnapshot, *, accepted: bool) -> Path:
         payload = _canonical_json(asdict(snapshot))
