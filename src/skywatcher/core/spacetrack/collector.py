@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import io
 import json
 import zipfile
 from dataclasses import dataclass
@@ -285,6 +284,16 @@ class SpaceTrackCollector:
             raise RuntimeError("normalization row conservation failed")
 
         next_watermark = self._watermark_from_rows(source_id, rows)
+        if rows and contract.incremental_predicate is not None and next_watermark is None:
+            self.store.save_status(self.control_plane.report())
+            return CollectionResult(
+                source_id=source_id,
+                state=CertificationState.PROVISIONAL,
+                manifestation=manifestation,
+                rows=tuple(rows),
+                normalized_rows=tuple(normalized),
+                blocker="WATERMARK_MISSING",
+            )
         if next_watermark is not None:
             self.control_plane.set_watermark(next_watermark)
             self.store.save_watermark(next_watermark)
