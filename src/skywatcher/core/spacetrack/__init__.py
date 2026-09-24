@@ -6,7 +6,9 @@ Consumers should read frozen/local materializations rather than query
 Space-Track directly.
 """
 
+from .certification import certify_local_runtime, certify_static_contracts
 from .collector import CollectionResult, DownloadResult, SpaceTrackCollector
+from .contradictions import ContradictionRegister
 from .contracts import (
     CONTROLLER_CONTRACTS,
     SOURCE_CONTRACTS,
@@ -19,6 +21,11 @@ from .control_plane import (
     classify_archive_equivalence,
     classify_decay_stage,
     logical_json_sha256,
+)
+from .materialize import (
+    materialize_space_objects,
+    materialize_stored_space_objects,
+    resolve_identity_bindings,
 )
 from .models import (
     CapabilityState,
@@ -33,6 +40,11 @@ from .query import (
     build_incremental_query,
     build_publicfile_download_url,
 )
+from .reentry import (
+    build_reentry_assertions,
+    materialize_reentry_events,
+    materialize_stored_reentry_events,
+)
 from .storage import SpaceTrackStore
 from .transport import ReadOnlyTransport, TransportResponse, UrlLibReadOnlyTransport
 
@@ -42,6 +54,7 @@ __all__ = [
     "CapabilityState",
     "CertificationState",
     "CollectionResult",
+    "ContradictionRegister",
     "ControllerContract",
     "DistributionClass",
     "DownloadResult",
@@ -58,8 +71,16 @@ __all__ = [
     "build_curated_favorites_query",
     "build_incremental_query",
     "build_publicfile_download_url",
+    "build_reentry_assertions",
+    "certify_local_runtime",
+    "certify_static_contracts",
     "classify_archive_equivalence",
     "classify_decay_stage",
     "get_source_contract",
     "logical_json_sha256",
+    "materialize_reentry_events",
+    "materialize_space_objects",
+    "materialize_stored_reentry_events",
+    "materialize_stored_space_objects",
+    "resolve_identity_bindings",
 ]
