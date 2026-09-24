@@ -186,6 +186,7 @@ class SpaceTrackControlPlane:
         self.rate_gate = RateGate()
         self.capabilities: dict[str, CapabilityObservation] = {}
         self.schemas: dict[str, SchemaSnapshot] = {}
+        self.schema_promotion: dict[str, bool] = {}
         self.watermarks: dict[str, Watermark] = {}
         self.manifestations: list[Manifestation] = []
 
@@ -198,8 +199,13 @@ class SpaceTrackControlPlane:
 
     def register_schema(self, snapshot: SchemaSnapshot) -> bool:
         previous = self.schemas.get(snapshot.source_id)
+        unchanged = previous is None or previous.canonical_sha256 == snapshot.canonical_sha256
         self.schemas[snapshot.source_id] = snapshot
-        return previous is None or previous.canonical_sha256 == snapshot.canonical_sha256
+        self.schema_promotion[snapshot.source_id] = unchanged
+        return unchanged
+
+    def schema_promotion_allowed(self, source_id: str) -> bool:
+        return self.schema_promotion.get(source_id, False)
 
     def set_watermark(self, watermark: Watermark) -> None:
         self.watermarks[watermark.source_id] = watermark
@@ -255,6 +261,7 @@ class SpaceTrackControlPlane:
             "schemas": {
                 key: asdict(value) for key, value in sorted(self.schemas.items())
             },
+            "schema_promotion": dict(sorted(self.schema_promotion.items())),
             "watermarks": {
                 key: asdict(value) for key, value in sorted(self.watermarks.items())
             },
