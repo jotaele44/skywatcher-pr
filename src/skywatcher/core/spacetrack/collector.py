@@ -22,6 +22,7 @@ from .models import (
     CapabilityState,
     CertificationState,
     Manifestation,
+    NormalizedBatch,
     Watermark,
 )
 from .query import (
@@ -294,6 +295,16 @@ class SpaceTrackCollector:
                 normalized_rows=tuple(normalized),
                 blocker="WATERMARK_MISSING",
             )
+        batch = NormalizedBatch(
+            source_id=source_id,
+            retrieved_utc=observed_utc,
+            query=url,
+            raw_sha256=manifestation.raw_sha256,
+            schema_sha256=manifestation.schema_sha256,
+            rows=tuple(normalized),
+        )
+        self.store.freeze_normalized(batch)
+
         if next_watermark is not None:
             self.control_plane.set_watermark(next_watermark)
             self.store.save_watermark(next_watermark)
