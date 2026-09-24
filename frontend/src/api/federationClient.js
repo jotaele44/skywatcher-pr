@@ -201,6 +201,12 @@ const flightCorpusV4 = {
   familyProvenance: () => request('/flight-corpus/v4/family-provenance'),
 };
 
+const spaceTrack = {
+  status: () => request('/space-track/status'),
+  objects: () => request('/space-track/objects'),
+  reentry: () => request('/space-track/reentry'),
+};
+
 const system = {
   publicSettings: () => request('/apps/public-settings').catch(() => ({
     id: appParams.appId,
@@ -219,5 +225,6 @@ export const federation = {
   asServiceRole: { entities, connectors },
   system,
   flightCorpusV4,
+  spaceTrack,
   request,
 };
