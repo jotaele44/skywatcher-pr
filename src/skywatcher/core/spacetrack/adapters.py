@@ -105,6 +105,18 @@ def normalize_tip(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def normalize_publicfile(row: dict[str, Any]) -> dict[str, Any]:
+    raw = _raw_copy(row)
+    return {
+        "source": _string_or_none(raw.get("SOURCE") or raw.get("Source")),
+        "type": _string_or_none(raw.get("TYPE") or raw.get("Type")),
+        "generated_at": _string_or_none(raw.get("DATE") or raw.get("Date")),
+        "link": _string_or_none(raw.get("LINK") or raw.get("Link")),
+        "size": _string_or_none(raw.get("SIZE") or raw.get("Size")),
+        "raw": raw,
+    }
+
+
 def normalize_catalog_change(row: dict[str, Any]) -> dict[str, Any]:
     raw = _raw_copy(row)
     return {
@@ -128,6 +140,7 @@ def normalize_rows(source_id: str, rows: Iterable[dict[str, Any]]) -> list[dict[
         "decay": normalize_decay,
         "decay_60day": normalize_decay,
         "tip": normalize_tip,
+        "publicfiles": normalize_publicfile,
     }
     normalizer = dispatch.get(source_id)
     if normalizer is None:
