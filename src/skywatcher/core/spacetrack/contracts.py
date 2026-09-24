@@ -1,8 +1,8 @@
 """Source and controller contracts for Space-Track Integration v1.
 
 The values in this module are operational policy, not inferred identity facts.
-They encode the public API guidance current at the v1 baseline and make rate /
-retention rules executable so callers cannot silently over-query the service.
+They encode the public API guidance current at the v1 baseline and make rate
+and retention rules executable so callers cannot silently over-query the service.
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ class SourceContract:
     canonical_role: str
     distribution_class: DistributionClass
     notes: tuple[str, ...] = ()
+    one_time_only: bool = False
 
 
 CONTROLLER_CONTRACTS: tuple[ControllerContract, ...] = (
@@ -97,7 +98,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         "Newest SGP4-compatible element set for tracked Earth-orbiting objects.",
         1.0,
         True,
-        "GP_ID",
+        "CREATION_DATE",
         "current_orbit",
         DistributionClass.ACCOUNT_ONLY,
         (
@@ -120,6 +121,19 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         ("Preserve every row and PRECEDENCE stage; never latest-row-collapse.",),
     ),
     SourceContract(
+        "decay_60day",
+        "basicspacedata",
+        "decay",
+        "P0",
+        "Weekly 60-day decay prediction denominator.",
+        1 / (24 * 7),
+        True,
+        "MSG_EPOCH",
+        "reentry_prediction",
+        DistributionClass.ACCOUNT_ONLY,
+        ("Acquire no more than weekly, preferably Wednesday after 17:00 UTC.",),
+    ),
+    SourceContract(
         "tip",
         "basicspacedata",
         "tip",
@@ -138,10 +152,10 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
     SourceContract(
         "publicfiles",
         "publicfiles",
-        "files",
+        "loadpublicdata",
         "P0",
-        "Public owner/operator products such as NASA-JSC ephemerides.",
-        3.0,
+        "Public-file inventory including owner/operator products such as NASA-JSC ephemerides.",
+        3 / 24,
         True,
         None,
         "operator_ephemeris_or_public_product",
@@ -167,6 +181,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
             "Use bulk yearly archives for large date/object ranges.",
             "Never use GP_HISTORY as a current ephemeris feed.",
         ),
+        True,
     ),
     SourceContract(
         "cdm_public",
@@ -174,7 +189,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         "cdm_public",
         "P1",
         "Public conjunction data messages.",
-        3.0,
+        3 / 24,
         True,
         "CREATED",
         "conjunction_event",
