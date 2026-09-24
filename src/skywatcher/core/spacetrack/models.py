@@ -97,3 +97,54 @@ class CapabilityObservation:
     state: CapabilityState
     observed_utc: str
     detail: str | None = None
+
+
+@dataclass(frozen=True)
+class NormalizedBatch:
+    source_id: str
+    retrieved_utc: str
+    query: str
+    raw_sha256: str
+    schema_sha256: str | None
+    rows: tuple[dict[str, Any], ...]
+
+
+@dataclass(frozen=True)
+class ContradictionRecord:
+    contradiction_id: str
+    category: str
+    key: str
+    observations: tuple[str, ...]
+    state: CertificationState = CertificationState.UNRESOLVED
+
+
+@dataclass(frozen=True)
+class IdentityBinding:
+    catalog_key: str
+    norad_cat_id: str | None
+    object_id: str | None
+    state: CertificationState
+    evidence: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class SpaceObjectView:
+    catalog_key: str
+    norad_cat_id: str
+    object_id: str | None
+    identity_state: CertificationState
+    satcat_row: dict[str, Any] | None
+    gp_row: dict[str, Any] | None
+    aliases: tuple[str, ...]
+    contradictions: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class MaterializationResult:
+    satcat_row_count: int
+    gp_row_count: int
+    object_count: int
+    unmatched_satcat: tuple[str, ...]
+    unmatched_gp: tuple[str, ...]
+    contradictions: tuple[ContradictionRecord, ...]
+    objects: tuple[SpaceObjectView, ...]
