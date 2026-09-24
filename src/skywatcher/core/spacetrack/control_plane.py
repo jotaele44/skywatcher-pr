@@ -147,7 +147,7 @@ class RateGate:
         while queue and queue[0] <= threshold:
             queue.popleft()
 
-    def can_request(self, source_id: str, now: datetime) -> tuple[bool, str | None]:
+    def can_global(self, now: datetime) -> tuple[bool, str | None]:
         current = self._utc(now)
         self._trim(self._global, current - timedelta(hours=1))
         recent_minute = sum(ts > current - timedelta(minutes=1) for ts in self._global)
@@ -155,6 +155,13 @@ class RateGate:
             return False, "GLOBAL_PER_MINUTE"
         if len(self._global) >= self.GLOBAL_PER_HOUR:
             return False, "GLOBAL_PER_HOUR"
+        return True, None
+
+    def can_request(self, source_id: str, now: datetime) -> tuple[bool, str | None]:
+        current = self._utc(now)
+        allowed, reason = self.can_global(current)
+        if not allowed:
+            return False, reason
 
         contract = get_source_contract(source_id)
         history = self._by_source.setdefault(source_id, deque())
@@ -169,6 +176,12 @@ class RateGate:
             if current - history[-1] < minimum_interval:
                 return False, "SOURCE_CADENCE"
         return True, None
+
+    def record_global(self, now: datetime) -> None:
+        allowed, reason = self.can_global(now)
+        if not allowed:
+            raise RuntimeError(f"Space-Track request blocked: {reason}")
+        self._global.append(self._utc(now))
 
     def record(self, source_id: str, now: datetime) -> None:
         allowed, reason = self.can_request(source_id, now)
