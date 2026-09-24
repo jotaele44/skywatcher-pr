@@ -35,6 +35,7 @@ class SourceContract:
     query_once: bool = False
     window_limit_count: int | None = None
     window_seconds: int | None = None
+    schema_required: bool = True
 
 
 CONTROLLER_CONTRACTS: tuple[ControllerContract, ...] = (
@@ -164,6 +165,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         "operator_ephemeris_or_public_product",
         DistributionClass.ACCOUNT_ONLY,
         ("Inventory at most once every eight hours.",),
+        schema_required=False,
     ),
     SourceContract(
         "publicfile_download",
@@ -183,6 +185,7 @@ SOURCE_CONTRACTS: tuple[SourceContract, ...] = (
         True,
         10,
         15 * 60,
+        False,
     ),
     SourceContract(
         "gp_history",
