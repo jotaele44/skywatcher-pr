@@ -7,9 +7,10 @@ import io
 import json
 import zipfile
 from collections import Counter, deque
+from collections.abc import Iterable
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
-from typing import Any, Iterable
+from typing import Any
 
 from .contracts import SourceContract, get_source_contract
 from .models import (
