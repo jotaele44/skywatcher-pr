@@ -155,7 +155,8 @@
           "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.jsx",
           "frontend/src/components/skywatcher/TrackTimeScrubber.jsx",
-          "frontend/src/components/skywatcher/SpatialFlightRenderer.jsx"
+          "frontend/src/components/skywatcher/SpatialFlightRenderer.jsx",
+          "frontend/src/components/ProgramTimeline.jsx"
         ],
         "discoverability": [
           "frontend/src/components/skywatcher/Sidebar.jsx"
