@@ -74,6 +74,7 @@ def test_source_denominator_contains_required_v1_classes():
         "tip",
         "cdm_public",
         "publicfiles",
+        "publicfile_download",
         "organization",
         "boxscore",
         "launch_site",
@@ -107,9 +108,17 @@ def test_gp_query_is_bulk_current_propagable_and_omm_capable():
     url = query.to_url()
     assert "/class/gp/" in url
     assert "/DECAY_DATE/null-val/" in url
-    assert "/CREATION_DATE/%3Enow-0.042/" in url
+    assert "/EPOCH/%3Enow-10/" in url
     assert "/orderby/GP_ID%20asc/" in url
     assert "/format/xml/" in url
+
+
+def test_gp_query_advances_from_creation_date_watermark():
+    query = build_incremental_query(
+        "gp",
+        Watermark("gp", "CREATION_DATE", "2026-09-24 18:59:00"),
+    )
+    assert "/CREATION_DATE/%3E2026-09-24%2018%3A59%3A00/" in query.to_url()
 
 
 def test_incremental_queries_use_source_specific_watermarks():
@@ -147,13 +156,13 @@ def test_rate_gate_enforces_source_cadence_and_global_only_schema_calls():
     assert reason is None
 
 
-def test_gp_history_is_one_time_only_per_control_plane_run():
+def test_gp_history_has_no_source_wide_lockout():
     gate = RateGate()
     now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
     gate.record("gp_history", now)
-    allowed, reason = gate.can_request("gp_history", now + timedelta(days=365))
-    assert allowed is False
-    assert reason == "ONE_TIME_ONLY"
+    allowed, reason = gate.can_request("gp_history", now + timedelta(seconds=1))
+    assert allowed is True
+    assert reason is None
 
 
 def test_publicfiles_cadence_is_eight_hours():
@@ -162,6 +171,20 @@ def test_publicfiles_cadence_is_eight_hours():
     gate.record("publicfiles", now)
     assert gate.can_request("publicfiles", now + timedelta(hours=7, minutes=59))[0] is False
     assert gate.can_request("publicfiles", now + timedelta(hours=8))[0] is True
+
+
+def test_publicfile_download_enforces_ten_per_fifteen_minute_window():
+    gate = RateGate()
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+    for index in range(10):
+        gate.record("publicfile_download", now + timedelta(seconds=index))
+    allowed, reason = gate.can_request(
+        "publicfile_download",
+        now + timedelta(minutes=14, seconds=59),
+    )
+    assert allowed is False
+    assert reason == "SOURCE_WINDOW_LIMIT"
+    assert gate.can_request("publicfile_download", now + timedelta(minutes=15))[0] is True
 
 
 def test_schema_drift_blocks_normalized_promotion():
@@ -188,6 +211,36 @@ def test_schema_drift_blocks_normalized_promotion():
     assert control.schema_promotion_allowed("satcat") is True
     assert control.register_schema(changed) is False
     assert control.schema_promotion_allowed("satcat") is False
+
+
+def test_schema_drift_remains_blocked_across_process_restart(tmp_path):
+    store = SpaceTrackStore(tmp_path)
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+
+    first = SpaceTrackCollector(
+        transport=FakeTransport(
+            [_json_response([{"name": "NORAD_CAT_ID"}, {"name": "SATNAME"}])]
+        ),
+        store=store,
+    )
+    assert first.capture_modeldef("satcat", now=now) is True
+
+    changed_payload = [
+        {"name": "NORAD_CAT_ID"},
+        {"name": "SATNAME"},
+        {"name": "NEW_FIELD"},
+    ]
+    second = SpaceTrackCollector(
+        transport=FakeTransport([_json_response(changed_payload)]),
+        store=store,
+    )
+    assert second.capture_modeldef("satcat", now=now + timedelta(days=1)) is False
+
+    third = SpaceTrackCollector(
+        transport=FakeTransport([_json_response(changed_payload)]),
+        store=store,
+    )
+    assert third.capture_modeldef("satcat", now=now + timedelta(days=2)) is False
 
 
 def test_archive_identity_classification_distinguishes_recompression_and_paths():
@@ -361,7 +414,9 @@ def test_collector_promotes_only_after_modeldef_baseline(tmp_path):
     transport = FakeTransport(
         [
             _json_response([{"name": "NORAD_CAT_ID"}, {"name": "SATNAME"}]),
-            _json_response([{"NORAD_CAT_ID": "49277", "SATNAME": "PRCUNAR2"}]),
+            _json_response(
+                [{"NORAD_CAT_ID": "49277", "SATNAME": "PRCUNAR2", "FILE": "9251"}]
+            ),
         ]
     )
     store = SpaceTrackStore(tmp_path)
@@ -372,6 +427,91 @@ def test_collector_promotes_only_after_modeldef_baseline(tmp_path):
     result = collector.collect_json("satcat", now=now)
     assert result.state is CertificationState.PASS
     assert result.normalized_rows[0]["norad_cat_id"] == "49277"
+
+
+def test_gp_history_reuses_frozen_query_instead_of_redownloading(tmp_path):
+    query = (
+        build_incremental_query("gp_history")
+        .with_filter("NORAD_CAT_ID", "49277")
+        .with_filter("EPOCH", "2022-08-01--2022-08-31")
+    )
+    transport = FakeTransport([_json_response([{"NORAD_CAT_ID": "49277"}])])
+    collector = SpaceTrackCollector(
+        transport=transport,
+        store=SpaceTrackStore(tmp_path),
+    )
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+
+    first = collector.collect_json("gp_history", now=now, query=query)
+    second = collector.collect_json(
+        "gp_history",
+        now=now + timedelta(seconds=1),
+        query=query,
+    )
+
+    assert first.state is CertificationState.PROVISIONAL
+    assert second.state is CertificationState.AUDIT_ONLY
+    assert second.blocker == "ALREADY_ACQUIRED"
+    assert len(transport.urls) == 1
+
+
+def test_publicfiles_inventory_does_not_require_basic_modeldef(tmp_path):
+    transport = FakeTransport(
+        [
+            _json_response(
+                [
+                    {
+                        "SOURCE": "NASA-JSC",
+                        "TYPE": "Ephemeris",
+                        "DATE": "2026-09-23 20:09:28",
+                        "LINK": "temporary",
+                        "SIZE": "408.03 KB",
+                    }
+                ]
+            )
+        ]
+    )
+    collector = SpaceTrackCollector(
+        transport=transport,
+        store=SpaceTrackStore(tmp_path),
+    )
+    result = collector.collect_json(
+        "publicfiles",
+        now=datetime(2026, 9, 24, 19, 0, tzinfo=UTC),
+    )
+
+    assert result.state is CertificationState.PASS
+    assert result.normalized_rows[0]["source"] == "NASA-JSC"
+    assert result.normalized_rows[0]["type"] == "Ephemeris"
+
+
+def test_publicfile_download_is_frozen_once_per_filename_query(tmp_path):
+    payload = _zip_bytes(
+        "iss.oem",
+        b"CCSDS_OEM_VERS = 2.0\n",
+        compression=zipfile.ZIP_DEFLATED,
+    )
+    transport = FakeTransport(
+        [TransportResponse(status=200, body=payload, headers={"content-type": "application/zip"})]
+    )
+    collector = SpaceTrackCollector(
+        transport=transport,
+        store=SpaceTrackStore(tmp_path),
+    )
+    now = datetime(2026, 9, 24, 19, 0, tzinfo=UTC)
+
+    first = collector.download_public_file("NASAJSC_Ephemeris_example.zip", now=now)
+    second = collector.download_public_file(
+        "NASAJSC_Ephemeris_example.zip",
+        now=now + timedelta(seconds=1),
+    )
+
+    assert first.state is CertificationState.PASS
+    assert first.archive is not None
+    assert first.archive.members[0].path == "iss.oem"
+    assert second.state is CertificationState.AUDIT_ONLY
+    assert second.blocker == "ALREADY_ACQUIRED"
+    assert len(transport.urls) == 1
 
 
 def test_collector_classifies_unauthorized_controller_without_guessing(tmp_path):
