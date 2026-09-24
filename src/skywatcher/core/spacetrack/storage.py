@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from dataclasses import asdict
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +20,14 @@ def _atomic_write(path: Path, payload: bytes) -> None:
     os.replace(tmp, path)
 
 
+def _json_default(value: Any) -> str:
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, Path):
+        return str(value)
+    raise TypeError(f"unsupported JSON value: {type(value).__name__}")
+
+
 def _canonical_json(value: Any) -> bytes:
     return (
         json.dumps(
@@ -25,10 +35,14 @@ def _canonical_json(value: Any) -> bytes:
             ensure_ascii=False,
             sort_keys=True,
             indent=2,
-            default=str,
+            default=_json_default,
         )
         + "\n"
     ).encode("utf-8")
+
+
+def _key(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 class SpaceTrackStore:
@@ -38,28 +52,79 @@ class SpaceTrackStore:
         self.root = Path(root)
 
     def freeze_raw(self, manifestation: Manifestation, payload: bytes) -> Path:
-        base = self.root / "raw" / manifestation.source_id / manifestation.raw_sha256
-        raw_path = base / "payload.bin"
-        manifest_path = base / "manifest.json"
-
-        if raw_path.exists():
-            existing = raw_path.read_bytes()
+        payload_path = (
+            self.root
+            / "raw"
+            / manifestation.source_id
+            / manifestation.raw_sha256
+            / "payload.bin"
+        )
+        if payload_path.exists():
+            existing = payload_path.read_bytes()
             if existing != payload:
                 raise RuntimeError("content-addressed payload collision")
         else:
-            _atomic_write(raw_path, payload)
+            _atomic_write(payload_path, payload)
 
         manifest_bytes = _canonical_json(asdict(manifestation))
+        manifest_id = hashlib.sha256(manifest_bytes).hexdigest()
+        manifest_path = (
+            self.root
+            / "manifestations"
+            / manifestation.source_id
+            / f"{manifest_id}.json"
+        )
         if manifest_path.exists() and manifest_path.read_bytes() != manifest_bytes:
-            raise RuntimeError("manifestation metadata collision for identical raw SHA256")
+            raise RuntimeError("manifestation identity collision")
         if not manifest_path.exists():
             _atomic_write(manifest_path, manifest_bytes)
-        return raw_path
+        return payload_path
+
+    def query_seen(self, source_id: str, query: str) -> bool:
+        return (self.root / "query_receipts" / source_id / f"{_key(query)}.json").exists()
+
+    def record_query_receipt(self, manifestation: Manifestation) -> Path:
+        path = (
+            self.root
+            / "query_receipts"
+            / manifestation.source_id
+            / f"{_key(manifestation.query)}.json"
+        )
+        payload = _canonical_json(
+            {
+                "source_id": manifestation.source_id,
+                "query": manifestation.query,
+                "retrieved_utc": manifestation.retrieved_utc,
+                "raw_sha256": manifestation.raw_sha256,
+            }
+        )
+        if path.exists() and path.read_bytes() != payload:
+            raise RuntimeError("query-once receipt already exists with different manifestation")
+        if not path.exists():
+            _atomic_write(path, payload)
+        return path
 
     def save_schema(self, snapshot: SchemaSnapshot) -> Path:
-        path = self.root / "schemas" / f"{snapshot.source_id}.json"
-        _atomic_write(path, _canonical_json(asdict(snapshot)))
-        return path
+        payload = _canonical_json(asdict(snapshot))
+        version_path = (
+            self.root
+            / "schemas"
+            / snapshot.source_id
+            / f"{snapshot.canonical_sha256}.json"
+        )
+        if not version_path.exists():
+            _atomic_write(version_path, payload)
+        current_path = self.root / "schemas" / snapshot.source_id / "current.json"
+        _atomic_write(current_path, payload)
+        return version_path
+
+    def load_schema(self, source_id: str) -> SchemaSnapshot | None:
+        path = self.root / "schemas" / source_id / "current.json"
+        if not path.exists():
+            return None
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["fields"] = tuple(payload.get("fields", ()))
+        return SchemaSnapshot(**payload)
 
     def save_watermark(self, watermark: Watermark) -> Path:
         path = self.root / "watermarks" / f"{watermark.source_id}.json"
