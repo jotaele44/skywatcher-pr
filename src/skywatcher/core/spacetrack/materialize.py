@@ -8,6 +8,7 @@ Conflicting stable identifiers remain unresolved and are preserved explicitly.
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import asdict
 from typing import Any, Iterable
 
 from .control_plane import logical_json_sha256
@@ -18,6 +19,7 @@ from .models import (
     MaterializationResult,
     SpaceObjectView,
 )
+from .storage import SpaceTrackStore
 
 
 def _text(value: Any) -> str | None:
@@ -297,3 +299,22 @@ def materialize_space_objects(
         contradictions=tuple(contradictions),
         objects=tuple(objects),
     )
+
+
+
+def materialize_stored_space_objects(
+    store: SpaceTrackStore,
+) -> tuple[MaterializationResult, str]:
+    satcat_rows = [
+        row
+        for batch in store.load_normalized_batches("satcat")
+        for row in batch.rows
+    ]
+    gp_rows = [
+        row
+        for batch in store.load_normalized_batches("gp")
+        for row in batch.rows
+    ]
+    result = materialize_space_objects(satcat_rows, gp_rows)
+    _, digest = store.freeze_materialization("space_objects", asdict(result))
+    return result, digest
