@@ -166,13 +166,15 @@ class RateGate:
 
         contract = get_source_contract(source_id)
         history = self._by_source.setdefault(source_id, deque())
-        if contract.one_time_only and history:
-            return False, "ONE_TIME_ONLY"
-        if contract.max_requests_per_hour is None:
-            return True, None
-
         self._trim(history, current - timedelta(days=8))
-        if history:
+
+        if contract.window_limit_count is not None and contract.window_seconds is not None:
+            threshold = current - timedelta(seconds=contract.window_seconds)
+            recent = sum(ts > threshold for ts in history)
+            if recent >= contract.window_limit_count:
+                return False, "SOURCE_WINDOW_LIMIT"
+
+        if contract.max_requests_per_hour is not None and history:
             minimum_interval = timedelta(hours=1 / contract.max_requests_per_hour)
             if current - history[-1] < minimum_interval:
                 return False, "SOURCE_CADENCE"
