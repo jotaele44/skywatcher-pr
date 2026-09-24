@@ -204,6 +204,71 @@
           "tests/test_server_smoke.py"
         ]
       }
+    },
+    {
+      "id": "space-track-control-plane",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Read-only acquisition, provenance, schema, rate-limit, normalization, and immutable-storage infrastructure. It exposes no standalone human workflow; future Space-Track dashboard/status capabilities must be separately GUI-mapped when API endpoints are added.",
+      "backend": {
+        "files": [
+          "src/skywatcher/core/spacetrack/__init__.py",
+          "src/skywatcher/core/spacetrack/adapters.py",
+          "src/skywatcher/core/spacetrack/collector.py",
+          "src/skywatcher/core/spacetrack/contracts.py",
+          "src/skywatcher/core/spacetrack/control_plane.py",
+          "src/skywatcher/core/spacetrack/models.py",
+          "src/skywatcher/core/spacetrack/query.py",
+          "src/skywatcher/core/spacetrack/storage.py",
+          "src/skywatcher/core/spacetrack/transport.py"
+        ],
+        "symbols": [
+          "src/skywatcher/core/spacetrack/models.py:CertificationState",
+          "src/skywatcher/core/spacetrack/models.py:CapabilityState",
+          "src/skywatcher/core/spacetrack/models.py:DistributionClass",
+          "src/skywatcher/core/spacetrack/models.py:Watermark",
+          "src/skywatcher/core/spacetrack/models.py:Manifestation",
+          "src/skywatcher/core/spacetrack/models.py:SourceArithmetic",
+          "src/skywatcher/core/spacetrack/models.py:ArchiveMember",
+          "src/skywatcher/core/spacetrack/models.py:ArchiveSnapshot",
+          "src/skywatcher/core/spacetrack/models.py:SchemaSnapshot",
+          "src/skywatcher/core/spacetrack/models.py:CapabilityObservation",
+          "src/skywatcher/core/spacetrack/contracts.py:ControllerContract",
+          "src/skywatcher/core/spacetrack/contracts.py:SourceContract",
+          "src/skywatcher/core/spacetrack/contracts.py:get_source_contract",
+          "src/skywatcher/core/spacetrack/query.py:SpaceTrackQuery",
+          "src/skywatcher/core/spacetrack/query.py:build_incremental_query",
+          "src/skywatcher/core/spacetrack/control_plane.py:logical_json_sha256",
+          "src/skywatcher/core/spacetrack/control_plane.py:raw_sha256",
+          "src/skywatcher/core/spacetrack/control_plane.py:classify_decay_stage",
+          "src/skywatcher/core/spacetrack/control_plane.py:source_arithmetic",
+          "src/skywatcher/core/spacetrack/control_plane.py:archive_snapshot",
+          "src/skywatcher/core/spacetrack/control_plane.py:classify_archive_equivalence",
+          "src/skywatcher/core/spacetrack/control_plane.py:schema_snapshot",
+          "src/skywatcher/core/spacetrack/control_plane.py:RateGate",
+          "src/skywatcher/core/spacetrack/control_plane.py:SpaceTrackControlPlane",
+          "src/skywatcher/core/spacetrack/control_plane.py:distinct_ids",
+          "src/skywatcher/core/spacetrack/control_plane.py:set_comparison",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_satcat",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_gp",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_decay",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_tip",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_catalog_change",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_rows",
+          "src/skywatcher/core/spacetrack/transport.py:TransportResponse",
+          "src/skywatcher/core/spacetrack/transport.py:ReadOnlyTransport",
+          "src/skywatcher/core/spacetrack/transport.py:UrlLibReadOnlyTransport",
+          "src/skywatcher/core/spacetrack/storage.py:SpaceTrackStore",
+          "src/skywatcher/core/spacetrack/collector.py:CollectionResult",
+          "src/skywatcher/core/spacetrack/collector.py:SpaceTrackCollector"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_spacetrack_control_plane.py"
+        ]
+      }
     }
   ],
   "exceptions": []
