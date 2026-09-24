@@ -73,7 +73,7 @@ class SpaceTrackCollector:
             "https://www.space-track.org/"
             f"{contract.controller}/modeldef/class/{contract.api_class}"
         )
-        self.control_plane.rate_gate.record(source_id, now)
+        self.control_plane.rate_gate.record_global(now)
         response = self.transport.get(url)
         if response.status in {401, 403}:
             self.control_plane.record_capability(
