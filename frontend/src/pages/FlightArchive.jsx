@@ -68,7 +68,20 @@ export default function FlightArchive() {
   const [busy, setBusy] = React.useState(false);
   const [persisting, setPersisting] = React.useState(false);
   const [persistReceipts, setPersistReceipts] = React.useState([]);
+  const [storedSnapshots, setStoredSnapshots] = React.useState([]);
   const [error, setError] = React.useState("");
+
+  const refreshSnapshots = React.useCallback(async () => {
+    try {
+      setStoredSnapshots(await federation.flightCorpusArchive.listSnapshots());
+    } catch {
+      setStoredSnapshots([]);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    refreshSnapshots();
+  }, [refreshSnapshots]);
 
   const corpusResults = results.filter((r) => r.status === FLIGHT_INGEST_STATUS.CORPUS_READY);
   const records = corpusResults.flatMap((r) => r.records || []);
@@ -125,10 +138,37 @@ export default function FlightArchive() {
         receipts.push({ file: file.name, ...receipt });
       }
       setPersistReceipts(receipts);
+      await refreshSnapshots();
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : String(exc));
     } finally {
       setPersisting(false);
+    }
+  };
+
+  const loadStoredSnapshot = async (snapshotId) => {
+    setBusy(true);
+    setError("");
+    try {
+      const stored = await federation.flightCorpusArchive.getSnapshot(snapshotId);
+      setResults([{
+        status: FLIGHT_INGEST_STATUS.CORPUS_READY,
+        source: stored.snapshot?.source_filename || ("snapshot-" + snapshotId),
+        snapshot: {
+          format: stored.snapshot?.format_name || "master-flight-log-backup",
+          version: stored.snapshot?.format_version || null,
+          exportedAt: stored.snapshot?.exported_at || null,
+          recordCount: stored.snapshot?.record_count || 0,
+        },
+        records: stored.records || [],
+        diagnostics: { persistedSnapshotId: snapshotId },
+      }]);
+      setSourceFiles([]);
+      setPersistReceipts([]);
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : String(exc));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -177,6 +217,28 @@ export default function FlightArchive() {
           ))}
           {error && <p role="alert" className="text-xs text-red-300">{error}</p>}
         </div>
+      </Panel>
+
+      <Panel title="Persisted snapshots" icon={Archive} action={<StatusChip tone="ready" label={String(storedSnapshots.length) + " stored"} icon={null} />}>
+        {storedSnapshots.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No persisted corpus snapshots in the configured Skywatcher database.</p>
+        ) : (
+          <div className="max-h-48 space-y-1 overflow-auto">
+            {storedSnapshots.map((snapshot) => (
+              <button
+                key={snapshot.snapshot_id}
+                type="button"
+                onClick={() => loadStoredSnapshot(snapshot.snapshot_id)}
+                className="grid w-full grid-cols-[5rem_1fr_7rem_10rem] gap-2 rounded-md border border-border bg-muted/20 px-3 py-2 text-left text-xs hover:bg-muted/40"
+              >
+                <span className="font-mono text-foreground">#{snapshot.snapshot_id}</span>
+                <span className="truncate text-foreground">{snapshot.source_filename || snapshot.source_ref || snapshot.source_kind}</span>
+                <span className="text-right font-mono text-muted-foreground">{snapshot.record_count} rows</span>
+                <span className="truncate font-mono text-muted-foreground">{snapshot.source_sha256?.slice(0, 16)}…</span>
+              </button>
+            ))}
+          </div>
+        )}
       </Panel>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
