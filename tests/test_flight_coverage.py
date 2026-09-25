@@ -175,7 +175,8 @@ def test_priority_tier_is_explicit_for_gap_queue_item():
     records = [
         _record("N1", "2026-07-01", uid="mfl:00000001"),
         _record("N1", "2026-07-02", uid="mfl:00000002"),
-        _record("N1", "2026-08-20", uid="mfl:00000003"),
+        _record("N1", "2026-07-03", uid="mfl:00000003"),
+        _record("N1", "2026-08-20", uid="mfl:00000004"),
     ]
     ledger = _ledger(records)
     gap = next(item for item in ledger["acquisition_queue"] if item["type"] == "GAP")
