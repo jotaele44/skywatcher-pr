@@ -46,18 +46,18 @@ if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
 from skywatcher.fr24 import database as skywatcher_db
-from skywatcher.fr24.flight_corpus import (
-    CorpusPersistenceError,
-    persist_corpus_snapshot,
-    read_corpus_snapshot,
-)
-from skywatcher.fr24.flight_coverage import build_coverage_ledger
 from skywatcher.fr24.acquisition_receipts import (
     AcquisitionReceiptError,
     load_manifest as load_acquisition_manifest,
     next_discovery_target,
     status_summary as acquisition_status_summary,
 )
+from skywatcher.fr24.flight_corpus import (
+    CorpusPersistenceError,
+    persist_corpus_snapshot,
+    read_corpus_snapshot,
+)
+from skywatcher.fr24.flight_coverage import build_coverage_ledger
 
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
 EXPORTS_DIR = ROOT / "exports"
