@@ -35,7 +35,7 @@ for extra in ("exports", "reports"):
 
 a = Analysis(
     [str(REPO_ROOT / "desktop" / "launch.py")],
-    pathex=[str(REPO_ROOT)],
+    pathex=[str(REPO_ROOT), str(REPO_ROOT / "src")],
     datas=datas,
     hiddenimports=[
         "uvicorn.logging",
@@ -45,6 +45,9 @@ a = Analysis(
         "uvicorn.lifespan.on",
         "desktop.app_server",
         "server.backend.main",
+        "skywatcher.fr24.database",
+        "skywatcher.fr24.database_migrations",
+        "skywatcher.fr24.flight_corpus",
         # Shared desktop-wrapper runtime (thehub-pr/packages/prii_desktop),
         # imported by the desktop/ shims — bundle it into the frozen build.
         "prii_desktop",
