@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
-
 from skywatcher.fr24 import database as db
 from skywatcher.fr24 import database_migrations as migrations
 
@@ -77,7 +75,7 @@ def test_corpus_record_requires_snapshot_foreign_key(tmp_path):
                 """,
                 ("mfl:test", 999999, "{}", "2026-09-25T00:00:00Z"),
             )
-        except sqlite3.IntegrityError as exc:
+        except db.sqlite3.IntegrityError as exc:
             assert "FOREIGN KEY" in str(exc).upper()
         else:
             raise AssertionError("orphan corpus record unexpectedly accepted")
