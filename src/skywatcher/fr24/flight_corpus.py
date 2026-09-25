@@ -241,17 +241,40 @@ def persist_corpus_snapshot(
                 f"row conservation failed: expected {len(records)}, persisted {persisted_count}"
             )
 
+        manifestation_read_back = conn.execute(
+            """
+            SELECT COUNT(*) AS n
+            FROM flight_source_manifestations m
+            JOIN flight_corpus_records r
+              ON r.corpus_record_id = m.corpus_record_id
+            WHERE r.snapshot_id = ?
+            """,
+            (snapshot_id,),
+        ).fetchone()["n"]
+        if manifestation_read_back != manifestation_count:
+            raise CorpusPersistenceError(
+                "manifestation row conservation failed: "
+                f"expected {manifestation_count}, persisted {manifestation_read_back}"
+            )
+
         conn.execute(
             "UPDATE flight_corpus_snapshots SET status = 'validated' WHERE snapshot_id = ?",
             (snapshot_id,),
         )
-        conn.commit()
+        verified = conn.execute(
+            """
+            SELECT status, record_count
+            FROM flight_corpus_snapshots
+            WHERE snapshot_id = ?
+            """,
+            (snapshot_id,),
+        ).fetchone()
+        if verified is None or verified["status"] != "validated":
+            raise CorpusPersistenceError("snapshot read-back verification failed before commit")
+        if verified["record_count"] != persisted_count:
+            raise CorpusPersistenceError("snapshot record_count changed during transaction")
 
-        read_back = read_corpus_snapshot(db_path, snapshot_id)
-        if len(read_back["records"]) != len(records):
-            raise CorpusPersistenceError(
-                "read-back verification failed after commit"
-            )
+        conn.commit()
 
         return PersistResult(
             snapshot_id=snapshot_id,
