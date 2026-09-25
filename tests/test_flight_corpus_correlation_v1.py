@@ -147,7 +147,6 @@ def test_two_synchronized_samples_fail_closed_as_sparse():
 
 
 def test_long_observation_gap_is_not_counted_as_proximity_duration():
-    samples = paired_samples(seconds=range(0, 31, 10))
     left = track(
         "NLEFT",
         "33333333",
