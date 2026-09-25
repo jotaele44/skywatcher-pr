@@ -28,7 +28,7 @@ import sys
 import uuid
 from collections import Counter
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +51,7 @@ from skywatcher.fr24.flight_corpus import (
     persist_corpus_snapshot,
     read_corpus_snapshot,
 )
+from skywatcher.fr24.flight_coverage import build_coverage_ledger
 
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
 EXPORTS_DIR = ROOT / "exports"
