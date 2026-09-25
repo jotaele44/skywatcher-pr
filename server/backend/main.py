@@ -241,6 +241,21 @@ def flight_corpus_v4_family_provenance() -> dict[str, Any]:
     }
 
 
+@app.get("/api/flight-corpus/v4/family-split-summary")
+def flight_corpus_v4_family_split_summary() -> dict[str, Any]:
+    path, member, availability = _verified_v4_member("complete_link_family_split_summary.csv")
+    if path is None:
+        return {"availability": availability, "member": member, "rows": [], "row_count": 0}
+    rows = read_csv(path)
+    return {
+        "availability": availability,
+        "member": member,
+        "rows": rows,
+        "row_count": len(rows),
+        "interpretation": {"family_is_identity": False, "subfamily_is_mission": False, "minus_one_is_canonical_family": False},
+    }
+
+
 # Session-scoped mutations from the review UI; never written to disk.
 _overlay: dict[str, dict[str, dict[str, Any]]] = {}
 _created: dict[str, list[dict[str, Any]]] = {}
