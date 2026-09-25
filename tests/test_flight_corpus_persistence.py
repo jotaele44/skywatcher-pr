@@ -84,8 +84,16 @@ def test_exact_snapshot_reimport_is_idempotent(tmp_path):
         "records": [_record("mfl:a")],
     }
 
-    first = persist_corpus_snapshot(dbp, **kwargs)
-    second = persist_corpus_snapshot(dbp, **kwargs)
+    first = persist_corpus_snapshot(
+        dbp,
+        source_filename="first-copy.html",
+        **kwargs,
+    )
+    second = persist_corpus_snapshot(
+        dbp,
+        source_filename="second-copy.html",
+        **kwargs,
+    )
 
     assert first.snapshot_id == second.snapshot_id
     assert second.duplicate_snapshot is True
@@ -94,6 +102,19 @@ def test_exact_snapshot_reimport_is_idempotent(tmp_path):
     try:
         assert conn.execute("SELECT COUNT(*) AS n FROM flight_corpus_snapshots").fetchone()["n"] == 1
         assert conn.execute("SELECT COUNT(*) AS n FROM flight_corpus_records").fetchone()["n"] == 1
+        sources = conn.execute(
+            """
+            SELECT source_filename
+            FROM flight_corpus_snapshot_sources
+            WHERE snapshot_id = ?
+            ORDER BY source_filename
+            """,
+            (first.snapshot_id,),
+        ).fetchall()
+        assert [row["source_filename"] for row in sources] == [
+            "first-copy.html",
+            "second-copy.html",
+        ]
     finally:
         conn.close()
 
