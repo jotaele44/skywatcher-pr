@@ -63,7 +63,8 @@
           "server/backend/console/fr24_control_plane.py",
           "scripts/load_fr24_control_plane.py",
           "src/skywatcher/fr24/flight_corpus.py",
-          "src/skywatcher/fr24/flight_coverage.py"
+          "src/skywatcher/fr24/flight_coverage.py",
+          "src/skywatcher/fr24/acquisition_receipts.py"
         ],
         "endpoints": [
           "GET /api/apps/public-settings",
@@ -91,7 +92,8 @@
           "GET /api/flight-corpus/archive/snapshots",
           "GET /api/flight-corpus/archive/snapshots/{snapshot_id}",
           "POST /api/flight-corpus/archive/snapshots",
-          "GET /api/flight-corpus/archive/snapshots/{snapshot_id}/coverage"
+          "GET /api/flight-corpus/archive/snapshots/{snapshot_id}/coverage",
+          "GET /api/flight-acquisition/p1/status"
         ],
         "symbols": [
           "server/backend/main.py:geo_observations",
@@ -120,7 +122,16 @@
           "src/skywatcher/fr24/flight_corpus.py:persist_corpus_snapshot",
           "src/skywatcher/fr24/flight_corpus.py:read_corpus_snapshot",
           "server/backend/main.py:flight_corpus_archive_coverage",
-          "src/skywatcher/fr24/flight_coverage.py:build_coverage_ledger"
+          "src/skywatcher/fr24/flight_coverage.py:build_coverage_ledger",
+          "server/backend/main.py:flight_acquisition_p1_status",
+          "src/skywatcher/fr24/acquisition_receipts.py:AcquisitionReceiptError",
+          "src/skywatcher/fr24/acquisition_receipts.py:load_manifest",
+          "src/skywatcher/fr24/acquisition_receipts.py:validate_manifest",
+          "src/skywatcher/fr24/acquisition_receipts.py:next_discovery_target",
+          "src/skywatcher/fr24/acquisition_receipts.py:record_discovery",
+          "src/skywatcher/fr24/acquisition_receipts.py:record_blocked_auth",
+          "src/skywatcher/fr24/acquisition_receipts.py:export_harvest_carryover",
+          "src/skywatcher/fr24/acquisition_receipts.py:status_summary"
         ]
       },
       "frontend": {
@@ -197,7 +208,9 @@
           "tests/test_flight_corpus_archive_api.py",
           "tests/test_flight_corpus_persistence.py",
           "tests/test_flight_corpus_migration.py",
-          "tests/test_flight_coverage.py"
+          "tests/test_flight_coverage.py",
+          "tests/test_acquisition_receipts.py",
+          "tests/test_acquisition_status_api.py"
         ],
         "contract": [
           "tests/test_gui_parity.py"

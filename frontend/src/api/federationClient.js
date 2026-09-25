@@ -201,6 +201,10 @@ const flightCorpusV4 = {
   familyProvenance: () => request('/flight-corpus/v4/family-provenance'),
 };
 
+const flightAcquisition = {
+  p1Status: () => request('/flight-acquisition/p1/status'),
+};
+
 const flightCorpusArchive = {
   listSnapshots: () => request('/flight-corpus/archive/snapshots'),
   getSnapshot: (snapshotId) => request(`/flight-corpus/archive/snapshots/${encode(snapshotId)}`),
@@ -232,5 +236,6 @@ export const federation = {
   system,
   flightCorpusV4,
   flightCorpusArchive,
+  flightAcquisition,
   request,
 };

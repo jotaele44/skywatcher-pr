@@ -46,6 +46,16 @@ if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
 from skywatcher.fr24 import database as skywatcher_db
+from skywatcher.fr24.acquisition_receipts import (
+    AcquisitionReceiptError,
+    next_discovery_target,
+)
+from skywatcher.fr24.acquisition_receipts import (
+    load_manifest as load_acquisition_manifest,
+)
+from skywatcher.fr24.acquisition_receipts import (
+    status_summary as acquisition_status_summary,
+)
 from skywatcher.fr24.flight_corpus import (
     CorpusPersistenceError,
     persist_corpus_snapshot,
@@ -70,6 +80,7 @@ CORPUS_IMPORT_MAX_BYTES = int(os.environ.get("SKYWATCHER_CORPUS_IMPORT_MAX_BYTES
 # aguayluz-pr and ovnis-pr under the identical name→GEOID shape.
 MUNICIPIOS_PATH = ROOT / "data" / "geo" / "pr_municipios_boundaries.json"
 FLIGHT_CORPUS_V4_DIR = ROOT / "data" / "flight_tracks" / "corpus_v4"
+P1_ACQUISITION_MANIFEST = ROOT / "data" / "flight_acquisition" / "p1_2026-09-25.json"
 
 
 
@@ -418,6 +429,27 @@ def flight_corpus_archive_coverage(
     if ledger["summary"]["input_records"] != stored["snapshot"]["record_count"]:
         raise HTTPException(status_code=409, detail="coverage input row-count mismatch")
     return ledger
+
+
+@app.get("/api/flight-acquisition/p1/status")
+def flight_acquisition_p1_status() -> dict[str, Any]:
+    """Expose the frozen P1 acquisition receipt and its next blocked target."""
+    if not P1_ACQUISITION_MANIFEST.is_file():
+        raise HTTPException(status_code=404, detail="P1 acquisition manifest not found")
+    try:
+        manifest = load_acquisition_manifest(P1_ACQUISITION_MANIFEST)
+    except (OSError, json.JSONDecodeError, AcquisitionReceiptError) as exc:
+        raise HTTPException(status_code=500, detail=f"invalid P1 acquisition manifest: {exc}") from exc
+
+    return {
+        "summary": acquisition_status_summary(manifest),
+        "execution_receipt": manifest.get("execution_receipt"),
+        "next_discovery_target": next_discovery_target(manifest),
+        "targets": manifest.get("targets", []),
+        "source_corpus_sha256": manifest.get("source_corpus_sha256"),
+        "coverage_ledger_merge_sha": manifest.get("coverage_ledger_merge_sha"),
+        "generated_as_of": manifest.get("generated_as_of"),
+    }
 
 
 @app.post("/api/flight-corpus/archive/snapshots", dependencies=_WRITE_GUARD)

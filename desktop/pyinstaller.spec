@@ -26,6 +26,7 @@ CONSOLE = os.environ.get("PRII_CONSOLE") == "1"
 datas = [
     (str(REPO_ROOT / "frontend" / "dist"), "frontend/dist"),
     (str(REPO_ROOT / "data" / "reference"), "data/reference"),
+    (str(REPO_ROOT / "data" / "flight_acquisition"), "data/flight_acquisition"),
     (str(BRANDING / "icon-256.png"), "assets/branding"),
 ]
 for extra in ("exports", "reports"):
@@ -49,6 +50,7 @@ a = Analysis(
         "skywatcher.fr24.database_migrations",
         "skywatcher.fr24.flight_corpus",
         "skywatcher.fr24.flight_coverage",
+        "skywatcher.fr24.acquisition_receipts",
         # Shared desktop-wrapper runtime (thehub-pr/packages/prii_desktop),
         # imported by the desktop/ shims — bundle it into the frozen build.
         "prii_desktop",
