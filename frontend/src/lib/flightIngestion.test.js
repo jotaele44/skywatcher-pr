@@ -159,6 +159,33 @@ describe("browser flight ingestion contract", () => {
     });
   });
 
+  it("preserves FR24 KML callsign and registration as separate identity fields", () => {
+    const result = parseFlightKml(
+      '<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>' +
+        "<name>-/HBAL124</name>" +
+        "<description><![CDATA[" +
+        '<div>Aircraft (BALL) High Altitude Balloon Registration ' +
+        '<a href="https://mobile.flightradar24.com/reg/n519hb">N519HB</a></div>' +
+        "]]></description>" +
+        "<Placemark><Point><coordinates>-104.545074,33.314163,0</coordinates></Point></Placemark>" +
+        "</Document></kml>",
+    );
+
+    expect(result.status).toBe(FLIGHT_INGEST_STATUS.READY);
+    expect(result.points[0]).toMatchObject({
+      callsign: "HBAL124",
+      registration: "N519HB",
+      aircraftType: "BALL",
+    });
+    expect(result.identity).toMatchObject({
+      status: "SOURCE_IDENTITY_PRESENT",
+      callsigns: ["HBAL124"],
+      registrations: ["N519HB"],
+      aircraftTypes: ["BALL"],
+      conflicts: [],
+    });
+  });
+
   it("accepts LineString-only KML", () => {
     const result = parseFlightKml(
       '<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Placemark><LineString>' +
