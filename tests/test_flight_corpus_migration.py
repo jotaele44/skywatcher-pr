@@ -5,7 +5,6 @@ from __future__ import annotations
 import skywatcher.fr24.database as db
 import skywatcher.fr24.database_migrations as migrations
 
-
 CORPUS_TABLES = {
     "flight_corpus_snapshots",
     "flight_corpus_snapshot_sources",
