@@ -70,6 +70,7 @@ export default function FlightArchive() {
   const [persistReceipts, setPersistReceipts] = React.useState([]);
   const [storedSnapshots, setStoredSnapshots] = React.useState([]);
   const [coverageLedger, setCoverageLedger] = React.useState(null);
+  const [p1Receipt, setP1Receipt] = React.useState(null);
   const [error, setError] = React.useState("");
 
   const refreshSnapshots = React.useCallback(async () => {
@@ -83,6 +84,12 @@ export default function FlightArchive() {
   React.useEffect(() => {
     refreshSnapshots();
   }, [refreshSnapshots]);
+
+  React.useEffect(() => {
+    federation.flightAcquisition.p1Status()
+      .then(setP1Receipt)
+      .catch(() => setP1Receipt(null));
+  }, []);
 
   const corpusResults = results.filter((r) => r.status === FLIGHT_INGEST_STATUS.CORPUS_READY);
   const persistableCorpusCount = results.filter(
@@ -296,9 +303,12 @@ export default function FlightArchive() {
           icon={null}
         />}
       >
-        {coverageLedger
-          ? <AcquisitionLedgerTable items={coverageLedger.acquisition_queue || []} />
-          : <CorpusTable records={queue} empty="No corpus records currently lack a KML manifestation." />}
+        <P1ExecutionReceipt receipt={p1Receipt} />
+        <div className="mt-4">
+          {coverageLedger
+            ? <AcquisitionLedgerTable items={coverageLedger.acquisition_queue || []} />
+            : <CorpusTable records={queue} empty="No corpus records currently lack a KML manifestation." />}
+        </div>
       </Panel>}
       {tab === "integrity" && <Panel title="Integrity state" icon={ShieldCheck} action={null}>
         <div className="grid gap-3 md:grid-cols-3">
@@ -371,6 +381,49 @@ function CanonicalCoverageTable({ ledger }) {
       </table>
     </div>
   </>;
+}
+
+
+function P1ExecutionReceipt({ receipt }) {
+  if (!receipt) {
+    return <div className="rounded-lg border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+      P1 execution receipt unavailable in this runtime.
+    </div>;
+  }
+  const summary = receipt.summary || {};
+  const execution = receipt.execution_receipt || {};
+  const next = receipt.next_discovery_target || null;
+  const blocked = summary.discovery?.BLOCKED_EXTERNAL_AUTH || 0;
+  return <div className="rounded-lg border border-border bg-muted/20 p-3">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <p className="text-xs font-semibold text-foreground">P1 acquisition execution</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {summary.target_count ?? 0} frozen targets · {blocked} blocked on authenticated FR24 discovery · {summary.discovered_flight_count ?? 0} discovered flight IDs
+        </p>
+      </div>
+      <StatusChip
+        tone={execution.result === "BLOCKED_EXTERNAL_AUTH" ? "warn" : "ready"}
+        label={execution.result || "UNKNOWN"}
+        icon={null}
+      />
+    </div>
+    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <Integrity label="Discovery requests" value={execution.discovery_requests_issued ?? "—"} tone="ready" />
+      <Integrity label="Playback requests" value={execution.playback_requests_issued ?? "—"} tone="ready" />
+      <Integrity label="Quota spent" value={execution.quota_units_spent ?? "—"} tone="ready" />
+      <Integrity label="Resumable" value={execution.resumable === true ? "YES" : "NO"} tone={execution.resumable === true ? "ready" : "warn"} />
+    </div>
+    {next && <div className="mt-3 rounded-md border border-border bg-background/40 px-3 py-2 text-xs">
+      <span className="font-semibold text-foreground">Next discovery target:</span>{" "}
+      <span className="font-mono text-foreground">{next.identity}</span>{" "}
+      <span className="font-mono text-muted-foreground">{next.recoverable_from} → {next.recoverable_to}</span>{" "}
+      <span className="text-muted-foreground">· score {next.priority_score}</span>
+    </div>}
+    <p className="mt-3 text-xs text-muted-foreground">
+      Authentication is not bypassed. No playback request is issued until an authenticated history lookup yields a dated FR24 flight ID inside the recoverable window.
+    </p>
+  </div>;
 }
 
 function AcquisitionLedgerTable({ items }) {
