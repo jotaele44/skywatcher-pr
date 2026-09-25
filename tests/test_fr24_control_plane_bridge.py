@@ -175,7 +175,7 @@ def test_blank_reobservation_does_not_erase_existing_callsign(tmp_path):
     finally:
         connection.close()
 
-    assert row == ("N600UH", 1300.0, 100.0)
+    assert tuple(row) == ("N600UH", 1300.0, 100.0)
 
 
 def test_conflicting_nonblank_callsigns_are_preserved_and_fail_closed(tmp_path, monkeypatch):
