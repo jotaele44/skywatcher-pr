@@ -45,6 +45,9 @@ a = Analysis(
         "uvicorn.lifespan.on",
         "desktop.app_server",
         "server.backend.main",
+        "skywatcher.fr24.database",
+        "skywatcher.fr24.database_migrations",
+        "skywatcher.fr24.flight_corpus",
         # Shared desktop-wrapper runtime (thehub-pr/packages/prii_desktop),
         # imported by the desktop/ shims — bundle it into the frozen build.
         "prii_desktop",
