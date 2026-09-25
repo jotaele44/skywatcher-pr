@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from skywatcher.fr24 import database as db
-from skywatcher.fr24 import database_migrations as migrations
+import skywatcher.fr24.database as db
+import skywatcher.fr24.database_migrations as migrations
 
 
 CORPUS_TABLES = {
