@@ -10,6 +10,7 @@ from skywatcher.fr24 import database_migrations as migrations
 
 CORPUS_TABLES = {
     "flight_corpus_snapshots",
+    "flight_corpus_snapshot_sources",
     "flight_corpus_records",
     "flight_source_manifestations",
 }
