@@ -54,8 +54,10 @@ def test_internal_gap_is_classified_against_365_day_lookback():
     records = [
         _record("N1", "2025-01-01", uid="mfl:00000001"),
         _record("N1", "2025-01-02", uid="mfl:00000002"),
-        _record("N1", "2025-05-01", uid="mfl:00000003"),
-        _record("N1", "2026-09-01", uid="mfl:00000004"),
+        _record("N1", "2025-01-03", uid="mfl:00000003"),
+        _record("N1", "2025-05-01", uid="mfl:00000004"),
+        _record("N1", "2025-05-02", uid="mfl:00000005"),
+        _record("N1", "2026-09-01", uid="mfl:00000006"),
     ]
     ledger = _ledger(records, as_of=date(2026, 9, 25))
     states = {(item["from"], item["to"]): item["state"] for item in ledger["gaps"]}
@@ -67,7 +69,8 @@ def test_recent_internal_gap_is_recoverable():
     records = [
         _record("N1", "2026-07-01", uid="mfl:00000001"),
         _record("N1", "2026-07-02", uid="mfl:00000002"),
-        _record("N1", "2026-08-20", uid="mfl:00000003"),
+        _record("N1", "2026-07-03", uid="mfl:00000003"),
+        _record("N1", "2026-08-20", uid="mfl:00000004"),
     ]
     ledger = _ledger(records, as_of=date(2026, 9, 25))
     assert ledger["gaps"][0]["state"] == "RECOVERABLE"
