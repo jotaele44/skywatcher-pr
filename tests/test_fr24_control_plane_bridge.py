@@ -6,7 +6,6 @@ from pathlib import Path
 from server.backend.console.fr24_control_plane import ingest_fr24_control_plane
 from server.backend.console.repositories import RepositoryRegistry
 
-
 FLIGHT_FIELDS = [
     "flight_id",
     "registration",
