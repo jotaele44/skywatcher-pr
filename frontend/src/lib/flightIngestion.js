@@ -8,6 +8,10 @@ const TIME_NAMES = ["timestamp", "time", "datetime", "date", "utc", "seen", "cre
 const ALT_NAMES = ["alt", "altitude", "altitude_ft", "baro_altitude", "geo_altitude"];
 const SPD_NAMES = ["speed", "groundspeed", "gs", "speed_mph", "velocity", "ground_speed"];
 const HDG_NAMES = ["heading", "track", "bearing", "course", "direction"];
+const CALLSIGN_NAMES = ["callsign", "call_sign"];
+const REGISTRATION_NAMES = ["registration", "reg", "tail", "tail_number", "aircraft_registration"];
+const ICAO24_NAMES = ["icao24", "hex", "hex_code", "mode_s", "transponder"];
+const AIRCRAFT_TYPE_NAMES = ["aircraft_type", "aircrafttype", "type_code", "typecode"];
 const POSITION_NAMES = ["position", "coordinates", "coordinate", "lat_lon", "latlon"];
 const START_LAT_NAMES = ["start_lat", "start_latitude"];
 const START_LON_NAMES = ["start_lon", "start_lng", "start_longitude"];
@@ -112,19 +116,54 @@ const parsePosition = (value) => {
   return validLatLon(lat, lon) ? { lat, lon } : null;
 };
 
+const cleanText = (value) => {
+  const cleaned = String(value ?? "").trim();
+  return cleaned || null;
+};
+
 const selectMetadata = (row, headers) => {
   const pick = (aliases) => {
     const column = findColumn(headers, aliases);
     return column ? row[column] : null;
   };
   return {
-    timestamp: pick(TIME_NAMES),
+    timestamp: cleanText(pick(TIME_NAMES)),
     altitude: toNumber(pick(ALT_NAMES)),
     speed: toNumber(pick(SPD_NAMES)),
     heading: toNumber(pick(HDG_NAMES)),
-    callsign: pick(["callsign"]),
-    registration: pick(["registration", "tail_number"]),
-    aircraftType: pick(["aircraft_type", "aircrafttype"]),
+    callsign: cleanText(pick(CALLSIGN_NAMES)),
+    registration: cleanText(pick(REGISTRATION_NAMES)),
+    icao24: cleanText(pick(ICAO24_NAMES)),
+    aircraftType: cleanText(pick(AIRCRAFT_TYPE_NAMES)),
+  };
+};
+
+const summarizeIdentity = (points) => {
+  const collect = (field) =>
+    [...new Set(points.map((point) => cleanText(point[field])).filter(Boolean))].sort();
+
+  const callsigns = collect("callsign");
+  const registrations = collect("registration");
+  const icao24s = collect("icao24");
+  const aircraftTypes = collect("aircraftType");
+  const conflicts = [];
+  if (callsigns.length > 1) conflicts.push("callsign");
+  if (registrations.length > 1) conflicts.push("registration");
+  if (icao24s.length > 1) conflicts.push("icao24");
+  if (aircraftTypes.length > 1) conflicts.push("aircraft_type");
+
+  const present = callsigns.length + registrations.length + icao24s.length + aircraftTypes.length > 0;
+  return {
+    status: conflicts.length
+      ? "UNRESOLVED_CONFLICT"
+      : present
+        ? "SOURCE_IDENTITY_PRESENT"
+        : "UNRESOLVED",
+    callsigns,
+    registrations,
+    icao24s,
+    aircraftTypes,
+    conflicts,
   };
 };
 
@@ -214,6 +253,7 @@ export function parseFlightCsv(text, source = "local.csv") {
       source,
       manifestation: "DERIVED_SEGMENT_TABLE",
       diagnostics: { headerIndex, delimiter, malformedRows, acceptedPoints: points.length },
+      identity: summarizeIdentity(points),
       points,
     };
   }
@@ -250,11 +290,42 @@ export function parseFlightCsv(text, source = "local.csv") {
     source,
     manifestation: positionColumn ? "FR24_POSITION" : "SPLIT_COORDINATES",
     diagnostics: { headerIndex, delimiter, malformedRows, acceptedPoints: points.length },
+    identity: summarizeIdentity(points),
     points,
   };
 }
 
 const localName = (node) => (node?.localName || node?.nodeName || "").split(":").at(-1)?.toLowerCase();
+
+const extractKmlIdentity = (xml) => {
+  const nodes = [...xml.getElementsByTagName("*")];
+  const documentName = cleanText(
+    nodes.find((node) => localName(node) === "name")?.textContent,
+  );
+  const descriptions = nodes
+    .filter((node) => localName(node) === "description")
+    .map((node) => String(node.textContent ?? ""))
+    .join("\n");
+
+  let callsign = null;
+  if (documentName?.includes("/")) {
+    const candidate = cleanText(documentName.split("/").at(-1));
+    if (candidate && candidate !== "-") callsign = candidate;
+  }
+
+  const registrationMatch = descriptions.match(
+    /flightradar24\.com\/reg\/([a-z0-9-]+)/i,
+  );
+  const aircraftTypeMatch = descriptions.match(/Aircraft\s*\(([a-z0-9-]+)\)/i);
+
+  return {
+    callsign,
+    registration: registrationMatch ? registrationMatch[1].toUpperCase() : null,
+    icao24: null,
+    aircraftType: aircraftTypeMatch ? aircraftTypeMatch[1].toUpperCase() : null,
+    sourceLabel: documentName,
+  };
+};
 
 export function parseFlightKml(text, source = "local.kml") {
   let xml;
@@ -268,6 +339,7 @@ export function parseFlightKml(text, source = "local.kml") {
     return { status: FLIGHT_INGEST_STATUS.MALFORMED_XML, source, diagnostics: {}, points: [] };
   }
 
+  const identityMetadata = extractKmlIdentity(xml);
   const points = [];
   for (const node of [...xml.getElementsByTagName("*")]) {
     if (localName(node) !== "coordinates") continue;
@@ -277,7 +349,7 @@ export function parseFlightKml(text, source = "local.kml") {
       const lon = toNumber(lonRaw);
       const lat = toNumber(latRaw);
       const altitude = toNumber(altRaw);
-      if (validLatLon(lat, lon)) points.push({ lat, lon, altitude });
+      if (validLatLon(lat, lon)) points.push({ ...identityMetadata, lat, lon, altitude });
     }
   }
 
@@ -292,7 +364,13 @@ export function parseFlightKml(text, source = "local.kml") {
       const lat = toNumber(latRaw);
       const altitude = toNumber(altRaw);
       if (validLatLon(lat, lon)) {
-        points.push({ lat, lon, altitude, timestamp: whenValues[index] ?? null });
+        points.push({
+          ...identityMetadata,
+          lat,
+          lon,
+          altitude,
+          timestamp: whenValues[index] ?? null,
+        });
       }
     });
   }
@@ -302,6 +380,7 @@ export function parseFlightKml(text, source = "local.kml") {
     source,
     manifestation: points.length ? "KML_TRACK" : "KML_METADATA_ONLY",
     diagnostics: { acceptedPoints: points.length },
+    identity: summarizeIdentity(points),
     points,
   };
 }

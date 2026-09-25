@@ -132,13 +132,35 @@ class TrackPointRepository:
             nested = row.get("points")
             if isinstance(nested, list):
                 flight_id = text(first(row, ("flight_id", "candidate_id", "aircraft_identity")))
-                aircraft_id = text(first(row, ("aircraft_id", "registration", "callsign", "aircraft_identity")))
+                registration = text(
+                    first(row, ("registration", "reg", "tail", "tail_number", "source_registration"))
+                )
+                callsign = text(first(row, ("callsign", "call_sign", "callsign_or_label")))
+                icao24 = text(first(row, ("icao24", "hex", "hex_code", "mode_s", "transponder")))
+                aircraft_type = text(
+                    first(row, ("aircraft_type", "aircraftType", "type_code", "typecode"))
+                )
+                aircraft_id = (
+                    text(first(row, ("aircraft_id",)))
+                    or icao24
+                    or registration
+                    or callsign
+                    or text(row.get("aircraft_identity"))
+                )
                 for index, point in enumerate(nested):
                     if not isinstance(point, dict):
                         continue
                     merged = dict(point)
                     merged.setdefault("flight_id", flight_id)
                     merged.setdefault("aircraft_id", aircraft_id)
+                    if registration:
+                        merged.setdefault("registration", registration)
+                    if callsign:
+                        merged.setdefault("callsign", callsign)
+                    if icao24:
+                        merged.setdefault("icao24", icao24)
+                    if aircraft_type:
+                        merged.setdefault("aircraft_type", aircraft_type)
                     merged.setdefault("point_index", index)
                     points.append(merged)
             else:
@@ -166,7 +188,56 @@ class TrackPointRepository:
             return None
         source_id = text(first(source, ("track_point_id", "id", "source_record_id")))
         flight_id = text(first(source, ("flight_id", "candidate_id"))) or None
-        aircraft_id = text(first(source, ("aircraft_id", "registration", "callsign", "aircraft_identity")))
+        provenance_payload = parse_json(
+            source.get("provenance_json") or source.get("provenance"),
+            {},
+        )
+        source_identity = (
+            provenance_payload.get("source_identity")
+            if isinstance(provenance_payload, dict)
+            else {}
+        )
+        if not isinstance(source_identity, dict):
+            source_identity = {}
+        identity_observations = (
+            provenance_payload.get("identity_observations")
+            if isinstance(provenance_payload, dict)
+            else {}
+        )
+        if not isinstance(identity_observations, dict):
+            identity_observations = {}
+        identity_state = (
+            text(provenance_payload.get("identity_state"))
+            if isinstance(provenance_payload, dict)
+            else ""
+        ) or None
+        registration = (
+            text(first(source, ("registration", "reg", "tail", "tail_number", "source_registration")))
+            or text(source_identity.get("registration"))
+            or None
+        )
+        callsign = (
+            text(first(source, ("callsign", "call_sign", "callsign_or_label")))
+            or text(source_identity.get("callsign"))
+            or None
+        )
+        icao24 = (
+            text(first(source, ("icao24", "hex", "hex_code", "mode_s", "transponder")))
+            or text(source_identity.get("icao24"))
+            or None
+        )
+        aircraft_type = (
+            text(first(source, ("aircraft_type", "aircraftType", "type_code", "typecode")))
+            or text(source_identity.get("aircraft_type"))
+            or None
+        )
+        aircraft_id = (
+            text(first(source, ("aircraft_id",)))
+            or icao24
+            or registration
+            or callsign
+            or text(source.get("aircraft_identity"))
+        )
         if not aircraft_id:
             aircraft_id = f"unknown::{flight_id or 'unassigned'}"
             qa_flags.append("aircraft_identity_unresolved")
@@ -193,6 +264,12 @@ class TrackPointRepository:
             "track_point_id": track_point_id,
             "flight_id": flight_id,
             "aircraft_id": aircraft_id,
+            "icao24": icao24,
+            "registration": registration,
+            "callsign": callsign,
+            "aircraft_type": aircraft_type,
+            "identity_observations": identity_observations,
+            "identity_state": identity_state,
             "observed_at_utc": observed,
             "lat": lat,
             "lon": lon,

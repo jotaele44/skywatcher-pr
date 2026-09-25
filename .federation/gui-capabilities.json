@@ -60,6 +60,8 @@
       "backend": {
         "files": [
           "server/backend/main.py",
+          "server/backend/console/fr24_control_plane.py",
+          "scripts/load_fr24_control_plane.py",
           "src/skywatcher/fr24/flight_corpus.py"
         ],
         "endpoints": [
@@ -105,6 +107,9 @@
           "server/backend/main.py:flight_corpus_v4_route_family_recurrence",
           "server/backend/main.py:flight_corpus_v4_airport_edge_recurrence",
           "server/backend/main.py:flight_corpus_v4_family_provenance",
+          "server/backend/console/fr24_control_plane.py:BridgeSummary",
+          "server/backend/console/fr24_control_plane.py:ingest_fr24_control_plane",
+          "scripts/load_fr24_control_plane.py:main",
           "server/backend/main.py:flight_corpus_archive_snapshots",
           "server/backend/main.py:flight_corpus_archive_snapshot",
           "server/backend/main.py:flight_corpus_archive_persist",
@@ -152,7 +157,6 @@
           "frontend/src/lib/AuthContext.jsx",
           "frontend/src/lib/observation-density.js",
           "frontend/src/lib/SkywatcherData.jsx",
-          "frontend/src/api/federationClient.js",
           "frontend/src/pages/Dashboard.jsx",
           "frontend/src/pages/Observations.jsx",
           "frontend/src/pages/Aircraft.jsx",
@@ -166,12 +170,13 @@
           "frontend/src/pages/Calibration.jsx",
           "frontend/src/pages/Console.jsx",
           "frontend/src/pages/SpatialTruth.jsx",
-          "frontend/src/pages/FlightArchive.jsx",
           "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.jsx",
           "frontend/src/components/skywatcher/TrackTimeScrubber.jsx",
           "frontend/src/components/skywatcher/SpatialFlightRenderer.jsx",
-          "frontend/src/components/ProgramTimeline.jsx"
+          "frontend/src/components/ProgramTimeline.jsx",
+          "frontend/src/lib/flightIngestion.js",
+          "frontend/src/pages/FlightArchive.jsx"
         ],
         "discoverability": [
           "frontend/src/components/skywatcher/Sidebar.jsx"
@@ -184,6 +189,7 @@
           "tests/test_fr24_dashboard_data.py",
           "tests/test_satim_calibration.py",
           "tests/test_geo_municipios_routes.py",
+          "tests/test_fr24_control_plane_bridge.py",
           "tests/test_flight_corpus_archive_api.py",
           "tests/test_flight_corpus_persistence.py",
           "tests/test_flight_corpus_migration.py"
@@ -196,8 +202,8 @@
           "frontend/src/components/skywatcher/PuertoRicoMapShell.test.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.test.jsx",
           "frontend/src/components/skywatcher/SpatialFlightRenderer.test.jsx",
-          "frontend/src/lib/masterFlightLog.test.js",
-          "frontend/src/lib/flightIngestion.test.js"
+          "frontend/src/lib/flightIngestion.test.js",
+          "frontend/src/lib/masterFlightLog.test.js"
         ],
         "e2e": [
           "frontend/tests/gui-parity.spec.mjs"
