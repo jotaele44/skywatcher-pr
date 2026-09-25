@@ -15,6 +15,7 @@ from skywatcher.flight_corpus_correlation_v1 import (
 
 ROOT = Path(__file__).parents[1]
 CFG = ROOT / "config" / "correlation_detector_v1.json"
+V4_CFG = ROOT / "config" / "flight_corpus_v4.json"
 
 
 def point(
@@ -207,6 +208,16 @@ def test_v1_registry_has_one_airborne_co_route_pair_and_preserves_v4_candidate()
     assert candidate["classification"] == "REPEATED_AIRBORNE_CO_ROUTE_CANDIDATE"
     assert candidate["mission"] == "UNKNOWN"
     assert candidate["coordination"] == "UNKNOWN"
+
+
+def test_v1_promoted_candidate_matches_v4_without_semantic_expansion():
+    v1 = load_registry()["promoted_descriptive_candidate"]
+    v4 = json.loads(V4_CFG.read_text(encoding="utf-8"))["promoted_candidates"][0]
+    assert v1["aircraft"] == v4["aircraft"]
+    assert v1["date"] == v4["date"]
+    assert v1["classification"] == v4["classification"]
+    assert v1["mission"] == v4["mission"] == "UNKNOWN"
+    assert v1["coordination"] == v4["coordination"] == "UNKNOWN"
 
 
 def test_geometry_recovery_denominators_close_without_zero_filling():
