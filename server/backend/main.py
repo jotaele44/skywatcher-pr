@@ -382,6 +382,44 @@ def flight_corpus_archive_snapshot(snapshot_id: int) -> dict[str, Any]:
     }
 
 
+@app.get("/api/flight-corpus/archive/snapshots/{snapshot_id}/coverage")
+def flight_corpus_archive_coverage(
+    snapshot_id: int,
+    as_of: str | None = Query(default=None),
+) -> dict[str, Any]:
+    """Return deterministic coverage/acquisition state for one persisted snapshot."""
+    if not ADSB_DB.is_file():
+        raise HTTPException(status_code=404, detail="corpus database not found")
+    try:
+        stored = read_corpus_snapshot(ADSB_DB, snapshot_id)
+    except CorpusPersistenceError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    normalized: list[dict[str, Any]] = []
+    for row in stored["records"]:
+        record = row.get("normalized_record")
+        if isinstance(record, dict):
+            normalized.append(record)
+
+    as_of_date: date | None = None
+    if as_of:
+        try:
+            as_of_date = date.fromisoformat(as_of)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="as_of must be YYYY-MM-DD") from exc
+
+    ledger = build_coverage_ledger(normalized, as_of=as_of_date)
+    ledger["snapshot"] = {
+        "snapshot_id": snapshot_id,
+        "source_sha256": stored["snapshot"].get("source_sha256"),
+        "record_count": stored["snapshot"].get("record_count"),
+        "status": stored["snapshot"].get("status"),
+    }
+    if ledger["summary"]["input_records"] != stored["snapshot"]["record_count"]:
+        raise HTTPException(status_code=409, detail="coverage input row-count mismatch")
+    return ledger
+
+
 @app.post("/api/flight-corpus/archive/snapshots", dependencies=_WRITE_GUARD)
 def flight_corpus_archive_persist(payload: dict[str, Any]) -> dict[str, Any]:
     """Persist one reviewed corpus snapshot from exact source bytes plus parsed records."""
