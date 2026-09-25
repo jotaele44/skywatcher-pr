@@ -62,7 +62,8 @@
           "server/backend/main.py",
           "server/backend/console/fr24_control_plane.py",
           "scripts/load_fr24_control_plane.py",
-          "src/skywatcher/fr24/flight_corpus.py"
+          "src/skywatcher/fr24/flight_corpus.py",
+          "src/skywatcher/fr24/flight_coverage.py"
         ],
         "endpoints": [
           "GET /api/apps/public-settings",
@@ -89,7 +90,8 @@
           "GET /api/flight-corpus/v4/family-provenance",
           "GET /api/flight-corpus/archive/snapshots",
           "GET /api/flight-corpus/archive/snapshots/{snapshot_id}",
-          "POST /api/flight-corpus/archive/snapshots"
+          "POST /api/flight-corpus/archive/snapshots",
+          "GET /api/flight-corpus/archive/snapshots/{snapshot_id}/coverage"
         ],
         "symbols": [
           "server/backend/main.py:geo_observations",
@@ -116,7 +118,9 @@
           "src/skywatcher/fr24/flight_corpus.py:CorpusPersistenceError",
           "src/skywatcher/fr24/flight_corpus.py:PersistResult",
           "src/skywatcher/fr24/flight_corpus.py:persist_corpus_snapshot",
-          "src/skywatcher/fr24/flight_corpus.py:read_corpus_snapshot"
+          "src/skywatcher/fr24/flight_corpus.py:read_corpus_snapshot",
+          "server/backend/main.py:flight_corpus_archive_coverage",
+          "src/skywatcher/fr24/flight_coverage.py:build_coverage_ledger"
         ]
       },
       "frontend": {
@@ -192,7 +196,8 @@
           "tests/test_fr24_control_plane_bridge.py",
           "tests/test_flight_corpus_archive_api.py",
           "tests/test_flight_corpus_persistence.py",
-          "tests/test_flight_corpus_migration.py"
+          "tests/test_flight_corpus_migration.py",
+          "tests/test_flight_coverage.py"
         ],
         "contract": [
           "tests/test_gui_parity.py"
