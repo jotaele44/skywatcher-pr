@@ -84,16 +84,23 @@ function normalizeRecord(monthBucket, record, ordinal) {
           raw: item,
         }))
       : [],
-    // Deliberately preserve fields whose semantics have not yet been certified.
-    sourceFieldsOpen: {
-      alt: record?.alt ?? null,
-      spd: record?.spd ?? null,
-      dist: record?.dist ?? null,
-      pr: record?.pr ?? null,
-      gap: record?.gap ?? null,
-      gp: record?.gp ?? null,
-      km: record?.km ?? null,
-      rt: record?.rt ?? null,
+    metrics: {
+      maxAltitudeFt: Number.isFinite(record?.alt) ? record.alt : null,
+      maxSpeedKt: Number.isFinite(record?.spd) ? record.spd : null,
+      trackDistanceKm: Number.isFinite(record?.dist) ? record.dist : null,
+      prAreaPointPct: Number.isFinite(record?.pr) ? record.pr : null,
+      maxGapSeconds: Number.isFinite(record?.gap) ? record.gap : null,
+      gapCounts: Array.isArray(record?.gp)
+        ? {
+            over120Seconds: record.gp[0] ?? null,
+            over300Seconds: record.gp[1] ?? null,
+            over900Seconds: record.gp[2] ?? null,
+          }
+        : null,
+    },
+    kmlEnrichment: {
+      metadataTableIndexRaw: Number.isInteger(record?.km) ? record.km : null,
+      routeRaw: typeof record?.rt === "string" ? record.rt : null,
     },
     raw: record,
   };
