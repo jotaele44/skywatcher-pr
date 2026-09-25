@@ -48,6 +48,7 @@ from skywatcher.fr24 import database as skywatcher_db
 from skywatcher.fr24.flight_corpus import (
     CorpusPersistenceError,
     persist_corpus_snapshot,
+    read_corpus_snapshot,
 )
 
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
@@ -342,6 +343,37 @@ def flight_corpus_archive_snapshots() -> list[dict[str, Any]]:
             conn.close()
     except sqlite3.OperationalError:
         return []
+
+
+@app.get("/api/flight-corpus/archive/snapshots/{snapshot_id}")
+def flight_corpus_archive_snapshot(snapshot_id: int) -> dict[str, Any]:
+    """Read one frozen corpus snapshot and rehydrate its normalized records."""
+    if not ADSB_DB.is_file():
+        raise HTTPException(status_code=404, detail="corpus database not found")
+    try:
+        stored = read_corpus_snapshot(ADSB_DB, snapshot_id)
+    except CorpusPersistenceError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    records = []
+    for row in stored["records"]:
+        normalized = row.get("normalized_record")
+        if not isinstance(normalized, dict):
+            normalized = {}
+        records.append(
+            {
+                **normalized,
+                "raw": row.get("raw_record"),
+                "persistence": {
+                    "corpus_record_id": row.get("corpus_record_id"),
+                    "identity_status": row.get("identity_status"),
+                    "manifestation_count": len(row.get("manifestations") or []),
+                },
+            }
+        )
+    if len(records) != stored["snapshot"]["record_count"]:
+        raise HTTPException(status_code=409, detail="persisted snapshot row-count mismatch")
+    return {"snapshot": stored["snapshot"], "records": records}
 
 
 @app.post("/api/flight-corpus/archive/snapshots", dependencies=_WRITE_GUARD)
