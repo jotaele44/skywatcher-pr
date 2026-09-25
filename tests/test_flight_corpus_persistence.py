@@ -205,3 +205,50 @@ def test_duplicate_snapshot_detects_corrupt_stored_count(tmp_path):
             format_name="master-flight-log-backup",
             records=[_record("mfl:a")],
         )
+
+
+def test_exact_bytes_with_divergent_parse_payload_fails_closed(tmp_path):
+    dbp = tmp_path / "s.db"
+    payload = b"same source bytes"
+    persist_corpus_snapshot(
+        dbp,
+        source_bytes=payload,
+        source_kind="master_flight_log_html",
+        format_name="master-flight-log-backup",
+        records=[_record("mfl:a")],
+    )
+
+    changed = _record("mfl:a")
+    changed["callsignRaw"] = "N2"
+
+    with pytest.raises(CorpusPersistenceError, match="payload differs"):
+        persist_corpus_snapshot(
+            dbp,
+            source_bytes=payload,
+            source_kind="master_flight_log_html",
+            format_name="master-flight-log-backup",
+            records=[changed],
+        )
+
+
+def test_read_back_preserves_raw_and_normalized_payload(tmp_path):
+    from skywatcher.fr24.flight_corpus import read_corpus_snapshot
+
+    dbp = tmp_path / "s.db"
+    record = _record("mfl:a")
+    result = persist_corpus_snapshot(
+        dbp,
+        source_bytes=b"read-back",
+        source_kind="master_flight_log_html",
+        format_name="master-flight-log-backup",
+        records=[record],
+    )
+
+    stored = read_corpus_snapshot(dbp, result.snapshot_id)
+    assert stored["snapshot"]["record_count"] == 1
+    assert stored["records"][0]["raw_record"] == record["raw"]
+    normalized = stored["records"][0]["normalized_record"]
+    assert normalized["corpusUid"] == record["corpusUid"]
+    assert normalized["callsignRaw"] == record["callsignRaw"]
+    assert normalized["metrics"] == record["metrics"]
+    assert normalized["sourceManifestations"] == record["sourceManifestations"]
