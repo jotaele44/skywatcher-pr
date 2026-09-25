@@ -30,6 +30,52 @@ from .flight_common import (
 from .tracks import TrackPointRepository
 
 
+def _identity_values(
+    source: dict[str, Any],
+    field_name: str,
+    aliases: tuple[str, ...],
+) -> list[str]:
+    values: list[str] = []
+
+    def add(value: Any) -> None:
+        normalized = text(value)
+        if normalized and normalized not in values:
+            values.append(normalized)
+
+    observed = source.get("identity_observations")
+    if isinstance(observed, dict):
+        carried = observed.get(field_name)
+        if isinstance(carried, list):
+            for value in carried:
+                add(value)
+        else:
+            add(carried)
+
+    for alias in aliases:
+        add(source.get(alias))
+    return values
+
+
+def _collect_identity_values(
+    rows: list[dict[str, Any]],
+    field_name: str,
+    aliases: tuple[str, ...],
+) -> list[str]:
+    values: list[str] = []
+    for row in rows:
+        for value in _identity_values(row, field_name, aliases):
+            if value not in values:
+                values.append(value)
+    return values
+
+
+def _single_identity(values: list[str], field_name: str, qa_flags: list[str]) -> str | None:
+    if len(values) > 1:
+        qa_flags.append(f"identity_{field_name}_conflict")
+        return None
+    return values[0] if values else None
+
+
 class FlightSessionRepository:
     name = "flight_sessions"
 
@@ -140,10 +186,52 @@ class FlightSessionRepository:
         if first_seen is None:
             return None
         last_seen = last_seen or first_seen
-        aircraft_id = text(first(source, ("aircraft_id", "registration", "callsign", "callsign_or_label", "aircraft_identity")))
+
+        registration_values = _identity_values(
+            source,
+            "registration",
+            ("registration", "reg", "tail", "tail_number", "source_registration"),
+        )
+        callsign_values = _identity_values(
+            source,
+            "callsign",
+            ("callsign", "call_sign", "callsign_or_label", "source_callsign"),
+        )
+        icao24_values = _identity_values(
+            source,
+            "icao24",
+            ("icao24", "hex", "hex_code", "mode_s", "transponder", "source_icao24"),
+        )
+        aircraft_type_values = _identity_values(
+            source,
+            "aircraft_type",
+            ("aircraft_type", "aircraftType", "type_code", "typecode", "source_aircraft_type"),
+        )
+        aircraft_id_values = _identity_values(
+            source,
+            "aircraft_id",
+            ("aircraft_id", "aircraft_identity"),
+        )
+
+        registration = _single_identity(registration_values, "registration", qa_flags)
+        callsign = _single_identity(callsign_values, "callsign", qa_flags)
+        icao24 = _single_identity(icao24_values, "icao24", qa_flags)
+        aircraft_type = _single_identity(aircraft_type_values, "aircraft_type", qa_flags)
+        aircraft_id = (
+            _single_identity(aircraft_id_values, "aircraft_id", qa_flags)
+            or icao24
+            or registration
+            or callsign
+        )
         if not aircraft_id:
             return None
-        flight_id = text(first(source, ("flight_id", "candidate_id"))) or stable_id(path, aircraft_id, first_seen, last_seen, prefix="flight-")
+        flight_id = text(first(source, ("flight_id", "candidate_id"))) or stable_id(
+            path,
+            aircraft_id,
+            first_seen,
+            last_seen,
+            prefix="flight-",
+        )
         points = source.get("points") if isinstance(source.get("points"), list) else []
         point_count = as_int(source.get("point_count"))
         if point_count is None:
@@ -163,10 +251,22 @@ class FlightSessionRepository:
             "schema_version": "0.1.0",
             "flight_id": flight_id,
             "aircraft_id": aircraft_id,
-            "icao24": text(source.get("icao24")) or None,
-            "registration": text(source.get("registration")) or None,
-            "callsign": text(first(source, ("callsign", "callsign_or_label"))) or None,
-            "aircraft_type": text(source.get("aircraft_type")) or None,
+            "icao24": icao24,
+            "registration": registration,
+            "callsign": callsign,
+            "aircraft_type": aircraft_type,
+            "identity_observations": {
+                "aircraft_id": aircraft_id_values,
+                "icao24": icao24_values,
+                "registration": registration_values,
+                "callsign": callsign_values,
+                "aircraft_type": aircraft_type_values,
+            },
+            "identity_state": (
+                "UNRESOLVED_CONFLICT"
+                if any(flag.startswith("identity_") and flag.endswith("_conflict") for flag in qa_flags)
+                else "SOURCE_IDENTITY_PRESENT"
+            ),
             "operator": text(source.get("operator")) or None,
             "origin_airport_id": text(first(source, ("origin_airport_id", "origin_code", "origin"))) or None,
             "destination_airport_id": text(first(source, ("destination_airport_id", "destination_code", "destination"))) or None,
@@ -206,15 +306,65 @@ class FlightSessionRepository:
             first_point, last_point = points[0], points[-1]
             synthetic = all(bool(point.get("synthetic")) for point in points)
             source_path = Path(first_point["provenance"]["artifact_path"])
+            qa_flags: list[str] = []
+
+            aircraft_id_values = _collect_identity_values(points, "aircraft_id", ("aircraft_id",))
+            icao24_values = _collect_identity_values(
+                points,
+                "icao24",
+                ("icao24", "hex", "hex_code", "mode_s", "transponder"),
+            )
+            registration_values = _collect_identity_values(
+                points,
+                "registration",
+                ("registration", "reg", "tail", "tail_number"),
+            )
+            callsign_values = _collect_identity_values(
+                points,
+                "callsign",
+                ("callsign", "call_sign", "callsign_or_label"),
+            )
+            aircraft_type_values = _collect_identity_values(
+                points,
+                "aircraft_type",
+                ("aircraft_type", "aircraftType", "type_code", "typecode"),
+            )
+
+            icao24 = _single_identity(icao24_values, "icao24", qa_flags)
+            registration = _single_identity(registration_values, "registration", qa_flags)
+            callsign = _single_identity(callsign_values, "callsign", qa_flags)
+            aircraft_type = _single_identity(aircraft_type_values, "aircraft_type", qa_flags)
+            aircraft_id = (
+                _single_identity(aircraft_id_values, "aircraft_id", qa_flags)
+                or icao24
+                or registration
+                or callsign
+                or f"unresolved::{flight_id}"
+            )
             row = {
                 "id": flight_id,
                 "schema_version": "0.1.0",
                 "flight_id": flight_id,
-                "aircraft_id": first_point["aircraft_id"],
-                "icao24": None,
-                "registration": None,
-                "callsign": None,
-                "aircraft_type": None,
+                "aircraft_id": aircraft_id,
+                "icao24": icao24,
+                "registration": registration,
+                "callsign": callsign,
+                "aircraft_type": aircraft_type,
+                "identity_observations": {
+                    "aircraft_id": aircraft_id_values,
+                    "icao24": icao24_values,
+                    "registration": registration_values,
+                    "callsign": callsign_values,
+                    "aircraft_type": aircraft_type_values,
+                },
+                "identity_state": (
+                    "UNRESOLVED_CONFLICT"
+                    if any(
+                        flag.startswith("identity_") and flag.endswith("_conflict")
+                        for flag in qa_flags
+                    )
+                    else "SOURCE_IDENTITY_PRESENT"
+                ),
                 "operator": None,
                 "origin_airport_id": None,
                 "destination_airport_id": None,
@@ -240,6 +390,7 @@ class FlightSessionRepository:
                     operational_mode=first_point["provenance"]["operational_mode"],
                     artifact_kind="derived_flight_session",
                     synthetic=synthetic,
+                    qa_flags=qa_flags,
                 )
             )
         return output
