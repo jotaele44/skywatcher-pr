@@ -294,6 +294,36 @@ export function parseFlightCsv(text, source = "local.csv") {
 
 const localName = (node) => (node?.localName || node?.nodeName || "").split(":").at(-1)?.toLowerCase();
 
+const extractKmlIdentity = (xml) => {
+  const nodes = [...xml.getElementsByTagName("*")];
+  const documentName = cleanText(
+    nodes.find((node) => localName(node) === "name")?.textContent,
+  );
+  const descriptions = nodes
+    .filter((node) => localName(node) === "description")
+    .map((node) => String(node.textContent ?? ""))
+    .join("\n");
+
+  let callsign = null;
+  if (documentName?.includes("/")) {
+    const candidate = cleanText(documentName.split("/").at(-1));
+    if (candidate && candidate !== "-") callsign = candidate;
+  }
+
+  const registrationMatch = descriptions.match(
+    /flightradar24\.com\/reg\/([a-z0-9-]+)/i,
+  );
+  const aircraftTypeMatch = descriptions.match(/Aircraft\s*\(([a-z0-9-]+)\)/i);
+
+  return {
+    callsign,
+    registration: registrationMatch ? registrationMatch[1].toUpperCase() : null,
+    icao24: null,
+    aircraftType: aircraftTypeMatch ? aircraftTypeMatch[1].toUpperCase() : null,
+    sourceLabel: documentName,
+  };
+};
+
 export function parseFlightKml(text, source = "local.kml") {
   let xml;
   try {
@@ -306,6 +336,7 @@ export function parseFlightKml(text, source = "local.kml") {
     return { status: FLIGHT_INGEST_STATUS.MALFORMED_XML, source, diagnostics: {}, points: [] };
   }
 
+  const identityMetadata = extractKmlIdentity(xml);
   const points = [];
   for (const node of [...xml.getElementsByTagName("*")]) {
     if (localName(node) !== "coordinates") continue;
@@ -315,7 +346,7 @@ export function parseFlightKml(text, source = "local.kml") {
       const lon = toNumber(lonRaw);
       const lat = toNumber(latRaw);
       const altitude = toNumber(altRaw);
-      if (validLatLon(lat, lon)) points.push({ lat, lon, altitude });
+      if (validLatLon(lat, lon)) points.push({ ...identityMetadata, lat, lon, altitude });
     }
   }
 
@@ -330,7 +361,13 @@ export function parseFlightKml(text, source = "local.kml") {
       const lat = toNumber(latRaw);
       const altitude = toNumber(altRaw);
       if (validLatLon(lat, lon)) {
-        points.push({ lat, lon, altitude, timestamp: whenValues[index] ?? null });
+        points.push({
+          ...identityMetadata,
+          lat,
+          lon,
+          altitude,
+          timestamp: whenValues[index] ?? null,
+        });
       }
     });
   }
