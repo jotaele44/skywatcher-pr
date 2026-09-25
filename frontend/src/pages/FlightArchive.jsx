@@ -4,6 +4,7 @@ import MetricCard from "@/components/skywatcher/MetricCard";
 import PageHeader from "@/components/skywatcher/PageHeader";
 import Panel from "@/components/skywatcher/Panel";
 import StatusChip from "@/components/skywatcher/StatusChip";
+import { federation } from "@/api/federationClient";
 import { FLIGHT_INGEST_STATUS, parseFlightFiles } from "@/lib/skywatcher";
 
 const ACCEPT = ".html,.htm,.csv,.kml,text/html,text/csv,application/vnd.google-earth.kml+xml";
@@ -14,6 +15,16 @@ const TABS = [
   ["acquisition", "Acquisition", Radar],
   ["integrity", "Integrity", ShieldCheck],
 ];
+
+function bytesToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
 
 function fmtDate(value) {
   if (!value) return "—";
@@ -53,7 +64,10 @@ function groupedCoverage(records) {
 export default function FlightArchive() {
   const [tab, setTab] = React.useState("archive");
   const [results, setResults] = React.useState([]);
+  const [sourceFiles, setSourceFiles] = React.useState([]);
   const [busy, setBusy] = React.useState(false);
+  const [persisting, setPersisting] = React.useState(false);
+  const [persistReceipts, setPersistReceipts] = React.useState([]);
   const [error, setError] = React.useState("");
 
   const corpusResults = results.filter((r) => r.status === FLIGHT_INGEST_STATUS.CORPUS_READY);
@@ -76,10 +90,45 @@ export default function FlightArchive() {
     setError("");
     try {
       setResults(await parseFlightFiles(files));
+      setSourceFiles(files);
+      setPersistReceipts([]);
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : String(exc));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const persistCorpus = async () => {
+    const candidates = results
+      .map((result, index) => ({ result, file: sourceFiles[index] }))
+      .filter(({ result, file }) =>
+        file && result.status === FLIGHT_INGEST_STATUS.CORPUS_READY
+      );
+    if (!candidates.length) return;
+
+    setPersisting(true);
+    setError("");
+    try {
+      const receipts = [];
+      for (const { result, file } of candidates) {
+        const sourceBytes = bytesToBase64(await file.arrayBuffer());
+        const receipt = await federation.flightCorpusArchive.persistSnapshot({
+          source_bytes_base64: sourceBytes,
+          source_kind: "master_flight_log_html",
+          source_filename: file.name,
+          format_name: result.snapshot?.format || "master-flight-log-backup",
+          format_version: result.snapshot?.version ?? 1,
+          exported_at: result.snapshot?.exportedAt || null,
+          records: result.records || [],
+        });
+        receipts.push({ file: file.name, ...receipt });
+      }
+      setPersistReceipts(receipts);
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : String(exc));
+    } finally {
+      setPersisting(false);
     }
   };
 
@@ -106,7 +155,26 @@ export default function FlightArchive() {
           <p className="text-xs text-muted-foreground">
             Master Flight Log HTML is corpus metadata. CSV/KML remain geometry-bearing manifestations and are not synthesized into corpus identity here.
           </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={busy || persisting || corpusResults.length === 0}
+              onClick={persistCorpus}
+              className="rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {persisting ? "Persisting…" : "Persist corpus snapshot"}
+            </button>
+            <span className="text-xs text-muted-foreground">
+              Explicit commit only; preview/import alone does not write canonical storage.
+            </span>
+          </div>
           {busy && <p className="text-xs text-muted-foreground">Parsing local sources…</p>}
+          {persistReceipts.map((receipt) => (
+            <p key={receipt.file + receipt.snapshot_id} className="text-xs text-emerald-300">
+              Persisted {receipt.file}: snapshot #{receipt.snapshot_id} · {receipt.record_count} records · SHA-256 {receipt.source_sha256}
+              {receipt.duplicate_snapshot ? " · exact duplicate reused" : ""}
+            </p>
+          ))}
           {error && <p role="alert" className="text-xs text-red-300">{error}</p>}
         </div>
       </Panel>
