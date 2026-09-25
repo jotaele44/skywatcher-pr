@@ -48,8 +48,12 @@ if str(ROOT / "src") not in sys.path:
 from skywatcher.fr24 import database as skywatcher_db
 from skywatcher.fr24.acquisition_receipts import (
     AcquisitionReceiptError,
-    load_manifest as load_acquisition_manifest,
     next_discovery_target,
+)
+from skywatcher.fr24.acquisition_receipts import (
+    load_manifest as load_acquisition_manifest,
+)
+from skywatcher.fr24.acquisition_receipts import (
     status_summary as acquisition_status_summary,
 )
 from skywatcher.fr24.flight_corpus import (
