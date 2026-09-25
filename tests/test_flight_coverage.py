@@ -61,8 +61,8 @@ def test_internal_gap_is_classified_against_365_day_lookback():
     ]
     ledger = _ledger(records, as_of=date(2026, 9, 25))
     states = {(item["from"], item["to"]): item["state"] for item in ledger["gaps"]}
-    assert states[("2025-01-03", "2025-04-30")] == "BEYOND_LOOKBACK"
-    assert states[("2025-05-02", "2026-08-31")] == "PARTLY_RECOVERABLE"
+    assert states[("2025-01-04", "2025-04-30")] == "BEYOND_LOOKBACK"
+    assert states[("2025-05-03", "2026-08-31")] == "PARTLY_RECOVERABLE"
 
 
 def test_recent_internal_gap_is_recoverable():
