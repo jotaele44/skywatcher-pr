@@ -43,20 +43,45 @@ def _date_from_iso(value: Any) -> date | None:
     return parsed.date() if parsed is not None else None
 
 
+def _source_folders(record: dict[str, Any]) -> list[str]:
+    folders: list[str] = []
+    for item in record.get("sourceManifestations") or []:
+        if not isinstance(item, dict):
+            continue
+        folder = str(item.get("folderRaw") or "").strip().upper()
+        if folder not in folders:
+            folders.append(folder)
+    return folders
+
+
+def _meaningful_folders(record: dict[str, Any]) -> list[str]:
+    return [
+        folder for folder in _source_folders(record)
+        if folder.lower() not in _GENERIC_FOLDERS
+    ]
+
+
 def _identity(record: dict[str, Any]) -> tuple[str, str]:
     callsign = str(record.get("callsignRaw") or "").strip().upper()
     if callsign:
         return callsign, "callsign_raw"
 
-    folders = {
-        str(item.get("folderRaw") or "").strip().upper()
-        for item in (record.get("sourceManifestations") or [])
-        if isinstance(item, dict)
-    }
-    folders = {folder for folder in folders if folder.lower() not in _GENERIC_FOLDERS}
+    folders = _meaningful_folders(record)
     if len(folders) == 1:
-        return next(iter(folders)), "single_source_folder_provisional"
+        return folders[0], "single_source_folder_provisional"
     return UNRESOLVED_IDENTITY, "unresolved"
+
+
+def _verification_reason(record: dict[str, Any]) -> str | None:
+    if not (isinstance(record.get("pointCount"), int) and record.get("pointCount", 0) > 0):
+        return None
+    callsign = str(record.get("callsignRaw") or "").strip().upper()
+    folders = _meaningful_folders(record)
+    if not callsign:
+        return "IDCONF" if len(folders) > 1 else "BLANK"
+    if any(folder != callsign for folder in folders):
+        return "MISFILED"
+    return None
 
 
 def _has_kml(record: dict[str, Any]) -> bool:
@@ -376,13 +401,30 @@ def build_coverage_ledger(
                 "evidence_note": "CSV-backed records lack reported KML presence; this is not missing-flight evidence.",
             }, as_of=as_of, lookback_days=lookback_days, base=10, watch=ident in watch))
 
-        if identity_state not in {"SOURCE_CALLSIGN", "WATCHLIST_ONLY"}:
+        verification_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for row in rows:
+            reason = _verification_reason(row)
+            if reason:
+                verification_groups[reason].append(row)
+        for reason, verification_rows in sorted(verification_groups.items()):
+            source_ids = [
+                row.get("sourceFlightIdRaw")
+                for row in verification_rows
+                if row.get("sourceFlightIdRaw")
+            ]
             queue.append(_prioritize({
                 "type": "VERIFY",
                 "identity": ident,
-                "record_count": len(rows),
-                "state": identity_state,
-                "evidence_note": "Identity is provisional or unresolved; no registration promotion is allowed from folder proximity alone.",
+                "record_count": len(verification_rows),
+                "state": reason,
+                "source_flight_ids": source_ids,
+                "evidence_note": (
+                    "Blank callsign requires source-identity review; folder evidence is provisional."
+                    if reason == "BLANK"
+                    else "Blank callsign appears under multiple non-generic folders; no folder is promoted to identity."
+                    if reason == "IDCONF"
+                    else "Callsigned record appears under a different non-generic source folder; callsign remains source evidence, not a canonical identity promotion."
+                ),
             }, as_of=as_of, lookback_days=lookback_days, base=25, watch=ident in watch))
 
         identities.append(item)
@@ -424,6 +466,7 @@ def build_coverage_ledger(
             "partial_gap_count": sum(1 for item in gaps if item["state"] == "PARTLY_RECOVERABLE"),
             "beyond_lookback_gap_count": sum(1 for item in gaps if item["state"] == "BEYOND_LOOKBACK"),
             "queue_count": len(queue),
+            "verification_count": sum(1 for item in queue if item["type"] == "VERIFY"),
             "queue_type_counts": {
                 queue_type: sum(1 for item in queue if item["type"] == queue_type)
                 for queue_type in ("GAP", "STALE", "WATCH", "EMPTY", "KML", "VERIFY")
