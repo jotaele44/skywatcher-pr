@@ -68,6 +68,9 @@ def test_committed_p1_manifest_is_valid():
     assert summary["discovery"] == {"BLOCKED_EXTERNAL_AUTH": 12}
     assert summary["playback"] == {"NOT_ATTEMPTED": 12}
     assert summary["discovered_flight_count"] == 0
+    assert all(target["attempt_count"] == 1 for target in manifest["targets"])
+    assert manifest["execution_receipt"]["quota_units_spent"] == 0
+    assert manifest["execution_receipt"]["result"] == "BLOCKED_EXTERNAL_AUTH"
 
 
 def test_next_discovery_prefers_nearest_deadline_then_score(tmp_path):
