@@ -266,9 +266,12 @@ def load_registration_tracks(root: str | Path, registration: str) -> list[Track]
         current = candidates.get(track.flight_id)
         if current is None or len(track.points) > len(current.points):
             candidates[track.flight_id] = track
-        elif current is not None and len(track.points) == len(current.points):
-            if track.source_path < current.source_path:
-                candidates[track.flight_id] = track
+        elif (
+            current is not None
+            and len(track.points) == len(current.points)
+            and track.source_path < current.source_path
+        ):
+            candidates[track.flight_id] = track
     return sorted(candidates.values(), key=lambda track: (track.start or datetime.min.replace(tzinfo=timezone.utc), track.flight_id))
 
 
