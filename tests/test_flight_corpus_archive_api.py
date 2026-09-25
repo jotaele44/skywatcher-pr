@@ -213,7 +213,9 @@ def test_archive_coverage_endpoint_returns_bounded_ledger(tmp_path, monkeypatch)
     body = response.json()
     assert body["snapshot"]["snapshot_id"] == snapshot_id
     assert body["summary"]["input_records"] == 4
-    assert body["summary"]["identity_count"] == 1
+    assert body["summary"]["identity_count"] == 5
+    assert body["summary"]["source_callsign_identity_count"] == 1
+    assert body["summary"]["watchlist_only_identity_count"] == 4
     assert body["summary"]["gap_count"] == 1
     assert body["gaps"][0]["state"] == "RECOVERABLE"
     assert body["summary"]["missing_kml_record_count"] == 1
