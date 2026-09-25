@@ -364,7 +364,7 @@ def _duration_within(
     max_gap_seconds: float,
 ) -> float:
     total = 0.0
-    for previous, current in zip(samples, samples[1:]):
+    for previous, current in zip(samples, samples[1:], strict=False):
         gap = (current.observed_at - previous.observed_at).total_seconds()
         if gap <= 0 or gap > max_gap_seconds:
             continue
