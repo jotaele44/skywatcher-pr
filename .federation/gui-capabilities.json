@@ -61,7 +61,8 @@
         "files": [
           "server/backend/main.py",
           "server/backend/console/fr24_control_plane.py",
-          "scripts/load_fr24_control_plane.py"
+          "scripts/load_fr24_control_plane.py",
+          "src/skywatcher/fr24/flight_corpus.py"
         ],
         "endpoints": [
           "GET /api/apps/public-settings",
@@ -85,7 +86,10 @@
           "GET /api/flight-corpus/v4/deep-interface",
           "GET /api/flight-corpus/v4/route-family-recurrence",
           "GET /api/flight-corpus/v4/airport-edge-recurrence",
-          "GET /api/flight-corpus/v4/family-provenance"
+          "GET /api/flight-corpus/v4/family-provenance",
+          "GET /api/flight-corpus/archive/snapshots",
+          "GET /api/flight-corpus/archive/snapshots/{snapshot_id}",
+          "POST /api/flight-corpus/archive/snapshots"
         ],
         "symbols": [
           "server/backend/main.py:geo_observations",
@@ -105,7 +109,14 @@
           "server/backend/main.py:flight_corpus_v4_family_provenance",
           "server/backend/console/fr24_control_plane.py:BridgeSummary",
           "server/backend/console/fr24_control_plane.py:ingest_fr24_control_plane",
-          "scripts/load_fr24_control_plane.py:main"
+          "scripts/load_fr24_control_plane.py:main",
+          "server/backend/main.py:flight_corpus_archive_snapshots",
+          "server/backend/main.py:flight_corpus_archive_snapshot",
+          "server/backend/main.py:flight_corpus_archive_persist",
+          "src/skywatcher/fr24/flight_corpus.py:CorpusPersistenceError",
+          "src/skywatcher/fr24/flight_corpus.py:PersistResult",
+          "src/skywatcher/fr24/flight_corpus.py:persist_corpus_snapshot",
+          "src/skywatcher/fr24/flight_corpus.py:read_corpus_snapshot"
         ]
       },
       "frontend": {
@@ -122,7 +133,8 @@
           "/readiness",
           "/calibration",
           "/console",
-          "/spatial-truth"
+          "/spatial-truth",
+          "/flight-archive"
         ],
         "e2e_routes": [
           "/",
@@ -137,7 +149,8 @@
           "/readiness",
           "/calibration",
           "/console",
-          "/spatial-truth"
+          "/spatial-truth",
+          "/flight-archive"
         ],
         "components": [
           "frontend/src/api/federationClient.js",
@@ -162,7 +175,8 @@
           "frontend/src/components/skywatcher/TrackTimeScrubber.jsx",
           "frontend/src/components/skywatcher/SpatialFlightRenderer.jsx",
           "frontend/src/components/ProgramTimeline.jsx",
-          "frontend/src/lib/flightIngestion.js"
+          "frontend/src/lib/flightIngestion.js",
+          "frontend/src/pages/FlightArchive.jsx"
         ],
         "discoverability": [
           "frontend/src/components/skywatcher/Sidebar.jsx"
@@ -175,7 +189,10 @@
           "tests/test_fr24_dashboard_data.py",
           "tests/test_satim_calibration.py",
           "tests/test_geo_municipios_routes.py",
-          "tests/test_fr24_control_plane_bridge.py"
+          "tests/test_fr24_control_plane_bridge.py",
+          "tests/test_flight_corpus_archive_api.py",
+          "tests/test_flight_corpus_persistence.py",
+          "tests/test_flight_corpus_migration.py"
         ],
         "contract": [
           "tests/test_gui_parity.py"
@@ -185,7 +202,8 @@
           "frontend/src/components/skywatcher/PuertoRicoMapShell.test.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.test.jsx",
           "frontend/src/components/skywatcher/SpatialFlightRenderer.test.jsx",
-          "frontend/src/lib/flightIngestion.test.js"
+          "frontend/src/lib/flightIngestion.test.js",
+          "frontend/src/lib/masterFlightLog.test.js"
         ],
         "e2e": [
           "frontend/tests/gui-parity.spec.mjs"
