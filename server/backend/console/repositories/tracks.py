@@ -199,6 +199,18 @@ class TrackPointRepository:
         )
         if not isinstance(source_identity, dict):
             source_identity = {}
+        identity_observations = (
+            provenance_payload.get("identity_observations")
+            if isinstance(provenance_payload, dict)
+            else {}
+        )
+        if not isinstance(identity_observations, dict):
+            identity_observations = {}
+        identity_state = (
+            text(provenance_payload.get("identity_state"))
+            if isinstance(provenance_payload, dict)
+            else ""
+        ) or None
         registration = (
             text(first(source, ("registration", "reg", "tail", "tail_number", "source_registration")))
             or text(source_identity.get("registration"))
@@ -256,6 +268,8 @@ class TrackPointRepository:
             "registration": registration,
             "callsign": callsign,
             "aircraft_type": aircraft_type,
+            "identity_observations": identity_observations,
+            "identity_state": identity_state,
             "observed_at_utc": observed,
             "lat": lat,
             "lon": lon,
