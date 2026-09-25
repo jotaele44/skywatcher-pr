@@ -470,11 +470,23 @@ def ingest_fr24_control_plane(
               ),
               status=excluded.status,
               point_count=MAX(excluded.point_count, console_flight_sessions.point_count),
-              max_altitude_ft=MAX(excluded.max_altitude_ft, console_flight_sessions.max_altitude_ft),
-              max_ground_speed_kt=MAX(
-                excluded.max_ground_speed_kt,
-                console_flight_sessions.max_ground_speed_kt
-              ),
+              max_altitude_ft=CASE
+                WHEN excluded.max_altitude_ft IS NULL
+                  THEN console_flight_sessions.max_altitude_ft
+                WHEN console_flight_sessions.max_altitude_ft IS NULL
+                  THEN excluded.max_altitude_ft
+                ELSE MAX(excluded.max_altitude_ft, console_flight_sessions.max_altitude_ft)
+              END,
+              max_ground_speed_kt=CASE
+                WHEN excluded.max_ground_speed_kt IS NULL
+                  THEN console_flight_sessions.max_ground_speed_kt
+                WHEN console_flight_sessions.max_ground_speed_kt IS NULL
+                  THEN excluded.max_ground_speed_kt
+                ELSE MAX(
+                  excluded.max_ground_speed_kt,
+                  console_flight_sessions.max_ground_speed_kt
+                )
+              END,
               track_quality=excluded.track_quality,
               gap_count=MAX(excluded.gap_count, console_flight_sessions.gap_count),
               provenance_json=excluded.provenance_json
