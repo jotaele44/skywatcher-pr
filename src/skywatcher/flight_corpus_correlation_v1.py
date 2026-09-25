@@ -17,11 +17,12 @@ from __future__ import annotations
 import csv
 import math
 import re
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import median
-from typing import Any, Iterable
+from typing import Any
 
 EARTH_RADIUS_KM = 6371.0088
 FLIGHT_ID_RE = re.compile(r"(?<![0-9a-f])([0-9a-f]{8})(?![0-9a-f])", re.IGNORECASE)
