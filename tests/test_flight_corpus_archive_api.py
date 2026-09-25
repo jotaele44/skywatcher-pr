@@ -142,3 +142,92 @@ def test_archive_post_rejects_invalid_base64_without_creating_db(tmp_path, monke
 
     assert response.status_code == 400
     assert not dbp.exists()
+
+
+def test_archive_coverage_endpoint_returns_bounded_ledger(tmp_path, monkeypatch):
+    from starlette.testclient import TestClient
+
+    backend = _backend()
+    dbp = tmp_path / "corpus.db"
+    monkeypatch.setattr(backend, "ADSB_DB", dbp)
+    monkeypatch.setattr(backend, "_WRITE_TOKEN", "test-token")
+
+    payload = _payload(b"coverage-source")
+    payload["records"] = [
+        {
+            **_record(),
+            "corpusUid": "mfl:a",
+            "sourceFlightIdRaw": "00000001",
+            "callsignRaw": "N1",
+            "pointCount": 20,
+            "startTimeUtc": "2026-07-01T12:00:00.000Z",
+            "endTimeUtc": "2026-07-01T13:00:00.000Z",
+            "sourceManifestations": [{"folderRaw": "N1", "filenameRaw": "a.csv", "kmlPresent": True}],
+        },
+        {
+            **_record(),
+            "corpusUid": "mfl:b",
+            "sourceFlightIdRaw": "00000002",
+            "callsignRaw": "N1",
+            "pointCount": 20,
+            "startTimeUtc": "2026-07-02T12:00:00.000Z",
+            "endTimeUtc": "2026-07-02T13:00:00.000Z",
+            "sourceManifestations": [{"folderRaw": "N1", "filenameRaw": "b.csv", "kmlPresent": True}],
+        },
+        {
+            **_record(),
+            "corpusUid": "mfl:c",
+            "sourceFlightIdRaw": "00000003",
+            "callsignRaw": "N1",
+            "pointCount": 20,
+            "startTimeUtc": "2026-08-20T12:00:00.000Z",
+            "endTimeUtc": "2026-08-20T13:00:00.000Z",
+            "sourceManifestations": [{"folderRaw": "N1", "filenameRaw": "c.csv", "kmlPresent": False}],
+        },
+    ]
+
+    headers = {"Authorization": "Bearer test-token"}
+    with TestClient(backend.app) as client:
+        persisted = client.post(
+            "/api/flight-corpus/archive/snapshots",
+            headers=headers,
+            json=payload,
+        )
+        snapshot_id = persisted.json()["snapshot_id"]
+        response = client.get(
+            f"/api/flight-corpus/archive/snapshots/{snapshot_id}/coverage",
+            params={"as_of": "2026-09-25"},
+        )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["snapshot"]["snapshot_id"] == snapshot_id
+    assert body["summary"]["input_records"] == 3
+    assert body["summary"]["identity_count"] == 1
+    assert body["summary"]["gap_count"] == 1
+    assert body["gaps"][0]["state"] == "RECOVERABLE"
+    assert body["summary"]["missing_kml_record_count"] == 1
+    assert any(item["type"] == "KML" for item in body["acquisition_queue"])
+
+
+def test_archive_coverage_endpoint_rejects_bad_as_of(tmp_path, monkeypatch):
+    from starlette.testclient import TestClient
+
+    backend = _backend()
+    dbp = tmp_path / "corpus.db"
+    monkeypatch.setattr(backend, "ADSB_DB", dbp)
+    monkeypatch.setattr(backend, "_WRITE_TOKEN", "test-token")
+
+    with TestClient(backend.app) as client:
+        persisted = client.post(
+            "/api/flight-corpus/archive/snapshots",
+            headers={"Authorization": "Bearer test-token"},
+            json=_payload(b"coverage-source"),
+        )
+        response = client.get(
+            f"/api/flight-corpus/archive/snapshots/{persisted.json()['snapshot_id']}/coverage",
+            params={"as_of": "not-a-date"},
+        )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "as_of must be YYYY-MM-DD"
