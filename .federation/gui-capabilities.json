@@ -59,7 +59,9 @@
       "requires_terminal": false,
       "backend": {
         "files": [
-          "server/backend/main.py"
+          "server/backend/main.py",
+          "server/backend/console/fr24_control_plane.py",
+          "scripts/load_fr24_control_plane.py"
         ],
         "endpoints": [
           "GET /api/apps/public-settings",
@@ -100,7 +102,10 @@
           "server/backend/main.py:flight_corpus_v4_deep_interface",
           "server/backend/main.py:flight_corpus_v4_route_family_recurrence",
           "server/backend/main.py:flight_corpus_v4_airport_edge_recurrence",
-          "server/backend/main.py:flight_corpus_v4_family_provenance"
+          "server/backend/main.py:flight_corpus_v4_family_provenance",
+          "server/backend/console/fr24_control_plane.py:BridgeSummary",
+          "server/backend/console/fr24_control_plane.py:ingest_fr24_control_plane",
+          "scripts/load_fr24_control_plane.py:main"
         ]
       },
       "frontend": {
@@ -156,7 +161,8 @@
           "frontend/src/components/skywatcher/SpatialToolsPanel.jsx",
           "frontend/src/components/skywatcher/TrackTimeScrubber.jsx",
           "frontend/src/components/skywatcher/SpatialFlightRenderer.jsx",
-          "frontend/src/components/ProgramTimeline.jsx"
+          "frontend/src/components/ProgramTimeline.jsx",
+          "frontend/src/lib/flightIngestion.js"
         ],
         "discoverability": [
           "frontend/src/components/skywatcher/Sidebar.jsx"
@@ -168,7 +174,8 @@
           "tests/test_manual_review_queue.py",
           "tests/test_fr24_dashboard_data.py",
           "tests/test_satim_calibration.py",
-          "tests/test_geo_municipios_routes.py"
+          "tests/test_geo_municipios_routes.py",
+          "tests/test_fr24_control_plane_bridge.py"
         ],
         "contract": [
           "tests/test_gui_parity.py"
@@ -177,7 +184,8 @@
           "frontend/src/lib/app-params.test.js",
           "frontend/src/components/skywatcher/PuertoRicoMapShell.test.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.test.jsx",
-          "frontend/src/components/skywatcher/SpatialFlightRenderer.test.jsx"
+          "frontend/src/components/skywatcher/SpatialFlightRenderer.test.jsx",
+          "frontend/src/lib/flightIngestion.test.js"
         ],
         "e2e": [
           "frontend/tests/gui-parity.spec.mjs"
