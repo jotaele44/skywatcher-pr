@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import sqlite3
 
-import pytest
-
 from skywatcher.fr24 import database as db
 from skywatcher.fr24 import database_migrations as migrations
 
@@ -69,7 +67,7 @@ def test_corpus_record_requires_snapshot_foreign_key(tmp_path):
 
     conn = db.connect(dbp)
     try:
-        with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY"):
+        try:
             conn.execute(
                 """
                 INSERT INTO flight_corpus_records (
@@ -78,5 +76,9 @@ def test_corpus_record_requires_snapshot_foreign_key(tmp_path):
                 """,
                 ("mfl:test", 999999, "{}", "2026-09-25T00:00:00Z"),
             )
+        except sqlite3.IntegrityError as exc:
+            assert "FOREIGN KEY" in str(exc).upper()
+        else:
+            raise AssertionError("orphan corpus record unexpectedly accepted")
     finally:
         conn.close()
