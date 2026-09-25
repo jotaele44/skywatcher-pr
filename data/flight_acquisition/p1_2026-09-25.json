@@ -28,9 +28,10 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     },
     {
       "acquisition_id": "P1-N767PD-20251001-20260608",
@@ -48,9 +49,10 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     },
     {
       "acquisition_id": "P1-N5854Z-20251010-20260708",
@@ -68,9 +70,10 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     },
     {
       "acquisition_id": "P1-C6062-20250925-20260925",
@@ -88,9 +91,10 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     },
     {
       "acquisition_id": "P1-N540DB-20250910-20251116",
@@ -108,9 +112,10 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     },
     {
       "acquisition_id": "P1-N407PR-20251002-20260902",
@@ -128,9 +133,10 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     },
     {
       "acquisition_id": "P1-N684JB-20251101-20251228",
@@ -148,9 +154,10 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     },
     {
       "acquisition_id": "P1-N999ZY-20251001-20260621",
@@ -168,9 +175,10 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     },
     {
       "acquisition_id": "P1-N5854Z-20260716-20260827",
@@ -188,9 +196,10 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     },
     {
       "acquisition_id": "P1-N620GG-20251018-20260827",
@@ -208,9 +217,10 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     },
     {
       "acquisition_id": "P1-N684JB-20260101-20260825",
@@ -228,9 +238,10 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     },
     {
       "acquisition_id": "P1-N936DM-20251005-20251214",
@@ -248,9 +259,19 @@
       "discovery_status": "BLOCKED_EXTERNAL_AUTH",
       "discovered_flight_ids": [],
       "playback_status": "NOT_ATTEMPTED",
-      "attempt_count": 0,
-      "last_attempt_at": null,
-      "last_error": "Authenticated FR24 history discovery is not available in this execution boundary."
+      "attempt_count": 1,
+      "last_attempt_at": "2026-09-25T07:03:00Z",
+      "last_error": "No authenticated FR24 API/account session is available to this execution boundary; no discovery request was issued and no playback quota was spent.",
+      "discovered_flights": []
     }
-  ]
+  ],
+  "execution_receipt": {
+    "attempted_at": "2026-09-25T07:03:00Z",
+    "target_count": 12,
+    "discovery_requests_issued": 0,
+    "playback_requests_issued": 0,
+    "quota_units_spent": 0,
+    "result": "BLOCKED_EXTERNAL_AUTH",
+    "resumable": true
+  }
 }
