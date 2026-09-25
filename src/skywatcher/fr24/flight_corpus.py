@@ -139,7 +139,7 @@ def persist_corpus_snapshot(
         conn.execute("BEGIN IMMEDIATE")
         cursor = conn.execute(
             """
-            INSERT INTO flight_corpus_snapshots (
+            INSERT OR IGNORE INTO flight_corpus_snapshots (
                 source_kind, source_ref, source_filename, source_sha256,
                 format_name, format_version, exported_at, ingested_at,
                 record_count, status
@@ -157,6 +157,46 @@ def persist_corpus_snapshot(
                 len(records),
             ),
         )
+        if cursor.rowcount == 0:
+            conn.rollback()
+            raced = conn.execute(
+                """
+                SELECT snapshot_id, record_count
+                FROM flight_corpus_snapshots
+                WHERE source_sha256 = ?
+                """,
+                (digest,),
+            ).fetchone()
+            if raced is None:
+                raise CorpusPersistenceError(
+                    "duplicate SHA insert was ignored but no snapshot could be read back"
+                )
+            actual = conn.execute(
+                "SELECT COUNT(*) AS n FROM flight_corpus_records WHERE snapshot_id = ?",
+                (raced["snapshot_id"],),
+            ).fetchone()["n"]
+            if actual != raced["record_count"]:
+                raise CorpusPersistenceError(
+                    "concurrent duplicate snapshot has inconsistent stored record_count"
+                )
+            manifestations = conn.execute(
+                """
+                SELECT COUNT(*) AS n
+                FROM flight_source_manifestations m
+                JOIN flight_corpus_records r
+                  ON r.corpus_record_id = m.corpus_record_id
+                WHERE r.snapshot_id = ?
+                """,
+                (raced["snapshot_id"],),
+            ).fetchone()["n"]
+            return PersistResult(
+                snapshot_id=int(raced["snapshot_id"]),
+                source_sha256=digest,
+                record_count=int(actual),
+                manifestation_count=int(manifestations),
+                duplicate_snapshot=True,
+            )
+
         snapshot_id = int(cursor.lastrowid)
         manifestation_count = 0
 
