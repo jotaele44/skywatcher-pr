@@ -188,14 +188,37 @@ class TrackPointRepository:
             return None
         source_id = text(first(source, ("track_point_id", "id", "source_record_id")))
         flight_id = text(first(source, ("flight_id", "candidate_id"))) or None
-        registration = text(
-            first(source, ("registration", "reg", "tail", "tail_number", "source_registration"))
-        ) or None
-        callsign = text(first(source, ("callsign", "call_sign", "callsign_or_label"))) or None
-        icao24 = text(first(source, ("icao24", "hex", "hex_code", "mode_s", "transponder"))) or None
-        aircraft_type = text(
-            first(source, ("aircraft_type", "aircraftType", "type_code", "typecode"))
-        ) or None
+        provenance_payload = parse_json(
+            source.get("provenance_json") or source.get("provenance"),
+            {},
+        )
+        source_identity = (
+            provenance_payload.get("source_identity")
+            if isinstance(provenance_payload, dict)
+            else {}
+        )
+        if not isinstance(source_identity, dict):
+            source_identity = {}
+        registration = (
+            text(first(source, ("registration", "reg", "tail", "tail_number", "source_registration")))
+            or text(source_identity.get("registration"))
+            or None
+        )
+        callsign = (
+            text(first(source, ("callsign", "call_sign", "callsign_or_label")))
+            or text(source_identity.get("callsign"))
+            or None
+        )
+        icao24 = (
+            text(first(source, ("icao24", "hex", "hex_code", "mode_s", "transponder")))
+            or text(source_identity.get("icao24"))
+            or None
+        )
+        aircraft_type = (
+            text(first(source, ("aircraft_type", "aircraftType", "type_code", "typecode")))
+            or text(source_identity.get("aircraft_type"))
+            or None
+        )
         aircraft_id = (
             text(first(source, ("aircraft_id",)))
             or icao24
