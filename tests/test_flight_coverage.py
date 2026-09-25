@@ -8,6 +8,10 @@ from skywatcher.fr24.flight_coverage import (
 )
 
 
+def _ledger(records, *, as_of=date(2026, 9, 25), watchlist=()):
+    return build_coverage_ledger(records, as_of=as_of, watchlist=watchlist)
+
+
 def _record(
     callsign: str | None,
     day: str,
@@ -41,7 +45,7 @@ def test_gap_requires_minimum_and_cadence_multiplier():
         _record("N1", "2026-01-06", uid="mfl:00000002"),
         _record("N1", "2026-02-15", uid="mfl:00000003"),
     ]
-    ledger = build_coverage_ledger(records, as_of=date(2026, 2, 20))
+    ledger = _ledger(records, as_of=date(2026, 2, 20))
     assert ledger["identities"][0]["median_cadence_days"] == 22.5
     assert ledger["gaps"] == []
 
@@ -53,7 +57,7 @@ def test_internal_gap_is_classified_against_365_day_lookback():
         _record("N1", "2025-05-01", uid="mfl:00000003"),
         _record("N1", "2026-09-01", uid="mfl:00000004"),
     ]
-    ledger = build_coverage_ledger(records, as_of=date(2026, 9, 25))
+    ledger = _ledger(records, as_of=date(2026, 9, 25))
     states = {(item["from"], item["to"]): item["state"] for item in ledger["gaps"]}
     assert states[("2025-01-03", "2025-04-30")] == "BEYOND_LOOKBACK"
     assert states[("2025-05-02", "2026-08-31")] == "PARTLY_RECOVERABLE"
@@ -65,14 +69,14 @@ def test_recent_internal_gap_is_recoverable():
         _record("N1", "2026-07-02", uid="mfl:00000002"),
         _record("N1", "2026-08-20", uid="mfl:00000003"),
     ]
-    ledger = build_coverage_ledger(records, as_of=date(2026, 9, 25))
+    ledger = _ledger(records, as_of=date(2026, 9, 25))
     assert ledger["gaps"][0]["state"] == "RECOVERABLE"
     assert ledger["gaps"][0]["recoverable_days"] == ledger["gaps"][0]["days"]
 
 
 def test_blank_callsign_single_folder_is_provisional_not_registration():
     records = [_record(None, "2026-09-01", uid="mfl:00000001", folder="N123AB")]
-    ledger = build_coverage_ledger(records, as_of=date(2026, 9, 25))
+    ledger = _ledger(records, as_of=date(2026, 9, 25))
     ident = ledger["identities"][0]
     assert ident["identity"] == "N123AB"
     assert ident["identity_state"] == "PROVISIONAL_FOLDER_IDENTITY"
@@ -81,14 +85,14 @@ def test_blank_callsign_single_folder_is_provisional_not_registration():
 
 def test_blank_callsign_generic_folder_stays_unresolved():
     records = [_record(None, "2026-09-01", uid="mfl:00000001", folder="csv")]
-    ledger = build_coverage_ledger(records, as_of=date(2026, 9, 25))
+    ledger = _ledger(records, as_of=date(2026, 9, 25))
     assert ledger["identities"][0]["identity"] == UNRESOLVED_IDENTITY
     assert ledger["identities"][0]["identity_state"] == "UNRESOLVED"
 
 
 def test_missing_kml_is_acquisition_state_not_missing_flight():
     records = [_record("N1", "2026-09-20", uid="mfl:00000001", kml=False)]
-    ledger = build_coverage_ledger(records, as_of=date(2026, 9, 25))
+    ledger = _ledger(records, as_of=date(2026, 9, 25))
     queue = ledger["acquisition_queue"]
     assert any(item["type"] == "KML" for item in queue)
     item = next(item for item in queue if item["type"] == "KML")
@@ -96,7 +100,7 @@ def test_missing_kml_is_acquisition_state_not_missing_flight():
 
 
 def test_stale_and_dormant_are_separate_activity_states():
-    recent = build_coverage_ledger(
+    recent = _ledger(
         [
             _record("N1", "2026-09-01", uid="mfl:00000001"),
             _record("N1", "2026-09-02", uid="mfl:00000002"),
@@ -107,7 +111,7 @@ def test_stale_and_dormant_are_separate_activity_states():
     stale = next(item for item in recent["acquisition_queue"] if item["type"] == "STALE")
     assert stale["activity_state"] == "ACTIVE_RECENTLY"
 
-    old = build_coverage_ledger(
+    old = _ledger(
         [
             _record("N1", "2026-01-01", uid="mfl:00000001"),
             _record("N1", "2026-01-02", uid="mfl:00000002"),
@@ -128,8 +132,50 @@ def test_overlap_nonstandard_copy_is_superseded():
     b["startTimeUtc"] = "2026-09-01T12:10:00.000Z"
     b["endTimeUtc"] = "2026-09-01T12:50:00.000Z"
 
-    ledger = build_coverage_ledger([a, b], as_of=date(2026, 9, 25))
+    ledger = _ledger([a, b])
     ident = ledger["identities"][0]
     assert ident["record_count"] == 2
     assert ident["counted_flight_count"] == 1
     assert ident["superseded_count"] == 1
+
+
+def test_watchlist_identity_with_no_records_gets_full_lookback_queue():
+    ledger = _ledger([], watchlist=("C6062",))
+    ident = next(item for item in ledger["identities"] if item["identity"] == "C6062")
+    assert ident["identity_state"] == "WATCHLIST_ONLY"
+    watch = next(item for item in ledger["acquisition_queue"] if item["type"] == "WATCH")
+    assert watch["identity"] == "C6062"
+    assert watch["from"] == "2025-09-25"
+    assert watch["to"] == "2026-09-25"
+    assert watch["state"] == "RECOVERABLE"
+    assert watch["priority_tier"] in {"P1", "P2"}
+
+
+def test_header_only_file_gets_flight_id_date_estimate_and_empty_queue():
+    records = [
+        _record("N1", "2026-01-01", uid="mfl:00000010"),
+        _record("N1", "2026-01-11", uid="mfl:00000020"),
+        _record("N1", "2026-01-01", uid="mfl:00000018", points=0),
+    ]
+    records[-1]["startTimeUtc"] = "1970-01-01T00:00:00.000Z"
+    records[-1]["endTimeUtc"] = "1970-01-01T00:00:00.000Z"
+
+    ledger = _ledger(records, as_of=date(2026, 2, 1))
+    empty = next(item for item in ledger["acquisition_queue"] if item["type"] == "EMPTY")
+    assert empty["source_flight_id_raw"] == "00000018"
+    assert empty["estimated_day"] == "2026-01-06"
+    assert empty["state"] == "RECOVERABLE"
+    assert empty["estimate_edge"] is False
+
+
+def test_priority_tier_is_explicit_for_gap_queue_item():
+    records = [
+        _record("N1", "2026-07-01", uid="mfl:00000001"),
+        _record("N1", "2026-07-02", uid="mfl:00000002"),
+        _record("N1", "2026-08-20", uid="mfl:00000003"),
+    ]
+    ledger = _ledger(records)
+    gap = next(item for item in ledger["acquisition_queue"] if item["type"] == "GAP")
+    assert isinstance(gap["priority_score"], int)
+    assert gap["priority_tier"] in {"P1", "P2", "P3", "X"}
+    assert gap["deadline"] is not None
