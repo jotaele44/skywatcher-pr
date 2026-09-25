@@ -373,7 +373,11 @@ def flight_corpus_archive_snapshot(snapshot_id: int) -> dict[str, Any]:
         )
     if len(records) != stored["snapshot"]["record_count"]:
         raise HTTPException(status_code=409, detail="persisted snapshot row-count mismatch")
-    return {"snapshot": stored["snapshot"], "records": records}
+    return {
+        "snapshot": stored["snapshot"],
+        "sources": stored.get("sources", []),
+        "records": records,
+    }
 
 
 @app.post("/api/flight-corpus/archive/snapshots", dependencies=_WRITE_GUARD)
