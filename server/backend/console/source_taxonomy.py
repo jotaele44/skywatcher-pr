@@ -40,6 +40,7 @@ SOURCE_METHODS = (
     "track_extraction",
     "airport_operations",
     "database_import",
+    "control_plane_export",
     "unknown",
 )
 DATA_RIGHTS = (
