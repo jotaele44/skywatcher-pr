@@ -195,3 +195,30 @@ quarantined as-is (it is DB-coupled and pre-dates the gate); any mission label i
 produces MUST be passed through the gate before it is exported. Exported bridge
 records carry the gated object, never a Skywatcher-confirmed mission fact — so the
 no-unfounded-intent principle is preserved by construction.
+
+
+---
+
+## Revision 2026-09-24 — canonical flight corpus / Master Flight Log
+
+Skywatcher now distinguishes **acquired corpus state** from the analytical
+`flights` entity. The Master Flight Log backup is ingested as a corpus/coverage
+manifestation, not as reconstructed geometry and not as an anomaly verdict.
+
+The additive tables are:
+
+- `flight_corpus_snapshots` — frozen source manifestations / backup snapshots.
+- `flight_corpus_records` — one source-bounded corpus record per imported
+  flight-log record, with optional later binding to `flights.flight_id`.
+- `flight_source_manifestations` — 0..N CSV/KML/source manifestations attached
+  to a corpus record without assuming filename/callsign identity.
+
+The browser adapter recognizes `master-flight-log-backup` version 1 HTML and
+promotes only fields with unambiguous source semantics: source flight id,
+callsign, point count, epoch start/end, endpoint coordinates, month bucket and
+source-manifestation entries. Compact fields `alt`, `spd`, `dist`, `pr`,
+`gap`, `gp`, `km` and `rt` remain preserved under `sourceFieldsOpen`
+until their producer computations are independently verified.
+
+A metadata-only corpus import never emits map route segments. Track geometry
+continues to require CSV/KML/other geometry-bearing evidence.
