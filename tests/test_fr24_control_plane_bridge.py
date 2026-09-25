@@ -135,6 +135,8 @@ def test_control_plane_bridge_preserves_n600uh_identity_end_to_end(tmp_path, mon
     assert session["registration"] == "N600UH"
     assert session["callsign"] == "N600UH"
     assert session["icao24"] == "A7C001"
+    assert session["provenance"]["source_method"] == "control_plane_export"
+    assert "invalid_source_method_normalized_to_unknown" not in session["qa_flags"]
 
     points = registry.snapshot("track_points").rows
     assert len(points) == 2
@@ -165,13 +167,16 @@ def test_blank_reobservation_does_not_erase_existing_callsign(tmp_path):
             track_points=second_points,
         )
 
-        callsign = connection.execute(
-            "SELECT callsign FROM console_flight_sessions WHERE flight_id='416abc01'"
-        ).fetchone()[0]
+        row = connection.execute(
+            """
+            SELECT callsign, max_altitude_ft, max_ground_speed_kt
+            FROM console_flight_sessions WHERE flight_id='416abc01'
+            """
+        ).fetchone()
     finally:
         connection.close()
 
-    assert callsign == "N600UH"
+    assert row == ("N600UH", 1300.0, 100.0)
 
 
 def test_conflicting_nonblank_callsigns_are_preserved_and_fail_closed(tmp_path):
