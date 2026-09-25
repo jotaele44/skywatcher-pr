@@ -29,13 +29,18 @@ UNRESOLVED_IDENTITY = "UNRESOLVED_SOURCE_CALLSIGN"
 _GENERIC_FOLDERS = {"", "csv", "empty"}
 
 
-def _date_from_iso(value: Any) -> date | None:
+def _datetime_from_iso(value: Any) -> datetime | None:
     if not isinstance(value, str) or not value:
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc).date()
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
     except ValueError:
         return None
+
+
+def _date_from_iso(value: Any) -> date | None:
+    parsed = _datetime_from_iso(value)
+    return parsed.date() if parsed is not None else None
 
 
 def _identity(record: dict[str, Any]) -> tuple[str, str]:
@@ -65,7 +70,7 @@ def _window(from_day: date, to_day: date, horizon: date) -> dict[str, Any]:
     recoverable_from = max(from_day, horizon)
     expired = to_day < recoverable_from
     recoverable_days = 0 if expired else (to_day - recoverable_from).days + 1
-    lost_to = min(to_day, horizon.fromordinal(horizon.toordinal() - 1))
+    lost_to = min(to_day, date.fromordinal(horizon.toordinal() - 1))
     lost_days = max(0, (lost_to - from_day).days + 1)
     return {
         "recoverable_from": None if expired else recoverable_from.isoformat(),
@@ -74,6 +79,83 @@ def _window(from_day: date, to_day: date, horizon: date) -> dict[str, Any]:
         "lost_days": lost_days,
         "state": "BEYOND_LOOKBACK" if expired else ("PARTLY_RECOVERABLE" if lost_days else "RECOVERABLE"),
     }
+
+
+def _flight_id_time_model(records: list[dict[str, Any]]) -> list[tuple[int, float]]:
+    points: list[tuple[int, float]] = []
+    for record in records:
+        if not (isinstance(record.get("pointCount"), int) and record.get("pointCount", 0) > 0):
+            continue
+        source_id = record.get("sourceFlightIdRaw")
+        observed = _datetime_from_iso(record.get("startTimeUtc"))
+        if not isinstance(source_id, str) or observed is None:
+            continue
+        try:
+            fid = int(source_id, 16)
+        except ValueError:
+            continue
+        points.append((fid, observed.timestamp()))
+    return sorted(set(points))
+
+
+def _estimate_flight_id_day(
+    model: list[tuple[int, float]],
+    source_id: Any,
+) -> tuple[date | None, bool]:
+    if not isinstance(source_id, str) or len(model) < 2:
+        return None, False
+    try:
+        target = int(source_id, 16)
+    except ValueError:
+        return None, False
+    if target <= model[0][0]:
+        return datetime.fromtimestamp(model[0][1], timezone.utc).date(), True
+    if target >= model[-1][0]:
+        return datetime.fromtimestamp(model[-1][1], timezone.utc).date(), True
+
+    lo = 0
+    hi = len(model) - 1
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        if model[mid][0] <= target:
+            lo = mid
+        else:
+            hi = mid
+    a_id, a_ts = model[lo]
+    b_id, b_ts = model[hi]
+    estimate = a_ts + (b_ts - a_ts) * (target - a_id) / (b_id - a_id or 1)
+    return datetime.fromtimestamp(estimate, timezone.utc).date(), False
+
+
+def _prioritize(
+    item: dict[str, Any],
+    *,
+    as_of: date,
+    lookback_days: int,
+    base: int,
+    watch: bool = False,
+    bonus: int = 0,
+    no_urgency: bool = False,
+) -> dict[str, Any]:
+    recoverable_from = item.get("recoverable_from")
+    expired = item.get("state") == "BEYOND_LOOKBACK"
+    deadline: date | None = None
+    days_left: int | None = None
+    if recoverable_from and not expired:
+        deadline = date.fromordinal(date.fromisoformat(recoverable_from).toordinal() + lookback_days)
+        days_left = (deadline - as_of).days
+
+    score = base + (20 if watch else 0)
+    if days_left is not None and not no_urgency:
+        score += 30 if days_left <= 7 else 20 if days_left <= 30 else 10 if days_left <= 60 else 0
+    score += bonus
+    item["priority_score"] = int(round(score))
+    item["priority_tier"] = (
+        "X" if expired else "P1" if score >= 90 else "P2" if score >= 60 else "P3"
+    )
+    item["deadline"] = deadline.isoformat() if deadline is not None else None
+    item["days_left"] = days_left
+    return item
 
 
 def _superseded_record_ids(records: list[dict[str, Any]]) -> set[int]:
@@ -122,12 +204,15 @@ def build_coverage_ledger(
 
     groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     basis_by_identity: dict[str, set[str]] = defaultdict(set)
+    fid_model = _flight_id_time_model(records)
     for record in records:
         if not isinstance(record, dict):
             continue
         ident, basis = _identity(record)
         groups[ident].append(record)
         basis_by_identity[ident].add(basis)
+    for watched in watch:
+        groups.setdefault(watched, [])
 
     identities: list[dict[str, Any]] = []
     gaps: list[dict[str, Any]] = []
@@ -155,7 +240,9 @@ def build_coverage_ledger(
         missing_kml = len(counted) - kml_count
 
         basis_set = basis_by_identity[ident]
-        if basis_set == {"callsign_raw"}:
+        if not rows and ident in watch:
+            identity_state = "WATCHLIST_ONLY"
+        elif basis_set == {"callsign_raw"}:
             identity_state = "SOURCE_CALLSIGN"
         elif "callsign_raw" in basis_set:
             identity_state = "MIXED_SOURCE_IDENTITY"
@@ -201,47 +288,110 @@ def build_coverage_ledger(
                     "evidence_note": "Unobserved interval between recorded flight-days; absence is not negative flight evidence.",
                 }
                 gaps.append(gap)
-                queue.append(gap)
+                queue.append(_prioritize(
+                    gap,
+                    as_of=as_of,
+                    lookback_days=lookback_days,
+                    base=40,
+                    watch=ident in watch,
+                    bonus=min(30, round((length / cadence) * 3)),
+                ))
 
         if observed_days and (ident in watch or len(counted) >= 3):
             since = (as_of - observed_days[-1]).days
             if since >= stale_days:
                 from_day = date.fromordinal(observed_days[-1].toordinal() + 1)
                 recovery = _window(from_day, as_of, horizon)
-                queue.append({
+                active = since <= dormant_days
+                queue.append(_prioritize({
                     "type": "STALE",
                     "identity": ident,
                     "from": from_day.isoformat(),
                     "to": as_of.isoformat(),
                     "days": since,
-                    "activity_state": "ACTIVE_RECENTLY" if since <= dormant_days else "DORMANT",
+                    "activity_state": "ACTIVE_RECENTLY" if active else "DORMANT",
                     **recovery,
                     "evidence_note": "Trailing archive absence; confirm operating status before treating as an acquisition priority.",
-                })
+                }, as_of=as_of, lookback_days=lookback_days,
+                    base=45 if active else 20,
+                    watch=ident in watch,
+                    bonus=min(20, since // 10) if active else 0,
+                    no_urgency=not active,
+                ))
+
+        if not rows and ident in watch:
+            recovery = _window(horizon, as_of, horizon)
+            queue.append(_prioritize({
+                "type": "WATCH",
+                "identity": ident,
+                "from": horizon.isoformat(),
+                "to": as_of.isoformat(),
+                **recovery,
+                "evidence_note": "Watchlist identity has no corpus records; fetch the current look-back window without treating archive absence as negative evidence.",
+            }, as_of=as_of, lookback_days=lookback_days, base=50, watch=True))
+
+        empty_rows = [
+            row for row in rows
+            if isinstance(row.get("pointCount"), int) and row.get("pointCount") == 0
+        ]
+        for row in empty_rows:
+            estimated_day, edge = _estimate_flight_id_day(fid_model, row.get("sourceFlightIdRaw"))
+            if estimated_day is not None:
+                recovery = _window(estimated_day, estimated_day, horizon)
+                item = {
+                    "type": "EMPTY",
+                    "identity": ident,
+                    "source_flight_id_raw": row.get("sourceFlightIdRaw"),
+                    "estimated_day": estimated_day.isoformat(),
+                    "estimate_edge": edge,
+                    "from": estimated_day.isoformat(),
+                    "to": estimated_day.isoformat(),
+                    **recovery,
+                    "evidence_note": "Header-only CSV; estimated date is interpolated from FR24 flight-ID order and is not a recorded trajectory timestamp.",
+                }
+            else:
+                item = {
+                    "type": "EMPTY",
+                    "identity": ident,
+                    "source_flight_id_raw": row.get("sourceFlightIdRaw"),
+                    "estimated_day": None,
+                    "estimate_edge": False,
+                    "state": "DATE_UNRESOLVED",
+                    "recoverable_from": None,
+                    "recoverable_to": None,
+                    "recoverable_days": 0,
+                    "lost_days": 0,
+                    "evidence_note": "Header-only CSV with no bounded date estimate; no trajectory absence inference is allowed.",
+                }
+            queue.append(_prioritize(
+                item, as_of=as_of, lookback_days=lookback_days, base=40, watch=ident in watch
+            ))
 
         if missing_kml:
-            queue.append({
+            queue.append(_prioritize({
                 "type": "KML",
                 "identity": ident,
                 "record_count": missing_kml,
                 "state": "REGENERABLE_OR_REFETCH",
                 "evidence_note": "CSV-backed records lack reported KML presence; this is not missing-flight evidence.",
-            })
+            }, as_of=as_of, lookback_days=lookback_days, base=10, watch=ident in watch))
 
-        if identity_state != "SOURCE_CALLSIGN":
-            queue.append({
+        if identity_state not in {"SOURCE_CALLSIGN", "WATCHLIST_ONLY"}:
+            queue.append(_prioritize({
                 "type": "VERIFY",
                 "identity": ident,
                 "record_count": len(rows),
                 "state": identity_state,
                 "evidence_note": "Identity is provisional or unresolved; no registration promotion is allowed from folder proximity alone.",
-            })
+            }, as_of=as_of, lookback_days=lookback_days, base=25, watch=ident in watch))
 
         identities.append(item)
 
     state_order = {"RECOVERABLE": 0, "PARTLY_RECOVERABLE": 1, "BEYOND_LOOKBACK": 2}
     queue.sort(key=lambda item: (
-        {"VERIFY": 0, "GAP": 1, "STALE": 2, "KML": 3}.get(item["type"], 9),
+        {"P1": 0, "P2": 1, "P3": 2, "X": 3}.get(item.get("priority_tier"), 9),
+        -int(item.get("priority_score") or 0),
+        {"WATCH": 0, "EMPTY": 1, "VERIFY": 2, "GAP": 3, "STALE": 4, "KML": 5}.get(item["type"], 9),
         state_order.get(item.get("state"), 9),
         item["identity"],
         item.get("from") or "",
@@ -262,7 +412,11 @@ def build_coverage_ledger(
             "input_records": len(records),
             "identity_count": len(identities),
             "source_callsign_identity_count": sum(1 for item in identities if item["identity_state"] == "SOURCE_CALLSIGN"),
-            "provisional_or_unresolved_identity_count": sum(1 for item in identities if item["identity_state"] != "SOURCE_CALLSIGN"),
+            "provisional_or_unresolved_identity_count": sum(
+                1 for item in identities
+                if item["identity_state"] not in {"SOURCE_CALLSIGN", "WATCHLIST_ONLY"}
+            ),
+            "watchlist_only_identity_count": sum(1 for item in identities if item["identity_state"] == "WATCHLIST_ONLY"),
             "counted_flight_count": sum(item["counted_flight_count"] for item in identities),
             "observed_day_count_sum": sum(item["observed_day_count"] for item in identities),
             "gap_count": len(gaps),
@@ -270,6 +424,14 @@ def build_coverage_ledger(
             "partial_gap_count": sum(1 for item in gaps if item["state"] == "PARTLY_RECOVERABLE"),
             "beyond_lookback_gap_count": sum(1 for item in gaps if item["state"] == "BEYOND_LOOKBACK"),
             "queue_count": len(queue),
+            "queue_type_counts": {
+                queue_type: sum(1 for item in queue if item["type"] == queue_type)
+                for queue_type in ("GAP", "STALE", "WATCH", "EMPTY", "KML", "VERIFY")
+            },
+            "priority_tier_counts": {
+                tier: sum(1 for item in queue if item.get("priority_tier") == tier)
+                for tier in ("P1", "P2", "P3", "X")
+            },
             "missing_kml_record_count": sum(item["kml_missing_count"] for item in identities),
         },
         "identities": identities,
