@@ -166,3 +166,13 @@ uv run python scripts/validate_airspace_export.py exports/examples/synthetic_air
 - Engine extracted from the Spiderweb airspace implementation branch.
 - FR24 ingest migrated from `spiderweb-pr` into `fr24/`.
 - Export contract salvaged from the retired airspace tooling path.
+
+<!-- PROJECT-OPERATING-CONTRACT:START -->
+## Current development and certification contract
+
+Skywatcher is the federation SKY-DOMAIN ANALYSIS plane: aviation, aircraft identity/history, orbital objects, astronomy, reentry/meteor/solar/lunar context, observational media, and historical SKY PLAYBACK. The Master Flight Log remains the flight-history authority; derived features link to it rather than duplicating flights.
+
+**Identity rules:** registration is not airframe identity. Preserve temporal registration, ownership/operator/configuration relationships and full candidate sets; never merge from name/registration/proximity alone. Orbital/object identity must retain authoritative IDs and source epochs. Source manifestations, trajectory points, observation media, telescope/adapter outputs, and external ephemerides require provenance and explicit freshness/version context.
+
+**Current vector:** close SAC and orbital/source-family gates, full Space-Track integration, aircraft identity/history, observational-media adapters including DWARF3-class inputs, Spiderweb terrain/horizon consumption, and current desktop+iPhone/native evidence. Certification is bounded to frozen source/data/runtime manifestations; code/test success does not prove live-source or physical-device certification.
+<!-- PROJECT-OPERATING-CONTRACT:END -->
