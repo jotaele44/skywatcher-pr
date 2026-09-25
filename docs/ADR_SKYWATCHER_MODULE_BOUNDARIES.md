@@ -195,3 +195,52 @@ quarantined as-is (it is DB-coupled and pre-dates the gate); any mission label i
 produces MUST be passed through the gate before it is exported. Exported bridge
 records carry the gated object, never a Skywatcher-confirmed mission fact — so the
 no-unfounded-intent principle is preserved by construction.
+
+
+---
+
+## Revision 2026-09-24 — canonical flight corpus / Master Flight Log
+
+Skywatcher now distinguishes **acquired corpus state** from the analytical
+`flights` entity. The Master Flight Log backup is ingested as a corpus/coverage
+manifestation, not as reconstructed geometry and not as an anomaly verdict.
+
+The additive tables are:
+
+- `flight_corpus_snapshots` — frozen byte-identified backup snapshots.
+- `flight_corpus_snapshot_sources` — deduplicated source path/name manifestations
+  for a snapshot, so byte identity does not erase acquisition provenance.
+- `flight_corpus_records` — one source-bounded corpus record per imported
+  flight-log record, with optional later binding to `flights.flight_id`.
+- `flight_source_manifestations` — 0..N CSV/KML/source manifestations attached
+  to a corpus record without assuming filename/callsign identity.
+
+The browser adapter recognizes `master-flight-log-backup` version 1 HTML and
+promotes only fields with unambiguous source semantics: source flight id,
+callsign, point count, epoch start/end, endpoint coordinates, month bucket and
+source-manifestation entries. `alt`, `spd`, `dist`, `pr`, `gap`, `gp`, `km` and `rt` were then traced to the
+producer implementation before promotion: `alt` is maximum altitude in feet;
+`spd` maximum speed in knots; `dist` cumulative haversine track distance in km;
+`pr` the percentage of accepted points inside the configured Puerto Rico AOI;
+`gap` the longest inter-point gap in seconds; `gp` counts gaps exceeding 120,
+300 and 900 seconds; `rt` is KML-derived departure→arrival route text; and `km`
+is an interned KML metadata-table index (not a distance). The original compact
+record remains preserved unchanged under `raw`.
+
+A metadata-only corpus import never emits map route segments. Track geometry
+continues to require CSV/KML/other geometry-bearing evidence.
+
+
+### Transactional corpus persistence
+
+The Flight Archive persistence path computes SHA-256 over the exact uploaded bytes,
+not over a browser-reencoded text representation. Exact-byte reimports reuse the
+same snapshot while preserving distinct source manifestations. Record identity is
+snapshot-local, so the same logical corpus UID may recur in later snapshots without
+forcing two mutable snapshots into one row.
+
+Persistence is fail-closed: snapshot, record, and manifestation counts are verified
+inside the transaction before commit; malformed records roll the entire snapshot
+back; foreign keys reject orphan records/manifestations; and the browser separates
+preview from the explicit persistence action. Persisted snapshots can be read back
+through the archive API and loaded into the same Archive/Coverage/Timeline views.
