@@ -203,6 +203,7 @@ const flightCorpusV4 = {
 
 const flightCorpusArchive = {
   listSnapshots: () => request('/flight-corpus/archive/snapshots'),
+  getSnapshot: (snapshotId) => request(`/flight-corpus/archive/snapshots/${encode(snapshotId)}`),
   persistSnapshot: (payload) => request('/flight-corpus/archive/snapshots', {
     method: 'POST',
     body: payload,
