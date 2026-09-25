@@ -17,16 +17,23 @@ describe("Master Flight Log corpus adapter", () => {
       start: { lat: 18.456985, lon: -66.106171 },
       end: { lat: 18.18405, lon: -67.149124 },
     });
-    expect(result.records[0].sourceFieldsOpen).toEqual({
-      alt: 2100,
-      spd: 134,
-      dist: 119.7,
-      pr: 100,
-      gap: 119,
-      gp: [0, 0, 0],
-      km: 12,
-      rt: "SIG>?",
+    expect(result.records[0].metrics).toEqual({
+      maxAltitudeFt: 2100,
+      maxSpeedKt: 134,
+      trackDistanceKm: 119.7,
+      prAreaPointPct: 100,
+      maxGapSeconds: 119,
+      gapCounts: {
+        over120Seconds: 0,
+        over300Seconds: 0,
+        over900Seconds: 0,
+      },
     });
+    expect(result.records[0].kmlEnrichment).toEqual({
+      metadataTableIndexRaw: 12,
+      routeRaw: "SIG>?",
+    });
+    expect(result.records[0].raw.km).toBe(12);
   });
 
   it("fails closed when the seed assignment is absent", () => {
