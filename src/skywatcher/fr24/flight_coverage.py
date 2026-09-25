@@ -363,7 +363,7 @@ def build_coverage_ledger(
             estimated_day, edge = _estimate_flight_id_day(fid_model, row.get("sourceFlightIdRaw"))
             if estimated_day is not None:
                 recovery = _window(estimated_day, estimated_day, horizon)
-                item = {
+                empty_item = {
                     "type": "EMPTY",
                     "identity": ident,
                     "source_flight_id_raw": row.get("sourceFlightIdRaw"),
@@ -375,7 +375,7 @@ def build_coverage_ledger(
                     "evidence_note": "Header-only CSV; estimated date is interpolated from FR24 flight-ID order and is not a recorded trajectory timestamp.",
                 }
             else:
-                item = {
+                empty_item = {
                     "type": "EMPTY",
                     "identity": ident,
                     "source_flight_id_raw": row.get("sourceFlightIdRaw"),
@@ -389,7 +389,7 @@ def build_coverage_ledger(
                     "evidence_note": "Header-only CSV with no bounded date estimate; no trajectory absence inference is allowed.",
                 }
             queue.append(_prioritize(
-                item, as_of=as_of, lookback_days=lookback_days, base=40, watch=ident in watch
+                empty_item, as_of=as_of, lookback_days=lookback_days, base=40, watch=ident in watch
             ))
 
         if missing_kml:
