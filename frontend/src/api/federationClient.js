@@ -201,6 +201,14 @@ const flightCorpusV4 = {
   familyProvenance: () => request('/flight-corpus/v4/family-provenance'),
 };
 
+const flightCorpusArchive = {
+  listSnapshots: () => request('/flight-corpus/archive/snapshots'),
+  persistSnapshot: (payload) => request('/flight-corpus/archive/snapshots', {
+    method: 'POST',
+    body: payload,
+  }),
+};
+
 const system = {
   publicSettings: () => request('/apps/public-settings').catch(() => ({
     id: appParams.appId,
@@ -219,5 +227,6 @@ export const federation = {
   asServiceRole: { entities, connectors },
   system,
   flightCorpusV4,
+  flightCorpusArchive,
   request,
 };
