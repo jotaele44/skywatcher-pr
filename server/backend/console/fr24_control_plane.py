@@ -175,7 +175,7 @@ def _existing_identity_observations(
                         observations[field_name].append(normalized)
 
     for field_name in observations:
-        if field_name in row.keys():
+        if field_name in row:
             value = _text(row[field_name])
             if value and value not in observations[field_name]:
                 observations[field_name].append(value)
