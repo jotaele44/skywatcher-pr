@@ -178,7 +178,7 @@ def test_blank_reobservation_does_not_erase_existing_callsign(tmp_path):
     assert row == ("N600UH", 1300.0, 100.0)
 
 
-def test_conflicting_nonblank_callsigns_are_preserved_and_fail_closed(tmp_path):
+def test_conflicting_nonblank_callsigns_are_preserved_and_fail_closed(tmp_path, monkeypatch):
     db_path = tmp_path / "flight_database.db"
     connection = sqlite3.connect(db_path)
     try:
@@ -216,3 +216,10 @@ def test_conflicting_nonblank_callsigns_are_preserved_and_fail_closed(tmp_path):
     assert provenance["identity_state"] == "UNRESOLVED_CONFLICT"
     assert provenance["identity_conflicts"] == ["callsign"]
     assert provenance["identity_observations"]["callsign"] == ["TEST123", "N600UH"]
+
+    monkeypatch.setenv("SKYWATCHER_FLIGHT_DB", str(db_path))
+    session = RepositoryRegistry(tmp_path).snapshot("flight_sessions").rows[0]
+    assert session["callsign"] is None
+    assert session["identity_state"] == "UNRESOLVED_CONFLICT"
+    assert session["identity_observations"]["callsign"] == ["TEST123", "N600UH"]
+    assert "identity_callsign_conflict" in session["qa_flags"]
