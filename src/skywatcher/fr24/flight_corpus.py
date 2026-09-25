@@ -68,6 +68,31 @@ def _manifestation_kind(item: dict[str, Any]) -> str:
     return "source_manifestation"
 
 
+def _record_snapshot_source(
+    conn: sqlite3.Connection,
+    snapshot_id: int,
+    *,
+    source_kind: str,
+    source_ref: str | None,
+    source_filename: str | None,
+    observed_at: str,
+) -> None:
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO flight_corpus_snapshot_sources (
+            snapshot_id, source_kind, source_ref, source_filename, observed_at
+        ) VALUES (?, ?, ?, ?, ?)
+        """,
+        (
+            snapshot_id,
+            source_kind,
+            source_ref or "",
+            source_filename or "",
+            observed_at,
+        ),
+    )
+
+
 def persist_corpus_snapshot(
     db_path: str | Path,
     *,
@@ -128,6 +153,15 @@ def persist_corpus_snapshot(
                 """,
                 (existing["snapshot_id"],),
             ).fetchone()["n"]
+            _record_snapshot_source(
+                conn,
+                int(existing["snapshot_id"]),
+                source_kind=source_kind,
+                source_ref=source_ref,
+                source_filename=source_filename,
+                observed_at=when,
+            )
+            conn.commit()
             return PersistResult(
                 snapshot_id=int(existing["snapshot_id"]),
                 source_sha256=digest,
@@ -189,6 +223,15 @@ def persist_corpus_snapshot(
                 """,
                 (raced["snapshot_id"],),
             ).fetchone()["n"]
+            _record_snapshot_source(
+                conn,
+                int(raced["snapshot_id"]),
+                source_kind=source_kind,
+                source_ref=source_ref,
+                source_filename=source_filename,
+                observed_at=when,
+            )
+            conn.commit()
             return PersistResult(
                 snapshot_id=int(raced["snapshot_id"]),
                 source_sha256=digest,
@@ -198,6 +241,14 @@ def persist_corpus_snapshot(
             )
 
         snapshot_id = int(cursor.lastrowid)
+        _record_snapshot_source(
+            conn,
+            snapshot_id,
+            source_kind=source_kind,
+            source_ref=source_ref,
+            source_filename=source_filename,
+            observed_at=when,
+        )
         manifestation_count = 0
 
         for ordinal, record in enumerate(records):
@@ -346,6 +397,15 @@ def read_corpus_snapshot(db_path: str | Path, snapshot_id: int) -> dict[str, Any
         if snapshot is None:
             raise CorpusPersistenceError(f"snapshot not found: {snapshot_id}")
 
+        source_rows = conn.execute(
+            """
+            SELECT *
+            FROM flight_corpus_snapshot_sources
+            WHERE snapshot_id = ?
+            ORDER BY source_observation_id
+            """,
+            (snapshot_id,),
+        ).fetchall()
         record_rows = conn.execute(
             """
             SELECT *
@@ -378,7 +438,11 @@ def read_corpus_snapshot(db_path: str | Path, snapshot_id: int) -> dict[str, Any
                     "manifestations": [dict(item) for item in manifestations],
                 }
             )
-        return {"snapshot": dict(snapshot), "records": records}
+        return {
+            "snapshot": dict(snapshot),
+            "sources": [dict(row) for row in source_rows],
+            "records": records,
+        }
     except sqlite3.Error as exc:
         raise CorpusPersistenceError(f"corpus snapshot read failed: {exc}") from exc
     finally:
