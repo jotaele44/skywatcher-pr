@@ -182,3 +182,40 @@ def test_priority_tier_is_explicit_for_gap_queue_item():
     assert isinstance(gap["priority_score"], int)
     assert gap["priority_tier"] in {"P1", "P2", "P3", "X"}
     assert gap["deadline"] is not None
+
+
+def test_generic_csv_folder_does_not_create_misfiled_verification():
+    record = _record("N407PR", "2026-09-01", uid="mfl:00000001", folder="csv")
+    record["sourceManifestations"].append({
+        "folderRaw": "N407PR",
+        "filenameRaw": "00000001.csv",
+        "kmlPresent": True,
+    })
+    ledger = _ledger([record])
+    assert not any(
+        item["type"] == "VERIFY" and item["state"] == "MISFILED"
+        for item in ledger["acquisition_queue"]
+    )
+
+
+def test_non_generic_mismatched_folder_creates_misfiled_verification():
+    record = _record("N684JB", "2026-08-30", uid="mfl:00000001", folder="N620GG")
+    ledger = _ledger([record])
+    verify = next(item for item in ledger["acquisition_queue"] if item["type"] == "VERIFY")
+    assert verify["identity"] == "N684JB"
+    assert verify["state"] == "MISFILED"
+    assert verify["record_count"] == 1
+
+
+def test_multi_folder_blank_callsign_stays_unresolved_and_idconf():
+    record = _record(None, "2026-07-11", uid="mfl:00000001", folder="N409TD")
+    record["sourceManifestations"].append({
+        "folderRaw": "UNRESOLVED_CALLSIGN",
+        "filenameRaw": "00000001.csv",
+        "kmlPresent": False,
+    })
+    ledger = _ledger([record])
+    ident = next(item for item in ledger["identities"] if item["identity"] == UNRESOLVED_IDENTITY)
+    assert ident["identity_state"] == "UNRESOLVED"
+    verify = next(item for item in ledger["acquisition_queue"] if item["type"] == "VERIFY")
+    assert verify["state"] == "IDCONF"
