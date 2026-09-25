@@ -87,6 +87,9 @@ def test_archive_post_hashes_exact_bytes_and_is_idempotent(tmp_path, monkeypatch
             json=_payload(source),
         )
         listed = client.get("/api/flight-corpus/archive/snapshots")
+        detail = client.get(
+            f"/api/flight-corpus/archive/snapshots/{first.json()['snapshot_id']}"
+        )
 
     assert first.status_code == 200, first.text
     assert first.json()["source_sha256"] == hashlib.sha256(source).hexdigest()
@@ -97,6 +100,11 @@ def test_archive_post_hashes_exact_bytes_and_is_idempotent(tmp_path, monkeypatch
     assert listed.status_code == 200
     assert len(listed.json()) == 1
     assert listed.json()[0]["record_count"] == 1
+    assert detail.status_code == 200
+    assert detail.json()["snapshot"]["source_sha256"] == hashlib.sha256(source).hexdigest()
+    assert len(detail.json()["records"]) == 1
+    assert detail.json()["records"][0]["corpusUid"] == "mfl:test"
+    assert detail.json()["records"][0]["raw"]["fid"] == "deadbeef"
 
 
 def test_archive_post_requires_write_authorization(tmp_path, monkeypatch):
