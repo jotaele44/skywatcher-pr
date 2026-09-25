@@ -84,6 +84,10 @@ export default function FlightArchive() {
   }, [refreshSnapshots]);
 
   const corpusResults = results.filter((r) => r.status === FLIGHT_INGEST_STATUS.CORPUS_READY);
+  const persistableCorpusCount = results.filter(
+    (result, index) =>
+      sourceFiles[index] && result.status === FLIGHT_INGEST_STATUS.CORPUS_READY,
+  ).length;
   const records = corpusResults.flatMap((r) => r.records || []);
   const summary = summarize(records);
   const queue = records
@@ -198,7 +202,7 @@ export default function FlightArchive() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              disabled={busy || persisting || corpusResults.length === 0}
+              disabled={busy || persisting || persistableCorpusCount === 0}
               onClick={persistCorpus}
               className="rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
