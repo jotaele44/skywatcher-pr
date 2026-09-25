@@ -1,3 +1,5 @@
+import { parseMasterFlightLogHtml } from "./masterFlightLog";
+
 const HEADER_SCAN_ROWS = 500;
 
 const LAT_NAMES = ["lat", "latitude", "y", "gps_lat", "position_lat"];
@@ -18,6 +20,7 @@ const END_LON_NAMES = ["end_lon", "end_lng", "end_longitude"];
 
 export const FLIGHT_INGEST_STATUS = Object.freeze({
   READY: "READY",
+  CORPUS_READY: "CORPUS_READY",
   EMPTY_TRACK: "EMPTY_TRACK",
   SCHEMA_UNRESOLVED: "SCHEMA_UNRESOLVED",
   COORDINATE_BINDING_UNRESOLVED: "COORDINATE_BINDING_UNRESOLVED",
@@ -388,6 +391,7 @@ export async function parseFlightFile(file) {
   const text = await file.text();
   if (extension === "csv") return parseFlightCsv(text, name);
   if (extension === "kml") return parseFlightKml(text, name);
+  if (extension === "html" || extension === "htm") return parseMasterFlightLogHtml(text, name);
   return {
     status: FLIGHT_INGEST_STATUS.UNSUPPORTED_GEOMETRY,
     source: name,
