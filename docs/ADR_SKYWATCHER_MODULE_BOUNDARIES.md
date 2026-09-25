@@ -207,7 +207,9 @@ manifestation, not as reconstructed geometry and not as an anomaly verdict.
 
 The additive tables are:
 
-- `flight_corpus_snapshots` — frozen source manifestations / backup snapshots.
+- `flight_corpus_snapshots` — frozen byte-identified backup snapshots.
+- `flight_corpus_snapshot_sources` — deduplicated source path/name manifestations
+  for a snapshot, so byte identity does not erase acquisition provenance.
 - `flight_corpus_records` — one source-bounded corpus record per imported
   flight-log record, with optional later binding to `flights.flight_id`.
 - `flight_source_manifestations` — 0..N CSV/KML/source manifestations attached
@@ -227,3 +229,18 @@ record remains preserved unchanged under `raw`.
 
 A metadata-only corpus import never emits map route segments. Track geometry
 continues to require CSV/KML/other geometry-bearing evidence.
+
+
+### Transactional corpus persistence
+
+The Flight Archive persistence path computes SHA-256 over the exact uploaded bytes,
+not over a browser-reencoded text representation. Exact-byte reimports reuse the
+same snapshot while preserving distinct source manifestations. Record identity is
+snapshot-local, so the same logical corpus UID may recur in later snapshots without
+forcing two mutable snapshots into one row.
+
+Persistence is fail-closed: snapshot, record, and manifestation counts are verified
+inside the transaction before commit; malformed records roll the entire snapshot
+back; foreign keys reject orphan records/manifestations; and the browser separates
+preview from the explicit persistence action. Persisted snapshots can be read back
+through the archive API and loaded into the same Archive/Coverage/Timeline views.
