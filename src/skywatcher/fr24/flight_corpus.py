@@ -58,6 +58,44 @@ def _endpoint(record: dict[str, Any], key: str) -> tuple[float | None, float | N
     )
 
 
+
+def _record_payload(record: dict[str, Any]) -> tuple[str, str]:
+    """Return canonical raw + normalized JSON for deterministic read-back comparison."""
+    raw = record.get("raw")
+    if not isinstance(raw, dict):
+        raise CorpusPersistenceError("record missing raw source object")
+    normalized = {key: value for key, value in record.items() if key != "raw"}
+    return _canonical_json(raw), _canonical_json(normalized)
+
+
+def _assert_duplicate_payload_matches(
+    conn: sqlite3.Connection,
+    snapshot_id: int,
+    records: list[dict[str, Any]],
+) -> None:
+    """Fail closed if identical source bytes are paired with a different parse payload."""
+    stored = conn.execute(
+        """
+        SELECT raw_record_json, normalized_record_json
+        FROM flight_corpus_records
+        WHERE snapshot_id = ?
+        ORDER BY corpus_record_id
+        """,
+        (snapshot_id,),
+    ).fetchall()
+    if len(stored) != len(records):
+        raise CorpusPersistenceError(
+            "duplicate snapshot source bytes match but supplied record count differs"
+        )
+    for ordinal, (row, record) in enumerate(zip(stored, records, strict=True)):
+        if not isinstance(record, dict):
+            raise CorpusPersistenceError(f"record {ordinal} is not an object")
+        raw_json, normalized_json = _record_payload(record)
+        if row["raw_record_json"] != raw_json or row["normalized_record_json"] != normalized_json:
+            raise CorpusPersistenceError(
+                f"duplicate snapshot source bytes match but record {ordinal} payload differs"
+            )
+
 def _manifestation_kind(item: dict[str, Any]) -> str:
     name = str(item.get("filenameRaw") or "")
     suffix = Path(name).suffix.lower()
@@ -143,6 +181,7 @@ def persist_corpus_snapshot(
                 raise CorpusPersistenceError(
                     "duplicate snapshot exists but stored record_count does not match read-back"
                 )
+            _assert_duplicate_payload_matches(conn, int(existing["snapshot_id"]), records)
             manifestations = conn.execute(
                 """
                 SELECT COUNT(*) AS n
@@ -213,6 +252,7 @@ def persist_corpus_snapshot(
                 raise CorpusPersistenceError(
                     "concurrent duplicate snapshot has inconsistent stored record_count"
                 )
+            _assert_duplicate_payload_matches(conn, int(raced["snapshot_id"]), records)
             manifestations = conn.execute(
                 """
                 SELECT COUNT(*) AS n
@@ -255,11 +295,9 @@ def persist_corpus_snapshot(
             if not isinstance(record, dict):
                 raise CorpusPersistenceError(f"record {ordinal} is not an object")
             corpus_uid = record.get("corpusUid")
-            raw = record.get("raw")
             if not isinstance(corpus_uid, str) or not corpus_uid.strip():
                 raise CorpusPersistenceError(f"record {ordinal} missing corpusUid")
-            if not isinstance(raw, dict):
-                raise CorpusPersistenceError(f"record {ordinal} missing raw source object")
+            raw_json, normalized_json = _record_payload(record)
 
             start_lat, start_lon = _endpoint(record, "start")
             end_lat, end_lon = _endpoint(record, "end")
@@ -285,8 +323,8 @@ def persist_corpus_snapshot(
                     start_lon,
                     end_lat,
                     end_lon,
-                    _canonical_json(raw),
-                    _canonical_json({key: value for key, value in record.items() if key != "raw"}),
+                    raw_json,
+                    normalized_json,
                     when,
                 ),
             )
