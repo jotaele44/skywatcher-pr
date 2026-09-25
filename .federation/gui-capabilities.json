@@ -85,6 +85,7 @@
           "GET /api/flight-corpus/v4/airport-edge-recurrence",
           "GET /api/flight-corpus/v4/family-provenance",
           "GET /api/flight-corpus/archive/snapshots",
+          "GET /api/flight-corpus/archive/snapshots/{snapshot_id}",
           "POST /api/flight-corpus/archive/snapshots"
         ],
         "symbols": [
@@ -104,6 +105,7 @@
           "server/backend/main.py:flight_corpus_v4_airport_edge_recurrence",
           "server/backend/main.py:flight_corpus_v4_family_provenance",
           "server/backend/main.py:flight_corpus_archive_snapshots",
+          "server/backend/main.py:flight_corpus_archive_snapshot",
           "server/backend/main.py:flight_corpus_archive_persist"
         ]
       },
