@@ -59,7 +59,8 @@
       "requires_terminal": false,
       "backend": {
         "files": [
-          "server/backend/main.py"
+          "server/backend/main.py",
+          "src/skywatcher/fr24/flight_corpus.py"
         ],
         "endpoints": [
           "GET /api/apps/public-settings",
@@ -106,7 +107,11 @@
           "server/backend/main.py:flight_corpus_v4_family_provenance",
           "server/backend/main.py:flight_corpus_archive_snapshots",
           "server/backend/main.py:flight_corpus_archive_snapshot",
-          "server/backend/main.py:flight_corpus_archive_persist"
+          "server/backend/main.py:flight_corpus_archive_persist",
+          "src/skywatcher/fr24/flight_corpus.py:CorpusPersistenceError",
+          "src/skywatcher/fr24/flight_corpus.py:PersistResult",
+          "src/skywatcher/fr24/flight_corpus.py:persist_corpus_snapshot",
+          "src/skywatcher/fr24/flight_corpus.py:read_corpus_snapshot"
         ]
       },
       "frontend": {
