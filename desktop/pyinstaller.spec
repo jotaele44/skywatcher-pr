@@ -48,6 +48,7 @@ a = Analysis(
         "skywatcher.fr24.database",
         "skywatcher.fr24.database_migrations",
         "skywatcher.fr24.flight_corpus",
+        "skywatcher.fr24.flight_coverage",
         # Shared desktop-wrapper runtime (thehub-pr/packages/prii_desktop),
         # imported by the desktop/ shims — bundle it into the frozen build.
         "prii_desktop",
