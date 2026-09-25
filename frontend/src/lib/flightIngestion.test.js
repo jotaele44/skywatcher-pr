@@ -137,6 +137,18 @@ describe("browser flight ingestion contract", () => {
     expect(result.status).toBe(FLIGHT_INGEST_STATUS.EMPTY_TRACK);
   });
 
+  it("routes Master Flight Log HTML into corpus metadata without route points", async () => {
+    const html = new File(
+      ['<script>window.MFL_SEED={"format":"master-flight-log-backup","version":1,"flights":{"2025-08":[{"h":"abc","fid":"f1","cs":"N1","n":2,"t0":1754062238,"t1":1754062240,"la0":18.1,"lo0":-66.1,"la1":18.2,"lo1":-66.2,"s":[]}]}};</script>'],
+      "Master Flight Log.html",
+      { type: "text/html" },
+    );
+    const [result] = await parseFlightFiles([html]);
+    expect(result.status).toBe(FLIGHT_INGEST_STATUS.CORPUS_READY);
+    expect(result.records).toHaveLength(1);
+    expect(result.points).toBeUndefined();
+  });
+
   it("isolates file failures inside one browser upload batch", async () => {
     const good = new File(
       [
