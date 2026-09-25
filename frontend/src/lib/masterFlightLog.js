@@ -80,7 +80,8 @@ function normalizeRecord(monthBucket, record, ordinal) {
           folderRaw: item?.f ?? null,
           filenameRaw: item?.n ?? null,
           mtimeRaw: item?.m ?? null,
-          bindingCodeRaw: item?.k ?? null,
+          kmlPresent: item?.k === 1 || item?.k === true,
+          kmlPresentRaw: item?.k ?? null,
           raw: item,
         }))
       : [],
