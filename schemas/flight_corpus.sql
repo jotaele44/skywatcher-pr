@@ -37,7 +37,8 @@ CREATE INDEX IF NOT EXISTS ix_flight_corpus_snapshots_kind
     ON flight_corpus_snapshots(source_kind);
 
 CREATE TABLE IF NOT EXISTS flight_corpus_records (
-    corpus_uid              TEXT    PRIMARY KEY,
+    corpus_record_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    corpus_uid              TEXT    NOT NULL,
     snapshot_id             INTEGER NOT NULL REFERENCES flight_corpus_snapshots(snapshot_id),
     source_flight_id_raw    TEXT,
     callsign_raw            TEXT,
@@ -69,7 +70,7 @@ CREATE INDEX IF NOT EXISTS ix_flight_corpus_records_time
 
 CREATE TABLE IF NOT EXISTS flight_source_manifestations (
     manifestation_id    INTEGER PRIMARY KEY AUTOINCREMENT,
-    corpus_uid          TEXT    NOT NULL REFERENCES flight_corpus_records(corpus_uid),
+    corpus_record_id    INTEGER NOT NULL REFERENCES flight_corpus_records(corpus_record_id),
     source_kind         TEXT    NOT NULL,
     source_folder_raw   TEXT,
     source_filename_raw TEXT,
@@ -81,8 +82,8 @@ CREATE TABLE IF NOT EXISTS flight_source_manifestations (
     raw_manifest_json   TEXT    NOT NULL,
     created_at          TEXT    NOT NULL
 );
-CREATE INDEX IF NOT EXISTS ix_flight_manifestations_corpus
-    ON flight_source_manifestations(corpus_uid);
+CREATE INDEX IF NOT EXISTS ix_flight_manifestations_record
+    ON flight_source_manifestations(corpus_record_id);
 CREATE INDEX IF NOT EXISTS ix_flight_manifestations_sha
     ON flight_source_manifestations(source_sha256);
 CREATE INDEX IF NOT EXISTS ix_flight_manifestations_name
