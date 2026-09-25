@@ -35,7 +35,7 @@ for extra in ("exports", "reports"):
 
 a = Analysis(
     [str(REPO_ROOT / "desktop" / "launch.py")],
-    pathex=[str(REPO_ROOT)],
+    pathex=[str(REPO_ROOT), str(REPO_ROOT / "src")],
     datas=datas,
     hiddenimports=[
         "uvicorn.logging",
