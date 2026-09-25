@@ -69,6 +69,7 @@ export default function FlightArchive() {
   const [persisting, setPersisting] = React.useState(false);
   const [persistReceipts, setPersistReceipts] = React.useState([]);
   const [storedSnapshots, setStoredSnapshots] = React.useState([]);
+  const [coverageLedger, setCoverageLedger] = React.useState(null);
   const [error, setError] = React.useState("");
 
   const refreshSnapshots = React.useCallback(async () => {
@@ -109,6 +110,7 @@ export default function FlightArchive() {
       setResults(await parseFlightFiles(files));
       setSourceFiles(files);
       setPersistReceipts([]);
+      setCoverageLedger(null);
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : String(exc));
     } finally {
@@ -154,7 +156,10 @@ export default function FlightArchive() {
     setBusy(true);
     setError("");
     try {
-      const stored = await federation.flightCorpusArchive.getSnapshot(snapshotId);
+      const [stored, coverage] = await Promise.all([
+        federation.flightCorpusArchive.getSnapshot(snapshotId),
+        federation.flightCorpusArchive.getCoverage(snapshotId),
+      ]);
       setResults([{
         status: FLIGHT_INGEST_STATUS.CORPUS_READY,
         source: stored.snapshot?.source_filename || ("snapshot-" + snapshotId),
@@ -169,6 +174,7 @@ export default function FlightArchive() {
       }]);
       setSourceFiles([]);
       setPersistReceipts([]);
+      setCoverageLedger(coverage);
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : String(exc));
     } finally {
@@ -276,10 +282,24 @@ export default function FlightArchive() {
       {tab === "archive" && <Panel title="Canonical corpus records" icon={Archive} action={null}><CorpusTable records={records} /></Panel>}
       {tab === "coverage" && <Panel title="Coverage denominator" icon={CalendarRange} action={null}>
         <p className="mb-3 text-sm text-muted-foreground">This describes what the archive can answer. Absence from the corpus is not evidence that an aircraft did not fly.</p>
-        <CoverageTable records={records} />
+        {coverageLedger ? <CanonicalCoverageTable ledger={coverageLedger} /> : <CoverageTable records={records} />}
       </Panel>}
       {tab === "timeline" && <Panel title="Observed timeline" icon={Clock3} action={null}><Timeline records={records} /></Panel>}
-      {tab === "acquisition" && <Panel title="Acquisition queue" icon={Radar} action={<StatusChip tone={queue.length ? "warn" : "ready"} label={String(queue.length) + " missing KML"} icon={null} />}><CorpusTable records={queue} empty="No corpus records currently lack a KML manifestation." /></Panel>}
+      {tab === "acquisition" && <Panel
+        title="Acquisition queue"
+        icon={Radar}
+        action={<StatusChip
+          tone={(coverageLedger?.acquisition_queue?.length || queue.length) ? "warn" : "ready"}
+          label={coverageLedger
+            ? String(coverageLedger.acquisition_queue?.length || 0) + " queue items"
+            : String(queue.length) + " missing KML"}
+          icon={null}
+        />}
+      >
+        {coverageLedger
+          ? <AcquisitionLedgerTable items={coverageLedger.acquisition_queue || []} />
+          : <CorpusTable records={queue} empty="No corpus records currently lack a KML manifestation." />}
+      </Panel>}
       {tab === "integrity" && <Panel title="Integrity state" icon={ShieldCheck} action={null}>
         <div className="grid gap-3 md:grid-cols-3">
           <Integrity label="Corpus-ready snapshots" value={corpusResults.length} tone="ready" />
@@ -315,6 +335,61 @@ function CorpusTable({ records, empty = "Load a Master Flight Log HTML backup to
       </table>
     </div>
   );
+}
+
+
+function CanonicalCoverageTable({ ledger }) {
+  const rows = ledger?.identities || [];
+  const params = ledger?.parameters || {};
+  const summary = ledger?.summary || {};
+  if (!rows.length) return <p className="text-sm text-muted-foreground">No persisted coverage identities.</p>;
+  return <>
+    <div className="mb-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <Integrity label="Source identities" value={summary.identity_count ?? rows.length} tone="ready" />
+      <Integrity label="Internal gaps" value={summary.gap_count ?? 0} tone={(summary.gap_count || 0) ? "warn" : "ready"} />
+      <Integrity label="Recoverable gaps" value={summary.recoverable_gap_count ?? 0} tone={(summary.recoverable_gap_count || 0) ? "warn" : "ready"} />
+      <Integrity label="Beyond look-back" value={summary.beyond_lookback_gap_count ?? 0} tone="ready" />
+    </div>
+    <p className="mb-3 text-xs text-muted-foreground">
+      As of {params.as_of || "—"} · {params.lookback_days ?? "—"}-day look-back · horizon {params.horizon || "—"} · gap gate ≥{params.gap_min_days ?? "—"} days and ≥{params.gap_multiplier ?? "—"}× median cadence.
+    </p>
+    <div className="max-h-[62vh] overflow-auto rounded-lg border border-border">
+      <table className="w-full text-sm">
+        <thead><tr className="sticky top-0 border-b border-border bg-secondary text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+          <th className="px-3 py-2">Identity</th><th className="px-3 py-2">Basis</th><th className="px-3 py-2 text-right">Flights</th><th className="px-3 py-2 text-right">Days</th><th className="px-3 py-2">First</th><th className="px-3 py-2">Last</th><th className="px-3 py-2 text-right">Cadence</th><th className="px-3 py-2 text-right">KML missing</th>
+        </tr></thead>
+        <tbody>{rows.map((row) => <tr key={row.identity} className="border-b border-border/50">
+          <td className="px-3 py-2 font-mono text-xs font-semibold">{row.identity}</td>
+          <td className="px-3 py-2"><StatusChip tone={row.identity_state === "SOURCE_CALLSIGN" ? "ready" : "warn"} label={row.identity_state} icon={null} /></td>
+          <td className="px-3 py-2 text-right font-mono text-xs">{row.counted_flight_count}</td>
+          <td className="px-3 py-2 text-right font-mono text-xs">{row.observed_day_count}</td>
+          <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{row.first_observed_day || "—"}</td>
+          <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{row.last_observed_day || "—"}</td>
+          <td className="px-3 py-2 text-right font-mono text-xs">{row.median_cadence_days == null ? "—" : row.median_cadence_days}</td>
+          <td className="px-3 py-2 text-right font-mono text-xs">{row.kml_missing_count}</td>
+        </tr>)}</tbody>
+      </table>
+    </div>
+  </>;
+}
+
+function AcquisitionLedgerTable({ items }) {
+  if (!items.length) return <p className="text-sm text-muted-foreground">No acquisition items under the current coverage rules.</p>;
+  return <div className="max-h-[62vh] overflow-auto rounded-lg border border-border">
+    <table className="w-full text-sm">
+      <thead><tr className="sticky top-0 border-b border-border bg-secondary text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+        <th className="px-3 py-2">Type</th><th className="px-3 py-2">Identity</th><th className="px-3 py-2">Window</th><th className="px-3 py-2">State</th><th className="px-3 py-2 text-right">Recoverable</th><th className="px-3 py-2">Evidence note</th>
+      </tr></thead>
+      <tbody>{items.map((item, index) => <tr key={[item.type, item.identity, item.from, item.to, index].join(":")} className="border-b border-border/50">
+        <td className="px-3 py-2"><StatusChip tone={item.type === "VERIFY" ? "warn" : item.state === "BEYOND_LOOKBACK" ? "muted" : "warn"} label={item.type} icon={null} /></td>
+        <td className="px-3 py-2 font-mono text-xs font-semibold">{item.identity}</td>
+        <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{item.from ? item.from + " → " + item.to : "—"}</td>
+        <td className="px-3 py-2 font-mono text-xs">{item.state || item.activity_state || "—"}</td>
+        <td className="px-3 py-2 text-right font-mono text-xs">{item.recoverable_days ?? "—"}</td>
+        <td className="max-w-md px-3 py-2 text-xs text-muted-foreground">{item.evidence_note || "—"}</td>
+      </tr>)}</tbody>
+    </table>
+  </div>;
 }
 
 function CoverageTable({ records }) {
