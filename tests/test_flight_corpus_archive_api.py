@@ -180,9 +180,19 @@ def test_archive_coverage_endpoint_returns_bounded_ledger(tmp_path, monkeypatch)
             "sourceFlightIdRaw": "00000003",
             "callsignRaw": "N1",
             "pointCount": 20,
+            "startTimeUtc": "2026-07-03T12:00:00.000Z",
+            "endTimeUtc": "2026-07-03T13:00:00.000Z",
+            "sourceManifestations": [{"folderRaw": "N1", "filenameRaw": "c.csv", "kmlPresent": True}],
+        },
+        {
+            **_record(),
+            "corpusUid": "mfl:d",
+            "sourceFlightIdRaw": "00000004",
+            "callsignRaw": "N1",
+            "pointCount": 20,
             "startTimeUtc": "2026-08-20T12:00:00.000Z",
             "endTimeUtc": "2026-08-20T13:00:00.000Z",
-            "sourceManifestations": [{"folderRaw": "N1", "filenameRaw": "c.csv", "kmlPresent": False}],
+            "sourceManifestations": [{"folderRaw": "N1", "filenameRaw": "d.csv", "kmlPresent": False}],
         },
     ]
 
@@ -202,7 +212,7 @@ def test_archive_coverage_endpoint_returns_bounded_ledger(tmp_path, monkeypatch)
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["snapshot"]["snapshot_id"] == snapshot_id
-    assert body["summary"]["input_records"] == 3
+    assert body["summary"]["input_records"] == 4
     assert body["summary"]["identity_count"] == 1
     assert body["summary"]["gap_count"] == 1
     assert body["gaps"][0]["state"] == "RECOVERABLE"
