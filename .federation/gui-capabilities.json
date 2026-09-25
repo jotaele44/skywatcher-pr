@@ -83,7 +83,9 @@
           "GET /api/flight-corpus/v4/deep-interface",
           "GET /api/flight-corpus/v4/route-family-recurrence",
           "GET /api/flight-corpus/v4/airport-edge-recurrence",
-          "GET /api/flight-corpus/v4/family-provenance"
+          "GET /api/flight-corpus/v4/family-provenance",
+          "GET /api/flight-corpus/archive/snapshots",
+          "POST /api/flight-corpus/archive/snapshots"
         ],
         "symbols": [
           "server/backend/main.py:geo_observations",
@@ -100,7 +102,9 @@
           "server/backend/main.py:flight_corpus_v4_deep_interface",
           "server/backend/main.py:flight_corpus_v4_route_family_recurrence",
           "server/backend/main.py:flight_corpus_v4_airport_edge_recurrence",
-          "server/backend/main.py:flight_corpus_v4_family_provenance"
+          "server/backend/main.py:flight_corpus_v4_family_provenance",
+          "server/backend/main.py:flight_corpus_archive_snapshots",
+          "server/backend/main.py:flight_corpus_archive_persist"
         ]
       },
       "frontend": {
@@ -141,6 +145,7 @@
           "frontend/src/lib/AuthContext.jsx",
           "frontend/src/lib/observation-density.js",
           "frontend/src/lib/SkywatcherData.jsx",
+          "frontend/src/api/federationClient.js",
           "frontend/src/pages/Dashboard.jsx",
           "frontend/src/pages/Observations.jsx",
           "frontend/src/pages/Aircraft.jsx",
@@ -171,7 +176,10 @@
           "tests/test_manual_review_queue.py",
           "tests/test_fr24_dashboard_data.py",
           "tests/test_satim_calibration.py",
-          "tests/test_geo_municipios_routes.py"
+          "tests/test_geo_municipios_routes.py",
+          "tests/test_flight_corpus_archive_api.py",
+          "tests/test_flight_corpus_persistence.py",
+          "tests/test_flight_corpus_migration.py"
         ],
         "contract": [
           "tests/test_gui_parity.py"
