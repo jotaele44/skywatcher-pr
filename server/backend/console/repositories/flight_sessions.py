@@ -21,6 +21,7 @@ from .flight_common import (
     mph_to_kt,
     normalize_time,
     open_sqlite_readonly,
+    parse_json,
     read_structured_rows,
     sqlite_rows,
     sqlite_table_exists,
@@ -43,6 +44,12 @@ def _identity_values(
             values.append(normalized)
 
     observed = source.get("identity_observations")
+    provenance_payload = parse_json(
+        source.get("provenance_json") or source.get("provenance"),
+        {},
+    )
+    if not isinstance(observed, dict) and isinstance(provenance_payload, dict):
+        observed = provenance_payload.get("identity_observations")
     if isinstance(observed, dict):
         carried = observed.get(field_name)
         if isinstance(carried, list):
@@ -50,6 +57,14 @@ def _identity_values(
                 add(value)
         else:
             add(carried)
+
+    source_identity = (
+        provenance_payload.get("source_identity")
+        if isinstance(provenance_payload, dict)
+        else {}
+    )
+    if isinstance(source_identity, dict):
+        add(source_identity.get(field_name))
 
     for alias in aliases:
         add(source.get(alias))
