@@ -334,7 +334,10 @@ def persist_corpus_snapshot(
 
 def read_corpus_snapshot(db_path: str | Path, snapshot_id: int) -> dict[str, Any]:
     """Read one snapshot and its records/manifestations without mutating the DB."""
-    conn = db.connect(db_path, readonly=True)
+    try:
+        conn = db.connect(db_path, readonly=True)
+    except db.DatabaseError as exc:
+        raise CorpusPersistenceError(str(exc)) from exc
     try:
         snapshot = conn.execute(
             "SELECT * FROM flight_corpus_snapshots WHERE snapshot_id = ?",
@@ -376,5 +379,7 @@ def read_corpus_snapshot(db_path: str | Path, snapshot_id: int) -> dict[str, Any
                 }
             )
         return {"snapshot": dict(snapshot), "records": records}
+    except sqlite3.Error as exc:
+        raise CorpusPersistenceError(f"corpus snapshot read failed: {exc}") from exc
     finally:
         conn.close()
