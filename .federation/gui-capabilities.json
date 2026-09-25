@@ -117,7 +117,8 @@
           "/readiness",
           "/calibration",
           "/console",
-          "/spatial-truth"
+          "/spatial-truth",
+          "/flight-archive"
         ],
         "e2e_routes": [
           "/",
@@ -132,7 +133,8 @@
           "/readiness",
           "/calibration",
           "/console",
-          "/spatial-truth"
+          "/spatial-truth",
+          "/flight-archive"
         ],
         "components": [
           "frontend/src/api/federationClient.js",
@@ -152,6 +154,7 @@
           "frontend/src/pages/Calibration.jsx",
           "frontend/src/pages/Console.jsx",
           "frontend/src/pages/SpatialTruth.jsx",
+          "frontend/src/pages/FlightArchive.jsx",
           "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.jsx",
           "frontend/src/components/skywatcher/TrackTimeScrubber.jsx",
@@ -177,7 +180,9 @@
           "frontend/src/lib/app-params.test.js",
           "frontend/src/components/skywatcher/PuertoRicoMapShell.test.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.test.jsx",
-          "frontend/src/components/skywatcher/SpatialFlightRenderer.test.jsx"
+          "frontend/src/components/skywatcher/SpatialFlightRenderer.test.jsx",
+          "frontend/src/lib/masterFlightLog.test.js",
+          "frontend/src/lib/flightIngestion.test.js"
         ],
         "e2e": [
           "frontend/tests/gui-parity.spec.mjs"
