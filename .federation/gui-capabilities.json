@@ -93,7 +93,8 @@
           "GET /api/flight-corpus/archive/snapshots/{snapshot_id}",
           "POST /api/flight-corpus/archive/snapshots",
           "GET /api/flight-corpus/archive/snapshots/{snapshot_id}/coverage",
-          "GET /api/flight-acquisition/p1/status"
+          "GET /api/flight-acquisition/p1/status",
+          "GET /api/flight-corpus/v4/family-split-summary"
         ],
         "symbols": [
           "server/backend/main.py:geo_observations",
@@ -131,7 +132,8 @@
           "src/skywatcher/fr24/acquisition_receipts.py:record_discovery",
           "src/skywatcher/fr24/acquisition_receipts.py:record_blocked_auth",
           "src/skywatcher/fr24/acquisition_receipts.py:export_harvest_carryover",
-          "src/skywatcher/fr24/acquisition_receipts.py:status_summary"
+          "src/skywatcher/fr24/acquisition_receipts.py:status_summary",
+          "server/backend/main.py:flight_corpus_v4_family_split_summary"
         ]
       },
       "frontend": {
