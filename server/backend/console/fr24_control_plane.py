@@ -20,7 +20,6 @@ from typing import Any
 from .migrations import migrate
 from .time import UTCValidationError, normalize_utc
 
-
 IDENTITY_ALIASES: dict[str, tuple[str, ...]] = {
     "aircraft_id": ("aircraft_id", "aircraft_identity"),
     "icao24": ("icao24", "hex", "hex_code", "mode_s", "transponder"),
