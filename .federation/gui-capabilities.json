@@ -175,7 +175,8 @@
           "tests/test_fr24_dashboard_data.py",
           "tests/test_satim_calibration.py",
           "tests/test_geo_municipios_routes.py",
-          "tests/test_fr24_control_plane_bridge.py"
+          "tests/test_fr24_control_plane_bridge.py",
+          "tests/test_flight_corpus_correlation_v1.py"
         ],
         "contract": [
           "tests/test_gui_parity.py"
@@ -189,6 +190,27 @@
         ],
         "e2e": [
           "frontend/tests/gui-parity.spec.mjs"
+        ]
+      },
+      "analysis": {
+        "files": [
+          "src/skywatcher/flight_corpus_correlation_v1.py"
+        ],
+        "symbols": [
+          "src/skywatcher/flight_corpus_correlation_v1.py:DetectorParameters",
+          "src/skywatcher/flight_corpus_correlation_v1.py:TrackPoint",
+          "src/skywatcher/flight_corpus_correlation_v1.py:Track",
+          "src/skywatcher/flight_corpus_correlation_v1.py:SynchronizedSample",
+          "src/skywatcher/flight_corpus_correlation_v1.py:EventMetrics",
+          "src/skywatcher/flight_corpus_correlation_v1.py:load_fr24_csv",
+          "src/skywatcher/flight_corpus_correlation_v1.py:load_registration_tracks",
+          "src/skywatcher/flight_corpus_correlation_v1.py:haversine_km",
+          "src/skywatcher/flight_corpus_correlation_v1.py:circular_difference_deg",
+          "src/skywatcher/flight_corpus_correlation_v1.py:temporal_overlap_seconds",
+          "src/skywatcher/flight_corpus_correlation_v1.py:synchronize_tracks",
+          "src/skywatcher/flight_corpus_correlation_v1.py:classify_samples",
+          "src/skywatcher/flight_corpus_correlation_v1.py:analyze_track_pair",
+          "src/skywatcher/flight_corpus_correlation_v1.py:analyze_registration_pair"
         ]
       }
     },
