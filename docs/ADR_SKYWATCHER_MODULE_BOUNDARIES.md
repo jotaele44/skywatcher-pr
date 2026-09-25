@@ -216,9 +216,14 @@ The additive tables are:
 The browser adapter recognizes `master-flight-log-backup` version 1 HTML and
 promotes only fields with unambiguous source semantics: source flight id,
 callsign, point count, epoch start/end, endpoint coordinates, month bucket and
-source-manifestation entries. Compact fields `alt`, `spd`, `dist`, `pr`,
-`gap`, `gp`, `km` and `rt` remain preserved under `sourceFieldsOpen`
-until their producer computations are independently verified.
+source-manifestation entries. `alt`, `spd`, `dist`, `pr`, `gap`, `gp`, `km` and `rt` were then traced to the
+producer implementation before promotion: `alt` is maximum altitude in feet;
+`spd` maximum speed in knots; `dist` cumulative haversine track distance in km;
+`pr` the percentage of accepted points inside the configured Puerto Rico AOI;
+`gap` the longest inter-point gap in seconds; `gp` counts gaps exceeding 120,
+300 and 900 seconds; `rt` is KML-derived departure→arrival route text; and `km`
+is an interned KML metadata-table index (not a distance). The original compact
+record remains preserved unchanged under `raw`.
 
 A metadata-only corpus import never emits map route segments. Track geometry
 continues to require CSV/KML/other geometry-bearing evidence.
