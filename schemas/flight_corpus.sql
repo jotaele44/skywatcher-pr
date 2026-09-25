@@ -36,6 +36,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_flight_corpus_snapshot_sha
 CREATE INDEX IF NOT EXISTS ix_flight_corpus_snapshots_kind
     ON flight_corpus_snapshots(source_kind);
 
+CREATE TABLE IF NOT EXISTS flight_corpus_snapshot_sources (
+    source_observation_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    snapshot_id           INTEGER NOT NULL REFERENCES flight_corpus_snapshots(snapshot_id),
+    source_kind           TEXT    NOT NULL,
+    source_ref            TEXT    NOT NULL DEFAULT '',
+    source_filename       TEXT    NOT NULL DEFAULT '',
+    observed_at           TEXT    NOT NULL,
+    UNIQUE(snapshot_id, source_kind, source_ref, source_filename)
+);
+CREATE INDEX IF NOT EXISTS ix_flight_corpus_snapshot_sources_snapshot
+    ON flight_corpus_snapshot_sources(snapshot_id);
+
 CREATE TABLE IF NOT EXISTS flight_corpus_records (
     corpus_record_id        INTEGER PRIMARY KEY AUTOINCREMENT,
     corpus_uid              TEXT    NOT NULL,
