@@ -15,6 +15,7 @@ Start with:
 from __future__ import annotations
 
 import base64
+import binascii
 import csv
 import hashlib
 import ipaddress
@@ -391,7 +392,7 @@ def flight_corpus_archive_persist(payload: dict[str, Any]) -> dict[str, Any]:
         raise HTTPException(status_code=413, detail="corpus source exceeds import byte limit")
     try:
         source_bytes = base64.b64decode(encoded, validate=True)
-    except (ValueError, TypeError) as exc:
+    except (binascii.Error, ValueError, TypeError) as exc:
         raise HTTPException(status_code=400, detail="invalid source_bytes_base64") from exc
     if len(source_bytes) > CORPUS_IMPORT_MAX_BYTES:
         raise HTTPException(status_code=413, detail="corpus source exceeds import byte limit")
