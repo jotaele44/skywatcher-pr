@@ -27,7 +27,7 @@ const PROGRAM_TIMELINE = [
   { id:"sky-aircraft-history", phase:"NOW", title:"Aircraft Identity & History", detail:"Resolve canonical airframe identity, lifecycle evidence, contradictions, and provenance without registration-only merges.", category:"Identity", href:"/aircraft" },
   { id:"sky-fr24", phase:"NEXT", title:"FR24 acquisition and track closure", detail:"Acquire bounded flight-summary/track windows, preserve raw manifestations, and reconcile overlap before retention advances.", category:"Acquisition", href:"/fr24" },
   { id:"sky-review", phase:"NEXT", title:"Manual evidence adjudication", detail:"Close low-confidence, duplicate, null, and contradictory observation records before promotion.", category:"Review", href:"/review" },
-  { id:"sky-playback", phase:"QUEUED", title:"Sky playback and replay", detail:"Extend replay across frozen aviation, orbital, meteor, solar, lunar, and observational evidence.", category:"Playback", href:"/playback" },
+  { id:"sky-playback", phase:"QUEUED", title:"Sky playback and replay", detail:"Extend replay across frozen aviation, orbital, meteor, solar, lunar, and observational evidence.", category:"Playback" },
   { id:"sky-cert", phase:"BLOCKED", title:"Rendered/device certification", detail:"Desktop and iPhone rendered QA plus production/native persistence remain certification gates.", category:"Certification", href:"/readiness" },
 ];
 
