@@ -2,6 +2,8 @@
 
 **Audit date:** 2026-09-28 · **`main` at audit:** `cfc0183` (not branch-protected) · **Production status:** `NON_PRODUCTION_DIAGNOSTIC`. The hub export is 16/16 synthetic, consistent with that declaration.
 
+**Post-audit update (2026-09-28 20:35Z):** the record_cell_binding v0.2 series was pushed straight to `main` after the audit. The Cell_Set PR #328 now conflicts with `main` and is superseded (X-05). The same series left `ruff check .` red on `main` (X-10); this PR carries the one-line fix.
+
 This document lists every blocker that the repository, its CI, and its GitHub issues and pull requests recorded as of the audit date, then gives an ordered plan to clear them. It changes no code, gate, ledger, or status file.
 
 Cross-repository blockers (IDs `X-nn`) are described in full in
@@ -55,7 +57,7 @@ Each blocker is counted once, under its primary type.
 
 | PR | State | Action |
 |---|---|---|
-| #328 Cell_Set uncertainty contract | Head checks green | Merge together with the other five repos (X-05) |
+| #328 Cell_Set uncertainty contract | Conflicts with `main` since the post-audit v0.2 series, which already carries the contract in `federation/spatial/registry_version.json` | Confirm v0.2 covers it, then close as superseded (X-05) |
 | #324 correlation detector v1 | No merge commit (conflict); overlaps 1 path on current `main` | Rebase, rerun, review |
 | #300 V4 family split summary | No merge commit (conflict); overlaps 4 paths | Rebase and reconcile |
 | #299 ILAP visual review (draft) | Conflict; overlaps 5 paths; GUI Reachability E2E red | Rebase and reconcile, or close as superseded |
@@ -113,8 +115,9 @@ Each blocker is counted once, under its primary type.
 - X-01: completion gate.
 - X-02: dependabot backlog and template drift.
 - X-03: `main` is unprotected.
-- X-05: the Cell_Set PR set.
+- X-05: the Cell_Set PR set, now superseded by v0.2 on `main`.
 - X-07: stale ledgers.
+- X-10: `main` lint is red since the v0.2 series; this PR carries the fix.
 
 See the thehub document for details.
 
