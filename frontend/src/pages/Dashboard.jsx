@@ -60,7 +60,7 @@ export default function Dashboard() {
         icon={LayoutDashboard}
       />
       <DiagnosticNoticeBanner />
-      <ProgramTimeline items={PROGRAM_TIMELINE} />
+      <ProgramTimeline producerId="skywatcher-pr" items={PROGRAM_TIMELINE} />
 
       {/* Identity + posture cards */}
       <div className="grid gap-4 lg:grid-cols-4">
