@@ -267,7 +267,8 @@
           "GET /{job_id}",
           "GET /{job_id}/results",
           "POST /{job_id}/control",
-          "POST /{job_id}/review"
+          "POST /{job_id}/review",
+          "GET /{job_id}/items/{item_id}/image"
         ],
         "symbols": [
           "server/backend/screenshot_router.py:create_run",
@@ -283,7 +284,8 @@
           "src/skywatcher/fr24/screenshot_rlsm_adapter.py:provisional_fields",
           "server/backend/screenshot_router.py:store",
           "src/skywatcher/fr24/screenshot_jobs.py:digest",
-          "src/skywatcher/fr24/screenshot_jobs.py:now"
+          "src/skywatcher/fr24/screenshot_jobs.py:now",
+          "server/backend/screenshot_router.py:preview_item"
         ]
       },
       "frontend": {
