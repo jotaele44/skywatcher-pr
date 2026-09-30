@@ -280,7 +280,10 @@
           "src/skywatcher/fr24/screenshot_jobs.py:ScreenshotJobs",
           "src/skywatcher/fr24/screenshot_jobs.py:validate_settings",
           "src/skywatcher/fr24/screenshot_rlsm_adapter.py:extract_into_rlsm",
-          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:provisional_fields"
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:provisional_fields",
+          "server/backend/screenshot_router.py:store",
+          "src/skywatcher/fr24/screenshot_jobs.py:digest",
+          "src/skywatcher/fr24/screenshot_jobs.py:now"
         ]
       },
       "frontend": {
@@ -310,7 +313,10 @@
         "e2e": [
           "frontend/tests/gui-parity.spec.mjs"
         ]
-      }
+      },
+      "feature_flag": "SKYWATCHER_SCREENSHOT_TOKEN",
+      "tracking": "https://github.com/jotaele44/skywatcher-pr/pull/331",
+      "expires_on": "2026-12-31"
     }
   ],
   "exceptions": []
