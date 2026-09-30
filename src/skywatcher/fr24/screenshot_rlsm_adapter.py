@@ -24,7 +24,7 @@ def _read_ocr(conn: sqlite3.Connection, screenshot_id: int) -> list[dict]:
 
 def provisional_fields(ocr_rows: list[dict]) -> tuple[dict, list[dict]]:
     """Build candidate fields without losing conflicting source observations."""
-    from fr24.rlsm_extractors import RE_REG_N, RE_REG_C, RE_REG_OE, _scan_text
+    from fr24.rlsm_extractors import RE_REG_C, RE_REG_N, RE_REG_OE, _scan_text
 
     readable = [r for r in ocr_rows if r.get("ocr_status") == "ok" and (r.get("raw_text") or "").strip()]
     if not readable:
@@ -83,9 +83,9 @@ def _discover_corpus_candidates(corpus_db: Path, fields: dict) -> list[dict]:
             (candidate,)
         ).fetchall()
         return [dict(row) for row in rows]  # No arbitrary candidate truncation.
-    except sqlite3.OperationalError:
+    except sqlite3.OperationalError as exc:
         # Schema absent is a genuine missing dependency, not an empty match universe.
-        raise RuntimeError("canonical corpus tables unavailable for reconciliation")
+        raise RuntimeError("canonical corpus tables unavailable for reconciliation") from exc
     finally:
         conn.close()
 
@@ -100,6 +100,7 @@ def extract_into_rlsm(
     filename_raw: str | None = None,
 ) -> dict[str, Any]:
     import PIL.Image
+
     from fr24 import rlsm_ocr
     from skywatcher.fr24.screenshot_metadata import parse_filename_timestamp
 
