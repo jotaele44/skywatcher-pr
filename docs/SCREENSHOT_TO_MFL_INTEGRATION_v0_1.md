@@ -15,8 +15,8 @@ Freeze the exact feature-branch SHA used for each operator run, including the RL
 2. Set a strong per-installation environment secret: SKYWATCHER_SCREENSHOT_TOKEN. The router can alternatively use an existing PRII_WRITE_TOKEN. If neither is configured **every screenshot endpoint fails closed with HTTP 503**. Legacy unauthenticated local-network write behavior is not inherited.
 3. Run the backend from the repository root using uvicorn; start the existing frontend. Open FR24 Intake → Screenshot Processor.
 4. Enter the screenshot token into the dedicated in-memory browser field. No token enters a job record, generated manifest, URL, or frontend persistent storage.
-5. Select source files; examine the explicit local-OCR/exact-dedup settings; execute. The persistent job database is under inputs/screenshots/runtime by default and is excluded from Git.
-6. Review extraction fields and all discovered candidate links. Add review notes. This action **does not** certify flight identity or change canonical corpus rows.
+5. Select source files; examine the explicit local-OCR/exact-dedup settings; optionally enable append-only reprocessing of cached OCR or increase PDF rendering to 1.5x; execute. The persistent job database is under inputs/screenshots/runtime by default and is excluded from Git.
+6. Expand individual extracted items and, when needed, request a lazy, authenticated, hash-verified preview of the original image manifestation. Review extraction fields and all discovered candidate links. Add review notes. This action **does not** certify flight identity or change canonical corpus rows.
 
 Tests:
 
@@ -33,10 +33,11 @@ Browser build:
 - GET /api/screenshot-runs: latest 30 processing histories.
 - GET /api/screenshot-runs/{job_id}: status, real completion denominator, terminal tallies.
 - GET /api/screenshot-runs/{job_id}/results: raw source manifest, every item, all field candidates, all discovered corpus candidate links, contradictions.
+- GET /api/screenshot-runs/{job_id}/items/{item_id}/image: authenticated, hash-verified lazy image preview; no-store response.
 - POST /api/screenshot-runs/{job_id}/control: pause/resume/cancel.
 - POST /api/screenshot-runs/{job_id}/review: append stage-level operator review note; cannot bind a canonical flight.
 
-The frontend currently polls job progress. Durable SQLite checkpoints survive server restarts; a new process requeues interrupted RUNNING items while preserving already completed items. Duplicate source hashes reuse RLSM OCR when the existing observation was marked complete. New physical paths still receive distinct source manifestations.
+The frontend currently polls job progress. Durable SQLite checkpoints survive server restarts; a new process requeues interrupted RUNNING items while preserving already completed items. Duplicate source hashes reuse RLSM OCR when the existing observation was marked complete unless the explicit reprocess-existing option requests a new append-only OCR attempt. PDF render scale affects only the derived manifestation; the original PDF SHA remains unchanged. New physical paths still receive distinct source manifestations.
 
 ## Bounded security
 
