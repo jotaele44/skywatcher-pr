@@ -6,7 +6,6 @@ Every field and association is provisional until independently adjudicated.
 from __future__ import annotations
 
 import hashlib
-import re
 import shutil
 import sqlite3
 from pathlib import Path
