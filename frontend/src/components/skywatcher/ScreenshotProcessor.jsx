@@ -104,6 +104,27 @@ export default function ScreenshotProcessor() {
     try { setHistory((await call("")).jobs || []); }
     catch (exc) { setError(exc.message); }
   };
+  const exportMflProjection = () => {
+    if (!results?.items?.length) return;
+    const payload = {
+      schema_version: "skywatcher.screenshot.mfl_staging_export.v1",
+      source_job_id: jobId,
+      canonical_append_authorized: false,
+      items: results.items.map((item) => ({
+        item_id: item.item_id, filename_raw: item.filename_raw,
+        screenshot_sha256: item.sha256,
+        processing_status: item.status,
+        master_log_projection: item.master_log_projection,
+      })),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "skywatcher-screenshot-mfl-staging-" + jobId + ".json";
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
   const chooseRun = (id) => {
     setJobId(id); sessionStorage.setItem(RUN_KEY, id); setResults(null); setActiveTab("execution");
   };
@@ -176,6 +197,7 @@ export default function ScreenshotProcessor() {
             {job.status === "PAUSED" && <button className={BUTTON} onClick={() => control("resume")}><Play className="mr-1 inline h-3 w-3" /> Resume</button>}
             {["QUEUED", "RUNNING", "PAUSED"].includes(job.status) && <button className={BUTTON} onClick={() => control("cancel")}>Cancel remaining</button>}
             <button className={BUTTON} onClick={loadResults}>Refresh detailed results</button>
+            {!!results?.items?.length && <button type="button" className={BUTTON} onClick={exportMflProjection}>Export staged MFL field coverage</button>}
           </div>
           {(results?.items || []).map((item) => <details key={item.item_id} className="rounded border border-border p-3 text-xs">
             <summary className="cursor-pointer font-semibold">{item.filename_raw} · {item.status}{item.was_reused ? " · existing OCR reused" : ""}</summary>
@@ -184,6 +206,16 @@ export default function ScreenshotProcessor() {
             <div className="mt-2 space-y-1">{Object.entries(item.fields || {}).map(([k, v]) =>
               <p key={k}><strong>{k}:</strong> {String(v.value)} <span className="text-muted-foreground">({v.certification})</span></p>)}</div>
             <p className="mt-2">Flight-record discovery candidates: {item.candidates?.length || 0}. Candidate matches are not identity.</p>
+            {item.master_log_projection && <div className="mt-2 rounded border border-border/70 p-2">
+              <p className="font-semibold">Master Flight Log v1 compatibility: {item.master_log_projection.proposed_count} proposed / {item.master_log_projection.withheld_count} withheld</p>
+              <p className="text-muted-foreground">NONCANONICAL — extraction does not authorize a new flight record.</p>
+              {Object.entries(item.master_log_projection.proposed_fields || {}).map(([key, field]) =>
+                <p key={key} className="font-mono">{key}: {String(field.value_raw)} (provisional)</p>)}
+              <details className="mt-2"><summary>View withheld fields and evidence requirements</summary>
+                {Object.entries(item.master_log_projection.withheld_fields || {}).map(([key, reason]) =>
+                  <p key={key} className="mt-1"><strong>{key}</strong>: {reason}</p>)}
+              </details>
+            </div>}
             {(item.contradictions || []).map((c, idx) => <p key={idx} className="mt-1 text-amber-300">{c.class}: {c.note}</p>)}
             {item.status === "NEEDS_REVIEW" && <div className="mt-3 space-y-2">
               <label className="block">Manual review notes (not flight certification)
