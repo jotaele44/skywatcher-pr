@@ -112,8 +112,15 @@ def _expand_payload(data: bytes, label: str, *, parent: str = "", depth: int = 0
                         yield info.filename, member, None, b"", "archive compression ratio exceeds limit"
                         continue
                     try:
-                        payload = archive.read(info)
-                    except (OSError, RuntimeError, zipfile.BadZipFile) as exc:
+                        with archive.open(info) as content:
+                            payload = content.read(MAX_SOURCE_BYTES + 1)
+                            if len(payload) > MAX_SOURCE_BYTES or content.read(1):
+                                yield info.filename, member, None, b"", "uncompressed member exceeds byte budget"
+                                continue
+                        if len(payload) != info.file_size:
+                            yield info.filename, member, None, b"", "ZIP member size differs from directory"
+                            continue
+                    except (OSError, RuntimeError, zipfile.BadZipFile, ValueError) as exc:
                         yield info.filename, member, None, b"", f"unreadable member: {type(exc).__name__}"
                         continue
                     yield from _expand_payload(payload, info.filename, parent=member, depth=depth + 1, scale=scale)
@@ -137,6 +144,7 @@ def _expand_payload(data: bytes, label: str, *, parent: str = "", depth: int = 0
                 if pdf.page_count > MAX_PDF_PAGES:
                     yield label, parent, None, b"", f"PDF exceeds {MAX_PDF_PAGES} page limit"
                     return
+                expanded_pdf_bytes = 0
                 for page_no in range(pdf.page_count):
                     try:
                         page = pdf.load_page(page_no)
@@ -146,6 +154,12 @@ def _expand_payload(data: bytes, label: str, *, parent: str = "", depth: int = 0
                         image_bytes = rendered.tobytes("png")
                         if len(image_bytes) > MAX_SOURCE_BYTES:
                             raise ValueError("rendered page exceeds byte limit")
+                        if expanded_pdf_bytes + len(image_bytes) > MAX_EXPANDED_BYTES:
+                            yield label, parent, page_no + 1, b"", "expanded PDF budget exceeded"
+                            for remaining in range(page_no + 1, pdf.page_count):
+                                yield label, parent, remaining + 1, b"", "PDF render budget exhausted"
+                            return
+                        expanded_pdf_bytes += len(image_bytes)
                         yield f"{label}#page={page_no + 1}.png", parent, page_no + 1, image_bytes, None
                     except (ValueError, RuntimeError, MemoryError) as exc:
                         yield label, parent, page_no + 1, b"", f"PDF page render failed: {type(exc).__name__}"
@@ -220,6 +234,7 @@ class ScreenshotJobs:
         directory = self.work / job_id
         directory.mkdir(mode=0o700)
         try:
+            expanded_batch_bytes = 0
             with self._connect() as conn:
                 conn.execute("INSERT INTO jobs VALUES (?,?,?,?,?,NULL)",
                              (job_id, now(), now(), "QUEUED", json.dumps(options, sort_keys=True)))
@@ -240,6 +255,9 @@ class ScreenshotJobs:
                         item_path = None
                         sha = None
                         if not problem:
+                            expanded_batch_bytes += len(payload)
+                            if expanded_batch_bytes > MAX_EXPANDED_BYTES:
+                                raise ValueError("expanded batch exceeds 80 MiB; no partial batch accepted")
                             item_path = directory / f"item-{source_idx:04d}-{item_idx:04d}.png"
                             # Store original format for Pillow/Tesseract using its genuine suffix.
                             item_path = item_path.with_suffix(Path(item_name).suffix.lower())
