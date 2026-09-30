@@ -10,7 +10,7 @@ fastapi = pytest.importorskip("fastapi")
 pytest.importorskip("httpx")
 
 
-def _fake_extractor(path, sha, root, rlsm_db, corpus_db, *, filename_raw=None):
+def _fake_extractor(path, sha, root, rlsm_db, corpus_db, *, filename_raw=None, reprocess_existing=False):
     return {
         "status": "NEEDS_REVIEW",
         "screenshot_id": 44,
@@ -75,6 +75,13 @@ def test_http_upload_requires_token_and_reports_real_terminal_progress(tmp_path,
         item = results.json()["items"][0]
         assert item["filename_raw"] == "IMG_0001.png"
         assert item["fields"]["registration"]["certification"] == "CANDIDATE_NOT_IDENTITY"
+        image = client.get(
+            "/api/screenshot-runs/" + job_id + "/items/" + str(item["item_id"]) + "/image",
+            headers={"Authorization": "Bearer fixture-token"},
+        )
+        assert image.status_code == 200
+        assert image.headers["cache-control"] == "no-store"
+        assert base64.b64decode(image.json()["data_base64"]) == b"bounded-fixture"
 
 
 def test_http_rejects_unimplemented_external_vision(tmp_path, monkeypatch):
