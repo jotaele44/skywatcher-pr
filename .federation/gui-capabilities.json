@@ -252,5 +252,21 @@
       }
     }
   ],
-  "exceptions": []
+  "exceptions": [
+    {
+      "id": "knowledge-implications-v0-1-draft",
+      "reason": "Draft-only, inactive Core analytical primitive: no user-facing production workflow is wired. Explicit short-lived exception rather than claiming GUI parity; resolve via manifest mapping and E2E tests before activation.",
+      "owner": "Skywatcher Core",
+      "tracking": "https://github.com/jotaele44/skywatcher-pr/pull/332",
+      "expires_on": "2026-10-31",
+      "candidate_ids": [
+        "python_module:src/skywatcher/core/knowledge_implications.py",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:canonical_json",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:sha256_canonical",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:dependency_digest",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:classify_delta",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:deterministic_verbal_output"
+      ]
+    }
+  ]
 }
