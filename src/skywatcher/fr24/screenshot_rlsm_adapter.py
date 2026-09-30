@@ -68,7 +68,7 @@ def provisional_fields(ocr_rows: list[dict]) -> tuple[dict, list[dict]]:
                               "note": "multiple displayed values of one unit; no selection justified"})
     # A flight ID is eligible for MFL projection only with its explicit GUI label.
     flight_id_pattern = re.compile(
-        r"\\b(?:FLIGHT\\s*ID|FR24\\s*(?:FLIGHT\\s*)?ID)\\s*[:#-]?\\s*([0-9a-f]{6,8})\\b",
+        r"\b(?:FLIGHT\s*ID|FR24\s*(?:FLIGHT\s*)?ID)\s*[:#-]?\s*([0-9a-f]{6,8})\b",
         re.I,
     )
     displayed_ids = sorted({
