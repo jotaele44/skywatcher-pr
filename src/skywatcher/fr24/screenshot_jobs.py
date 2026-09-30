@@ -75,6 +75,9 @@ def _expand_payload(data: bytes, label: str, *, parent: str = "", depth: int = 0
             archive = zipfile.ZipFile(io.BytesIO(data))
             with archive:
                 members = [info for info in archive.infolist() if not info.is_dir()]
+                if not members:
+                    yield label, parent, None, b"", "empty ZIP archive"
+                    return
                 if len(members) > MAX_MEMBERS:
                     yield label, parent, None, b"", "archive member limit exceeded"
                     return
@@ -117,6 +120,9 @@ def _expand_payload(data: bytes, label: str, *, parent: str = "", depth: int = 0
             with fitz.open(stream=data, filetype="pdf") as pdf:
                 if pdf.is_encrypted:
                     yield label, parent, None, b"", "encrypted PDF"
+                    return
+                if not pdf.page_count:
+                    yield label, parent, None, b"", "PDF contains no pages"
                     return
                 if pdf.page_count > MAX_PDF_PAGES:
                     yield label, parent, None, b"", f"PDF exceeds {MAX_PDF_PAGES} page limit"
