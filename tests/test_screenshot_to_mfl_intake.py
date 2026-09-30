@@ -14,7 +14,7 @@ from skywatcher.fr24.screenshot_jobs import ScreenshotJobs, validate_settings
 from skywatcher.fr24.screenshot_rlsm_adapter import provisional_fields
 
 
-def fake_extractor(path, sha, root, rlsm_db, corpus_db, *, filename_raw=None):
+def fake_extractor(path, sha, root, rlsm_db, corpus_db, *, filename_raw=None, reprocess_existing=False):
     assert hashlib.sha256(path.read_bytes()).hexdigest() == sha
     assert filename_raw
     return {
@@ -28,7 +28,8 @@ def fake_extractor(path, sha, root, rlsm_db, corpus_db, *, filename_raw=None):
 
 def test_strict_settings_reject_unimplemented_promotion():
     assert validate_settings({}) == {
-        "ocr_mode": "local", "vision_mode": "off", "duplicate_mode": "exact"
+        "ocr_mode": "local", "vision_mode": "off", "duplicate_mode": "exact",
+        "reprocess_existing": False, "pdf_scale": 1.0
     }
     with pytest.raises(ValueError, match="not implemented"):
         validate_settings({"vision_mode": "comprehensive"})
@@ -110,7 +111,7 @@ def test_review_is_not_a_canonical_flight_promotion(tmp_path):
     accepted = service.review(run["job_id"], item["item_id"], "OCR field reviewed; identity remains unbound")
     assert accepted["items"][0]["status"] == "REVIEWED"
     assert accepted["items"][0]["candidates"] == []
-    assert accepted["status"] == "READY_FOR_REVIEW"  # run status is immutable history
+    assert accepted["status"] == "COMPLETE"  # review completion does not certify identity
 
 
 def test_conflicting_ocr_registration_is_not_silently_selected():
@@ -186,6 +187,10 @@ def test_rlsm_exact_byte_reuse_and_complete_corpus_candidate_set(tmp_path, monke
     one = adapter.extract_into_rlsm(first, sha, tmp_path, rlsm, corpus, filename_raw="IMG A.png")
     two = adapter.extract_into_rlsm(second, sha, tmp_path, rlsm, corpus, filename_raw="IMG B.png")
     assert len(observed) == 1
+    refreshed = adapter.extract_into_rlsm(second, sha, tmp_path, rlsm, corpus,
+                                          filename_raw="IMG B.png", reprocess_existing=True)
+    assert refreshed["was_reused"] is True
+    assert len(observed) == 2
     assert one["status"] == two["status"] == "NEEDS_REVIEW"
     assert two["was_reused"] is True
     assert len(one["candidates"]) == len(two["candidates"]) == 2
@@ -193,6 +198,50 @@ def test_rlsm_exact_byte_reuse_and_complete_corpus_candidate_set(tmp_path, monke
     with sqlite3.connect(rlsm) as conn:
         assert conn.execute("SELECT COUNT(*) FROM screenshots").fetchone()[0] == 1
         assert conn.execute("SELECT COUNT(*) FROM source_manifestations").fetchone()[0] == 2
-        assert conn.execute("SELECT COUNT(*) FROM ocr_observations").fetchone()[0] == 1
+        assert conn.execute("SELECT COUNT(*) FROM ocr_observations").fetchone()[0] == 2
     with sqlite3.connect(corpus) as conn:
         assert conn.execute("SELECT COUNT(*) FROM flight_corpus_records").fetchone()[0] == 2
+
+def test_preview_hash_and_runtime_boundary(tmp_path):
+    import base64
+
+    service = ScreenshotJobs(tmp_path, extractor=fake_extractor)
+    run = service.create([("source.png", b"pixel-fixture")])
+    item = service.detail(run["job_id"], include_items=True)["items"][0]
+    receipt = service.preview(run["job_id"], item["item_id"])
+    assert base64.b64decode(receipt["data_base64"]) == b"pixel-fixture"
+    assert receipt["sha256"] == item["sha256"]
+    with service._connect() as conn:
+        saved = Path(conn.execute("SELECT saved_path FROM items WHERE item_id=?",
+                                  (item["item_id"],)).fetchone()[0])
+    saved.write_bytes(b"altered-bytes")
+    with pytest.raises(ValueError, match="hash"):
+        service.preview(run["job_id"], item["item_id"])
+
+
+def test_pdf_preprocessing_changes_only_derived_render_identity(tmp_path):
+    fitz = pytest.importorskip("fitz")
+    doc = fitz.open()
+    doc.new_page(width=120, height=80)
+    payload = doc.tobytes()
+    doc.close()
+    service = ScreenshotJobs(tmp_path, extractor=fake_extractor)
+    standard = service.create([("page.pdf", payload)], {"pdf_scale": 1.0})
+    enhanced = service.create([("page.pdf", payload)], {"pdf_scale": 1.5})
+    s = service.detail(standard["job_id"], include_items=True)
+    e = service.detail(enhanced["job_id"], include_items=True)
+    assert s["sources"][0]["sha256"] == e["sources"][0]["sha256"]
+    assert s["items"][0]["sha256"] != e["items"][0]["sha256"]
+    assert s["items"][0]["page_number"] == e["items"][0]["page_number"] == 1
+
+
+def test_empty_zip_is_not_reported_as_zero_work(tmp_path):
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, "w"):
+        pass
+    service = ScreenshotJobs(tmp_path, extractor=fake_extractor)
+    run = service.create([("empty.zip", stream.getvalue())])
+    detail = service.detail(run["job_id"], include_items=True)
+    assert detail["total"] == detail["complete"] == 1
+    assert detail["counts"] == {"BLOCKED": 1}
+    assert detail["items"][0]["error"] == "empty ZIP archive"
