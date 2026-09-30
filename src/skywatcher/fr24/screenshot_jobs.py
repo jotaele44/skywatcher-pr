@@ -212,7 +212,7 @@ class ScreenshotJobs:
                     if not data or len(data) > MAX_SOURCE_BYTES or Path(label).suffix.lower() not in ALLOWED_EXTS:
                         raise ValueError(f"invalid or oversized source #{source_idx + 1}")
                     path = directory / f"source-{source_idx:04d}.bin"
-                    with path.open("xb") as fp:
+                    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as fp:
                         fp.write(data)
                     source_id = conn.execute(
                         "INSERT INTO sources (job_id,ordinal,original_name,sha256,size_bytes,saved_path) VALUES (?,?,?,?,?,?)",
@@ -227,7 +227,7 @@ class ScreenshotJobs:
                             item_path = directory / f"item-{source_idx:04d}-{item_idx:04d}.png"
                             # Store original format for Pillow/Tesseract using its genuine suffix.
                             item_path = item_path.with_suffix(Path(item_name).suffix.lower())
-                            with item_path.open("xb") as fp:
+                            with os.fdopen(os.open(item_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as fp:
                                 fp.write(payload)
                             sha = digest(payload)
                         conn.execute("""INSERT INTO items
@@ -337,8 +337,11 @@ class ScreenshotJobs:
             self._worker_lock.release()
 
     def _run(self, job_id):
-        from skywatcher.fr24.screenshot_rlsm_adapter import extract_into_rlsm
-        engine = self.extractor or extract_into_rlsm
+        if self.extractor is None:
+            from skywatcher.fr24.screenshot_rlsm_adapter import extract_into_rlsm
+            engine = extract_into_rlsm
+        else:
+            engine = self.extractor
         while True:
             with self._connect() as conn:
                 state = conn.execute("SELECT status FROM jobs WHERE job_id=?", (job_id,)).fetchone()["status"]
@@ -358,7 +361,8 @@ class ScreenshotJobs:
                 conn.execute("UPDATE items SET status='RUNNING' WHERE item_id=?", (item["item_id"],))
             try:
                 result = engine(Path(item["saved_path"]), item["sha256"],
-                                self.root, self.rlsm_db, self.corpus_db)
+                                self.root, self.rlsm_db, self.corpus_db,
+                                filename_raw=item["filename_raw"])
                 if not isinstance(result, dict) or result.get("status") not in {"NEEDS_REVIEW", "EXTRACTED_EMPTY", "BLOCKED"}:
                     raise ValueError("extractor returned an invalid stage receipt")
                 status = result["status"]
