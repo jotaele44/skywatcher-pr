@@ -287,3 +287,42 @@ def test_pdf_budget_preserves_remaining_page_denominator(monkeypatch):
     assert [entry[2] for entry in page_items] == [1, 2]
     assert page_items[0][4] == "expanded PDF budget exceeded"
     assert page_items[1][4] == "PDF render budget exhausted"
+
+def test_explicit_source_flight_id_is_provisional_and_not_created_as_flight():
+    from skywatcher.fr24.screenshot_mfl_projection import MFL_FIELDS, project_screenshot_fields
+
+    fields, conflicts = provisional_fields([{
+        "obs_id": 7, "zone": "aircraft_card",
+        "raw_text": "ABC123 FLIGHT ID 3bf72561 2000 ft",
+        "confidence_mean": 94, "ocr_status": "ok",
+    }])
+    assert not conflicts
+    assert fields["source_flight_id_displayed"]["value"] == "3bf72561"
+    proposal = project_screenshot_fields(
+        fields, conflicts, [], screenshot_sha256="a" * 64
+    )
+    assert proposal["proposed_fields"]["sourceFlightIdRaw"]["value_raw"] == "3bf72561"
+    assert proposal["proposed_fields"]["callsignRaw"]["value_raw"] == "ABC123"
+    assert proposal["canonical_append_authorized"] is False
+    assert proposal["certification"] == "NONCANONICAL"
+    assert "metrics.maxAltitudeFt" in proposal["withheld_fields"]
+    assert "startTimeUtc" in proposal["withheld_fields"]
+    assert proposal["proposed_count"] + proposal["withheld_count"] == len(MFL_FIELDS)
+
+
+def test_conflicting_explicit_flight_ids_withhold_id():
+    from skywatcher.fr24.screenshot_mfl_projection import project_screenshot_fields
+
+    fields, conflicts = provisional_fields([
+        {"obs_id": 1, "zone": "aircraft_card", "raw_text": "ABC123 FLIGHT ID 3bf72561",
+         "confidence_mean": 91, "ocr_status": "ok"},
+        {"obs_id": 2, "zone": "top_bar", "raw_text": "FR24 ID 40998654",
+         "confidence_mean": 93, "ocr_status": "ok"},
+    ])
+    assert "source_flight_id_displayed" not in fields
+    assert any(c.get("field") == "source_flight_id_displayed" for c in conflicts)
+    proposal = project_screenshot_fields(
+        fields, conflicts, [], screenshot_sha256="b" * 64
+    )
+    assert "sourceFlightIdRaw" in proposal["withheld_fields"]
+    assert proposal["canonical_append_authorized"] is False
