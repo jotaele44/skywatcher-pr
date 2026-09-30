@@ -36,6 +36,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from server.backend.console import router as console_router
+from server.backend.screenshot_router import router as screenshot_router
 from server.backend.console.repositories import RepositoryRegistry, row_has_complete_provenance
 from server.backend.console.repositories.normalize import attach_provenance
 from server.backend.console.source_taxonomy import build_provenance, normalize_observation
@@ -98,6 +99,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(console_router)
+app.include_router(screenshot_router)
 
 def _flight_corpus_v4_contract() -> dict[str, Any]:
     path = ROOT / "config" / "flight_corpus_v4.json"
