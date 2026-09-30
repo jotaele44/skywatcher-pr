@@ -10,7 +10,9 @@ from pathlib import Path
 
 import pytest
 from skywatcher.core.knowledge_implications import (
-    canonical_json, classify_delta, dependency_digest, deterministic_verbal_output,
+    classify_delta,
+    dependency_digest,
+    deterministic_verbal_output,
 )
 
 REPO = Path(__file__).resolve().parents[1]
