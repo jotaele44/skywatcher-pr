@@ -20,6 +20,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from skywatcher.fr24.screenshot_mfl_projection import project_screenshot_fields
+
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".heic", ".heif", ".webp", ".tif", ".tiff", ".bmp"}
 ALLOWED_EXTS = IMAGE_EXTS | {".zip", ".pdf"}
 TERMINAL = {"NEEDS_REVIEW", "EXTRACTED_EMPTY", "REVIEWED", "FAILED", "BLOCKED"}
@@ -311,6 +313,10 @@ class ScreenshotJobs:
                            start_time_utc,end_time_utc,association_status
                            FROM candidate_links WHERE item_id=? ORDER BY corpus_record_id""",
                         (item["item_id"],))]
+                    item["master_log_projection"] = project_screenshot_fields(
+                        item["fields"], item["contradictions"], item["candidates"],
+                        screenshot_sha256=item["sha256"],
+                    )
                 response["items"] = items
             return response
 
