@@ -47,7 +47,6 @@ if str(ROOT / "src") not in sys.path:
 
 # Load after the src bootstrap: the screenshot router imports skywatcher.fr24.
 from server.backend.screenshot_router import router as screenshot_router  # noqa: E402
-
 from skywatcher.fr24 import database as skywatcher_db
 from skywatcher.fr24.acquisition_receipts import (
     AcquisitionReceiptError,
