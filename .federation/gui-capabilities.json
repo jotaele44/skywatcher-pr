@@ -250,6 +250,67 @@
           "tests/test_server_smoke.py"
         ]
       }
+    },
+    {
+      "id": "screenshot-to-mfl-intake",
+      "classification": "operator",
+      "status": "staged",
+      "requires_terminal": false,
+      "rationale": "Authenticated local screenshot extraction and manual review are available; corpus-level certification and canonical MFL promotion remain gated.",
+      "backend": {
+        "files": [
+          "server/backend/screenshot_router.py",
+          "src/skywatcher/fr24/screenshot_jobs.py",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py"
+        ],
+        "endpoints": [
+          "GET /{job_id}",
+          "GET /{job_id}/results",
+          "POST /{job_id}/control",
+          "POST /{job_id}/review"
+        ],
+        "symbols": [
+          "server/backend/screenshot_router.py:create_run",
+          "server/backend/screenshot_router.py:list_runs",
+          "server/backend/screenshot_router.py:get_run",
+          "server/backend/screenshot_router.py:get_results",
+          "server/backend/screenshot_router.py:control_run",
+          "server/backend/screenshot_router.py:review_item",
+          "server/backend/screenshot_router.py:require_screenshot_access",
+          "src/skywatcher/fr24/screenshot_jobs.py:ScreenshotJobs",
+          "src/skywatcher/fr24/screenshot_jobs.py:validate_settings",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:extract_into_rlsm",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:provisional_fields"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/fr24"
+        ],
+        "e2e_routes": [
+          "/fr24"
+        ],
+        "components": [
+          "frontend/src/pages/FR24Intake.jsx",
+          "frontend/src/components/skywatcher/ScreenshotProcessor.jsx",
+          "frontend/src/api/federationClient.js"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_screenshot_to_mfl_intake.py",
+          "tests/test_screenshot_intake_api.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      }
     }
   ],
   "exceptions": []
