@@ -245,3 +245,45 @@ def test_empty_zip_is_not_reported_as_zero_work(tmp_path):
     assert detail["total"] == detail["complete"] == 1
     assert detail["counts"] == {"BLOCKED": 1}
     assert detail["items"][0]["error"] == "empty ZIP archive"
+
+def test_expanded_batch_budget_is_atomic(tmp_path, monkeypatch):
+    from skywatcher.fr24 import screenshot_jobs as module
+
+    monkeypatch.setattr(module, "MAX_EXPANDED_BYTES", 8)
+    service = ScreenshotJobs(tmp_path, extractor=fake_extractor)
+    with pytest.raises(ValueError, match="expanded batch"):
+        service.create([("one.png", b"12345"), ("two.png", b"67890")])
+    assert service.list_jobs() == []
+    assert list(service.work.glob("*/source-*.bin")) == []
+
+
+def test_zip_member_stream_read_is_bounded_and_preserves_blocker(monkeypatch):
+    from skywatcher.fr24 import screenshot_jobs as module
+
+    archive_bytes = io.BytesIO()
+    with zipfile.ZipFile(archive_bytes, "w") as archive:
+        archive.writestr("long.png", b"12345")
+        archive.writestr("safe.png", b"12")
+    monkeypatch.setattr(module, "MAX_SOURCE_BYTES", 4)
+    expanded = list(module._expand_payload(archive_bytes.getvalue(), "packet.zip"))
+    assert len(expanded) == 2
+    assert expanded[0][4] == "member exceeds size limit"
+    assert expanded[1][3] == b"12"
+    assert expanded[1][4] is None
+
+
+def test_pdf_budget_preserves_remaining_page_denominator(monkeypatch):
+    fitz = pytest.importorskip("fitz")
+    from skywatcher.fr24 import screenshot_jobs as module
+
+    doc = fitz.open()
+    doc.new_page(width=200, height=200)
+    doc.new_page(width=200, height=200)
+    content = doc.tobytes()
+    doc.close()
+    monkeypatch.setattr(module, "MAX_EXPANDED_BYTES", 1)
+    page_items = list(module._expand_payload(content, "multipage.pdf"))
+    assert len(page_items) == 2
+    assert [entry[2] for entry in page_items] == [1, 2]
+    assert page_items[0][4] == "expanded PDF budget exceeded"
+    assert page_items[1][4] == "PDF render budget exhausted"
