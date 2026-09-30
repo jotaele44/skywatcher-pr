@@ -36,7 +36,6 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from server.backend.console import router as console_router
-from server.backend.screenshot_router import router as screenshot_router
 from server.backend.console.repositories import RepositoryRegistry, row_has_complete_provenance
 from server.backend.console.repositories.normalize import attach_provenance
 from server.backend.console.source_taxonomy import build_provenance, normalize_observation
@@ -45,6 +44,9 @@ ROOT = Path(__file__).resolve().parents[2]
 # Make the src-layout package importable when uvicorn starts from the repo root.
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
+
+# Load after the src bootstrap: the screenshot router imports skywatcher.fr24.
+from server.backend.screenshot_router import router as screenshot_router  # noqa: E402
 
 from skywatcher.fr24 import database as skywatcher_db
 from skywatcher.fr24.acquisition_receipts import (
