@@ -6,6 +6,7 @@ Every field and association is provisional until independently adjudicated.
 from __future__ import annotations
 
 import hashlib
+import re
 import shutil
 import sqlite3
 from pathlib import Path
@@ -65,12 +66,31 @@ def provisional_fields(ocr_rows: list[dict]) -> tuple[dict, list[dict]]:
             conflicts.append({"class": "SCHEMA", "status": "UNRESOLVED",
                               "field": field, "raw_value_candidates": sorted(values),
                               "note": "multiple displayed values of one unit; no selection justified"})
+    # A flight ID is eligible for MFL projection only with its explicit GUI label.
+    flight_id_pattern = re.compile(
+        r"\\b(?:FLIGHT\\s*ID|FR24\\s*(?:FLIGHT\\s*)?ID)\\s*[:#-]?\\s*([0-9a-f]{6,8})\\b",
+        re.I,
+    )
+    displayed_ids = sorted({
+        match.group(1) for row in readable
+        for match in flight_id_pattern.finditer(row["raw_text"])
+    })
+    if len(displayed_ids) == 1:
+        parsed["source_flight_id_displayed"] = displayed_ids[0]
+    elif len(displayed_ids) > 1:
+        conflicts.append({
+            "class": "IDENTITY", "field": "source_flight_id_displayed",
+            "status": "UNRESOLVED", "raw_flight_id_candidates": displayed_ids,
+            "note": "conflicting explicit displayed flight IDs",
+        })
     # Never equate displayed height/speed with whole-flight maximums.
     result = {}
     for field, value in parsed.items():
         supporting = [r for r in readable if (
             (field == "registration" and value in r["raw_text"]) or
-            (field != "registration")
+            (field == "source_flight_id_displayed" and
+             any(m.group(1) == value for m in flight_id_pattern.finditer(r["raw_text"]))) or
+            (field not in {"registration", "source_flight_id_displayed"})
         )]
         result[field] = {
             "value": value,
