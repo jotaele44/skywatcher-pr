@@ -22,7 +22,7 @@ from skywatcher.fr24.screenshot_jobs import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-MAX_REQUEST_BYTES = 48 * 1024 * 1024
+MAX_REQUEST_BYTES = 58 * 1024 * 1024
 
 
 def require_screenshot_access(request: Request) -> None:
@@ -65,7 +65,7 @@ async def _bounded_json(request: Request) -> dict:
     if size:
         try:
             if int(size) > MAX_REQUEST_BYTES:
-                raise HTTPException(status_code=413, detail="request exceeds 48 MiB")
+                raise HTTPException(status_code=413, detail="request exceeds 58 MiB")
         except ValueError as exc:
             raise HTTPException(status_code=400, detail="invalid content length") from exc
     buffer = bytearray()
