@@ -17,9 +17,34 @@ function asBase64(file) {
   });
 }
 
+function SourcePreview({ jobId, itemId, token }) {
+  const [src, setSrc] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const load = async () => {
+    setBusy(true); setError("");
+    try {
+      const response = await federation.request(
+        "/screenshot-runs/" + encodeURIComponent(jobId) + "/items/" + itemId + "/image",
+        { token }
+      );
+      setSrc("data:" + response.mime_type + ";base64," + response.data_base64);
+    } catch (exc) { setError(exc.message); } finally { setBusy(false); }
+  };
+  return <div className="mt-3 space-y-2">
+    {!src && <button type="button" className={BUTTON} disabled={busy || !token} onClick={load}>
+      {busy ? "Loading source..." : "View original source image"}
+    </button>}
+    {src && <img src={src} alt="Original uploaded image used for extraction review" className="max-h-[30rem] max-w-full rounded border border-border object-contain" />}
+    {error && <p className="text-xs text-amber-300">{error}</p>}
+  </div>;
+}
+
 export default function ScreenshotProcessor() {
   const [token, setToken] = useState("");
   const [files, setFiles] = useState([]);
+  const [reprocess, setReprocess] = useState(false);
+  const [pdfScale, setPdfScale] = useState(1.0);
   const [activeTab, setActiveTab] = useState("upload");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -60,7 +85,8 @@ export default function ScreenshotProcessor() {
       const upload = await Promise.all(files.map(async (f) => ({ name: f.name, data_base64: await asBase64(f) })));
       const created = await call("", {
         method: "POST",
-        body: { files: upload, settings: { ocr_mode: "local", vision_mode: "off", duplicate_mode: "exact" } },
+        body: { files: upload, settings: { ocr_mode: "local", vision_mode: "off", duplicate_mode: "exact",
+                    reprocess_existing: reprocess, pdf_scale: pdfScale } },
       });
       setJobId(created.job_id); sessionStorage.setItem(RUN_KEY, created.job_id);
       setJob(created); setActiveTab("execution");
@@ -123,6 +149,12 @@ export default function ScreenshotProcessor() {
         <div className="rounded border border-border p-3 text-xs">
           <h3 className="font-semibold">Preprocessing profile — initial secured implementation</h3>
           <p className="mt-2">Local OCR: enabled · Exact SHA-256 reuse: enabled · Raw manifestation provenance: preserved</p>
+          <label className="mt-3 flex items-center gap-2"><input type="checkbox" checked={reprocess} onChange={(e) => setReprocess(e.target.checked)} /> Reprocess existing screenshot OCR (append-only new attempt)</label>
+          <label className="mt-2 block">PDF render resolution
+            <select className="ml-2 rounded border border-border bg-background px-2 py-1" value={pdfScale} onChange={(e) => setPdfScale(Number(e.target.value))}>
+              <option value={1}>Standard 1.0×</option><option value={1.5}>Enhanced 1.5×</option>
+            </select>
+          </label>
           <p className="mt-2 text-muted-foreground">External vision and perceptual deduplication are withheld pending independent validation. PDF rendering requires optional PyMuPDF.</p>
         </div>
         <button type="button" disabled={!canRun} onClick={execute}
@@ -136,6 +168,7 @@ export default function ScreenshotProcessor() {
           <p className="break-all font-mono text-xs">{job.job_id} · {job.status}</p>
           <progress className="h-3 w-full" value={job.complete || 0} max={job.total || 1} aria-label="Processing progress" />
           <p className="text-sm">{job.complete}/{job.total} manifestations processed ({Math.round((job.progress || 0) * 100)}%)</p>
+          {job.current_stage && <p className="font-mono text-xs text-primary">Current stage: {job.current_stage}</p>}
           <div className="flex flex-wrap gap-2">{Object.entries(job.counts || {}).map(([k, n]) =>
             <span key={k} className="rounded border border-border px-2 py-1 font-mono text-xs">{k}: {n}</span>)}</div>
           <div className="flex flex-wrap gap-2">
@@ -147,6 +180,7 @@ export default function ScreenshotProcessor() {
           {(results?.items || []).map((item) => <details key={item.item_id} className="rounded border border-border p-3 text-xs">
             <summary className="cursor-pointer font-semibold">{item.filename_raw} · {item.status}{item.was_reused ? " · existing OCR reused" : ""}</summary>
             {item.error && <p className="mt-2 text-amber-300">{item.error}</p>}
+            {item.sha256 && <SourcePreview jobId={jobId} itemId={item.item_id} token={token} />}
             <div className="mt-2 space-y-1">{Object.entries(item.fields || {}).map(([k, v]) =>
               <p key={k}><strong>{k}:</strong> {String(v.value)} <span className="text-muted-foreground">({v.certification})</span></p>)}</div>
             <p className="mt-2">Flight-record discovery candidates: {item.candidates?.length || 0}. Candidate matches are not identity.</p>
