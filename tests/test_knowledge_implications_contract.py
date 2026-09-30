@@ -9,6 +9,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+
 from skywatcher.core.knowledge_implications import (
     classify_delta,
     dependency_digest,
