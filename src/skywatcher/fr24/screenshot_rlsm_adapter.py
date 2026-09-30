@@ -192,6 +192,12 @@ def extract_into_rlsm(
                 }
         ocr = _read_ocr(conn, screenshot_id)
         fields, contradictions = provisional_fields(ocr)
+        if not any(row.get("ocr_status") == "ok" and (row.get("raw_text") or "").strip() for row in ocr):
+            return {
+                "status": "BLOCKED", "screenshot_id": screenshot_id,
+                "was_reused": reused, "contradictions": contradictions,
+                "error": "OCR produced no usable text; negative evidence is unverified",
+            }
         candidates = _discover_corpus_candidates(corpus_db, fields)
         return {
             "status": "NEEDS_REVIEW" if fields else "EXTRACTED_EMPTY",
