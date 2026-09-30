@@ -6,6 +6,7 @@ No screenshot observation becomes a canonical flight through this module.
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import io
 import json
@@ -38,16 +39,25 @@ def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def validate_settings(value: Any) -> dict[str, str]:
+def validate_settings(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("settings must be an object")
     allowed = {"ocr_mode": {"local"}, "vision_mode": {"off"}, "duplicate_mode": {"exact"}}
-    if set(value) - set(allowed):
-        raise ValueError("unsupported settings: " + ", ".join(sorted(set(value) - set(allowed))))
+    valid_keys = set(allowed) | {"reprocess_existing", "pdf_scale"}
+    if set(value) - valid_keys:
+        raise ValueError("unsupported settings: " + ", ".join(sorted(set(value) - valid_keys)))
     settings = {k: value.get(k, next(iter(v))) for k, v in allowed.items()}
     for key, options in allowed.items():
         if settings[key] not in options:
             raise ValueError(f"{key} is not implemented in this release")
+    reprocess = value.get("reprocess_existing", False)
+    scale = value.get("pdf_scale", 1.0)
+    if not isinstance(reprocess, bool):
+        raise ValueError("reprocess_existing must be a boolean")
+    if isinstance(scale, bool) or not isinstance(scale, (int, float)) or scale not in (1.0, 1.5):
+        raise ValueError("pdf_scale must be 1.0 or 1.5")
+    settings["reprocess_existing"] = reprocess
+    settings["pdf_scale"] = float(scale)
     return settings
 
 
@@ -58,7 +68,7 @@ def _clean_label(name: str) -> str:
     return name
 
 
-def _expand_payload(data: bytes, label: str, *, parent: str = "", depth: int = 0):
+def _expand_payload(data: bytes, label: str, *, parent: str = "", depth: int = 0, scale: float = 1.0):
     """Yield (name, member, page, bytes, error); blocked items are explicit."""
     extension = Path(label).suffix.lower()
     if extension in IMAGE_EXTS:
@@ -106,7 +116,7 @@ def _expand_payload(data: bytes, label: str, *, parent: str = "", depth: int = 0
                     except (OSError, RuntimeError, zipfile.BadZipFile) as exc:
                         yield info.filename, member, None, b"", f"unreadable member: {type(exc).__name__}"
                         continue
-                    yield from _expand_payload(payload, info.filename, parent=member, depth=depth + 1)
+                    yield from _expand_payload(payload, info.filename, parent=member, depth=depth + 1, scale=scale)
         except (OSError, zipfile.BadZipFile):
             yield label, parent, None, b"", "invalid ZIP archive"
         return
@@ -130,9 +140,9 @@ def _expand_payload(data: bytes, label: str, *, parent: str = "", depth: int = 0
                 for page_no in range(pdf.page_count):
                     try:
                         page = pdf.load_page(page_no)
-                        if page.rect.width * page.rect.height > 20_000_000:
+                        if page.rect.width * page.rect.height * scale * scale > 20_000_000:
                             raise ValueError("page exceeds image pixel limit")
-                        rendered = page.get_pixmap(matrix=fitz.Matrix(1, 1), alpha=False)
+                        rendered = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
                         image_bytes = rendered.tobytes("png")
                         if len(image_bytes) > MAX_SOURCE_BYTES:
                             raise ValueError("rendered page exceeds byte limit")
@@ -224,7 +234,7 @@ class ScreenshotJobs:
                         "INSERT INTO sources (job_id,ordinal,original_name,sha256,size_bytes,saved_path) VALUES (?,?,?,?,?,?)",
                         (job_id, source_idx, label, digest(data), len(data), str(path))
                     ).lastrowid
-                    for item_idx, (item_name, member, page, payload, problem) in enumerate(_expand_payload(data, label)):
+                    for item_idx, (item_name, member, page, payload, problem) in enumerate(_expand_payload(data, label, scale=options["pdf_scale"])):
                         if item_idx >= MAX_MEMBERS + MAX_PDF_PAGES:
                             raise ValueError("expanded item count exceeds safety limit")
                         item_path = None
@@ -266,6 +276,7 @@ class ScreenshotJobs:
                 "created_at": job["created_at"], "updated_at": job["updated_at"],
                 "error": job["error"], "total": total, "complete": complete,
                 "progress": (complete / total if total else 0.0), "counts": tally,
+                "current_stage": "RLSM_OCR_AND_RECONCILIATION" if tally.get("RUNNING") else None,
             }
             if include_items:
                 response["sources"] = [dict(r) for r in conn.execute(
@@ -284,6 +295,30 @@ class ScreenshotJobs:
                         (item["item_id"],))]
                 response["items"] = items
             return response
+
+    def preview(self, job_id: str, item_id: int) -> dict:
+        with self._connect() as conn:
+            record = conn.execute("SELECT saved_path,sha256 FROM items WHERE job_id=? AND item_id=?",
+                                  (job_id, item_id)).fetchone()
+        if record is None or not record["saved_path"] or not record["sha256"]:
+            raise KeyError("image preview is unavailable")
+        path = Path(record["saved_path"])
+        if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_SOURCE_BYTES:
+            raise ValueError("preview source unavailable or exceeds byte budget")
+        try:
+            path.resolve(strict=True).relative_to(self.work)
+        except ValueError as exc:
+            raise ValueError("preview source escapes the runtime vault") from exc
+        data = path.read_bytes()
+        if digest(data) != record["sha256"]:
+            raise ValueError("preview source hash no longer matches the manifest")
+        mime = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                ".webp": "image/webp", ".heic": "image/heic", ".heif": "image/heif",
+                ".tif": "image/tiff", ".tiff": "image/tiff", ".bmp": "image/bmp"}.get(path.suffix.lower())
+        if mime is None:
+            raise ValueError("non-image preview is prohibited")
+        return {"mime_type": mime, "sha256": record["sha256"],
+                "data_base64": base64.b64encode(data).decode("ascii")}
 
     def list_jobs(self):
         with self._connect() as conn:
@@ -321,9 +356,19 @@ class ScreenshotJobs:
                                   (note, item_id, job_id))
             if result.rowcount != 1:
                 raise ValueError("only staged review candidates may be marked reviewed")
+        with self._connect() as conn:
+            outstanding = conn.execute("SELECT COUNT(*) FROM items WHERE job_id=? AND status='NEEDS_REVIEW'",
+                                       (job_id,)).fetchone()[0]
+            if not outstanding:
+                issues = conn.execute("SELECT COUNT(*) FROM items WHERE job_id=? AND status IN ('FAILED','BLOCKED')",
+                                      (job_id,)).fetchone()[0]
+                conn.execute("UPDATE jobs SET status=?,updated_at=? WHERE job_id=?",
+                             ("COMPLETE_WITH_BLOCKERS" if issues else "COMPLETE", now(), job_id))
         return self.detail(job_id, include_items=True)
 
     def kick(self):
+        if self._worker_lock.locked():
+            return
         thread = threading.Thread(target=self._drain, daemon=True, name="skywatcher-screenshot-intake")
         thread.start()
 
@@ -341,6 +386,10 @@ class ScreenshotJobs:
                 self._run(job_id)
         finally:
             self._worker_lock.release()
+            with self._connect() as conn:
+                pending = conn.execute("SELECT 1 FROM jobs WHERE status='QUEUED' LIMIT 1").fetchone()
+            if pending:
+                self.kick()
 
     def _run(self, job_id):
         if self.extractor is None:
@@ -348,6 +397,9 @@ class ScreenshotJobs:
             engine = extract_into_rlsm
         else:
             engine = self.extractor
+        with self._connect() as conn:
+            options = json.loads(conn.execute("SELECT settings_json FROM jobs WHERE job_id=?",
+                                              (job_id,)).fetchone()[0])
         while True:
             with self._connect() as conn:
                 state = conn.execute("SELECT status FROM jobs WHERE job_id=?", (job_id,)).fetchone()["status"]
@@ -368,7 +420,8 @@ class ScreenshotJobs:
             try:
                 result = engine(Path(item["saved_path"]), item["sha256"],
                                 self.root, self.rlsm_db, self.corpus_db,
-                                filename_raw=item["filename_raw"])
+                                filename_raw=item["filename_raw"],
+                                reprocess_existing=options["reprocess_existing"])
                 if not isinstance(result, dict) or result.get("status") not in {"NEEDS_REVIEW", "EXTRACTED_EMPTY", "BLOCKED"}:
                     raise ValueError("extractor returned an invalid stage receipt")
                 status = result["status"]
