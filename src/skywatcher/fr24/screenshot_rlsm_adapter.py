@@ -24,7 +24,16 @@ def _read_ocr(conn: sqlite3.Connection, screenshot_id: int) -> list[dict]:
 
 def provisional_fields(ocr_rows: list[dict]) -> tuple[dict, list[dict]]:
     """Build candidate fields without losing conflicting source observations."""
-    from fr24.rlsm_extractors import RE_REG_C, RE_REG_N, RE_REG_OE, _scan_text
+    from fr24.rlsm_extractors import (
+        RE_ALT,
+        RE_HEADING,
+        RE_REG_C,
+        RE_REG_N,
+        RE_REG_OE,
+        RE_SPEED_KT,
+        RE_SPEED_MPH,
+        _scan_text,
+    )
 
     readable = [r for r in ocr_rows if r.get("ocr_status") == "ok" and (r.get("raw_text") or "").strip()]
     if not readable:
@@ -47,6 +56,15 @@ def provisional_fields(ocr_rows: list[dict]) -> tuple[dict, list[dict]]:
     elif len(raw_regs) == 1:
         parsed["registration"] = raw_regs[0]
 
+    # Conflicting same-unit UI values are not arbitrarily first-picked.
+    for field, pattern in (("altitude_ft", RE_ALT), ("heading_deg", RE_HEADING),
+                           ("speed_kt", RE_SPEED_KT), ("speed_kt", RE_SPEED_MPH)):
+        values = {m.group(1) for row in readable for m in pattern.finditer(row["raw_text"])}
+        if len(values) > 1:
+            parsed.pop(field, None)
+            conflicts.append({"class": "SCHEMA", "status": "UNRESOLVED",
+                              "field": field, "raw_value_candidates": sorted(values),
+                              "note": "multiple displayed values of one unit; no selection justified"})
     # Never equate displayed height/speed with whole-flight maximums.
     result = {}
     for field, value in parsed.items():
@@ -68,11 +86,13 @@ def provisional_fields(ocr_rows: list[dict]) -> tuple[dict, list[dict]]:
     return result, conflicts
 
 
-def _discover_corpus_candidates(corpus_db: Path, fields: dict) -> list[dict]:
+def _discover_corpus_candidates(corpus_db: Path, fields: dict) -> tuple[list[dict], str]:
     # Callsign is discovery only; registration is never equated to callsign.
     candidate = fields.get("callsign", {}).get("value")
-    if not candidate or not corpus_db.is_file():
-        return []
+    if not candidate:
+        return [], "NOT_QUERIED_NO_SUPPORTED_CALLSIGN"
+    if not corpus_db.is_file():
+        return [], "BLOCKED_CORPUS_UNAVAILABLE"
     conn = sqlite3.connect(f"file:{corpus_db}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     try:
@@ -82,7 +102,7 @@ def _discover_corpus_candidates(corpus_db: Path, fields: dict) -> list[dict]:
                WHERE callsign_raw=? ORDER BY snapshot_id,corpus_record_id""",
             (candidate,)
         ).fetchall()
-        return [dict(row) for row in rows]  # No arbitrary candidate truncation.
+        return [dict(row) for row in rows], "QUERIED"  # No arbitrary candidate truncation.
     except sqlite3.OperationalError as exc:
         # Schema absent is a genuine missing dependency, not an empty match universe.
         raise RuntimeError("canonical corpus tables unavailable for reconciliation") from exc
@@ -98,6 +118,7 @@ def extract_into_rlsm(
     corpus_db: Path,
     *,
     filename_raw: str | None = None,
+    reprocess_existing: bool = False,
 ) -> dict[str, Any]:
     import PIL.Image
 
@@ -169,7 +190,7 @@ def extract_into_rlsm(
              "duplicate_payload" if reused else "canonical_payload")
         )
         conn.commit()
-        if row is None or row["ocr_status"] != "ok":
+        if row is None or row["ocr_status"] != "ok" or reprocess_existing:
             run_id = conn.execute(
                 """INSERT INTO processing_runs
                    (run_kind,started_at,status,n_inputs,n_processed,n_failed)
@@ -198,7 +219,10 @@ def extract_into_rlsm(
                 "was_reused": reused, "contradictions": contradictions,
                 "error": "OCR produced no usable text; negative evidence is unverified",
             }
-        candidates = _discover_corpus_candidates(corpus_db, fields)
+        candidates, query_state = _discover_corpus_candidates(corpus_db, fields)
+        if query_state != "QUERIED":
+            contradictions.append({"class": "SCOPE", "status": "OPEN",
+                                   "note": query_state + ": candidate absence cannot be treated as a negative search"})
         return {
             "status": "NEEDS_REVIEW" if fields else "EXTRACTED_EMPTY",
             "screenshot_id": screenshot_id, "was_reused": reused,
