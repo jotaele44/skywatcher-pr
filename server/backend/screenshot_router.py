@@ -13,7 +13,7 @@ import secrets
 from functools import lru_cache
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from skywatcher.fr24.screenshot_jobs import (
     MAX_BATCH_BYTES,
@@ -131,6 +131,17 @@ def get_results(job_id: str):
         return store().detail(job_id, include_items=True)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
+
+
+@router.get("/{job_id}/items/{item_id}/image")
+def preview_item(job_id: str, item_id: int, response: Response):
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        return store().preview(job_id, item_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="image unavailable") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.post("/{job_id}/control")
