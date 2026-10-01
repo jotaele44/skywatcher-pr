@@ -97,10 +97,14 @@ of recurrences), starting with clusters that co-occur with high-confidence aircr
 observations.
 
 The icon channel applies the same rule to on-screen glyphs: `fr24/rlsm_icons.py` fingerprints
-each map icon with a 64-bit average hash, and because UI glyphs are pixel-identical between
-renders, `scripts/rlsm_icon_cluster.py` collapses the corpus to a few dozen classes. Naming
-those once (`data/reference/icon_classes.json`) types every recurrence — and gives the label
-extractor an independent class prior, which is what keeps a 5,744-key gazetteer honest. Same principle for SATIM: the calibration engine is built and conservative but
+each map icon with a 64-bit average hash, and `scripts/rlsm_icon_cluster.py` collapses recurring
+renders to a reviewable class set. Cluster review is now bound to
+`configs/fr24_poi_icon_registry.json`: the certified path emits
+`outputs/icon_classes.generated.json` with the closed source/reserved vocabulary, and the
+legacy apply path accepts only declared IDs or explicit aliases. The user-supplied reference
+pixel library is installed locally with `scripts/import_fr24_icon_reference_library.py` and
+remains untracked while redistribution rights are unverified. Icon class is contextual evidence,
+never POI or operator identity. Same principle for SATIM: the calibration engine is built and conservative but
 starved at 12 ground-truth labels (`frontend/public/satim/moca_fr24_2025.summary.json`) — every
 operator labeling hour should go to the existing harvest harnesses
 (`scripts/satim_harvest_review_labels.py`, `scripts/fit_satim_calibration.py`) rather than ad-hoc

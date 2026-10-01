@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 from pathlib import Path
@@ -311,6 +312,12 @@ def test_empty_icon_channel_clusters_without_stage_failure(tmp_path: Path) -> No
     conn.close()
     assert result == {"distinct_hashes": 0, "clusters": 0, "icons_total": 0}
     assert naming_file.exists()
+    review = json.loads(naming_file.read_text(encoding="utf-8"))
+    assert review["registry_id"] == "FR24_POI_ICON_REGISTRY_V1"
+    assert review["classification_contract"] == "operator_review_required"
+    assert "FR24_AIRPORT" in review["allowed_icon_class_ids"]
+    assert "FR24_UI_CHROME" in review["allowed_icon_class_ids"]
+    assert review["clusters"] == []
 
 
 def test_symlinked_corpus_uses_canonical_repository_paths(tmp_path: Path) -> None:
