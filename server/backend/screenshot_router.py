@@ -15,6 +15,11 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
+from skywatcher.fr24.screenshot_certification import (
+    MAX_GOLD_BYTES,
+    ScreenshotCertification,
+    ScreenshotCertificationError,
+)
 from skywatcher.fr24.screenshot_jobs import (
     MAX_BATCH_BYTES,
     MAX_SOURCES,
@@ -58,6 +63,27 @@ def store() -> ScreenshotJobs:
     )
     jobs.kick()  # Recover interrupted jobs on application restart.
     return jobs
+
+
+@lru_cache(maxsize=1)
+def certification_service() -> ScreenshotCertification:
+    root = ROOT.resolve()
+    configured = os.environ.get("SKYWATCHER_SCREENSHOT_WORK_ROOT")
+    base_work = (
+        Path(configured).resolve()
+        if configured
+        else root / "inputs" / "screenshots" / "runtime"
+    )
+    try:
+        base_work.relative_to(root)
+    except ValueError as exc:
+        raise RuntimeError(
+            "screenshot certification work root must reside beneath the Skywatcher repository"
+        ) from exc
+    return ScreenshotCertification(
+        root,
+        work_root=base_work / "certification",
+    )
 
 
 async def _bounded_json(request: Request) -> dict:
@@ -115,6 +141,47 @@ async def create_run(request: Request):
 @router.get("")
 def list_runs():
     return {"jobs": store().list_jobs()}
+
+
+@router.get("/certification/status")
+def certification_status():
+    return certification_service().readiness()
+
+
+@router.get("/certification/template")
+def certification_template():
+    try:
+        return certification_service().generate_gold_template()
+    except ScreenshotCertificationError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.get("/certification/runs")
+def certification_runs(limit: int = 20):
+    return {
+        "runs": certification_service().list_receipts(
+            limit=max(1, min(int(limit), 100))
+        )
+    }
+
+
+@router.post("/certification/audit")
+async def certification_audit(request: Request):
+    body = await _bounded_json(request)
+    name = body.get("name")
+    encoded = body.get("data_base64")
+    if not isinstance(name, str) or not name.strip():
+        raise HTTPException(status_code=400, detail="gold sample name is required")
+    if not isinstance(encoded, str) or len(encoded) > (MAX_GOLD_BYTES * 2):
+        raise HTTPException(status_code=413, detail="gold sample exceeds encoded size limit")
+    try:
+        payload = base64.b64decode(encoded, validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise HTTPException(status_code=400, detail="invalid gold-sample base64") from exc
+    try:
+        return certification_service().run_audit(name, payload)
+    except ScreenshotCertificationError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("/{job_id}")
