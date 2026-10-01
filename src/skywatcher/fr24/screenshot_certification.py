@@ -14,6 +14,7 @@ import importlib.util
 import json
 import shutil
 import sqlite3
+import threading
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -27,6 +28,7 @@ from fr24 import rlsm_intelligence_audit_v2 as audit_v2
 MAX_GOLD_BYTES = 8 * 1024 * 1024
 EXPECTED_GOLD_RECORDS = 300
 SCHEMA_VERSION = "skywatcher.screenshot_certification.v1"
+_AUDIT_LOCK = threading.Lock()
 
 
 class ScreenshotCertificationError(RuntimeError):
@@ -210,11 +212,17 @@ class ScreenshotCertification:
             "operator_pipeline_ready": False,
             "latest_receipt": None,
         }
+        schema_ready = False
         if db_exists:
-            status["rlsm_database_manifest"] = self._sqlite_manifest()
-            manifest = self._corpus_manifest()
-            status["corpus_manifest"] = manifest
-            status["active_screenshots"] = manifest["active_rows"]
+            try:
+                status["rlsm_database_manifest"] = self._sqlite_manifest()
+                manifest = self._corpus_manifest()
+                status["corpus_manifest"] = manifest
+                status["active_screenshots"] = manifest["active_rows"]
+                schema_ready = True
+            except (sqlite3.DatabaseError, ScreenshotCertificationError) as exc:
+                status["rlsm_database_error"] = f"{type(exc).__name__}: {exc}"
+        status["rlsm_schema_ready"] = schema_ready
         if corpus_exists:
             status["corpus_path_state"] = "PRESENT_LOCAL"
         deps = status["python_dependencies"]
@@ -222,11 +230,11 @@ class ScreenshotCertification:
             status["tesseract_available"]
             and deps["Pillow"]
             and deps["pytesseract"]
-            and db_exists
+            and schema_ready
             and corpus_exists
         )
         status["certification_ready_for_audit"] = bool(
-            db_exists and corpus_exists and status["gold_schema_present"]
+            schema_ready and corpus_exists and status["gold_schema_present"]
         )
         receipts = self.list_receipts(limit=1)
         if receipts:
@@ -456,13 +464,19 @@ class ScreenshotCertification:
         gold_path = run_dir / f"gold_sample{suffix}"
         gold_path.write_bytes(payload)
         outputs_dir = run_dir / "outputs"
-        report = audit_v2.run(
-            db_path=self.db_path,
-            corpus_root=self.corpus_root,
-            gold_path=gold_path,
-            outputs_dir=outputs_dir,
-            sample_limit=25,
-        )
+        try:
+            with _AUDIT_LOCK:
+                report = audit_v2.run(
+                    db_path=self.db_path,
+                    corpus_root=self.corpus_root,
+                    gold_path=gold_path,
+                    outputs_dir=outputs_dir,
+                    sample_limit=25,
+                )
+        except (FileNotFoundError, sqlite3.DatabaseError, ValueError) as exc:
+            raise ScreenshotCertificationError(
+                f"certification audit failed: {type(exc).__name__}: {exc}"
+            ) from exc
 
         db_after = self._sqlite_manifest()
         corpus_after = self._corpus_manifest()
