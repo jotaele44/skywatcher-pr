@@ -62,6 +62,10 @@ from skywatcher.fr24.flight_corpus import (
     read_corpus_snapshot,
 )
 from skywatcher.fr24.flight_coverage import build_coverage_ledger
+from skywatcher.fr24.screenshot_processor import (
+    ScreenshotProcessingError,
+    get_default_store as get_screenshot_job_store,
+)
 
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
 EXPORTS_DIR = ROOT / "exports"
@@ -340,6 +344,37 @@ def require_write_access(request: Request) -> None:
 
 
 _WRITE_GUARD = [Depends(require_write_access)]
+_SCREENSHOT_ALLOW_PRIVATE_NETWORK = os.environ.get(
+    "SKYWATCHER_SCREENSHOT_ALLOW_PRIVATE_NETWORK", ""
+).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def require_screenshot_access(request: Request) -> None:
+    """Protect local screenshot bytes more strictly than generic dashboard writes."""
+    if _WRITE_TOKEN:
+        require_write_access(request)
+        return
+    host = request.client.host if request.client else ""
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        if host == "localhost":
+            return
+        raise HTTPException(status_code=403, detail="Screenshot processing is loopback-only")
+    if ip.is_loopback:
+        return
+    if _SCREENSHOT_ALLOW_PRIVATE_NETWORK and (ip.is_private or ip.is_link_local):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail=(
+            "Screenshot processing is loopback-only by default. Set "
+            "SKYWATCHER_SCREENSHOT_ALLOW_PRIVATE_NETWORK=1 to allow trusted private-network access."
+        ),
+    )
+
+
+_SCREENSHOT_GUARD = [Depends(require_screenshot_access)]
 
 if not _WRITE_TOKEN:
     log.warning(
@@ -347,6 +382,77 @@ if not _WRITE_TOKEN:
         "a local network and are refused for public addresses. Set the token "
         "before exposing this server beyond a trusted network."
     )
+
+
+@app.get("/api/screenshot-processing/jobs", dependencies=_SCREENSHOT_GUARD)
+def screenshot_processing_jobs(limit: int = Query(default=25, ge=1, le=200)) -> dict[str, Any]:
+    return {"jobs": get_screenshot_job_store().list_jobs(limit=limit)}
+
+
+@app.post("/api/screenshot-processing/jobs", dependencies=_SCREENSHOT_GUARD)
+def create_screenshot_processing_job(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return get_screenshot_job_store().create_job(
+            uploads=payload.get("uploads") or [],
+            settings=payload.get("settings") or {},
+        )
+    except ScreenshotProcessingError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/screenshot-processing/jobs/{job_id}", dependencies=_SCREENSHOT_GUARD)
+def screenshot_processing_job(job_id: str) -> dict[str, Any]:
+    try:
+        return get_screenshot_job_store().get_job(job_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Screenshot processing job not found") from exc
+
+
+@app.post("/api/screenshot-processing/jobs/{job_id}/execute", dependencies=_SCREENSHOT_GUARD)
+def execute_screenshot_processing_job(job_id: str) -> dict[str, Any]:
+    try:
+        return get_screenshot_job_store().submit(job_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Screenshot processing job not found") from exc
+    except ScreenshotProcessingError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/screenshot-processing/jobs/{job_id}/pause", dependencies=_SCREENSHOT_GUARD)
+def pause_screenshot_processing_job(job_id: str) -> dict[str, Any]:
+    try:
+        return get_screenshot_job_store().set_paused(job_id, True)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Screenshot processing job not found") from exc
+
+
+@app.post("/api/screenshot-processing/jobs/{job_id}/resume", dependencies=_SCREENSHOT_GUARD)
+def resume_screenshot_processing_job(job_id: str) -> dict[str, Any]:
+    try:
+        return get_screenshot_job_store().set_paused(job_id, False)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Screenshot processing job not found") from exc
+
+
+@app.post("/api/screenshot-processing/jobs/{job_id}/cancel", dependencies=_SCREENSHOT_GUARD)
+def cancel_screenshot_processing_job(job_id: str) -> dict[str, Any]:
+    try:
+        return get_screenshot_job_store().cancel(job_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Screenshot processing job not found") from exc
+
+
+@app.post("/api/screenshot-processing/jobs/{job_id}/commit", dependencies=_SCREENSHOT_GUARD)
+def commit_screenshot_processing_job(job_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return get_screenshot_job_store().commit_candidate_links(
+            job_id,
+            payload.get("decisions") or [],
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Screenshot processing job not found") from exc
+    except ScreenshotProcessingError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/flight-corpus/archive/snapshots")
