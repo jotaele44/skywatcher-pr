@@ -5,9 +5,9 @@ from __future__ import annotations
 import base64
 import io
 import json
+from pathlib import Path
 import sqlite3
 import zipfile
-from pathlib import Path
 
 from skywatcher.fr24.screenshot_processor import ScreenshotJobStore
 
