@@ -217,6 +217,10 @@ const flightCorpusArchive = {
   }),
 };
 
+const ilap = {
+  review: () => request('/ilap/review'),
+};
+
 const system = {
   publicSettings: () => request('/apps/public-settings').catch(() => ({
     id: appParams.appId,
@@ -237,5 +241,6 @@ export const federation = {
   flightCorpusV4,
   flightCorpusArchive,
   flightAcquisition,
+  ilap,
   request,
 };
