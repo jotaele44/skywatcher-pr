@@ -203,7 +203,7 @@ def test_sidecar_on_released_0003_preserves_mfl_and_allows_bounded_pairing(tmp_p
                 mfl_sha,
                 mfl_sha,
                 "MFL_RECORD",
-                "T1",
+                "UNKNOWN",
                 "V2",
                 "COMPLETE",
                 when,
