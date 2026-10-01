@@ -1,4 +1,4 @@
-"""Pure, offline, deterministic primitives for a provenance-bound KB sidecar.
+"""Offline, deterministic primitives for a provenance-bound KB sidecar.
 
 This module deliberately does not infer event identity, classify mission/intent,
 read RLSM's separate database, or update the Master Flight Log.
@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -101,3 +102,66 @@ def deterministic_verbal_output(implication: Mapping[str, Any]) -> str:
             f"Sources: {', '.join(implication['source_refs']) or 'none'}\n"
             f"Limitations: {', '.join(implication['limitations']) or 'none stated'}\n"
             f"Certification: {implication['certification_state']}")
+
+def invalidate_implications_for_artifacts(
+    conn: sqlite3.Connection,
+    artifact_ids: Sequence[str],
+) -> list[str]:
+    """Mark directly affected implications and all derived descendants STALE.
+
+    The caller owns the surrounding transaction. Nothing is committed here.
+    Source artifacts are immutable; this function is invoked when an old
+    artifact/dependency is explicitly displaced by newly adjudicated evidence.
+    """
+    ids = tuple(sorted(set(artifact_ids)))
+    if not ids or any(not isinstance(value, str) or not value for value in ids):
+        raise ValueError("artifact_ids must contain one or more nonempty strings")
+
+    placeholders = ",".join("?" for _ in ids)
+    roots = [
+        row[0]
+        for row in conn.execute(
+            f"""
+            SELECT DISTINCT implication_id
+            FROM swk_implication_evidence
+            WHERE artifact_id IN ({placeholders})
+            """,
+            ids,
+        )
+    ]
+    if not roots:
+        return []
+
+    values_sql = ",".join("(?)" for _ in roots)
+    affected = [
+        row[0]
+        for row in conn.execute(
+            f"""
+            WITH RECURSIVE affected(id) AS (
+              VALUES {values_sql}
+              UNION
+              SELECT l.implication_id
+              FROM swk_implication_lineage l
+              JOIN affected a ON l.parent_implication_id = a.id
+            )
+            SELECT DISTINCT id FROM affected ORDER BY id
+            """,
+            tuple(roots),
+        )
+    ]
+    affected_placeholders = ",".join("?" for _ in affected)
+    conn.execute(
+        f"""
+        UPDATE swk_implication
+        SET validity_state='STALE',
+            certification_state=CASE
+              WHEN certification_state='SUPERSEDED' THEN certification_state
+              ELSE 'OPEN'
+            END
+        WHERE implication_id IN ({affected_placeholders})
+          AND validity_state IN ('CURRENT','RECOMPUTED')
+        """,
+        tuple(affected),
+    )
+    return affected
+
