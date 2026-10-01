@@ -1,8 +1,8 @@
 # Skill upgrade candidate — Skywatcher provenance-bound cumulative implication
 
-**State:** CANDIDATE_NOT_INSTALLED (repository-tested draft; operator-corpus validation still blocked).
+**State:** APPLIED_TO_EXISTING_FR24_IMAGE_SKILL_ON_DRAFT_BRANCH; NOT_MERGED. Operator-corpus validation and sidecar activation remain blocked.
 
-New mandated gates for screenshot/flight ingestion analysis:
+The existing `skills/skywatcher-fr24-image-analysis/SKILL.md` now carries an activation-gated cumulative implication handoff. The following gates are the broader workflow upgrade:
 
 1. Parse raw source and preserve every manifestation before event adjudication. Namespace external keys by source system/database and frozen source manifestation.
 2. Never derive event, airframe, operator, mission, site, or facility identity from name only, registration only, count equality, hash equality, nearest-only, proximity-only, same-category, or source absence.
