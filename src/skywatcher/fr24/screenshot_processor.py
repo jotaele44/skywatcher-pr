@@ -1022,7 +1022,7 @@ class ScreenshotJobStore:
         self._update_job(job_conn, job_id, stage="extract")
         rows = job_conn.execute(
             """
-            SELECT file_id, screenshot_id FROM screenshot_processing_files
+            SELECT file_id, screenshot_id, unresolved_json FROM screenshot_processing_files
             WHERE job_id=? AND screenshot_id IS NOT NULL AND status != 'FAILED'
             ORDER BY ordinal
             """,
@@ -1053,7 +1053,7 @@ class ScreenshotJobStore:
             ]
             fields = _scan_text(combined) if combined.strip() else {}
             confidence = (sum(confidences) / len(confidences) / 100.0) if confidences else 0.0
-            unresolved = []
+            unresolved = json.loads(row["unresolved_json"]) if row["unresolved_json"] else []
             if not fields:
                 unresolved.append("no aircraft telemetry fields extracted")
             if "registration" not in fields and "callsign" not in fields:
@@ -1082,6 +1082,14 @@ class ScreenshotJobStore:
             "PROVISIONAL",
             "field extraction complete; OCR-derived identity remains provisional",
         )
+        if settings.get("vision_assist") != "disabled":
+            self._event(
+                job_conn,
+                job_id,
+                "vision_assist",
+                "BLOCKED",
+                "provider-neutral vision results may be ingested, but no external model is invoked automatically by this local processor",
+            )
         job_conn.commit()
 
     def _run_trajectory(self, job_conn: sqlite3.Connection, rlsm_conn: sqlite3.Connection, job_id: str) -> None:
@@ -1141,7 +1149,8 @@ class ScreenshotJobStore:
                 try:
                     existing = rlsm_conn.execute(
                         """
-                        SELECT status, method, rms_error_px, anchor_count, observed_at
+                        SELECT status, method, fit_residual_m, estimated_error_m,
+                               confidence, anchor_count, observed_at
                         FROM screenshot_georeferences
                         WHERE screenshot_id=? ORDER BY georef_id DESC LIMIT 1
                         """,
