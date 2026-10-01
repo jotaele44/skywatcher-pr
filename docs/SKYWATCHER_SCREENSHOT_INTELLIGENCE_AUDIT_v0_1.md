@@ -48,7 +48,8 @@ The local FR24 Intake → Screenshot Processor → Certification tab exposes the
 7. `icon_capture_complete`
 8. `no_unsupported_geolocation`
 9. `field_level_provenance_100`
-10. `location_label_recall_gte_0_98`
+10. `gold_source_byte_identity_100`
+11. `location_label_recall_gte_0_98`
 
 ## Outputs
 
