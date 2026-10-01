@@ -165,6 +165,7 @@ def validate_registry(data: dict[str, Any]) -> dict[str, Any]:
 
     archive_by_path: dict[str, dict[str, Any]] = {}
     archive_paths: list[str] = []
+    valid_archive_members: list[dict[str, Any]] = []
     for row in archive_members:
         if not isinstance(row, dict):
             failures.append("archive_members contains a non-object")
@@ -176,29 +177,34 @@ def validate_registry(data: dict[str, Any]) -> dict[str, Any]:
             failures.append("archive member missing path")
             continue
         archive_paths.append(path)
+        row_valid = True
         if not isinstance(size, int) or size < 0:
             failures.append(f"{path}: invalid uncompressed_size")
+            row_valid = False
         if not isinstance(sha, str) or not SHA256_RE.fullmatch(sha):
             failures.append(f"{path}: invalid sha256")
-        archive_by_path[path] = row
+            row_valid = False
+        if row_valid:
+            archive_by_path[path] = row
+            valid_archive_members.append(row)
     archive_dupes = _duplicates(archive_paths)
     if archive_dupes:
         failures.append("duplicate archive member paths: " + ", ".join(archive_dupes))
 
-    full_manifest = sorted(archive_members, key=lambda row: row.get("path", ""))
+    # Derived hashes must never touch malformed rows. Malformed members are already
+    # recorded above as validation failures; excluding them here preserves fail-closed
+    # behavior instead of turning bad input into an exception.
+    full_manifest = sorted(valid_archive_members, key=lambda row: row["path"])
     semantic_manifest = [
-        row
-        for row in full_manifest
-        if isinstance(row, dict) and _is_semantic_member(str(row.get("path", "")))
+        row for row in full_manifest if _is_semantic_member(row["path"])
     ]
     payload_multiset = sorted(
         [
             {
-                "uncompressed_size": row.get("uncompressed_size"),
-                "sha256": row.get("sha256"),
+                "uncompressed_size": row["uncompressed_size"],
+                "sha256": row["sha256"],
             }
-            for row in archive_members
-            if isinstance(row, dict)
+            for row in valid_archive_members
         ],
         key=lambda row: (row["uncompressed_size"], row["sha256"]),
     )
