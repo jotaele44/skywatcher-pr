@@ -85,6 +85,8 @@ def test_perceptual_similarity_preserves_full_candidate_set_as_discovery_only():
 
 
 def test_rendered_track_receipt_never_claims_raw_trajectory(monkeypatch, tmp_path):
+    import sys
+
     from skywatcher.fr24 import screenshot_rlsm_adapter as adapter
 
     fixture = SimpleNamespace(
@@ -97,7 +99,8 @@ def test_rendered_track_receipt_never_claims_raw_trajectory(monkeypatch, tmp_pat
         component_count=2,
         confidence=0.6,
     )
-    monkeypatch.setattr("fr24.track_vectorizer.vectorize_image", lambda _: fixture)
+    fake_module = SimpleNamespace(vectorize_image=lambda _: fixture)
+    monkeypatch.setitem(sys.modules, "fr24.track_vectorizer", fake_module)
     receipt = adapter._rendered_track_observation(tmp_path / "unused.png")
 
     assert receipt["status"] == "OBSERVED"
