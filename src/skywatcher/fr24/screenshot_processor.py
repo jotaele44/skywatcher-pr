@@ -1019,6 +1019,7 @@ class ScreenshotJobStore:
         job_conn.commit()
 
     def _run_extract(self, job_conn: sqlite3.Connection, rlsm_conn: sqlite3.Connection, job_id: str) -> None:
+        settings = self.get_job(job_id, include_files=False)["settings"]
         self._update_job(job_conn, job_id, stage="extract")
         rows = job_conn.execute(
             """
