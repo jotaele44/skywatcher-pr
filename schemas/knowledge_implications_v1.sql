@@ -43,9 +43,11 @@ CREATE TABLE IF NOT EXISTS swk_subject_ref (
   subject_kind TEXT NOT NULL CHECK(subject_kind IN
     ('MFL_RECORD','RLSM_SCREENSHOT','RECONSTRUCTED_FLIGHT','AIRCRAFT_CANDIDATE',
      'AOI','FPIM_FINDING','SATIM_FINDING','CORRIM_ASSOCIATION','OTHER')),
-  source_namespace TEXT NOT NULL,
+  source_namespace TEXT NOT NULL CHECK(source_namespace IN
+    ('SKYWATCHER_PRIMARY','RLSM_LOCAL','MFL_SNAPSHOT','EXTERNAL','USER_UPLOAD')),
   external_record_key_raw TEXT NOT NULL,
-  source_snapshot_sha256 TEXT,
+  source_snapshot_sha256 TEXT CHECK(source_snapshot_sha256 IS NULL OR
+    (length(source_snapshot_sha256)=64 AND source_snapshot_sha256 NOT GLOB '*[^0-9a-f]*')),
   identity_state TEXT NOT NULL DEFAULT 'UNRESOLVED' CHECK(identity_state IN
     ('PASS','PROVISIONAL','OPEN','CANDIDATE_NOT_IDENTITY','UNRESOLVED','SUPERSEDED')),
   binding_basis_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(binding_basis_json)),
@@ -67,8 +69,12 @@ CREATE TABLE IF NOT EXISTS swk_subject_evidence (
 
 CREATE TABLE IF NOT EXISTS swk_knowledge_run (
   run_id TEXT PRIMARY KEY,
-  input_manifest_sha256 TEXT NOT NULL CHECK(length(input_manifest_sha256)=64),
-  ruleset_sha256 TEXT NOT NULL CHECK(length(ruleset_sha256)=64),
+  input_manifest_sha256 TEXT NOT NULL CHECK(
+    length(input_manifest_sha256)=64 AND input_manifest_sha256 NOT GLOB '*[^0-9a-f]*'
+  ),
+  ruleset_sha256 TEXT NOT NULL CHECK(
+    length(ruleset_sha256)=64 AND ruleset_sha256 NOT GLOB '*[^0-9a-f]*'
+  ),
   baseline_commit TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'OPEN' CHECK(status IN ('OPEN','VALIDATED','FAILED','BLOCKED')),
   started_utc TEXT NOT NULL,
@@ -91,7 +97,9 @@ CREATE TABLE IF NOT EXISTS swk_implication (
   statement TEXT NOT NULL CHECK(length(trim(statement))>0),
   scope_json TEXT NOT NULL CHECK(json_valid(scope_json)),
   ruleset_version TEXT NOT NULL,
-  dependency_sha256 TEXT NOT NULL CHECK(length(dependency_sha256)=64),
+  dependency_sha256 TEXT NOT NULL CHECK(
+    length(dependency_sha256)=64 AND dependency_sha256 NOT GLOB '*[^0-9a-f]*'
+  ),
   validity_state TEXT NOT NULL DEFAULT 'CURRENT' CHECK(validity_state IN
     ('CURRENT','STALE','INVALIDATED','SUPERSEDED','RECOMPUTED')),
   certification_state TEXT NOT NULL DEFAULT 'OPEN' CHECK(certification_state IN
@@ -138,12 +146,16 @@ CREATE TABLE IF NOT EXISTS swk_knowledge_state (
   source_manifestation_count INTEGER NOT NULL CHECK(source_manifestation_count>=0),
   canonical_event_count INTEGER CHECK(canonical_event_count IS NULL OR canonical_event_count>=0),
   canonical_denominator_ref TEXT,
-  canonical_denominator_sha256 TEXT,
-  canonical_denominator_cert_receipt TEXT,
+  canonical_denominator_sha256 TEXT CHECK(canonical_denominator_sha256 IS NULL OR
+    (length(canonical_denominator_sha256)=64 AND canonical_denominator_sha256 NOT GLOB '*[^0-9a-f]*')),
+  canonical_denominator_cert_receipt TEXT CHECK(canonical_denominator_cert_receipt IS NULL OR
+    (length(canonical_denominator_cert_receipt)=64 AND canonical_denominator_cert_receipt NOT GLOB '*[^0-9a-f]*')),
   unresolved_candidate_count INTEGER NOT NULL CHECK(unresolved_candidate_count>=0),
   implication_count INTEGER NOT NULL CHECK(implication_count>=0),
   contradiction_count INTEGER NOT NULL CHECK(contradiction_count>=0),
-  state_manifest_sha256 TEXT NOT NULL CHECK(length(state_manifest_sha256)=64),
+  state_manifest_sha256 TEXT NOT NULL CHECK(
+    length(state_manifest_sha256)=64 AND state_manifest_sha256 NOT GLOB '*[^0-9a-f]*'
+  ),
   certification_state TEXT NOT NULL CHECK(certification_state IN
     ('PASS','OPEN','BLOCKED','PROVISIONAL','AUDIT_ONLY','UNRESOLVED')),
   created_utc TEXT NOT NULL,
@@ -151,14 +163,24 @@ CREATE TABLE IF NOT EXISTS swk_knowledge_state (
     (canonical_denominator_ref IS NOT NULL AND canonical_denominator_sha256 IS NOT NULL)),
   CHECK(certification_state <> 'PASS' OR
     (canonical_denominator_ref IS NOT NULL AND canonical_denominator_sha256 IS NOT NULL
-     AND canonical_denominator_cert_receipt IS NOT NULL))
+     AND canonical_denominator_cert_receipt IS NOT NULL)),
+  CHECK(previous_state_id IS NULL OR previous_state_id <> state_id)
 );
 CREATE TABLE IF NOT EXISTS swk_knowledge_delta (
   delta_id TEXT PRIMARY KEY,
   prior_state_id TEXT NOT NULL REFERENCES swk_knowledge_state(state_id),
   new_state_id TEXT NOT NULL REFERENCES swk_knowledge_state(state_id),
-  dimension TEXT NOT NULL,
-  delta_type TEXT NOT NULL,
+  dimension TEXT NOT NULL CHECK(dimension IN
+    ('EVENT_IDENTITY','EVENT_COUNT','SOURCE_COVERAGE','TEMPORAL_COVERAGE',
+     'SPATIAL_COVERAGE','AIRCRAFT_IDENTITY','OPERATOR_BINDING',
+     'AIRCRAFT_TYPE_DIVERSITY','TRACK_BEHAVIOR','RECURRENCE','CO_OCCURRENCE',
+     'SOURCE_QUALITY','EVIDENCE_INDEPENDENCE','CONTRADICTIONS',
+     'HYPOTHESIS_SUPPORT','HYPOTHESIS_FALSIFICATION','UNKNOWN_RESIDUE')),
+  delta_type TEXT NOT NULL CHECK(delta_type IN
+    ('NEW','CONFIRMS','STRENGTHENS','WEAKENS','CONTRADICTS','REFINES',
+     'NARROWS','BROADENS','EXTENDS_TEMPORAL_RANGE','EXTENDS_SPATIAL_RANGE',
+     'IMPROVES_SOURCE_QUALITY','CLOSES_GAP','CREATES_GAP','REOPENS','CLOSES',
+     'SUPERSEDES','NO_MATERIAL_CHANGE')),
   before_json TEXT NOT NULL CHECK(json_valid(before_json)),
   after_json TEXT NOT NULL CHECK(json_valid(after_json)),
   explanation_json TEXT NOT NULL CHECK(json_valid(explanation_json)),
@@ -175,6 +197,27 @@ CREATE TABLE IF NOT EXISTS swk_contradiction (
   resolution_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(resolution_json)),
   created_utc TEXT NOT NULL
 );
+
+
+-- Reject transitive implication-lineage cycles; deterministic graph shape is
+-- not evidence, but cyclic support would make recomputation non-auditable.
+CREATE TRIGGER IF NOT EXISTS tr_swk_lineage_cycle_insert
+BEFORE INSERT ON swk_implication_lineage
+WHEN EXISTS (
+  WITH RECURSIVE ancestors(id) AS (
+    SELECT NEW.parent_implication_id
+    UNION
+    SELECT l.parent_implication_id
+    FROM swk_implication_lineage l
+    JOIN ancestors a ON l.implication_id = a.id
+  )
+  SELECT 1 FROM ancestors WHERE id = NEW.implication_id
+)
+BEGIN SELECT RAISE(ABORT,'implication lineage cycle prohibited'); END;
+
+CREATE TRIGGER IF NOT EXISTS tr_swk_lineage_immutable
+BEFORE UPDATE ON swk_implication_lineage
+BEGIN SELECT RAISE(ABORT,'implication lineage edges are immutable'); END;
 
 -- PASS cannot be set without a bound supporting artifact. This covers both
 -- insert and update. A later invalidation must change certification in one UPDATE.
