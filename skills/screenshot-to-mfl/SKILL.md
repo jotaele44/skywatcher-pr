@@ -1,7 +1,7 @@
 ---
 name: screenshot-to-mfl
 description: "Stage newly supplied screenshot/PDF/ZIP evidence in Skywatcher, preserving provenance and deriving reviewable aircraft-field observations without fabricating canonical flight history."
-version: 0.1.0
+version: 0.2.0
 provenance_tier: SPEC_AUTHORED
 status: INITIAL_IMPLEMENTATION_NOT_CERTIFIED
 ---
@@ -28,9 +28,10 @@ Authorized local source bytes, frozen source labels, SHA-256 receipt, processing
 8. Optionally observe rendered route pixels, explicitly recording RENDERED_TRAIL and raw_trajectory=false.
 9. Reuse only already-supported persisted RLSM georeference receipts; never synthesize a transform from nearest labels or proximity.
 10. Detect same-frame contradictions. Suppress any selected field affected by unresolved conflicting source strings.
-11. Discover all plausible source-flight candidates against read-only corpus snapshots. Callsign similarity is discovery, not binding.
-12. Emit complete item and stage receipts, including blocked and failed items, and expose them to the review UI.
-13. Permit explicit reviewed annotations. Stop before canonical flight-history mutation without a separate certified promotion contract.
+11. When an FR24/source flight ID is explicitly displayed, query it as a separate discovery key from callsign; preserve the complete union and record the exact match basis on every candidate.
+12. Discover all plausible source-flight candidates against read-only corpus snapshots. Exact displayed ID or callsign agreement is evidence for discovery, not automatic binding.
+13. Emit complete item and stage receipts, including blocked and failed items, and expose them to the review UI.
+14. Permit explicit reviewed annotations. Stop before canonical flight-history mutation without a separate certified promotion contract.
 
 ## Identity and interpretation restrictions
 
@@ -55,4 +56,4 @@ Pre-release gate: Python and browser tests PASS, independent operator corpus aud
 
 ## Current status
 
-INITIAL_IMPLEMENTATION_NOT_CERTIFIED. Upload, inventory, persistent jobs, local RLSM OCR, provisional candidates, review-only UI, perceptual-similarity discovery, rendered-track pixel receipts, and reuse of persisted supported georeferences are code-delivered. Vision, perceptual identity/dedup promotion, cross-frame binding, canonical MFL writes, full SATIM/FPIM/CORRIM handoff and production certification remain OPEN or BLOCKED until evidence exists.
+INITIAL_IMPLEMENTATION_NOT_CERTIFIED. Upload, inventory, persistent jobs, local RLSM OCR, provisional fields, exact displayed source-flight-ID/callsign candidate-union discovery with match-basis receipts, review-only UI, perceptual-similarity discovery, rendered-track pixel receipts, and reuse of persisted supported georeferences are code-delivered. Vision, perceptual identity/dedup promotion, cross-frame binding, canonical MFL writes, full SATIM/FPIM/CORRIM handoff and production certification remain OPEN or BLOCKED until evidence exists.
