@@ -62,8 +62,8 @@ from skywatcher.fr24.flight_corpus import (
     read_corpus_snapshot,
 )
 from skywatcher.fr24.flight_coverage import build_coverage_ledger
+from skywatcher.fr24.screenshot_processor import ScreenshotProcessingError
 from skywatcher.fr24.screenshot_processor import (
-    ScreenshotProcessingError,
     get_default_store as get_screenshot_job_store,
 )
 
@@ -360,7 +360,10 @@ def require_screenshot_access(request: Request) -> None:
     except ValueError:
         if host == "localhost":
             return
-        raise HTTPException(status_code=403, detail="Screenshot processing is loopback-only")
+        raise HTTPException(
+            status_code=403,
+            detail="Screenshot processing is loopback-only",
+        ) from None
     if ip.is_loopback:
         return
     if _SCREENSHOT_ALLOW_PRIVATE_NETWORK and (ip.is_private or ip.is_link_local):
