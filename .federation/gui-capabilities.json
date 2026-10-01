@@ -262,14 +262,19 @@
           "server/backend/screenshot_router.py",
           "src/skywatcher/fr24/screenshot_jobs.py",
           "src/skywatcher/fr24/screenshot_rlsm_adapter.py",
-          "src/skywatcher/fr24/screenshot_mfl_projection.py"
+          "src/skywatcher/fr24/screenshot_mfl_projection.py",
+          "src/skywatcher/fr24/screenshot_certification.py"
         ],
         "endpoints": [
           "GET /{job_id}",
           "GET /{job_id}/results",
           "POST /{job_id}/control",
           "POST /{job_id}/review",
-          "GET /{job_id}/items/{item_id}/image"
+          "GET /{job_id}/items/{item_id}/image",
+          "GET /certification/status",
+          "GET /certification/template",
+          "GET /certification/runs",
+          "POST /certification/audit"
         ],
         "symbols": [
           "server/backend/screenshot_router.py:create_run",
@@ -290,7 +295,14 @@
           "src/skywatcher/fr24/screenshot_mfl_projection.py:project_screenshot_fields",
           "src/skywatcher/fr24/screenshot_rlsm_adapter.py:_perceptual_duplicate_candidates",
           "src/skywatcher/fr24/screenshot_rlsm_adapter.py:_rendered_track_observation",
-          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:_persisted_georeference_evidence"
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:_persisted_georeference_evidence",
+          "server/backend/screenshot_router.py:certification_service",
+          "server/backend/screenshot_router.py:certification_status",
+          "server/backend/screenshot_router.py:certification_template",
+          "server/backend/screenshot_router.py:certification_runs",
+          "server/backend/screenshot_router.py:certification_audit",
+          "src/skywatcher/fr24/screenshot_certification.py:ScreenshotCertification",
+          "src/skywatcher/fr24/screenshot_certification.py:ScreenshotCertificationError"
         ]
       },
       "frontend": {
@@ -312,7 +324,8 @@
       "tests": {
         "backend": [
           "tests/test_screenshot_to_mfl_intake.py",
-          "tests/test_screenshot_intake_api.py"
+          "tests/test_screenshot_intake_api.py",
+          "tests/test_screenshot_certification.py"
         ],
         "contract": [
           "tests/test_gui_parity.py"
