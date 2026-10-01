@@ -24,10 +24,13 @@ Authorized local source bytes, frozen source labels, SHA-256 receipt, processing
 4. Reuse existing RLSM screenshot payloads by exact SHA-256, never by normalized filenames or perceptual proximity.
 5. Run local OCR with zone and field provenance. Treat no usable OCR as BLOCKED rather than PASS.
 6. Preserve all registration, callsign, altitude, speed, heading, operator-label and text observations as provisional.
-7. Detect same-frame contradictions. Suppress any selected field affected by unresolved conflicting source strings.
-8. Discover all plausible source-flight candidates against read-only corpus snapshots. Callsign similarity is discovery, not binding.
-9. Emit complete item and stage receipts, including blocked and failed items, and expose them to the review UI.
-10. Permit explicit reviewed annotations. Stop before canonical flight-history mutation without a separate certified promotion contract.
+7. Optionally compute perceptual similarity against the complete local RLSM pHash denominator. Preserve every in-threshold candidate as discovery only.
+8. Optionally observe rendered route pixels, explicitly recording RENDERED_TRAIL and raw_trajectory=false.
+9. Reuse only already-supported persisted RLSM georeference receipts; never synthesize a transform from nearest labels or proximity.
+10. Detect same-frame contradictions. Suppress any selected field affected by unresolved conflicting source strings.
+11. Discover all plausible source-flight candidates against read-only corpus snapshots. Callsign similarity is discovery, not binding.
+12. Emit complete item and stage receipts, including blocked and failed items, and expose them to the review UI.
+13. Permit explicit reviewed annotations. Stop before canonical flight-history mutation without a separate certified promotion contract.
 
 ## Identity and interpretation restrictions
 
@@ -44,7 +47,7 @@ Job ID; frozen source and member manifest; per-stage terminal statuses; exact ha
 
 ## Regression and certification
 
-Positive: exact duplicate bytes at two filenames preserve two manifestations while reusing one OCR payload; valid OCR fields receive source receipts and the original corpus remains unchanged.
+Positive: exact duplicate bytes at two filenames preserve two manifestations while reusing one OCR payload; valid OCR fields receive source receipts; perceptual neighbors remain candidate-only; rendered trails remain non-raw; persisted georeference receipts are consumed without synthesis; the original corpus remains unchanged.
 
 Negative: malformed ZIP, path traversal, empty ZIP/PDF, source hash drift, missing local OCR, conflicting registrations, unmatched callsigns, truncated candidate sets, or absent gold truth cannot produce a certified success.
 
@@ -52,4 +55,4 @@ Pre-release gate: Python and browser tests PASS, independent operator corpus aud
 
 ## Current status
 
-INITIAL_IMPLEMENTATION_NOT_CERTIFIED. Upload, inventory, persistent jobs, local RLSM OCR, provisional candidates and review-only UI are code-delivered. Vision, perceptual dedup, cross-frame binding, canonical MFL writes, full SATIM/FPIM/CORRIM handoff and production certification remain OPEN or BLOCKED until evidence exists.
+INITIAL_IMPLEMENTATION_NOT_CERTIFIED. Upload, inventory, persistent jobs, local RLSM OCR, provisional candidates, review-only UI, perceptual-similarity discovery, rendered-track pixel receipts, and reuse of persisted supported georeferences are code-delivered. Vision, perceptual identity/dedup promotion, cross-frame binding, canonical MFL writes, full SATIM/FPIM/CORRIM handoff and production certification remain OPEN or BLOCKED until evidence exists.
