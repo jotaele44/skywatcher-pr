@@ -741,7 +741,13 @@ def evaluate_gold(
         if require_independent_review:
             annotator = str(gold_row.get("annotator") or "").strip()
             reviewer = str(gold_row.get("reviewed_by") or "").strip()
-            if not annotator or not reviewer or annotator.casefold() == reviewer.casefold():
+            review_state = str(gold_row.get("review_state") or "").strip().casefold()
+            if (
+                review_state != "reviewed"
+                or not annotator
+                or not reviewer
+                or annotator.casefold() == reviewer.casefold()
+            ):
                 independent_review_violations += 1
                 errors.append(
                     {
@@ -749,6 +755,7 @@ def evaluate_gold(
                         "severity": "high",
                         "gold_index": index,
                         "screenshot_id": sid,
+                        "review_state": review_state or None,
                         "annotator_present": bool(annotator),
                         "reviewer_present": bool(reviewer),
                         "distinct_reviewers": bool(
