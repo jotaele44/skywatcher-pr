@@ -64,7 +64,8 @@
           "scripts/load_fr24_control_plane.py",
           "src/skywatcher/fr24/flight_corpus.py",
           "src/skywatcher/fr24/flight_coverage.py",
-          "src/skywatcher/fr24/acquisition_receipts.py"
+          "src/skywatcher/fr24/acquisition_receipts.py",
+          "src/skywatcher/fr24/screenshot_processor.py"
         ],
         "endpoints": [
           "GET /api/apps/public-settings",
@@ -94,7 +95,15 @@
           "POST /api/flight-corpus/archive/snapshots",
           "GET /api/flight-corpus/archive/snapshots/{snapshot_id}/coverage",
           "GET /api/flight-acquisition/p1/status",
-          "GET /api/flight-corpus/v4/family-split-summary"
+          "GET /api/flight-corpus/v4/family-split-summary",
+          "GET /api/screenshot-processing/jobs",
+          "POST /api/screenshot-processing/jobs",
+          "GET /api/screenshot-processing/jobs/{job_id}",
+          "POST /api/screenshot-processing/jobs/{job_id}/execute",
+          "POST /api/screenshot-processing/jobs/{job_id}/pause",
+          "POST /api/screenshot-processing/jobs/{job_id}/resume",
+          "POST /api/screenshot-processing/jobs/{job_id}/cancel",
+          "POST /api/screenshot-processing/jobs/{job_id}/commit"
         ],
         "symbols": [
           "server/backend/main.py:geo_observations",
@@ -133,7 +142,19 @@
           "src/skywatcher/fr24/acquisition_receipts.py:record_blocked_auth",
           "src/skywatcher/fr24/acquisition_receipts.py:export_harvest_carryover",
           "src/skywatcher/fr24/acquisition_receipts.py:status_summary",
-          "server/backend/main.py:flight_corpus_v4_family_split_summary"
+          "server/backend/main.py:flight_corpus_v4_family_split_summary",
+          "server/backend/main.py:require_screenshot_access",
+          "server/backend/main.py:screenshot_processing_jobs",
+          "server/backend/main.py:create_screenshot_processing_job",
+          "server/backend/main.py:screenshot_processing_job",
+          "server/backend/main.py:execute_screenshot_processing_job",
+          "server/backend/main.py:pause_screenshot_processing_job",
+          "server/backend/main.py:resume_screenshot_processing_job",
+          "server/backend/main.py:cancel_screenshot_processing_job",
+          "server/backend/main.py:commit_screenshot_processing_job",
+          "src/skywatcher/fr24/screenshot_processor.py:ScreenshotProcessingError",
+          "src/skywatcher/fr24/screenshot_processor.py:ScreenshotJobStore",
+          "src/skywatcher/fr24/screenshot_processor.py:get_default_store"
         ]
       },
       "frontend": {
@@ -212,7 +233,8 @@
           "tests/test_flight_corpus_migration.py",
           "tests/test_flight_coverage.py",
           "tests/test_acquisition_receipts.py",
-          "tests/test_acquisition_status_api.py"
+          "tests/test_acquisition_status_api.py",
+          "tests/test_screenshot_processor.py"
         ],
         "contract": [
           "tests/test_gui_parity.py"
