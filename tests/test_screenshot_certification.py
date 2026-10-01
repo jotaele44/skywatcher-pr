@@ -3,8 +3,8 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from pathlib import Path
 import sqlite3
+from pathlib import Path
 
 from fr24 import rlsm_intelligence_audit
 from skywatcher.fr24 import screenshot_certification as certification_module
