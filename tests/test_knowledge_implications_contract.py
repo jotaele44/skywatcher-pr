@@ -14,6 +14,7 @@ from skywatcher.core.knowledge_implications import (
     classify_delta,
     dependency_digest,
     deterministic_verbal_output,
+    invalidate_implications_for_artifacts,
 )
 
 REPO = Path(__file__).resolve().parents[1]
@@ -236,4 +237,47 @@ def test_implication_lineage_rejects_transitive_cycle_and_updates():
                 WHERE implication_id='i2' AND parent_implication_id='i1'
                 """
             )
+
+def test_artifact_invalidation_propagates_to_all_descendants():
+    with conn() as db:
+        seed(db)
+        db.execute("INSERT INTO swk_implication_evidence VALUES('i1','e1','SUPPORT')")
+        db.execute("UPDATE swk_implication SET certification_state='PASS' WHERE implication_id='i1'")
+        for implication_id in ("i2", "i3"):
+            db.execute(
+                """
+                INSERT INTO swk_implication(
+                  implication_id,run_id,domain_owner,implication_type,epistemic_class,
+                  delta_type,statement,scope_json,ruleset_version,dependency_sha256,created_utc
+                ) VALUES(?, 'r1','FPIM','CORPUS','INFERENCE','REFINES',?,
+                         '{}','v1',?,'now')
+                """,
+                (implication_id, f"statement-{implication_id}", ZERO),
+            )
+        db.execute("INSERT INTO swk_implication_lineage VALUES('i2','i1','DERIVED_FROM')")
+        db.execute("INSERT INTO swk_implication_lineage VALUES('i3','i2','DERIVED_FROM')")
+
+        affected = invalidate_implications_for_artifacts(db, ["e1"])
+        assert affected == ["i1", "i2", "i3"]
+        rows = db.execute(
+            """
+            SELECT implication_id,validity_state,certification_state
+            FROM swk_implication
+            ORDER BY implication_id
+            """
+        ).fetchall()
+        assert rows == [
+            ("i1", "STALE", "OPEN"),
+            ("i2", "STALE", "OPEN"),
+            ("i3", "STALE", "OPEN"),
+        ]
+
+
+def test_artifact_invalidation_no_match_is_noop():
+    with conn() as db:
+        seed(db)
+        assert invalidate_implications_for_artifacts(db, ["unknown-artifact"]) == []
+        assert db.execute(
+            "SELECT validity_state FROM swk_implication WHERE implication_id='i1'"
+        ).fetchone()[0] == "CURRENT"
 
