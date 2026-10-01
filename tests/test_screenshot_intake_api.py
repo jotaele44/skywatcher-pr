@@ -110,3 +110,87 @@ def test_http_rejects_unimplemented_external_vision(tmp_path, monkeypatch):
         )
     assert response.status_code == 400
     assert "not implemented" in response.json()["detail"]
+
+
+
+def test_certification_routes_are_authenticated_and_static(tmp_path, monkeypatch):
+    from fastapi import FastAPI
+    from starlette.testclient import TestClient
+
+    import server.backend.screenshot_router as api
+
+    class FakeCertification:
+        def readiness(self):
+            return {
+                "schema_version": "fixture",
+                "certification_ready_for_audit": True,
+                "operator_pipeline_ready": True,
+            }
+
+        def generate_gold_template(self):
+            return {
+                "name": "gold_sample_300.template.jsonl",
+                "sha256": "a" * 64,
+                "data_base64": base64.b64encode(b"{}\n").decode("ascii"),
+                "selection_manifest": {"selected_rows": 300},
+            }
+
+        def list_receipts(self, limit=20):
+            return [{"run_id": "fixture-run", "certification_status": "BLOCKED"}][:limit]
+
+        def run_audit(self, name, payload):
+            assert name == "gold.jsonl"
+            assert payload == b"{}\n"
+            return {
+                "run_id": "fixture-run",
+                "certification_status": "BLOCKED",
+                "canonical_mfl_mutation_authorized": False,
+            }
+
+    monkeypatch.setattr(api, "certification_service", lambda: FakeCertification())
+    monkeypatch.setenv("SKYWATCHER_SCREENSHOT_TOKEN", "fixture-token")
+    app = FastAPI()
+    app.include_router(api.router)
+
+    with TestClient(app) as client:
+        assert client.get("/api/screenshot-runs/certification/status").status_code == 401
+
+        headers = {"Authorization": "Bearer fixture-token"}
+        status = client.get(
+            "/api/screenshot-runs/certification/status",
+            headers=headers,
+        )
+        assert status.status_code == 200
+        assert status.json()["certification_ready_for_audit"] is True
+
+        template = client.get(
+            "/api/screenshot-runs/certification/template",
+            headers=headers,
+        )
+        assert template.status_code == 200
+        assert template.json()["selection_manifest"]["selected_rows"] == 300
+
+        runs = client.get(
+            "/api/screenshot-runs/certification/runs",
+            headers=headers,
+        )
+        assert runs.status_code == 200
+        assert runs.json()["runs"][0]["run_id"] == "fixture-run"
+
+        audit = client.post(
+            "/api/screenshot-runs/certification/audit",
+            headers=headers,
+            json={
+                "name": "gold.jsonl",
+                "data_base64": base64.b64encode(b"{}\n").decode("ascii"),
+            },
+        )
+        assert audit.status_code == 200
+        assert audit.json()["canonical_mfl_mutation_authorized"] is False
+
+        invalid = client.post(
+            "/api/screenshot-runs/certification/audit",
+            headers=headers,
+            json={"name": "gold.jsonl", "data_base64": "not-base64!"},
+        )
+        assert invalid.status_code == 400
