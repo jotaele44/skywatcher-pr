@@ -44,6 +44,9 @@ export default function ScreenshotProcessor() {
   const [token, setToken] = useState("");
   const [files, setFiles] = useState([]);
   const [reprocess, setReprocess] = useState(false);
+  const [perceptualDiscovery, setPerceptualDiscovery] = useState(false);
+  const [renderedTrack, setRenderedTrack] = useState(false);
+  const [existingGeoref, setExistingGeoref] = useState(true);
   const [pdfScale, setPdfScale] = useState(1.0);
   const [activeTab, setActiveTab] = useState("upload");
   const [busy, setBusy] = useState(false);
@@ -85,8 +88,15 @@ export default function ScreenshotProcessor() {
       const upload = await Promise.all(files.map(async (f) => ({ name: f.name, data_base64: await asBase64(f) })));
       const created = await call("", {
         method: "POST",
-        body: { files: upload, settings: { ocr_mode: "local", vision_mode: "off", duplicate_mode: "exact",
-                    reprocess_existing: reprocess, pdf_scale: pdfScale } },
+        body: { files: upload, settings: {
+          ocr_mode: "local",
+          vision_mode: "off",
+          duplicate_mode: perceptualDiscovery ? "exact+perceptual_discovery" : "exact",
+          rendered_track_mode: renderedTrack ? "local" : "off",
+          georeference_mode: existingGeoref ? "existing_only" : "off",
+          reprocess_existing: reprocess,
+          pdf_scale: pdfScale,
+        } },
       });
       setJobId(created.job_id); sessionStorage.setItem(RUN_KEY, created.job_id);
       setJob(created); setActiveTab("execution");
@@ -171,12 +181,15 @@ export default function ScreenshotProcessor() {
           <h3 className="font-semibold">Preprocessing profile — initial secured implementation</h3>
           <p className="mt-2">Local OCR: enabled · Exact SHA-256 reuse: enabled · Raw manifestation provenance: preserved</p>
           <label className="mt-3 flex items-center gap-2"><input type="checkbox" checked={reprocess} onChange={(e) => setReprocess(e.target.checked)} /> Reprocess existing screenshot OCR (append-only new attempt)</label>
+          <label className="mt-2 flex items-center gap-2"><input type="checkbox" checked={perceptualDiscovery} onChange={(e) => setPerceptualDiscovery(e.target.checked)} /> Discover perceptually similar screenshots (discovery only; never dedup identity)</label>
+          <label className="mt-2 flex items-center gap-2"><input type="checkbox" checked={renderedTrack} onChange={(e) => setRenderedTrack(e.target.checked)} /> Analyze rendered track pixels (not raw telemetry)</label>
+          <label className="mt-2 flex items-center gap-2"><input type="checkbox" checked={existingGeoref} onChange={(e) => setExistingGeoref(e.target.checked)} /> Reuse existing supported RLSM georeference receipts when present</label>
           <label className="mt-2 block">PDF render resolution
             <select className="ml-2 rounded border border-border bg-background px-2 py-1" value={pdfScale} onChange={(e) => setPdfScale(Number(e.target.value))}>
               <option value={1}>Standard 1.0×</option><option value={1.5}>Enhanced 1.5×</option>
             </select>
           </label>
-          <p className="mt-2 text-muted-foreground">External vision and perceptual deduplication are withheld pending independent validation. PDF rendering requires optional PyMuPDF.</p>
+          <p className="mt-2 text-muted-foreground">External vision remains withheld pending independent validation. Perceptual similarity is discovery-only; rendered trails are never native trajectories. PDF rendering requires optional PyMuPDF.</p>
         </div>
         <button type="button" disabled={!canRun} onClick={execute}
           className="rounded border border-primary bg-primary/10 px-5 py-2 text-sm font-bold text-primary disabled:opacity-40">
@@ -206,6 +219,23 @@ export default function ScreenshotProcessor() {
             <div className="mt-2 space-y-1">{Object.entries(item.fields || {}).map(([k, v]) =>
               <p key={k}><strong>{k}:</strong> {String(v.value)} <span className="text-muted-foreground">({v.certification})</span></p>)}</div>
             <p className="mt-2">Flight-record discovery candidates: {item.candidates?.length || 0}. Candidate matches are not identity.</p>
+            {!!item.perceptual_duplicates?.length && <div className="mt-2 rounded border border-border/70 p-2">
+              <p className="font-semibold">Perceptual similarity candidates: {item.perceptual_duplicates.length}</p>
+              <p className="text-muted-foreground">Discovery only — same-looking pixels do not establish screenshot, flight, or event identity.</p>
+              {item.perceptual_duplicates.slice(0, 10).map((candidate) =>
+                <p key={candidate.screenshot_id} className="font-mono">RLSM #{candidate.screenshot_id} · Hamming {candidate.hamming_distance} · {candidate.certification}</p>)}
+              {item.perceptual_duplicates.length > 10 && <p className="text-muted-foreground">+ {item.perceptual_duplicates.length - 10} more preserved candidates</p>}
+            </div>}
+            {item.rendered_track?.status && item.rendered_track.status !== "NOT_REQUESTED" && <div className="mt-2 rounded border border-border/70 p-2">
+              <p className="font-semibold">Rendered-track observation: {item.rendered_track.status}</p>
+              {item.rendered_track.path_shape && <p className="font-mono">shape={item.rendered_track.path_shape} · confidence={item.rendered_track.confidence}</p>}
+              <p className="text-muted-foreground">Evidence type: RENDERED_TRAIL · raw_trajectory=false.</p>
+            </div>}
+            {!!item.georeference_evidence?.length && <div className="mt-2 rounded border border-border/70 p-2">
+              <p className="font-semibold">Persisted georeference receipts: {item.georeference_evidence.length}</p>
+              {item.georeference_evidence.map((receipt) =>
+                <p key={receipt.georef_version} className="font-mono">{receipt.georef_version} · {receipt.status} · {receipt.method} · {receipt.certification}</p>)}
+            </div>}
             {item.master_log_projection && <div className="mt-2 rounded border border-border/70 p-2">
               <p className="font-semibold">Master Flight Log v1 compatibility: {item.master_log_projection.proposed_count} proposed / {item.master_log_projection.withheld_count} withheld</p>
               <p className="text-muted-foreground">NONCANONICAL — extraction does not authorize a new flight record.</p>
