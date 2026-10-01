@@ -287,7 +287,10 @@
           "src/skywatcher/fr24/screenshot_jobs.py:digest",
           "src/skywatcher/fr24/screenshot_jobs.py:now",
           "server/backend/screenshot_router.py:preview_item",
-          "src/skywatcher/fr24/screenshot_mfl_projection.py:project_screenshot_fields"
+          "src/skywatcher/fr24/screenshot_mfl_projection.py:project_screenshot_fields",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:_perceptual_duplicate_candidates",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:_rendered_track_observation",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:_persisted_georeference_evidence"
         ]
       },
       "frontend": {
