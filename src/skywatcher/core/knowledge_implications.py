@@ -113,6 +113,8 @@ def invalidate_implications_for_artifacts(
     Source artifacts are immutable; this function is invoked when an old
     artifact/dependency is explicitly displaced by newly adjudicated evidence.
     """
+    if isinstance(artifact_ids, (str, bytes)):
+        raise ValueError("artifact_ids must be a sequence of IDs, not a scalar string")
     ids = tuple(sorted(set(artifact_ids)))
     if not ids or any(not isinstance(value, str) or not value for value in ids):
         raise ValueError("artifact_ids must contain one or more nonempty strings")
