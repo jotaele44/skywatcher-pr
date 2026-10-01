@@ -56,6 +56,11 @@ export default function ScreenshotProcessor() {
   const [results, setResults] = useState(null);
   const [history, setHistory] = useState([]);
   const [notes, setNotes] = useState({});
+  const [certStatus, setCertStatus] = useState(null);
+  const [goldFile, setGoldFile] = useState(null);
+  const [certReceipt, setCertReceipt] = useState(null);
+  const [certRuns, setCertRuns] = useState([]);
+  const [certBusy, setCertBusy] = useState(false);
   const totalSize = useMemo(() => files.reduce((n, f) => n + f.size, 0), [files]);
   const canRun = !!token && !busy && files.length > 0 && files.length <= 32 && totalSize <= 40 * 1048576;
   const call = (path, options = {}) => federation.request("/screenshot-runs" + path, { ...options, token });
@@ -114,6 +119,52 @@ export default function ScreenshotProcessor() {
     try { setHistory((await call("")).jobs || []); }
     catch (exc) { setError(exc.message); }
   };
+  const refreshCertification = async () => {
+    if (!token) return;
+    setCertBusy(true); setError("");
+    try {
+      const [status, runs] = await Promise.all([
+        call("/certification/status"),
+        call("/certification/runs"),
+      ]);
+      setCertStatus(status);
+      setCertRuns(runs.runs || []);
+      if (!certReceipt && runs.runs?.length) setCertReceipt(runs.runs[0]);
+    } catch (exc) { setError(exc.message); } finally { setCertBusy(false); }
+  };
+  const downloadGoldTemplate = async () => {
+    if (!token) return;
+    setCertBusy(true); setError("");
+    try {
+      const result = await call("/certification/template");
+      const binary = atob(result.data_base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "application/x-ndjson" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = result.name || "gold_sample_300.template.jsonl";
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+      setCertStatus((old) => old ? { ...old, generated_template_sha256: result.sha256 } : old);
+    } catch (exc) { setError(exc.message); } finally { setCertBusy(false); }
+  };
+  const runCertificationAudit = async () => {
+    if (!token || !goldFile) return;
+    setCertBusy(true); setError("");
+    try {
+      const receipt = await call("/certification/audit", {
+        method: "POST",
+        body: {
+          name: goldFile.name,
+          data_base64: await asBase64(goldFile),
+        },
+      });
+      setCertReceipt(receipt);
+      await refreshCertification();
+    } catch (exc) { setError(exc.message); } finally { setCertBusy(false); }
+  };
   const exportMflProjection = () => {
     if (!results?.items?.length) return;
     const payload = {
@@ -166,9 +217,13 @@ export default function ScreenshotProcessor() {
       </label>
       <p className="text-xs text-muted-foreground">Configure SKYWATCHER_SCREENSHOT_TOKEN on the local backend. This form keeps the token in memory.</p>
       <div role="tablist" aria-label="Screenshot processing sections" className="flex flex-wrap gap-2">
-        {[["upload", "Upload & settings"], ["execution", "Execution & results"], ["history", "Processing history"]].map(([id, label]) =>
+        {[["upload", "Upload & settings"], ["execution", "Execution & results"], ["history", "Processing history"], ["certification", "Certification"]].map(([id, label]) =>
           <button key={id} type="button" role="tab" aria-selected={activeTab === id} className={BUTTON + (activeTab === id ? " border-primary text-primary" : "")}
-            onClick={() => { setActiveTab(id); if (id === "history" && token) refreshHistory(); }}>{label}</button>)}
+            onClick={() => {
+              setActiveTab(id);
+              if (id === "history" && token) refreshHistory();
+              if (id === "certification" && token) refreshCertification();
+            }}>{label}</button>)}
       </div>
 
       {activeTab === "upload" && <div role="tabpanel" className="space-y-4">
@@ -284,6 +339,81 @@ export default function ScreenshotProcessor() {
           <span className="break-all font-mono">{h.job_id}</span><span>{h.complete}/{h.total}</span><span>{h.status}</span>
         </button>)}
         {!history.length && <p className="text-xs text-muted-foreground">No history loaded.</p>}
+      </div>}
+
+      {activeTab === "certification" && <div role="tabpanel" className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <button className={BUTTON} disabled={!token || certBusy} onClick={refreshCertification}>Refresh readiness</button>
+          <button className={BUTTON} disabled={!token || certBusy || !certStatus?.certification_ready_for_audit} onClick={downloadGoldTemplate}>
+            Generate deterministic 300-frame template
+          </button>
+        </div>
+
+        {!token && <p className="text-xs text-amber-300">Enter the screenshot-intake token to inspect local certification state.</p>}
+
+        {certStatus && <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded border border-border p-3">Tesseract <strong className="block mt-1">{certStatus.tesseract_available ? "PASS" : "BLOCKED"}</strong></div>
+          <div className="rounded border border-border p-3">RLSM database <strong className="block mt-1">{certStatus.rlsm_database_present ? "PASS" : "BLOCKED"}</strong></div>
+          <div className="rounded border border-border p-3">Local corpus <strong className="block mt-1">{certStatus.corpus_present ? "PASS" : "BLOCKED"}</strong></div>
+          <div className="rounded border border-border p-3">Active screenshots <strong className="block mt-1">{certStatus.active_screenshots ?? "—"}</strong></div>
+        </div>}
+
+        {certStatus?.corpus_manifest && <div className="rounded border border-border p-3 text-xs">
+          <p className="font-semibold">Logical corpus manifestation</p>
+          <p className="mt-1 break-all font-mono text-muted-foreground">{certStatus.corpus_manifest.sha256}</p>
+          <p className="mt-1 text-muted-foreground">{certStatus.corpus_manifest.active_rows} active / {certStatus.corpus_manifest.rows} ledger rows · {certStatus.corpus_manifest.identity_class}</p>
+        </div>}
+
+        <div className="rounded border border-border p-3 text-xs">
+          <h3 className="font-semibold">300-frame independently reviewed gold sample</h3>
+          <p className="mt-2 text-muted-foreground">The generated template is deterministic and starts as unreviewed. Certification requires exactly 300 unique resolved frames, explicit label annotation (including [] for reviewed absence), review_state=reviewed, and distinct annotator/reviewer identities.</p>
+          <input
+            type="file"
+            accept=".json,.jsonl"
+            onChange={(e) => { setGoldFile(e.target.files?.[0] || null); setError(""); }}
+            className="mt-3 block w-full text-xs file:mr-3 file:rounded file:border file:border-border file:bg-background file:px-3 file:py-2"
+          />
+          {goldFile && <p className="mt-2 font-mono">{goldFile.name} · {(goldFile.size / 1024).toFixed(1)} KiB</p>}
+          <button className={BUTTON + " mt-3"} disabled={!token || !goldFile || certBusy || !certStatus?.certification_ready_for_audit} onClick={runCertificationAudit}>
+            {certBusy ? "Running…" : "Run fail-closed certification audit"}
+          </button>
+        </div>
+
+        {certReceipt && <div className="space-y-3 rounded border border-border p-3 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-semibold">Certification receipt</h3>
+            <span className="rounded border border-border px-2 py-1 font-mono">{certReceipt.certification_status}</span>
+          </div>
+          <p className="break-all font-mono text-muted-foreground">run={certReceipt.run_id}</p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <div>Gold records <strong className="block">{certReceipt.gold_validation?.records ?? "—"} / 300</strong></div>
+            <div>Resolved unique <strong className="block">{certReceipt.gold_sample?.unique_resolved_records ?? "—"}</strong></div>
+            <div>Label recall <strong className="block">{certReceipt.gold_sample?.label_metrics?.recall ?? "—"}</strong></div>
+            <div>Aircraft field accuracy <strong className="block">{certReceipt.gold_sample?.aircraft_field_accuracy ?? "—"}</strong></div>
+          </div>
+          <div className="overflow-x-auto rounded border border-border">
+            <table className="w-full text-left text-xs">
+              <thead><tr className="bg-secondary/40"><th className="px-2 py-1">Required gate</th><th className="px-2 py-1">State</th><th className="px-2 py-1">Evidence</th></tr></thead>
+              <tbody>{Object.entries(certReceipt.gates || {}).map(([name, gate]) =>
+                <tr key={name} className="border-t border-border/60">
+                  <td className="px-2 py-1 font-mono">{name}</td>
+                  <td className="px-2 py-1 font-semibold">{gate.status}</td>
+                  <td className="px-2 py-1 font-mono text-[10px] text-muted-foreground">{JSON.stringify(gate.evidence)}</td>
+                </tr>)}</tbody>
+            </table>
+          </div>
+          {!certReceipt.inputs?.inputs_stable_during_audit && <p className="text-amber-300">Input drift occurred during audit; receipt is UNRESOLVED regardless of raw audit status.</p>}
+          <p className="text-muted-foreground">Canonical Master Flight Log mutation authorized: {String(certReceipt.canonical_mfl_mutation_authorized)}</p>
+        </div>}
+
+        {!!certRuns.length && <details className="rounded border border-border p-3 text-xs">
+          <summary className="cursor-pointer font-semibold">Previous local certification receipts ({certRuns.length})</summary>
+          <div className="mt-2 space-y-1">
+            {certRuns.map((run) => <button key={run.run_id} type="button" className="flex w-full justify-between gap-2 rounded border border-border/60 p-2 text-left" onClick={() => setCertReceipt(run)}>
+              <span className="font-mono">{run.run_id}</span><span>{run.certification_status}</span>
+            </button>)}
+          </div>
+        </details>}
       </div>}
       {error && <p role="alert" className="rounded border border-red-400/40 bg-red-500/10 p-3 text-xs text-red-300">{error}</p>}
     </section>
