@@ -15,7 +15,7 @@ Freeze the exact feature-branch SHA used for each operator run, including the RL
 2. Set a strong per-installation environment secret: SKYWATCHER_SCREENSHOT_TOKEN. The router can alternatively use an existing PRII_WRITE_TOKEN. If neither is configured **every screenshot endpoint fails closed with HTTP 503**. Legacy unauthenticated local-network write behavior is not inherited.
 3. Run the backend from the repository root using uvicorn; start the existing frontend. Open FR24 Intake → Screenshot Processor.
 4. Enter the screenshot token into the dedicated in-memory browser field. No token enters a job record, generated manifest, URL, or frontend persistent storage.
-5. Select source files; examine the explicit local-OCR/exact-dedup settings; optionally enable append-only reprocessing of cached OCR or increase PDF rendering to 1.5x; execute. The persistent job database is under inputs/screenshots/runtime by default and is excluded from Git.
+5. Select source files; examine the explicit preprocessing settings; optionally enable append-only OCR reprocessing, perceptual-similarity discovery, rendered-track pixel analysis, or existing supported georeference reuse; execute. The persistent job database is under inputs/screenshots/runtime by default and is excluded from Git.
 6. Expand individual extracted items and, when needed, request a lazy, authenticated, hash-verified preview of the original image manifestation. Review extraction fields and all discovered candidate links. Add review notes. This action **does not** certify flight identity or change canonical corpus rows.
 
 Tests:
@@ -71,10 +71,13 @@ The frontend currently polls job progress. Durable SQLite checkpoints survive se
 | Gold 300 independent sample | BLOCKED | Operator-local annotations not supplied |
 | 98% gold label recall threshold | BLOCKED | Must be measured, never assumed |
 | Independent aircraft-field accuracy | OPEN | Build labeled benchmark |
-| Full-source perceptual dedup | OPEN | Current release supports exact SHA only |
+| Perceptual similarity discovery | CODED; TEST REQUIRED | Complete local pHash neighborhood; never identity/dedup promotion |
+| Perceptual dedup promotion | BLOCKED | Requires independent false-positive benchmark and review policy |
 | Vision second opinion | OPEN | Provider-neutral existing adapter requires gated invocation |
 | Cross-frame flight ID adjudication | OPEN | Independent temporal truth and source IDs required |
 | Canonical MFL commit | NOT ENABLED | Schema-compatible append-only binding plus required independent evidence gate |
+| Rendered-track pixel observation | CODED; TEST REQUIRED | Explicit RENDERED_TRAIL, raw_trajectory=false |
+| Existing supported georeference reuse | CODED; TEST REQUIRED | Reads persisted RLSM receipts; does not synthesize transforms |
 | Geo/SATIM/FPIM/CORRIM auto-chain | OPEN | Separate spatial + fusion certification required |
 | Arbitrary Internet-facing upload | BLOCKED | Dedicated sandbox/resource isolation required |
 
@@ -84,10 +87,11 @@ The frontend currently polls job progress. Durable SQLite checkpoints survive se
 2. Execute the bounded operator-local positive and negative screenshot packet.
 3. Run the existing independently annotated 300-frame gold certification; record exact denominator and every unresolved frame.
 4. Add optional cost-gated vision on the OCR-low-confidence slice, preserving model/run receipts, original zone OCR, and contradictions.
-5. Add perceptual discovery and explicit false-positive review; retain all duplicate manifestations.
-6. Add source-flight-ID extraction only where GUI/source provenance supports it, then independent temporal binding and cross-frame linkage.
-7. Implement authorized append-only corpus evidence links, field-level contradictions and compensated two-store persistence.
-8. Connect certified spatial/trajectory consumers without duplicating Spiderweb geometry authority.
-9. Re-run regression and corpus certification on the final release commit; freeze hashes and manifests.
+5. Benchmark perceptual-similarity false positives before considering any dedup promotion; preserve discovery-only status until then.
+6. Validate rendered-track and persisted-georeference receipts on operator fixtures, then define their handoff contract without duplicating Spiderweb geometry authority.
+7. Add source-flight-ID extraction only where GUI/source provenance supports it, then independent temporal binding and cross-frame linkage.
+8. Implement authorized append-only corpus evidence links, field-level contradictions and compensated two-store persistence only after the promotion contract closes.
+9. Connect certified SATIM/FPIM/CORRIM consumers through published evidence contracts.
+10. Re-run regression and corpus certification on the final release commit; freeze hashes and manifests.
 
 FOIA or external evidence requests are neither required nor initiated by this local intake feature.
