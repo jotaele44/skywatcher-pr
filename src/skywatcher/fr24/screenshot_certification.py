@@ -22,7 +22,6 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
-from fr24 import rlsm_intelligence_audit as audit
 from fr24 import rlsm_intelligence_audit_v2 as audit_v2
 
 MAX_GOLD_BYTES = 8 * 1024 * 1024
