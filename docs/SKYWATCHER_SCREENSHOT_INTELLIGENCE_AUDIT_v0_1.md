@@ -4,7 +4,9 @@
 
 This pipeline converts each screenshot into reviewable observations while preserving the source image, SHA-256 identity, extraction method, confidence, and validation state. Pixel observations, GUI metadata, OCR output, associations, and geolocation inferences remain separate.
 
-## Single command
+## Operator entry points
+
+The canonical CLI remains available:
 
 ```bash
 ./run-rlsm.sh --refresh-derived
@@ -12,7 +14,9 @@ This pipeline converts each screenshot into reviewable observations while preser
 ./run-rlsm.sh --status
 ```
 
-`--certify` returns a non-zero exit code unless every required gate passes. A missing, malformed, unresolved, or non-300-record gold file is never treated as a passing label-recall result.
+The local FR24 Intake → Screenshot Processor → Certification tab exposes the same audit policy without requiring terminal use. It can inspect local readiness, generate a deterministic 300-frame stratified template, accept the independently reviewed JSON/JSONL file, execute the fail-closed v2 audit, display every required gate, and retain local certification receipts.
+
+`--certify` and the GUI audit both remain fail-closed. A missing, malformed, duplicate-frame, unreviewed, unresolved, or non-300-record gold file is never treated as a passing label-recall result.
 
 ## Capability matrix
 
@@ -64,7 +68,9 @@ The pipeline writes:
 
 The canonical operator file is `data/rlsm/gold_sample_300.jsonl`. Each line identifies a corpus screenshot by `screenshot_id`, SHA-256, or filename and may annotate labels, bounding boxes, frame type, aircraft fields, track shape, and icons. The schema is `schemas/rlsm/gold_sample.v1.schema.json`; `data/rlsm/gold_sample_300.example.jsonl` is illustrative only.
 
-The 300 records must be stratified across provider/layout, portrait and landscape, map style, zoom, resolution, compression, selected and unselected aircraft, visible and absent paths, dense labels, occlusion, and low-quality frames. Annotation and review should be performed independently.
+The 300 records must be stratified across provider/layout, portrait and landscape, map style, zoom, resolution, compression, selected and unselected aircraft, visible and absent paths, dense labels, occlusion, and low-quality frames. The GUI template uses deterministic stratum round-robin selection from active RLSM rows and records the selection manifest.
+
+For certification, all 300 records must resolve to 300 unique screenshot IDs. Each record must include `labels` explicitly, including `[]` for a reviewed absence; `review_state` must be `reviewed`; `annotator` and `reviewed_by` must both be present and must identify different reviewers. The generated template starts at `review_state=unreviewed` and therefore cannot certify unchanged.
 
 ## Interpretation controls
 
@@ -80,3 +86,12 @@ The 300 records must be stratified across provider/layout, portrait and landscap
 ## Current operational dependency
 
 Repository CI can validate schemas, stage wiring, deterministic exports, and synthetic fixtures. Full certification requires the operator-local screenshot corpus and the independently reviewed 300-frame annotation file; neither should be committed if they contain private or licensed source imagery.
+
+
+## Local certification receipts
+
+Authenticated GUI certification runs are stored beneath the ignored operator-local screenshot runtime vault. A receipt freezes the uploaded gold SHA-256, pre/post RLSM database SHA-256, pre/post logical corpus-manifest SHA-256, required gate states, gold metrics, output hashes, and whether inputs stayed stable during the audit. Input drift forces the receipt to `UNRESOLVED` even if the raw audit result was PASS.
+
+The logical corpus manifest is a separate identity class from current byte identity: it canonically serializes the ordered screenshot ledger fields `screenshot_id, rel_path, sha256, size_bytes, ingest_status`. The receipt does not claim a fresh re-hash of every corpus image byte.
+
+No certification route authorizes Master Flight Log mutation.
