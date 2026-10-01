@@ -397,6 +397,10 @@ class ScreenshotCertification:
 
     def run_audit(self, name: str, payload: bytes) -> dict[str, Any]:
         validation = self.validate_gold(name, payload)
+        if validation["schema_errors"]:
+            raise ScreenshotCertificationError(
+                "gold sample does not satisfy schemas/rlsm/gold_sample.v1.schema.json"
+            )
         readiness = self.readiness()
         if not readiness["certification_ready_for_audit"]:
             raise ScreenshotCertificationError(
