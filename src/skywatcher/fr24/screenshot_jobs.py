@@ -44,11 +44,24 @@ def digest(data: bytes) -> str:
 def validate_settings(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("settings must be an object")
-    allowed = {"ocr_mode": {"local"}, "vision_mode": {"off"}, "duplicate_mode": {"exact"}}
+    allowed = {
+        "ocr_mode": {"local"},
+        "vision_mode": {"off"},
+        "duplicate_mode": {"exact", "exact+perceptual_discovery"},
+        "rendered_track_mode": {"off", "local"},
+        "georeference_mode": {"off", "existing_only"},
+    }
+    defaults = {
+        "ocr_mode": "local",
+        "vision_mode": "off",
+        "duplicate_mode": "exact",
+        "rendered_track_mode": "off",
+        "georeference_mode": "existing_only",
+    }
     valid_keys = set(allowed) | {"reprocess_existing", "pdf_scale"}
     if set(value) - valid_keys:
         raise ValueError("unsupported settings: " + ", ".join(sorted(set(value) - valid_keys)))
-    settings = {k: value.get(k, next(iter(v))) for k, v in allowed.items()}
+    settings = {key: value.get(key, defaults[key]) for key in allowed}
     for key, options in allowed.items():
         if settings[key] not in options:
             raise ValueError(f"{key} is not implemented in this release")
@@ -188,6 +201,8 @@ CREATE TABLE IF NOT EXISTS items (
  saved_path TEXT, status TEXT NOT NULL, error TEXT,
  screenshot_id INTEGER, was_reused INTEGER NOT NULL DEFAULT 0,
  fields_json TEXT, contradictions_json TEXT, review_note TEXT,
+ perceptual_duplicates_json TEXT, rendered_track_json TEXT,
+ georeference_evidence_json TEXT,
  UNIQUE(job_id, source_id, ordinal));
 CREATE TABLE IF NOT EXISTS candidate_links (
  item_id INTEGER NOT NULL REFERENCES items(item_id), corpus_record_id INTEGER NOT NULL,
@@ -223,6 +238,14 @@ class ScreenshotJobs:
     def _initialize(self):
         with self._connect() as conn:
             conn.executescript(_SCHEMA)
+            item_columns = {row[1] for row in conn.execute("PRAGMA table_info(items)")}
+            for column in (
+                "perceptual_duplicates_json",
+                "rendered_track_json",
+                "georeference_evidence_json",
+            ):
+                if column not in item_columns:
+                    conn.execute(f"ALTER TABLE items ADD COLUMN {column} TEXT")
             conn.execute("UPDATE jobs SET status='QUEUED',updated_at=? WHERE status='RUNNING'", (now(),))
             conn.execute("UPDATE items SET status='QUEUED' WHERE status='RUNNING'")
 
@@ -303,11 +326,21 @@ class ScreenshotJobs:
                     "SELECT ordinal,original_name,sha256,size_bytes FROM sources WHERE job_id=? ORDER BY ordinal", (job_id,))]
                 items = [dict(r) for r in conn.execute(
                     """SELECT item_id,ordinal,filename_raw,member_path,page_number,sha256,size_bytes,
-                       status,error,screenshot_id,was_reused,fields_json,contradictions_json,review_note
+                       status,error,screenshot_id,was_reused,fields_json,contradictions_json,review_note,
+                       perceptual_duplicates_json,rendered_track_json,georeference_evidence_json
                        FROM items WHERE job_id=? ORDER BY source_id,ordinal""", (job_id,))]
                 for item in items:
                     item["fields"] = json.loads(item.pop("fields_json") or "{}")
                     item["contradictions"] = json.loads(item.pop("contradictions_json") or "[]")
+                    item["perceptual_duplicates"] = json.loads(
+                        item.pop("perceptual_duplicates_json") or "[]"
+                    )
+                    item["rendered_track"] = json.loads(
+                        item.pop("rendered_track_json") or "{}"
+                    )
+                    item["georeference_evidence"] = json.loads(
+                        item.pop("georeference_evidence_json") or "[]"
+                    )
                     item["candidates"] = [dict(r) for r in conn.execute(
                         """SELECT corpus_record_id,snapshot_id,corpus_uid,callsign_raw,
                            start_time_utc,end_time_utc,association_status
@@ -442,21 +475,50 @@ class ScreenshotJobs:
                     return
                 conn.execute("UPDATE items SET status='RUNNING' WHERE item_id=?", (item["item_id"],))
             try:
-                result = engine(Path(item["saved_path"]), item["sha256"],
-                                self.root, self.rlsm_db, self.corpus_db,
-                                filename_raw=item["filename_raw"],
-                                reprocess_existing=options["reprocess_existing"])
+                extractor_kwargs = {
+                    "filename_raw": item["filename_raw"],
+                    "reprocess_existing": options["reprocess_existing"],
+                }
+                if self.extractor is None:
+                    extractor_kwargs.update({
+                        "perceptual_duplicate_mode": (
+                            "discover"
+                            if options["duplicate_mode"] == "exact+perceptual_discovery"
+                            else "off"
+                        ),
+                        "rendered_track_mode": options["rendered_track_mode"],
+                        "georeference_mode": options["georeference_mode"],
+                    })
+                result = engine(
+                    Path(item["saved_path"]),
+                    item["sha256"],
+                    self.root,
+                    self.rlsm_db,
+                    self.corpus_db,
+                    **extractor_kwargs,
+                )
                 if not isinstance(result, dict) or result.get("status") not in {"NEEDS_REVIEW", "EXTRACTED_EMPTY", "BLOCKED"}:
                     raise ValueError("extractor returned an invalid stage receipt")
                 status = result["status"]
                 fields = json.dumps(result.get("fields", {}), ensure_ascii=False, sort_keys=True)
                 contradictions = json.dumps(result.get("contradictions", []), ensure_ascii=False)
+                perceptual_duplicates = json.dumps(
+                    result.get("perceptual_duplicates", []), ensure_ascii=False, sort_keys=True
+                )
+                rendered_track = json.dumps(
+                    result.get("rendered_track", {}), ensure_ascii=False, sort_keys=True
+                )
+                georeference_evidence = json.dumps(
+                    result.get("georeference_evidence", []), ensure_ascii=False, sort_keys=True
+                )
                 candidates = result.get("candidates", [])
                 with self._connect() as conn:
                     conn.execute("""UPDATE items SET status=?,screenshot_id=?,was_reused=?,
-                        fields_json=?,contradictions_json=?,error=? WHERE item_id=?""",
+                        fields_json=?,contradictions_json=?,perceptual_duplicates_json=?,
+                        rendered_track_json=?,georeference_evidence_json=?,error=? WHERE item_id=?""",
                         (status, result.get("screenshot_id"), int(bool(result.get("was_reused"))),
-                         fields, contradictions, result.get("error"), item["item_id"]))
+                         fields, contradictions, perceptual_duplicates, rendered_track,
+                         georeference_evidence, result.get("error"), item["item_id"]))
                     for candidate in candidates:
                         conn.execute("""INSERT OR IGNORE INTO candidate_links
                             (item_id,corpus_record_id,snapshot_id,corpus_uid,callsign_raw,
