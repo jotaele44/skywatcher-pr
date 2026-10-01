@@ -40,8 +40,19 @@ def project_screenshot_fields(
     text extraction does not establish the original FR24 event or valid temporal
     identity. Other MFL values need native data or corroborated source records.
     """
-    conflict_fields = {c.get("field") for c in contradictions if c.get("status") == "UNRESOLVED"}
-    if any(c.get("class") == "IDENTITY" and c.get("status") == "UNRESOLVED" for c in contradictions):
+    conflict_fields = {
+        c.get("field")
+        for c in contradictions
+        if c.get("status") == "UNRESOLVED" and c.get("field")
+    }
+    # Backward-compatible fail-closed handling for legacy identity contradictions
+    # that predate field-scoped receipts.
+    if any(
+        c.get("class") == "IDENTITY"
+        and c.get("status") == "UNRESOLVED"
+        and not c.get("field")
+        for c in contradictions
+    ):
         conflict_fields.update({"callsign", "source_flight_id_displayed"})
 
     proposed = {}
