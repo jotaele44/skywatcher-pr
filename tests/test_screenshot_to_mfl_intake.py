@@ -28,13 +28,108 @@ def fake_extractor(path, sha, root, rlsm_db, corpus_db, *, filename_raw=None, re
 
 def test_strict_settings_reject_unimplemented_promotion():
     assert validate_settings({}) == {
-        "ocr_mode": "local", "vision_mode": "off", "duplicate_mode": "exact",
-        "reprocess_existing": False, "pdf_scale": 1.0
+        "ocr_mode": "local",
+        "vision_mode": "off",
+        "duplicate_mode": "exact",
+        "rendered_track_mode": "off",
+        "georeference_mode": "existing_only",
+        "reprocess_existing": False,
+        "pdf_scale": 1.0,
     }
     with pytest.raises(ValueError, match="not implemented"):
         validate_settings({"vision_mode": "comprehensive"})
     with pytest.raises(ValueError, match="unsupported"):
         validate_settings({"auto_publish": True})
+
+    assert validate_settings({
+        "duplicate_mode": "exact+perceptual_discovery",
+        "rendered_track_mode": "local",
+        "georeference_mode": "off",
+    })["duplicate_mode"] == "exact+perceptual_discovery"
+    with pytest.raises(ValueError, match="not implemented"):
+        validate_settings({"rendered_track_mode": "raw_trajectory"})
+
+
+def test_perceptual_similarity_preserves_full_candidate_set_as_discovery_only():
+    from skywatcher.fr24.screenshot_rlsm_adapter import _perceptual_duplicate_candidates
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute(
+        """CREATE TABLE screenshots (
+            screenshot_id INTEGER PRIMARY KEY, sha256 TEXT, filename TEXT,
+            rel_path TEXT, phash TEXT
+        )"""
+    )
+    conn.executemany(
+        "INSERT INTO screenshots VALUES (?,?,?,?,?)",
+        [
+            (1, "sha-a", "a.png", "a.png", "0000000000000000"),
+            (2, "sha-b", "b.png", "b.png", "0000000000000001"),
+            (3, "sha-c", "c.png", "c.png", "0000000000000003"),
+            (4, "sha-d", "d.png", "d.png", "ffffffffffffffff"),
+        ],
+    )
+    candidates = _perceptual_duplicate_candidates(
+        conn, 1, "0000000000000000", threshold=2
+    )
+    conn.close()
+
+    assert [row["screenshot_id"] for row in candidates] == [2, 3]
+    assert [row["hamming_distance"] for row in candidates] == [1, 2]
+    assert all(
+        row["relationship"] == "PERCEPTUAL_SIMILARITY_DISCOVERY_ONLY"
+        and row["certification"] == "CANDIDATE_NOT_IDENTITY"
+        for row in candidates
+    )
+
+
+def test_rendered_track_receipt_never_claims_raw_trajectory(monkeypatch, tmp_path):
+    from skywatcher.fr24 import screenshot_rlsm_adapter as adapter
+
+    fixture = SimpleNamespace(
+        path_shape="loop",
+        has_loop=1,
+        has_orbit=0,
+        has_gap=1,
+        track_length_px=123.4,
+        bbox=(1, 2, 30, 40),
+        component_count=2,
+        confidence=0.6,
+    )
+    monkeypatch.setattr("fr24.track_vectorizer.vectorize_image", lambda _: fixture)
+    receipt = adapter._rendered_track_observation(tmp_path / "unused.png")
+
+    assert receipt["status"] == "OBSERVED"
+    assert receipt["evidence_type"] == "RENDERED_TRAIL"
+    assert receipt["raw_trajectory"] is False
+    assert receipt["certification"] == "PROVISIONAL_PIXEL_OBSERVATION"
+
+
+def test_persisted_georeference_is_consumed_without_synthesis():
+    from skywatcher.fr24.screenshot_rlsm_adapter import _persisted_georeference_evidence
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute(
+        """CREATE TABLE screenshot_georeferences (
+            screenshot_id INTEGER, georef_version TEXT, status TEXT, method TEXT,
+            viewport_profile TEXT, anchor_count INTEGER, scale_m_per_px REAL,
+            fit_residual_m REAL, zoom_rung INTEGER, zoom_support INTEGER,
+            confidence REAL, estimated_error_m REAL, observed_at TEXT
+        )"""
+    )
+    conn.execute(
+        """INSERT INTO screenshot_georeferences VALUES
+           (7,'v1','located','multi_anchor_affine','portrait',3,4.2,11.0,NULL,NULL,
+            0.91,48.0,'2026-09-30T12:00:00Z')"""
+    )
+    evidence = _persisted_georeference_evidence(conn, 7)
+    conn.close()
+
+    assert len(evidence) == 1
+    assert evidence[0]["status"] == "located"
+    assert evidence[0]["certification"] == "PROVISIONAL_SUPPORTED_GEOREFERENCE"
 
 
 def test_manifest_conserves_same_payload_at_distinct_source_paths(tmp_path):
