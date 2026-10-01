@@ -153,3 +153,87 @@ def test_pass_support_update_and_content_edit_rejected():
             db.execute("UPDATE swk_implication_evidence SET evidence_role='CONTEXT' WHERE implication_id='i1'")
         with pytest.raises(sqlite3.IntegrityError,match="certified implication"):
             db.execute("UPDATE swk_implication SET statement='unbacked rewritten claim' WHERE implication_id='i1'")
+
+def test_hash_and_state_checks_fail_closed():
+    with conn() as db:
+        with pytest.raises(sqlite3.IntegrityError):
+            db.execute(
+                """
+                INSERT INTO swk_knowledge_run(
+                  run_id,input_manifest_sha256,ruleset_sha256,baseline_commit,started_utc
+                ) VALUES('bad','NOT-A-HASH',?,?,?)
+                """,
+                (ZERO, "fixture", "now"),
+            )
+        seed(db)
+        with pytest.raises(sqlite3.IntegrityError):
+            db.execute(
+                """
+                INSERT INTO swk_knowledge_state(
+                  state_id,run_id,previous_state_id,source_manifestation_count,
+                  unresolved_candidate_count,implication_count,contradiction_count,
+                  state_manifest_sha256,certification_state,created_utc
+                ) VALUES('state-a','r1','state-a',0,0,0,0,?,'OPEN','now')
+                """,
+                (ZERO,),
+            )
+
+
+def test_delta_vocabulary_is_closed():
+    with conn() as db:
+        seed(db)
+        for state_id in ("s1", "s2"):
+            db.execute(
+                """
+                INSERT INTO swk_knowledge_state(
+                  state_id,run_id,source_manifestation_count,
+                  unresolved_candidate_count,implication_count,contradiction_count,
+                  state_manifest_sha256,certification_state,created_utc
+                ) VALUES(?,?,0,0,0,0,?,'OPEN','now')
+                """,
+                (state_id, "r1", ZERO),
+            )
+        with pytest.raises(sqlite3.IntegrityError):
+            db.execute(
+                """
+                INSERT INTO swk_knowledge_delta(
+                  delta_id,prior_state_id,new_state_id,dimension,delta_type,
+                  before_json,after_json,explanation_json
+                ) VALUES('d1','s1','s2','INVENTED_DIMENSION','NEW','{}','{}','{}')
+                """
+            )
+
+
+def test_implication_lineage_rejects_transitive_cycle_and_updates():
+    with conn() as db:
+        seed(db)
+        for implication_id in ("i2", "i3"):
+            db.execute(
+                """
+                INSERT INTO swk_implication(
+                  implication_id,run_id,domain_owner,implication_type,epistemic_class,
+                  delta_type,statement,scope_json,ruleset_version,dependency_sha256,created_utc
+                ) VALUES(?, 'r1','FPIM','CORPUS','INFERENCE','REFINES',?,
+                         '{}','v1',?,'now')
+                """,
+                (implication_id, f"statement-{implication_id}", ZERO),
+            )
+        db.execute(
+            "INSERT INTO swk_implication_lineage VALUES('i2','i1','DERIVED_FROM')"
+        )
+        db.execute(
+            "INSERT INTO swk_implication_lineage VALUES('i3','i2','DERIVED_FROM')"
+        )
+        with pytest.raises(sqlite3.IntegrityError, match="cycle"):
+            db.execute(
+                "INSERT INTO swk_implication_lineage VALUES('i1','i3','DERIVED_FROM')"
+            )
+        with pytest.raises(sqlite3.IntegrityError, match="immutable"):
+            db.execute(
+                """
+                UPDATE swk_implication_lineage
+                SET relation='WEAKENS'
+                WHERE implication_id='i2' AND parent_implication_id='i1'
+                """
+            )
+
