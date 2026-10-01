@@ -50,7 +50,7 @@ def provisional_fields(ocr_rows: list[dict]) -> tuple[dict, list[dict]]:
     if len(raw_regs) > 1:
         parsed.pop("registration", None)
         conflicts.append({
-            "class": "IDENTITY", "status": "UNRESOLVED",
+            "class": "IDENTITY", "field": "registration", "status": "UNRESOLVED",
             "raw_registration_candidates": raw_regs,
             "note": "multiple OCR registration strings; no selection is justified",
         })
@@ -66,6 +66,34 @@ def provisional_fields(ocr_rows: list[dict]) -> tuple[dict, list[dict]]:
             conflicts.append({"class": "SCHEMA", "status": "UNRESOLVED",
                               "field": field, "raw_value_candidates": sorted(values),
                               "note": "multiple displayed values of one unit; no selection justified"})
+    # Recover callsign independently from registration only when the UI labels it.
+    # Generic callsign parsing from _scan_text remains available when no registration
+    # suppresses it, but an explicit label can coexist with a visible registration.
+    callsign_label_pattern = re.compile(
+        r"\bCALLSIGN\s*[:#-]?\s*([A-Z0-9]{2,10})\b",
+        re.I,
+    )
+    explicit_callsigns = {
+        match.group(1).upper()
+        for row in readable
+        for match in callsign_label_pattern.finditer(row["raw_text"])
+    }
+    generic_callsign = parsed.get("callsign")
+    callsign_candidates = set(explicit_callsigns)
+    if generic_callsign:
+        callsign_candidates.add(str(generic_callsign).upper())
+    if len(callsign_candidates) == 1:
+        parsed["callsign"] = next(iter(callsign_candidates))
+    elif len(callsign_candidates) > 1:
+        parsed.pop("callsign", None)
+        conflicts.append({
+            "class": "IDENTITY",
+            "field": "callsign",
+            "status": "UNRESOLVED",
+            "raw_callsign_candidates": sorted(callsign_candidates),
+            "note": "conflicting displayed callsign candidates; no selection is justified",
+        })
+
     # A flight ID is eligible for MFL projection only with its explicit GUI label.
     flight_id_pattern = re.compile(
         r"\b(?:FLIGHT\s*ID|FR24\s*(?:FLIGHT\s*)?ID)\s*[:#-]?\s*([0-9a-f]{6,8})\b",
@@ -90,7 +118,12 @@ def provisional_fields(ocr_rows: list[dict]) -> tuple[dict, list[dict]]:
             (field == "registration" and value in r["raw_text"]) or
             (field == "source_flight_id_displayed" and
              any(m.group(1) == value for m in flight_id_pattern.finditer(r["raw_text"]))) or
-            (field not in {"registration", "source_flight_id_displayed"})
+            (field == "callsign" and (
+                any(m.group(1).upper() == str(value).upper()
+                    for m in callsign_label_pattern.finditer(r["raw_text"]))
+                or str(value) in r["raw_text"]
+            )) or
+            (field not in {"registration", "source_flight_id_displayed", "callsign"})
         )]
         result[field] = {
             "value": value,
@@ -221,28 +254,90 @@ def _persisted_georeference_evidence(
 
 
 def _discover_corpus_candidates(corpus_db: Path, fields: dict) -> tuple[list[dict], str]:
-    # Callsign is discovery only; registration is never equated to callsign.
-    candidate = fields.get("callsign", {}).get("value")
-    if not candidate:
-        return [], "NOT_QUERIED_NO_SUPPORTED_CALLSIGN"
+    """Preserve the full union of exact displayed-source-ID and callsign candidates."""
+    callsign = fields.get("callsign", {}).get("value")
+    source_flight_id = fields.get("source_flight_id_displayed", {}).get("value")
+    if not callsign and not source_flight_id:
+        return [], "NOT_QUERIED_NO_SUPPORTED_IDENTITY_FIELD"
     if not corpus_db.is_file():
         return [], "BLOCKED_CORPUS_UNAVAILABLE"
+
     conn = sqlite3.connect(f"file:{corpus_db}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     try:
-        rows = conn.execute(
-            """SELECT corpus_record_id,snapshot_id,corpus_uid,callsign_raw,
-               start_time_utc,end_time_utc FROM flight_corpus_records
-               WHERE callsign_raw=? ORDER BY snapshot_id,corpus_record_id""",
-            (candidate,)
-        ).fetchall()
-        return [dict(row) for row in rows], "QUERIED"  # No arbitrary candidate truncation.
+        columns = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(flight_corpus_records)")
+        }
+        required = {
+            "corpus_record_id",
+            "snapshot_id",
+            "corpus_uid",
+            "callsign_raw",
+            "start_time_utc",
+            "end_time_utc",
+        }
+        if not required <= columns:
+            raise RuntimeError("canonical corpus tables unavailable for reconciliation")
+
+        source_id_supported = "source_flight_id_raw" in columns
+        select_source_id = (
+            "source_flight_id_raw"
+            if source_id_supported
+            else "NULL AS source_flight_id_raw"
+        )
+        candidate_map: dict[int, dict[str, Any]] = {}
+
+        def add_rows(rows: list[sqlite3.Row], basis: str) -> None:
+            for row in rows:
+                record_id = int(row["corpus_record_id"])
+                candidate = candidate_map.setdefault(
+                    record_id,
+                    {
+                        **dict(row),
+                        "match_basis": [],
+                        "association_status": "CANDIDATE_NOT_IDENTITY",
+                    },
+                )
+                if basis not in candidate["match_basis"]:
+                    candidate["match_basis"].append(basis)
+
+        if source_flight_id and source_id_supported:
+            rows = conn.execute(
+                f"""SELECT corpus_record_id,snapshot_id,corpus_uid,{select_source_id},
+                           callsign_raw,start_time_utc,end_time_utc
+                    FROM flight_corpus_records
+                    WHERE LOWER(TRIM(source_flight_id_raw))=LOWER(TRIM(?))
+                    ORDER BY snapshot_id,corpus_record_id""",
+                (source_flight_id,),
+            ).fetchall()
+            add_rows(rows, "EXACT_DISPLAYED_SOURCE_FLIGHT_ID")
+
+        if callsign:
+            rows = conn.execute(
+                f"""SELECT corpus_record_id,snapshot_id,corpus_uid,{select_source_id},
+                           callsign_raw,start_time_utc,end_time_utc
+                    FROM flight_corpus_records
+                    WHERE UPPER(TRIM(callsign_raw))=UPPER(TRIM(?))
+                    ORDER BY snapshot_id,corpus_record_id""",
+                (callsign,),
+            ).fetchall()
+            add_rows(rows, "EXACT_DISPLAYED_CALLSIGN")
+
+        state = (
+            "QUERIED"
+            if not source_flight_id or source_id_supported
+            else "QUERIED_CALLSIGN_ONLY_SOURCE_ID_COLUMN_UNAVAILABLE"
+        )
+        candidates = sorted(
+            candidate_map.values(),
+            key=lambda row: (int(row["snapshot_id"]), int(row["corpus_record_id"])),
+        )
+        return candidates, state
     except sqlite3.OperationalError as exc:
-        # Schema absent is a genuine missing dependency, not an empty match universe.
         raise RuntimeError("canonical corpus tables unavailable for reconciliation") from exc
     finally:
         conn.close()
-
 
 def extract_into_rlsm(
     image_path: Path,
