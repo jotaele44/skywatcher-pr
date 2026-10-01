@@ -55,6 +55,7 @@ const DEFAULT_SETTINGS = {
   georeference: true,
   match_existing_flights: true,
   candidate_time_window_minutes: 90,
+  temporal_hint_mode: "preserve_only",
 };
 
 function bytesToBase64(arrayBuffer) {
@@ -365,6 +366,16 @@ function ProcessorTab({
               ["disabled", "Disabled"],
               ["low_confidence_only", "Low-confidence only"],
               ["comprehensive", "Comprehensive"],
+            ]}
+          />
+          <SettingSelect
+            label="Filename timestamp interpretation"
+            value={settings.temporal_hint_mode}
+            onChange={(value) => setSettings((prev) => ({ ...prev, temporal_hint_mode: value }))}
+            options={[
+              ["preserve_only", "Preserve only — no temporal filtering"],
+              ["america_puerto_rico", "Puerto Rico local time (AST)"],
+              ["utc", "UTC"],
             ]}
           />
           <SettingNumber
