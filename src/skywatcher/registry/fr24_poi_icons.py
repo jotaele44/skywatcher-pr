@@ -247,6 +247,11 @@ def validate_registry(data: dict[str, Any]) -> dict[str, Any]:
             failures.append(f"{manifest_id}: size does not match archive member")
         if row.get("sha256") != member.get("sha256"):
             failures.append(f"{manifest_id}: sha256 does not match archive member")
+        expected_manifestation_id = "FR24SRC_" + str(member.get("sha256", ""))[:16].upper()
+        if manifest_id != expected_manifestation_id:
+            failures.append(
+                f"{manifest_id}: manifestation_id is not content-bound to member sha256"
+            )
         refs = row.get("source_type_ids")
         if not isinstance(refs, list):
             failures.append(f"{manifest_id}: source_type_ids must be an array")
@@ -271,6 +276,10 @@ def validate_registry(data: dict[str, Any]) -> dict[str, Any]:
                 failures.append(f"{manifest_id}: operator-logo match must remain candidate-only")
         else:
             failures.append(f"{manifest_id}: unsupported entity_kind {kind!r}")
+
+    archive_sha = source_archive.get("sha256")
+    if not isinstance(archive_sha, str) or not SHA256_RE.fullmatch(archive_sha):
+        failures.append("source archive sha256 is missing or invalid")
 
     artwork_status = source_archive.get("source_artwork_redistribution_status")
     if artwork_status != "UNVERIFIED":
