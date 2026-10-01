@@ -281,3 +281,10 @@ def test_artifact_invalidation_no_match_is_noop():
             "SELECT validity_state FROM swk_implication WHERE implication_id='i1'"
         ).fetchone()[0] == "CURRENT"
 
+
+def test_artifact_invalidation_rejects_scalar_string():
+    with conn() as db:
+        seed(db)
+        with pytest.raises(ValueError, match="sequence of IDs"):
+            invalidate_implications_for_artifacts(db, "e1")
+
