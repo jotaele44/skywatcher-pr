@@ -124,6 +124,11 @@ export default function ScreenshotProcessor() {
         item_id: item.item_id, filename_raw: item.filename_raw,
         screenshot_sha256: item.sha256,
         processing_status: item.status,
+        candidate_links: item.candidates || [],
+        perceptual_duplicates: item.perceptual_duplicates || [],
+        rendered_track: item.rendered_track || {},
+        georeference_evidence: item.georeference_evidence || [],
+        contradictions: item.contradictions || [],
         master_log_projection: item.master_log_projection,
       })),
     };
@@ -219,6 +224,15 @@ export default function ScreenshotProcessor() {
             <div className="mt-2 space-y-1">{Object.entries(item.fields || {}).map(([k, v]) =>
               <p key={k}><strong>{k}:</strong> {String(v.value)} <span className="text-muted-foreground">({v.certification})</span></p>)}</div>
             <p className="mt-2">Flight-record discovery candidates: {item.candidates?.length || 0}. Candidate matches are not identity.</p>
+            {!!item.candidates?.length && <details className="mt-2 rounded border border-border/70 p-2">
+              <summary className="cursor-pointer font-semibold">View complete candidate set and match basis</summary>
+              <div className="mt-2 max-h-52 space-y-1 overflow-auto">
+                {item.candidates.map((candidate) =>
+                  <p key={candidate.corpus_record_id} className="font-mono">
+                    #{candidate.corpus_record_id} · {candidate.corpus_uid} · {(candidate.match_basis || []).join(" + ") || "basis unavailable"} · CANDIDATE_NOT_IDENTITY
+                  </p>)}
+              </div>
+            </details>}
             {!!item.perceptual_duplicates?.length && <div className="mt-2 rounded border border-border/70 p-2">
               <p className="font-semibold">Perceptual similarity candidates: {item.perceptual_duplicates.length}</p>
               <p className="text-muted-foreground">Discovery only — same-looking pixels do not establish screenshot, flight, or event identity.</p>
