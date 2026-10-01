@@ -251,10 +251,11 @@ def test_rlsm_exact_byte_reuse_and_complete_corpus_candidate_set(tmp_path, monke
     with sqlite3.connect(corpus) as conn:
         conn.execute("""CREATE TABLE flight_corpus_records (
             corpus_record_id INTEGER, snapshot_id INTEGER, corpus_uid TEXT,
-            callsign_raw TEXT, start_time_utc TEXT, end_time_utc TEXT)""")
-        conn.executemany("INSERT INTO flight_corpus_records VALUES (?,?,?,?,?,?)", [
-            (1, 5, "mfl:1", "ABC123", None, None),
-            (2, 6, "mfl:2", "ABC123", None, None),
+            source_flight_id_raw TEXT, callsign_raw TEXT,
+            start_time_utc TEXT, end_time_utc TEXT)""")
+        conn.executemany("INSERT INTO flight_corpus_records VALUES (?,?,?,?,?,?,?)", [
+            (1, 5, "mfl:1", None, "ABC123", None, None),
+            (2, 6, "mfl:2", None, "ABC123", None, None),
         ])
     schema = Path(__file__).resolve().parents[1] / "data" / "rlsm" / "schema.sql"
     (tmp_path / "data" / "rlsm").mkdir(parents=True)
@@ -299,6 +300,42 @@ def test_rlsm_exact_byte_reuse_and_complete_corpus_candidate_set(tmp_path, monke
         assert conn.execute("SELECT COUNT(*) FROM ocr_observations").fetchone()[0] == 2
     with sqlite3.connect(corpus) as conn:
         assert conn.execute("SELECT COUNT(*) FROM flight_corpus_records").fetchone()[0] == 2
+
+def test_job_persists_candidate_match_basis(tmp_path):
+    def candidate_extractor(
+        path, sha, root, rlsm_db, corpus_db, *, filename_raw=None, reprocess_existing=False
+    ):
+        return {
+            "status": "NEEDS_REVIEW",
+            "screenshot_id": 8,
+            "fields": {},
+            "contradictions": [],
+            "candidates": [{
+                "corpus_record_id": 55,
+                "snapshot_id": 4,
+                "corpus_uid": "mfl:55",
+                "source_flight_id_raw": "3bf72561",
+                "callsign_raw": "ABC123",
+                "start_time_utc": None,
+                "end_time_utc": None,
+                "match_basis": [
+                    "EXACT_DISPLAYED_SOURCE_FLIGHT_ID",
+                    "EXACT_DISPLAYED_CALLSIGN",
+                ],
+            }],
+        }
+
+    service = ScreenshotJobs(tmp_path, extractor=candidate_extractor)
+    run = service.create([("source.png", b"pixel-fixture")])
+    service._drain()
+    item = service.detail(run["job_id"], include_items=True)["items"][0]
+
+    assert item["candidates"][0]["match_basis"] == [
+        "EXACT_DISPLAYED_SOURCE_FLIGHT_ID",
+        "EXACT_DISPLAYED_CALLSIGN",
+    ]
+    assert item["candidates"][0]["association_status"] == "CANDIDATE_NOT_IDENTITY"
+
 
 def test_preview_hash_and_runtime_boundary(tmp_path):
     import base64
@@ -385,6 +422,96 @@ def test_pdf_budget_preserves_remaining_page_denominator(monkeypatch):
     assert [entry[2] for entry in page_items] == [1, 2]
     assert page_items[0][4] == "expanded PDF budget exceeded"
     assert page_items[1][4] == "PDF render budget exhausted"
+
+def test_explicit_callsign_survives_visible_registration_when_independently_labeled():
+    fields, conflicts = provisional_fields([{
+        "obs_id": 11,
+        "zone": "aircraft_card",
+        "raw_text": "REG. N123AB CALLSIGN ABC123 FLIGHT ID 3bf72561 2000 ft",
+        "confidence_mean": 96,
+        "ocr_status": "ok",
+    }])
+
+    assert not conflicts
+    assert fields["registration"]["value"] == "N123AB"
+    assert fields["callsign"]["value"] == "ABC123"
+    assert fields["source_flight_id_displayed"]["value"] == "3bf72561"
+
+
+def test_source_flight_id_and_callsign_candidate_union_preserves_match_basis(tmp_path):
+    from skywatcher.fr24.screenshot_rlsm_adapter import _discover_corpus_candidates
+
+    corpus = tmp_path / "corpus.sqlite"
+    with sqlite3.connect(corpus) as conn:
+        conn.execute("""CREATE TABLE flight_corpus_records (
+            corpus_record_id INTEGER, snapshot_id INTEGER, corpus_uid TEXT,
+            source_flight_id_raw TEXT, callsign_raw TEXT,
+            start_time_utc TEXT, end_time_utc TEXT)""")
+        conn.executemany(
+            "INSERT INTO flight_corpus_records VALUES (?,?,?,?,?,?,?)",
+            [
+                (1, 10, "mfl:both", "3bf72561", "ABC123", None, None),
+                (2, 11, "mfl:id-only", "3bf72561", "OTHER9", None, None),
+                (3, 12, "mfl:call-only", "99999999", "ABC123", None, None),
+            ],
+        )
+
+    fields = {
+        "source_flight_id_displayed": {"value": "3BF72561"},
+        "callsign": {"value": "abc123"},
+    }
+    candidates, state = _discover_corpus_candidates(corpus, fields)
+
+    assert state == "QUERIED"
+    assert [row["corpus_record_id"] for row in candidates] == [1, 2, 3]
+    by_id = {row["corpus_record_id"]: row for row in candidates}
+    assert by_id[1]["match_basis"] == [
+        "EXACT_DISPLAYED_SOURCE_FLIGHT_ID",
+        "EXACT_DISPLAYED_CALLSIGN",
+    ]
+    assert by_id[2]["match_basis"] == ["EXACT_DISPLAYED_SOURCE_FLIGHT_ID"]
+    assert by_id[3]["match_basis"] == ["EXACT_DISPLAYED_CALLSIGN"]
+    assert all(row["association_status"] == "CANDIDATE_NOT_IDENTITY" for row in candidates)
+
+
+def test_registration_conflict_does_not_erase_clean_callsign_or_source_id_projection():
+    from skywatcher.fr24.screenshot_mfl_projection import project_screenshot_fields
+
+    fields, conflicts = provisional_fields([
+        {
+            "obs_id": 1,
+            "zone": "aircraft_card",
+            "raw_text": "REG. N123AB CALLSIGN ABC123 FLIGHT ID 3bf72561",
+            "confidence_mean": 95,
+            "ocr_status": "ok",
+        },
+        {
+            "obs_id": 2,
+            "zone": "top_bar",
+            "raw_text": "REG. N999ZZ",
+            "confidence_mean": 94,
+            "ocr_status": "ok",
+        },
+    ])
+
+    assert "registration" not in fields
+    assert fields["callsign"]["value"] == "ABC123"
+    assert fields["source_flight_id_displayed"]["value"] == "3bf72561"
+    assert any(
+        conflict.get("field") == "registration" and conflict["status"] == "UNRESOLVED"
+        for conflict in conflicts
+    )
+
+    projection = project_screenshot_fields(
+        fields,
+        conflicts,
+        [],
+        screenshot_sha256="c" * 64,
+    )
+    assert projection["proposed_fields"]["callsignRaw"]["value_raw"] == "ABC123"
+    assert projection["proposed_fields"]["sourceFlightIdRaw"]["value_raw"] == "3bf72561"
+    assert projection["canonical_append_authorized"] is False
+
 
 def test_explicit_source_flight_id_is_provisional_and_not_created_as_flight():
     from skywatcher.fr24.screenshot_mfl_projection import MFL_FIELDS, project_screenshot_fields
