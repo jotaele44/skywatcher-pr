@@ -96,3 +96,27 @@ The frontend currently polls job progress. Durable SQLite checkpoints survive se
 10. Re-run regression and corpus certification on the final release commit; freeze hashes and manifests.
 
 FOIA or external evidence requests are neither required nor initiated by this local intake feature.
+
+
+## Operator-local certification surface
+
+The FR24 Intake Screenshot Processor now includes a Certification tab protected by the same dedicated bearer-token boundary as screenshot intake.
+
+It provides:
+
+- local Tesseract / Python dependency / RLSM DB / corpus readiness;
+- deterministic 300-frame gold-template generation;
+- explicit unreviewed template state;
+- authenticated JSON/JSONL gold upload;
+- schema validation;
+- exact 300-row denominator enforcement;
+- duplicate resolved-frame rejection;
+- explicit label annotation requirement, including reviewed `[]`;
+- distinct annotator / reviewer enforcement;
+- execution of the existing RLSM v2 audit;
+- full required-gate display;
+- frozen gold, database, logical corpus-manifest and output hashes;
+- idempotent receipt reuse for identical frozen inputs;
+- fail-closed `UNRESOLVED` state on audit-time input drift.
+
+This closes the terminal-only operational gap but does not manufacture the missing operator-local annotations. Repository CI can certify the controller and audit logic; only an actual independently reviewed 300-frame local file can close the corpus certification gate.
