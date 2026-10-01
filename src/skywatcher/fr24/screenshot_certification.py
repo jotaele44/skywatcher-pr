@@ -137,6 +137,30 @@ class ScreenshotCertification:
         conn.row_factory = sqlite3.Row
         return conn
 
+    def _sqlite_manifest(self) -> dict[str, Any]:
+        if not self.db_path.is_file():
+            raise ScreenshotCertificationError("RLSM database is unavailable")
+        components = []
+        aggregate = hashlib.sha256()
+        for suffix in ("", "-wal", "-shm"):
+            path = Path(str(self.db_path) + suffix)
+            if not path.is_file():
+                continue
+            item = {
+                "component": "main" if not suffix else suffix.lstrip("-"),
+                "size_bytes": path.stat().st_size,
+                "sha256": _sha256_file(path),
+            }
+            components.append(item)
+            aggregate.update(_canonical_json(item).encode("utf-8"))
+            aggregate.update(b"\n")
+        return {
+            "identity_class": "SOURCE_MANIFESTATION",
+            "format": "sqlite_bundle_v1",
+            "components": components,
+            "sha256": aggregate.hexdigest(),
+        }
+
     def _corpus_manifest(self) -> dict[str, Any]:
         with self._connect() as conn:
             rows = conn.execute(
@@ -186,7 +210,7 @@ class ScreenshotCertification:
             "latest_receipt": None,
         }
         if db_exists:
-            status["rlsm_database_sha256"] = _sha256_file(self.db_path)
+            status["rlsm_database_manifest"] = self._sqlite_manifest()
             manifest = self._corpus_manifest()
             status["corpus_manifest"] = manifest
             status["active_screenshots"] = manifest["active_rows"]
@@ -319,6 +343,7 @@ class ScreenshotCertification:
                            s.width,s.height,{frame_expr} AS frame_type
                     FROM screenshots s
                     WHERE s.ingest_status='ok'
+                      AND COALESCE(s.source_availability,'present')='present'
                     ORDER BY s.screenshot_id"""
             ).fetchall()
 
@@ -410,12 +435,12 @@ class ScreenshotCertification:
                 "local RLSM database, corpus, and gold schema are required"
             )
 
-        db_sha_before = _sha256_file(self.db_path)
+        db_before = self._sqlite_manifest()
         corpus_before = self._corpus_manifest()
         fingerprint_input = {
             "schema_version": SCHEMA_VERSION,
             "gold_sha256": validation["sha256"],
-            "rlsm_database_sha256": db_sha_before,
+            "rlsm_database_manifest_sha256": db_before["sha256"],
             "corpus_manifest_sha256": corpus_before["sha256"],
         }
         fingerprint = _sha256_bytes(_canonical_json(fingerprint_input).encode("utf-8"))
@@ -438,10 +463,10 @@ class ScreenshotCertification:
             sample_limit=25,
         )
 
-        db_sha_after = _sha256_file(self.db_path)
+        db_after = self._sqlite_manifest()
         corpus_after = self._corpus_manifest()
         stable = (
-            db_sha_before == db_sha_after
+            db_before["sha256"] == db_after["sha256"]
             and corpus_before["sha256"] == corpus_after["sha256"]
         )
         output_hashes: dict[str, str] = {}
@@ -461,8 +486,8 @@ class ScreenshotCertification:
             "inputs": {
                 "gold_sample_name": Path(name).name,
                 "gold_sample_sha256": validation["sha256"],
-                "rlsm_database_sha256_before": db_sha_before,
-                "rlsm_database_sha256_after": db_sha_after,
+                "rlsm_database_manifest_before": db_before,
+                "rlsm_database_manifest_after": db_after,
                 "corpus_manifest_before": corpus_before,
                 "corpus_manifest_after": corpus_after,
                 "inputs_stable_during_audit": stable,
