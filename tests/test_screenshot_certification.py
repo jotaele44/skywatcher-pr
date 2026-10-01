@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 from pathlib import Path
 import sqlite3
@@ -168,6 +169,70 @@ def test_gold_evaluator_requires_distinct_review_and_explicit_labels(
     kinds = {error["kind"] for error in errors}
     assert "gold_independent_review_missing" in kinds
     assert "gold_labels_not_explicitly_annotated" in kinds
+
+
+def test_gold_source_byte_identity_passes_then_fails_on_mutation(tmp_path: Path) -> None:
+    service = _service(tmp_path, count=1)
+    source = service.corpus_root / "frame-0001.png"
+    source.write_bytes(b"gold-frame")
+    expected_sha = hashlib.sha256(source.read_bytes()).hexdigest()
+
+    conn = sqlite3.connect(service.db_path)
+    conn.execute(
+        """UPDATE screenshots
+           SET sha256=?, rel_path=?, size_bytes=?
+           WHERE screenshot_id=1""",
+        (
+            expected_sha,
+            "data/FR24_baseline/frame-0001.png",
+            source.stat().st_size,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    gold_row = {
+        "screenshot_id": 1,
+        "screenshot_sha256": expected_sha,
+        "filename": "frame-0001.png",
+        "labels": [],
+        "annotator": "annotator-a",
+        "reviewed_by": "reviewer-b",
+        "review_state": "reviewed",
+    }
+    gold = tmp_path / "gold.jsonl"
+    gold.write_text(json.dumps(gold_row) + "\n", encoding="utf-8")
+
+    conn = sqlite3.connect(service.db_path)
+    passed, pass_errors = rlsm_intelligence_audit.evaluate_gold(
+        conn,
+        gold,
+        expected_size=1,
+        require_independent_review=True,
+        corpus_root=service.corpus_root,
+    )
+    conn.close()
+
+    assert passed["status"] == "ready"
+    assert passed["source_bytes_verified"] == 1
+    assert passed["source_byte_failures"] == 0
+    assert not any(error["kind"] == "gold_source_sha256_mismatch" for error in pass_errors)
+
+    source.write_bytes(b"mutated-frame")
+    conn = sqlite3.connect(service.db_path)
+    failed, fail_errors = rlsm_intelligence_audit.evaluate_gold(
+        conn,
+        gold,
+        expected_size=1,
+        require_independent_review=True,
+        corpus_root=service.corpus_root,
+    )
+    conn.close()
+
+    assert failed["status"] == "incomplete"
+    assert failed["source_bytes_verified"] == 0
+    assert failed["source_byte_failures"] == 1
+    assert any(error["kind"] == "gold_source_sha256_mismatch" for error in fail_errors)
 
 
 def test_audit_receipt_is_idempotent_and_freezes_input_identity(
