@@ -1,15 +1,20 @@
 # Skill upgrade candidate — Skywatcher provenance-bound cumulative implication
 
-**State:** CANDIDATE_NOT_INSTALLED (local, synthetic-verified only).
+**State:** CANDIDATE_NOT_INSTALLED (repository-tested draft; operator-corpus validation still blocked).
 
 New mandated gates for screenshot/flight ingestion analysis:
-1. Parse raw source and record every manifestation before any event adjudication. Namespace all keys by source DB and frozen snapshot.
-2. Never derive event, airframe, mission, operator, or site identity from names, registration alone, count equality, source hash alone, nearest match, or proximity.
-3. Separate V0 observations, V1 computed features, independently adjudicated identity, FPIM interpretation, and CORRIM cross-domain association.
-4. Respect active v2.1 evidence axes: T1–T4, V0–V4, availability/provenance/geometry/temporal/review independent. Gold screenshot+track pairing is an event-support qualifier, not T5 and not an event-count increment.
-5. Every implication has a typed class, evidence roles (SUPPORT/COUNTEREVIDENCE/CONTROL/etc.), frozen scope, ruleset, and dependency hash. Hypotheses cannot serve as independent evidence for themselves.
-6. Report the actual knowledge delta after evidence adjudication, or `NO_MATERIAL_CHANGE`; do not increment canonical flight counts from screenshot totals.
-7. Material changes invalidate and recompute all affected implications and findings. Frozen prior versions remain auditable.
-8. Independent denominator changes require a lineage/continuity certification; different hashes prove byte difference only; identical frozen hash with different count is a contradiction.
-9. A source-backed factual report is not a mission, intent, coordination, wrongdoing, or subsurface claim. Keep unlabeled geometry neutral.
-10. Do not certify from local synthetic passes alone. Require current repository CI, migration rollback, test-corpus replay, and active v2.1 boundary compliance.
+
+1. Parse raw source and preserve every manifestation before event adjudication. Namespace external keys by source system/database and frozen source manifestation.
+2. Never derive event, airframe, operator, mission, site, or facility identity from name only, registration only, count equality, hash equality, nearest-only, proximity-only, same-category, or source absence.
+3. Separate V0 observations, V1 computed features, independently adjudicated identity, FPIM interpretation, SATIM interpretation, and CORRIM cross-domain association.
+4. Respect active v2.1 evidence axes: T1–T4 tier, V0–V4 visibility, provenance, availability, geometry, temporal precision, review state, confidence, and priority remain orthogonal. Screenshot+track support is not T5 and never increments an event denominator without same-event binding.
+5. Every implication must carry a typed implication class, owning domain, support/counterevidence/control roles, scope, ruleset version, and dependency hash. Hypotheses cannot become independent evidence for themselves.
+6. Report an explicit knowledge delta after adjudication or `NO_MATERIAL_CHANGE`. Source-manifestation growth and canonical-event growth are separate counters.
+7. A changed/displaced dependency must recursively stale every affected implication descendant before any result can be rendered current. Frozen prior states remain auditable.
+8. Implication lineage must be acyclic and immutable. Tied or cyclic top evidence remains unresolved; deterministic graph traversal is not evidentiary support.
+9. Independent denominator changes require frozen lineage/continuity evidence. Different hashes prove byte difference only; identical frozen bytes with inconsistent counts create a contradiction.
+10. Preserve contradictory evidence as first-class state. Do not resolve near-duplicates, conflicting identity candidates, or same-discovery-key records by overwrite.
+11. Verbal output may render only current/recomputed structured state; it may not invent evidence, purpose, intent, coordination, wrongdoing, subsurface relevance, or mission from geometry/recurrence.
+12. Any SQLite schema extension must have a positive explicit-transaction rollback fixture and a negative unwrapped-`executescript` fixture before migration registration.
+13. Migration compatibility must test released database states for schema-version conservation, existing-row conservation, FK integrity, idempotence, and no event multiplication.
+14. Repository CI/synthetic fixtures do not certify an operator-local corpus. Require operator replay and independently reviewed gold/identity evidence before enabling normal-startup migration, active consumers, or production certification.
