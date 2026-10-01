@@ -208,6 +208,7 @@ CREATE TABLE IF NOT EXISTS candidate_links (
  item_id INTEGER NOT NULL REFERENCES items(item_id), corpus_record_id INTEGER NOT NULL,
  snapshot_id INTEGER NOT NULL, corpus_uid TEXT NOT NULL, callsign_raw TEXT,
  start_time_utc TEXT, end_time_utc TEXT, association_status TEXT NOT NULL,
+ match_basis_json TEXT NOT NULL DEFAULT '[]',
  PRIMARY KEY(item_id, corpus_record_id));
 CREATE INDEX IF NOT EXISTS ix_items_job ON items(job_id, status);
 CREATE INDEX IF NOT EXISTS ix_sources_job ON sources(job_id);
@@ -246,6 +247,14 @@ class ScreenshotJobs:
             ):
                 if column not in item_columns:
                     conn.execute(f"ALTER TABLE items ADD COLUMN {column} TEXT")
+            candidate_columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(candidate_links)")
+            }
+            if "match_basis_json" not in candidate_columns:
+                conn.execute(
+                    "ALTER TABLE candidate_links ADD COLUMN "
+                    "match_basis_json TEXT NOT NULL DEFAULT '[]'"
+                )
             conn.execute("UPDATE jobs SET status='QUEUED',updated_at=? WHERE status='RUNNING'", (now(),))
             conn.execute("UPDATE items SET status='QUEUED' WHERE status='RUNNING'")
 
@@ -341,11 +350,19 @@ class ScreenshotJobs:
                     item["georeference_evidence"] = json.loads(
                         item.pop("georeference_evidence_json") or "[]"
                     )
-                    item["candidates"] = [dict(r) for r in conn.execute(
-                        """SELECT corpus_record_id,snapshot_id,corpus_uid,callsign_raw,
-                           start_time_utc,end_time_utc,association_status
-                           FROM candidate_links WHERE item_id=? ORDER BY corpus_record_id""",
-                        (item["item_id"],))]
+                    candidate_rows = [
+                        dict(r) for r in conn.execute(
+                            """SELECT corpus_record_id,snapshot_id,corpus_uid,callsign_raw,
+                               start_time_utc,end_time_utc,association_status,match_basis_json
+                               FROM candidate_links WHERE item_id=? ORDER BY corpus_record_id""",
+                            (item["item_id"],)
+                        )
+                    ]
+                    for candidate in candidate_rows:
+                        candidate["match_basis"] = json.loads(
+                            candidate.pop("match_basis_json") or "[]"
+                        )
+                    item["candidates"] = candidate_rows
                     item["master_log_projection"] = project_screenshot_fields(
                         item["fields"], item["contradictions"], item["candidates"],
                         screenshot_sha256=item["sha256"],
@@ -522,11 +539,12 @@ class ScreenshotJobs:
                     for candidate in candidates:
                         conn.execute("""INSERT OR IGNORE INTO candidate_links
                             (item_id,corpus_record_id,snapshot_id,corpus_uid,callsign_raw,
-                             start_time_utc,end_time_utc,association_status)
-                            VALUES (?,?,?,?,?,?,?,'CANDIDATE_NOT_IDENTITY')""",
+                             start_time_utc,end_time_utc,association_status,match_basis_json)
+                            VALUES (?,?,?,?,?,?,?,'CANDIDATE_NOT_IDENTITY',?)""",
                             (item["item_id"], candidate["corpus_record_id"], candidate["snapshot_id"],
                              candidate["corpus_uid"], candidate.get("callsign_raw"),
-                             candidate.get("start_time_utc"), candidate.get("end_time_utc")))
+                             candidate.get("start_time_utc"), candidate.get("end_time_utc"),
+                             json.dumps(candidate.get("match_basis", []), sort_keys=True)))
             except Exception as exc:
                 with self._connect() as conn:
                     conn.execute("UPDATE items SET status='FAILED',error=? WHERE item_id=?",
