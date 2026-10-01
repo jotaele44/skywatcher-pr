@@ -45,6 +45,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
+# Load after the src bootstrap: the screenshot router imports skywatcher.fr24.
+from server.backend.screenshot_router import router as screenshot_router  # noqa: E402
 from skywatcher.fr24 import database as skywatcher_db
 from skywatcher.fr24.acquisition_receipts import (
     AcquisitionReceiptError,
@@ -98,6 +100,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(console_router)
+app.include_router(screenshot_router)
 
 def _flight_corpus_v4_contract() -> dict[str, Any]:
     path = ROOT / "config" / "flight_corpus_v4.json"
