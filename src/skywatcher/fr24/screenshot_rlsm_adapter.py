@@ -106,6 +106,120 @@ def provisional_fields(ocr_rows: list[dict]) -> tuple[dict, list[dict]]:
     return result, conflicts
 
 
+def _perceptual_duplicate_candidates(
+    conn: sqlite3.Connection,
+    screenshot_id: int,
+    phash: str | None,
+    *,
+    threshold: int = 4,
+) -> list[dict]:
+    """Return the complete local pHash-neighborhood as discovery-only evidence."""
+    if not phash:
+        return []
+    from scripts.rlsm_inventory import hamming_distance
+
+    candidates = []
+    rows = conn.execute(
+        """SELECT screenshot_id,sha256,filename,rel_path,phash
+           FROM screenshots
+           WHERE screenshot_id<>? AND phash IS NOT NULL
+           ORDER BY screenshot_id""",
+        (screenshot_id,),
+    ).fetchall()
+    for row in rows:
+        distance = hamming_distance(phash, row["phash"])
+        if distance <= threshold:
+            candidates.append({
+                "screenshot_id": int(row["screenshot_id"]),
+                "sha256": row["sha256"],
+                "filename_raw": row["filename"],
+                "rel_path": row["rel_path"],
+                "phash": row["phash"],
+                "hamming_distance": distance,
+                "relationship": "PERCEPTUAL_SIMILARITY_DISCOVERY_ONLY",
+                "certification": "CANDIDATE_NOT_IDENTITY",
+            })
+    return candidates
+
+
+def _rendered_track_observation(image_path: Path) -> dict:
+    """Observe the rendered FR24 trail without promoting it to raw trajectory."""
+    try:
+        from fr24.track_vectorizer import vectorize_image
+    except ImportError as exc:
+        return {
+            "status": "BLOCKED_DEPENDENCY",
+            "evidence_type": "RENDERED_TRAIL",
+            "raw_trajectory": False,
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+    try:
+        features = vectorize_image(str(image_path))
+    except Exception as exc:  # detector failure is isolated from OCR extraction
+        return {
+            "status": "BLOCKED",
+            "evidence_type": "RENDERED_TRAIL",
+            "raw_trajectory": False,
+            "error": f"{type(exc).__name__}: {exc}"[:300],
+        }
+    if features is None:
+        return {
+            "status": "UNRESOLVED_NO_DETECTED_COMPONENT",
+            "evidence_type": "RENDERED_TRAIL",
+            "raw_trajectory": False,
+            "certification": "UNRESOLVED",
+            "note": "detector found no qualifying rendered-trail component; absence is not certified",
+        }
+    return {
+        "status": "OBSERVED",
+        "evidence_type": "RENDERED_TRAIL",
+        "raw_trajectory": False,
+        "path_shape": features.path_shape,
+        "has_loop": bool(features.has_loop),
+        "has_orbit": bool(features.has_orbit),
+        "has_gap": bool(features.has_gap),
+        "track_length_px": features.track_length_px,
+        "bbox": list(features.bbox),
+        "component_count": features.component_count,
+        "confidence": features.confidence,
+        "certification": "PROVISIONAL_PIXEL_OBSERVATION",
+    }
+
+
+def _persisted_georeference_evidence(
+    conn: sqlite3.Connection,
+    screenshot_id: int,
+) -> list[dict]:
+    """Read, never synthesize, supported georeference receipts already in RLSM."""
+    exists = conn.execute(
+        """SELECT 1 FROM sqlite_master
+           WHERE type='table' AND name='screenshot_georeferences'"""
+    ).fetchone()
+    if not exists:
+        return []
+    rows = conn.execute(
+        """SELECT georef_version,status,method,viewport_profile,anchor_count,
+                  scale_m_per_px,fit_residual_m,zoom_rung,zoom_support,
+                  confidence,estimated_error_m,observed_at
+           FROM screenshot_georeferences
+           WHERE screenshot_id=?
+           ORDER BY georef_version""",
+        (screenshot_id,),
+    ).fetchall()
+    return [
+        {
+            **dict(row),
+            "evidence_state": "COMPUTED",
+            "certification": (
+                "PROVISIONAL_SUPPORTED_GEOREFERENCE"
+                if row["status"] == "located"
+                else "UNRESOLVED"
+            ),
+        }
+        for row in rows
+    ]
+
+
 def _discover_corpus_candidates(corpus_db: Path, fields: dict) -> tuple[list[dict], str]:
     # Callsign is discovery only; registration is never equated to callsign.
     candidate = fields.get("callsign", {}).get("value")
@@ -139,11 +253,21 @@ def extract_into_rlsm(
     *,
     filename_raw: str | None = None,
     reprocess_existing: bool = False,
+    perceptual_duplicate_mode: str = "off",
+    rendered_track_mode: str = "off",
+    georeference_mode: str = "existing_only",
 ) -> dict[str, Any]:
     import PIL.Image
 
     from fr24 import rlsm_ocr
     from skywatcher.fr24.screenshot_metadata import parse_filename_timestamp
+
+    if perceptual_duplicate_mode not in {"off", "discover"}:
+        raise ValueError("unsupported perceptual_duplicate_mode")
+    if rendered_track_mode not in {"off", "local"}:
+        raise ValueError("unsupported rendered_track_mode")
+    if georeference_mode not in {"off", "existing_only"}:
+        raise ValueError("unsupported georeference_mode")
 
     if not shutil.which("tesseract") or rlsm_ocr.pytesseract is None:
         return {"status": "BLOCKED", "error": "local Tesseract is not installed"}
@@ -153,11 +277,19 @@ def extract_into_rlsm(
     if hashlib.sha256(data).hexdigest() != expected_sha:
         return {"status": "BLOCKED", "error": "source bytes changed after inventory"}
     PIL.Image.MAX_IMAGE_PIXELS = 20_000_000
+    width = height = None
+    phash = None
     try:
         with PIL.Image.open(image_path) as image:
-            if image.width * image.height > 20_000_000:
+            width, height = image.size
+            if width * height > 20_000_000:
                 return {"status": "BLOCKED", "error": "pixel budget exceeded"}
             image.verify()
+        if perceptual_duplicate_mode == "discover":
+            from scripts.rlsm_inventory import ahash_8x8
+            with PIL.Image.open(image_path) as image:
+                image.load()
+                phash = ahash_8x8(image)
     except (OSError, ValueError, PIL.Image.DecompressionBombError):
         return {"status": "BLOCKED", "error": "unsupported or corrupt image format"}
 
@@ -184,22 +316,31 @@ def extract_into_rlsm(
         if not required_tables <= present:
             return {"status": "BLOCKED", "error": "RLSM database requires migration"}
 
-        row = conn.execute("SELECT screenshot_id,ocr_status FROM screenshots WHERE sha256=?",
-                           (expected_sha,)).fetchone()
+        row = conn.execute(
+            "SELECT screenshot_id,ocr_status,phash,width,height FROM screenshots WHERE sha256=?",
+            (expected_sha,),
+        ).fetchone()
         reused = row is not None
         if row is None:
             cursor = conn.execute(
                 """INSERT INTO screenshots
                    (sha256,filename,rel_path,month_bucket,filename_ts,ext,size_bytes,
-                    ingest_status,ocr_status,source_availability,ingested_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now'))""",
+                    width,height,phash,ingest_status,ocr_status,source_availability,ingested_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))""",
                 (expected_sha, filename_raw or image_path.name, relative, None,
                  parse_filename_timestamp(filename_raw or image_path.name),
-                 image_path.suffix.lower(), len(data), "ok", "pending", "present")
+                 image_path.suffix.lower(), len(data), width, height, phash,
+                 "ok", "pending", "present")
             )
             screenshot_id = int(cursor.lastrowid)
         else:
             screenshot_id = int(row["screenshot_id"])
+            if phash and not row["phash"]:
+                conn.execute(
+                    "UPDATE screenshots SET phash=?,width=COALESCE(width,?),height=COALESCE(height,?) "
+                    "WHERE screenshot_id=?",
+                    (phash, width, height, screenshot_id),
+                )
         conn.execute(
             """INSERT OR IGNORE INTO source_manifestations
                (rel_path,sha256,screenshot_id,filename,ext,size_bytes,
@@ -210,6 +351,21 @@ def extract_into_rlsm(
              "duplicate_payload" if reused else "canonical_payload")
         )
         conn.commit()
+        perceptual_duplicates = (
+            _perceptual_duplicate_candidates(conn, screenshot_id, phash)
+            if perceptual_duplicate_mode == "discover"
+            else []
+        )
+        rendered_track = (
+            _rendered_track_observation(image_path)
+            if rendered_track_mode == "local"
+            else {"status": "NOT_REQUESTED"}
+        )
+        georeference_evidence = (
+            _persisted_georeference_evidence(conn, screenshot_id)
+            if georeference_mode == "existing_only"
+            else []
+        )
         if row is None or row["ocr_status"] != "ok" or reprocess_existing:
             run_id = conn.execute(
                 """INSERT INTO processing_runs
@@ -230,6 +386,9 @@ def extract_into_rlsm(
                 return {
                     "status": "BLOCKED", "screenshot_id": screenshot_id,
                     "was_reused": reused, "error": receipt.get("reason", "OCR failed"),
+                    "perceptual_duplicates": perceptual_duplicates,
+                    "rendered_track": rendered_track,
+                    "georeference_evidence": georeference_evidence,
                 }
         ocr = _read_ocr(conn, screenshot_id)
         fields, contradictions = provisional_fields(ocr)
@@ -238,6 +397,9 @@ def extract_into_rlsm(
                 "status": "BLOCKED", "screenshot_id": screenshot_id,
                 "was_reused": reused, "contradictions": contradictions,
                 "error": "OCR produced no usable text; negative evidence is unverified",
+                "perceptual_duplicates": perceptual_duplicates,
+                "rendered_track": rendered_track,
+                "georeference_evidence": georeference_evidence,
             }
         candidates, query_state = _discover_corpus_candidates(corpus_db, fields)
         if query_state != "QUERIED":
@@ -248,6 +410,9 @@ def extract_into_rlsm(
             "screenshot_id": screenshot_id, "was_reused": reused,
             "fields": fields, "contradictions": contradictions,
             "candidates": candidates,
+            "perceptual_duplicates": perceptual_duplicates,
+            "rendered_track": rendered_track,
+            "georeference_evidence": georeference_evidence,
         }
     finally:
         conn.close()
