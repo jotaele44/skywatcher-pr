@@ -205,6 +205,20 @@ const flightAcquisition = {
   p1Status: () => request('/flight-acquisition/p1/status'),
 };
 
+const screenshotProcessing = {
+  listJobs: (params = {}) => request(`/screenshot-processing/jobs${queryString(params)}`),
+  createJob: (payload) => request('/screenshot-processing/jobs', { method: 'POST', body: payload }),
+  getJob: (jobId) => request(`/screenshot-processing/jobs/${encode(jobId)}`),
+  execute: (jobId) => request(`/screenshot-processing/jobs/${encode(jobId)}/execute`, { method: 'POST' }),
+  pause: (jobId) => request(`/screenshot-processing/jobs/${encode(jobId)}/pause`, { method: 'POST' }),
+  resume: (jobId) => request(`/screenshot-processing/jobs/${encode(jobId)}/resume`, { method: 'POST' }),
+  cancel: (jobId) => request(`/screenshot-processing/jobs/${encode(jobId)}/cancel`, { method: 'POST' }),
+  commit: (jobId, decisions) => request(`/screenshot-processing/jobs/${encode(jobId)}/commit`, {
+    method: 'POST',
+    body: { decisions },
+  }),
+};
+
 const flightCorpusArchive = {
   listSnapshots: () => request('/flight-corpus/archive/snapshots'),
   getSnapshot: (snapshotId) => request(`/flight-corpus/archive/snapshots/${encode(snapshotId)}`),
@@ -237,5 +251,6 @@ export const federation = {
   flightCorpusV4,
   flightCorpusArchive,
   flightAcquisition,
+  screenshotProcessing,
   request,
 };
