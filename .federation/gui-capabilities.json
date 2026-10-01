@@ -48,7 +48,8 @@
       "**/components/ui/**",
       "scripts/check_gui_parity.py",
       "scripts/validate_flight_corpus_v4_import.py",
-      "src/skywatcher/flight_corpus_v4.py"
+      "src/skywatcher/flight_corpus_v4.py",
+      "scripts/import_fr24_icon_reference_library.py"
     ]
   },
   "capabilities": [
@@ -337,6 +338,36 @@
       "feature_flag": "SKYWATCHER_SCREENSHOT_TOKEN",
       "tracking": "https://github.com/jotaele44/skywatcher-pr/pull/331",
       "expires_on": "2026-12-31"
+    },
+    {
+      "id": "fr24-poi-icon-registry",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Shared screenshot taxonomy/provenance infrastructure consumed by RLSM icon review; it is not a separate end-user workflow. The one-time local reference-library importer is a bootstrap utility and is excluded from GUI capability discovery.",
+      "backend": {
+        "files": [
+          "src/skywatcher/registry/fr24_poi_icons.py"
+        ],
+        "symbols": [
+          "src/skywatcher/registry/fr24_poi_icons.py:allowed_icon_class_ids",
+          "src/skywatcher/registry/fr24_poi_icons.py:archive_member_manifest",
+          "src/skywatcher/registry/fr24_poi_icons.py:load_registry",
+          "src/skywatcher/registry/fr24_poi_icons.py:resolve_icon_class",
+          "src/skywatcher/registry/fr24_poi_icons.py:validate_registry",
+          "src/skywatcher/registry/fr24_poi_icons.py:validate_registry_file",
+          "src/skywatcher/registry/fr24_poi_icons.py:verify_source_archive"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_fr24_poi_icon_registry.py",
+          "tests/test_rlsm_operator_regressions.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
     }
   ],
   "exceptions": []
