@@ -14,10 +14,10 @@ Normative ownership follows ontology v2.0 as amended by active v2.1: Core owns s
 
 - `schemas/knowledge_implications_v1.sql`: 12 prefixed sidecar tables and 8 safety triggers. It is deliberately absent from `MIGRATIONS`.
 - `src/skywatcher/core/knowledge_implications.py`: canonical serialization/hashing, bounded denominator delta logic, structured verbal rendering, and explicit recursive stale invalidation for implications directly or transitively dependent on displaced source artifacts.
-- `tests/test_knowledge_implications_contract.py`: 17 positive/negative contract gates.
+- `tests/test_knowledge_implications_contract.py`: 18 positive/negative contract gates, including the FR24 image-skill handoff lock.
 - `tests/test_knowledge_implications_migration_gate.py`: 2 DDL-atomicity gates, including the unsafe unwrapped-`executescript` negative control.
 - `tests/test_knowledge_implications_existing_db_integration.py`: 4 representative integration gates against released 0001 and 0003 database states.
-- `.federation/gui-capabilities.json`: one explicit expiring draft exception for the internal Core module/symbols; this does not claim GUI parity for an inactive capability.
+- `skills/skywatcher-fr24-image-analysis/SKILL.md`: existing skill upgraded with an activation-gated cumulative implication handoff; the stage must report `NOT_ENABLED` until sidecar activation gates close.\n- `.federation/gui-capabilities.json`: one explicit expiring draft exception for the internal Core module/symbols; this does not claim GUI parity for an inactive capability.
 - `docs/SKILL_UPGRADE_CANDIDATE.md`: proposed, uninstalled operational skill amendment.
 
 ## Hardened invariants
