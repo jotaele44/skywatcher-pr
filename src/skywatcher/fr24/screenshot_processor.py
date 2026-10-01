@@ -21,8 +21,10 @@ import time
 import uuid
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_JOB_DB = REPO_ROOT / "data" / "screenshot_processing" / "jobs.sqlite3"
@@ -127,11 +129,14 @@ def _default_settings(settings: dict[str, Any] | None) -> dict[str, Any]:
         "auto_commit": False,
         "retain_uploads": True,
         "candidate_time_window_minutes": 90,
+        "temporal_hint_mode": "preserve_only",
     }
     defaults.update(supplied)
     # External vision must never be silently enabled by a malformed setting.
     if defaults["vision_assist"] not in {"disabled", "low_confidence_only", "comprehensive"}:
         raise ScreenshotProcessingError("unsupported vision_assist setting")
+    if defaults["temporal_hint_mode"] not in {"preserve_only", "america_puerto_rico", "utc"}:
+        raise ScreenshotProcessingError("unsupported temporal_hint_mode setting")
     defaults["auto_commit"] = False
     return defaults
 
@@ -1229,13 +1234,29 @@ class ScreenshotJobStore:
                 job_conn.commit()
                 return
             window_minutes = int(settings.get("candidate_time_window_minutes") or 90)
+            temporal_mode = settings.get("temporal_hint_mode", "preserve_only")
+            from skywatcher.fr24.screenshot_metadata import parse_filename_timestamp
+
             for index, row in enumerate(rows, 1):
                 if not self._check_control(job_conn, job_id):
                     return
                 fields = json.loads(row["extracted_fields_json"]) if row["extracted_fields_json"] else {}
-                candidates: list[dict[str, Any]] = []
-                callsign = fields.get("callsign")
-                if callsign:
+                source_time_name = row["source_member"] or row["source_name_raw"]
+                timestamp_hint = parse_filename_timestamp(Path(str(source_time_name)).name)
+                timestamp_utc: datetime | None = None
+                if timestamp_hint and temporal_mode != "preserve_only":
+                    naive = datetime.fromisoformat(timestamp_hint)
+                    if temporal_mode == "america_puerto_rico":
+                        source_tz = ZoneInfo("America/Puerto_Rico")
+                    else:
+                        source_tz = timezone.utc
+                    timestamp_utc = naive.replace(tzinfo=source_tz).astimezone(timezone.utc)
+
+                candidate_map: dict[int, dict[str, Any]] = {}
+
+                def add_candidates(value: str | None, basis: str) -> None:
+                    if not value:
+                        return
                     candidate_rows = corpus.execute(
                         """
                         SELECT corpus_record_id, corpus_uid, snapshot_id,
@@ -1246,17 +1267,50 @@ class ScreenshotJobStore:
                         ORDER BY start_time_utc DESC
                         LIMIT 100
                         """,
-                        (callsign,),
+                        (value,),
                     ).fetchall()
                     for candidate in candidate_rows:
-                        candidates.append(
+                        candidate_dict = dict(candidate)
+                        time_support = "UNRESOLVED"
+                        if timestamp_utc is not None and candidate["start_time_utc"]:
+                            start = datetime.fromisoformat(
+                                str(candidate["start_time_utc"]).replace("Z", "+00:00")
+                            )
+                            end_value = candidate["end_time_utc"] or candidate["start_time_utc"]
+                            end = datetime.fromisoformat(str(end_value).replace("Z", "+00:00"))
+                            margin = timedelta(minutes=window_minutes)
+                            if timestamp_utc < start - margin or timestamp_utc > end + margin:
+                                continue
+                            time_support = "WITHIN_CONFIGURED_WINDOW"
+                        record_id = int(candidate["corpus_record_id"])
+                        existing = candidate_map.setdefault(
+                            record_id,
                             {
-                                **dict(candidate),
+                                **candidate_dict,
                                 "relationship": "CANDIDATE_NOT_IDENTITY",
-                                "basis": ["EXACT_CALLSIGN"],
+                                "basis": [],
+                                "timestamp_hint_raw": timestamp_hint,
+                                "timestamp_hint_mode": temporal_mode,
+                                "timestamp_hint_utc": (
+                                    timestamp_utc.isoformat().replace("+00:00", "Z")
+                                    if timestamp_utc is not None
+                                    else None
+                                ),
+                                "time_support": time_support,
                                 "time_window_minutes": window_minutes,
-                            }
+                            },
                         )
+                        if basis not in existing["basis"]:
+                            existing["basis"].append(basis)
+                        if time_support == "WITHIN_CONFIGURED_WINDOW":
+                            existing["time_support"] = time_support
+
+                add_candidates(fields.get("callsign"), "EXACT_CALLSIGN")
+                add_candidates(
+                    fields.get("registration"),
+                    "REGISTRATION_TEXT_EQUALS_SOURCE_CALLSIGN_DISCOVERY_ONLY",
+                )
+                candidates = list(candidate_map.values())
                 status = "CANDIDATE_NOT_IDENTITY" if candidates else "UNRESOLVED"
                 contradictions: list[dict[str, Any]] = []
                 if len(candidates) > 1:
