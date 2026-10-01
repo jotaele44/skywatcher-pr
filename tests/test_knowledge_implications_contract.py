@@ -288,3 +288,13 @@ def test_artifact_invalidation_rejects_scalar_string():
         with pytest.raises(ValueError, match="sequence of IDs"):
             invalidate_implications_for_artifacts(db, "e1")
 
+def test_fr24_image_skill_declares_activation_gated_cumulative_handoff():
+    skill = (
+        REPO / "skills" / "skywatcher-fr24-image-analysis" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    assert "Cumulative implication handoff — activation-gated" in skill
+    assert "NO_MATERIAL_CHANGE" in skill
+    assert "screenshot count is" in skill
+    assert "never substituted for canonical event count" in skill
+    assert "NOT_ENABLED" in skill
+
