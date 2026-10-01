@@ -225,7 +225,10 @@ class ScreenshotCertification:
         validator = self._schema_validator()
         schema_errors: list[dict[str, Any]] = []
         for index, row in enumerate(rows):
-            for error in sorted(validator.iter_errors(row), key=lambda item: list(item.path)):
+            for error in sorted(
+                validator.iter_errors(row),
+                key=lambda item: tuple(str(part) for part in item.path),
+            ):
                 schema_errors.append(
                     {
                         "index": index,
