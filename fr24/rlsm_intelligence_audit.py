@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sqlite3
 import time
@@ -666,12 +667,57 @@ def _safe_ratio(numerator: int, denominator: int) -> float | None:
     return numerator / denominator if denominator else None
 
 
+def _resolve_gold_source_path(
+    conn: sqlite3.Connection,
+    screenshot_id: int,
+    corpus_root: Path,
+) -> Path | None:
+    row = conn.execute(
+        "SELECT rel_path FROM screenshots WHERE screenshot_id=?",
+        (screenshot_id,),
+    ).fetchone()
+    if row is None or not row[0]:
+        return None
+    raw = Path(str(row[0]))
+    candidates: list[Path] = []
+    if raw.is_absolute():
+        candidates.append(raw)
+    else:
+        candidates.append(REPO / raw)
+        candidates.append(corpus_root / raw)
+        parts = raw.parts
+        if len(parts) >= 3 and parts[0:2] == ("data", "FR24_baseline"):
+            candidates.append(corpus_root.joinpath(*parts[2:]))
+        candidates.append(corpus_root / raw.name)
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        if candidate.is_file() and not candidate.is_symlink():
+            return candidate
+    return None
+
+
+def _sha256_path(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while True:
+            chunk = handle.read(4 * 1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def evaluate_gold(
     conn: sqlite3.Connection,
     gold_path: Path,
     expected_size: int = 300,
     *,
     require_independent_review: bool = False,
+    corpus_root: Path | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     errors: list[dict[str, Any]] = []
     try:
@@ -702,6 +748,8 @@ def evaluate_gold(
     duplicate_resolved = 0
     independent_review_violations = 0
     unannotated_label_rows = 0
+    source_bytes_verified = 0
+    source_byte_failures = 0
     resolved_ids: set[int] = set()
     frame_correct = frame_total = track_correct = track_total = 0
     aircraft_correct = aircraft_total = 0
@@ -776,6 +824,45 @@ def evaluate_gold(
                         "note": "labels must be present as an array, including [] for reviewed absence",
                     }
                 )
+
+            if corpus_root is None:
+                source_byte_failures += 1
+                errors.append(
+                    {
+                        "kind": "gold_source_byte_verification_unavailable",
+                        "severity": "high",
+                        "gold_index": index,
+                        "screenshot_id": sid,
+                    }
+                )
+            else:
+                source_path = _resolve_gold_source_path(conn, sid, corpus_root)
+                if source_path is None:
+                    source_byte_failures += 1
+                    errors.append(
+                        {
+                            "kind": "gold_source_file_unavailable",
+                            "severity": "high",
+                            "gold_index": index,
+                            "screenshot_id": sid,
+                        }
+                    )
+                else:
+                    observed_sha = _sha256_path(source_path)
+                    if observed_sha.casefold() != str(_sha).casefold():
+                        source_byte_failures += 1
+                        errors.append(
+                            {
+                                "kind": "gold_source_sha256_mismatch",
+                                "severity": "high",
+                                "gold_index": index,
+                                "screenshot_id": sid,
+                                "expected_sha256": _sha,
+                                "observed_sha256": observed_sha,
+                            }
+                        )
+                    else:
+                        source_bytes_verified += 1
 
         expected_labels = _label_values(gold_row.get("labels"))
         predicted_rows = conn.execute(
@@ -856,6 +943,7 @@ def evaluate_gold(
             and duplicate_resolved == 0
             and independent_review_violations == 0
             and unannotated_label_rows == 0
+            and (not require_independent_review or source_byte_failures == 0)
         )
         else "incomplete"
     )
@@ -871,6 +959,9 @@ def evaluate_gold(
         "independent_review_required": require_independent_review,
         "independent_review_violations": independent_review_violations,
         "unannotated_label_rows": unannotated_label_rows,
+        "source_bytes_verified": source_bytes_verified,
+        "source_byte_failures": source_byte_failures,
+        "source_byte_verification_required": require_independent_review,
         "label_metrics": {
             "true_positive": tp,
             "false_positive": fp,
@@ -1198,6 +1289,7 @@ def run(
         conn,
         gold_path,
         require_independent_review=True,
+        corpus_root=corpus_root,
     )
     gates = build_gates(accounting, ocr, capabilities, geolocation, provenance, gold)
     certification = (
