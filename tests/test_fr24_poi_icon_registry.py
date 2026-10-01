@@ -56,6 +56,12 @@ def test_composite_source_crops_preserve_multiple_visible_glyphs() -> None:
     assert all(len(row["source_type_ids"]) == 2 for row in composites)
 
 
+def test_manifestation_ids_are_content_bound() -> None:
+    data = load_registry(REGISTRY_PATH)
+    for row in data["source_manifestations"]:
+        assert row["manifestation_id"] == "FR24SRC_" + row["sha256"][:16].upper()
+
+
 def test_operator_logo_sources_cannot_become_poi_types() -> None:
     data = load_registry(REGISTRY_PATH)
     operator_rows = [
