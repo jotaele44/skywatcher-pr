@@ -110,6 +110,17 @@ def test_allowed_icon_classes_include_seed_and_non_poi_runtime_classes() -> None
     assert len(ids) == 40
 
 
+def test_malformed_archive_member_returns_fail_instead_of_raising() -> None:
+    data = load_registry(REGISTRY_PATH)
+    malformed = copy.deepcopy(data)
+    malformed["archive_members"].append("not-an-object")
+
+    result = validate_registry(malformed)
+
+    assert result["status"] == "fail"
+    assert "archive_members contains a non-object" in result["failures"]
+
+
 def test_registry_tamper_fails_closed() -> None:
     data = load_registry(REGISTRY_PATH)
     tampered = copy.deepcopy(data)
