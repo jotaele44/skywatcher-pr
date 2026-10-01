@@ -208,8 +208,8 @@ def test_audit_receipt_is_idempotent_and_freezes_input_identity(
     assert first["certification_status"] == "PASS"
     assert first["audit_certification_status"] == "PASS"
     assert first["inputs"]["inputs_stable_during_audit"] is True
-    assert first["inputs"]["rlsm_database_sha256_before"] == (
-        first["inputs"]["rlsm_database_sha256_after"]
+    assert first["inputs"]["rlsm_database_manifest_before"] == (
+        first["inputs"]["rlsm_database_manifest_after"]
     )
     assert first["inputs"]["corpus_manifest_before"] == (
         first["inputs"]["corpus_manifest_after"]
