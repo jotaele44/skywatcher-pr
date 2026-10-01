@@ -45,6 +45,8 @@ data/.migration_trash/
 # inventory: it holds sha256 + phash for 13,321 screenshots, ~1,020 of which
 # (month bucket 2026-03) no longer exist on disk. Back it up, don't delete it.
 data/rlsm/*.sqlite*
+# Interactive Screenshot Processor runtime sources, rendered PDF pages, and job ledger.
+data/screenshot_processing/
 
 flight_database.db
 
