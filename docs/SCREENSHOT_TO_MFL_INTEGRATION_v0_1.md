@@ -52,7 +52,7 @@ The frontend currently polls job progress. Durable SQLite checkpoints survive se
 
 - Preserve RAW screenshot label, member path, source SHA-256, page, derived image SHA-256, and RLSM screenshot id separately.
 - Registration is a provisional observation, not an airframe, operator, or flight binding.
-- Callsign discovery against flight_corpus_records retains the **entire** match set; no best-one heuristic or arbitrary nearest match.
+- Exact displayed source-flight-ID and callsign discovery against flight_corpus_records retains the **entire union** of matching records and the match basis for each record; no best-one heuristic or arbitrary nearest match.
 - Present height/speed observations are not whole-flight maxima. A screenshot trail is not timestamped raw trajectory geometry.
 - Tied or contradictory registration strings remain UNRESOLVED and do not produce a selected registration.
 - Empty OCR cannot generate a successful extraction result.
@@ -74,7 +74,8 @@ The frontend currently polls job progress. Durable SQLite checkpoints survive se
 | Perceptual similarity discovery | CODED; TEST REQUIRED | Complete local pHash neighborhood; never identity/dedup promotion |
 | Perceptual dedup promotion | BLOCKED | Requires independent false-positive benchmark and review policy |
 | Vision second opinion | OPEN | Provider-neutral existing adapter requires gated invocation |
-| Cross-frame flight ID adjudication | OPEN | Independent temporal truth and source IDs required |
+| Displayed source-flight-ID discovery | CODED; TEST REQUIRED | Exact text match, full candidate union, still CANDIDATE_NOT_IDENTITY |
+| Cross-frame flight ID adjudication | OPEN | Independent temporal truth and reviewed continuity required |
 | Canonical MFL commit | NOT ENABLED | Schema-compatible append-only binding plus required independent evidence gate |
 | Rendered-track pixel observation | CODED; TEST REQUIRED | Explicit RENDERED_TRAIL, raw_trajectory=false |
 | Existing supported georeference reuse | CODED; TEST REQUIRED | Reads persisted RLSM receipts; does not synthesize transforms |
@@ -89,7 +90,7 @@ The frontend currently polls job progress. Durable SQLite checkpoints survive se
 4. Add optional cost-gated vision on the OCR-low-confidence slice, preserving model/run receipts, original zone OCR, and contradictions.
 5. Benchmark perceptual-similarity false positives before considering any dedup promotion; preserve discovery-only status until then.
 6. Validate rendered-track and persisted-georeference receipts on operator fixtures, then define their handoff contract without duplicating Spiderweb geometry authority.
-7. Add source-flight-ID extraction only where GUI/source provenance supports it, then independent temporal binding and cross-frame linkage.
+7. Add independent temporal binding and cross-frame linkage on top of the displayed source-ID/callsign candidate union; preserve ties and contradictory clocks.
 8. Implement authorized append-only corpus evidence links, field-level contradictions and compensated two-store persistence only after the promotion contract closes.
 9. Connect certified SATIM/FPIM/CORRIM consumers through published evidence contracts.
 10. Re-run regression and corpus certification on the final release commit; freeze hashes and manifests.
