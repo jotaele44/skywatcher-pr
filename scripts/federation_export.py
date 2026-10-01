@@ -90,6 +90,45 @@ def _num(v: Any) -> float | None:
         return None
 
 
+# Additive FEDERATION_EPISTEMIC_STATE_CONTRACT_V1 declarations (thehub-pr,
+# candidate; vendored at schemas/federation_epistemic_state.v1.schema.json).
+# Only states the observation's own source/geometry/temporal fields support are
+# declared; anything else is omitted so the Hub fails closed.
+EVIDENCE_STATE_CONTRACT = "federation-evidence-state-v1"
+_CLASS_BY_SOURCE_TYPE = {
+    "adsb": "MEASURED", "radar": "MEASURED",
+    # Provider-rendered ADS-B contact captured from a screenshot: the contact is a
+    # measurement; its position is georeferenced from the image (see geometry).
+    "screenshot": "MEASURED",
+    "official": "CURATED", "field_note": "CURATED", "secondary": "CURATED",
+}
+_TEMPORAL_BY_STATUS = {"exact": "EXACT_TIMESTAMP", "approximate": "APPROXIMATE"}
+
+
+def _evidence_state(**fields: Any) -> dict[str, Any]:
+    declared = {k: v for k, v in fields.items() if v is not None}
+    return {"contract": EVIDENCE_STATE_CONTRACT, "data_stage": "CANONICAL", **declared}
+
+
+def _obs_evidence_state(obs: dict[str, Any], has_point: bool) -> dict[str, Any]:
+    source_type = obs.get("source_type")
+    klass = _CLASS_BY_SOURCE_TYPE.get(source_type)
+    precision = method = None
+    status = obs.get("geometry_status")
+    if has_point and status == "located" and source_type in ("adsb", "radar"):
+        precision, method = "OBSERVED_POINT", "EXACT"
+    elif has_point and (status == "approximate" or (status == "located" and source_type == "screenshot")):
+        # Screenshot icon georeferencing / approximate placement: an interpreted point.
+        precision, method = "INTERPRETED_POINT", "INFERRED"
+    return _evidence_state(
+        epistemic_class=klass,
+        observation_state="OBSERVED_PRESENT" if klass else None,
+        temporal_precision=_TEMPORAL_BY_STATUS.get(obs.get("temporal_status")),
+        geometry_precision=precision,
+        coordinate_method=method,
+    )
+
+
 def _obs_attributes(obs: dict[str, Any]) -> dict[str, Any]:
     """Producer-specific observation payload for the canonical observation row.
 
@@ -169,6 +208,7 @@ def build_streams(
             "source_ref": s.get("sha256") or raw_sid,
             "confidence": 1.0,
             "lineage": _lineage("SOURCE_REGISTRY", inputs),
+            "evidence_state": _evidence_state(epistemic_class="CURATED"),
             "synthetic": synthetic,
             "created_at": s.get("retrieved_at") or now,
             "extracted_at": now,
@@ -184,6 +224,7 @@ def build_streams(
             "jurisdiction": "PR",
             "confidence": 1.0,
             "lineage": _lineage("SOURCE_ENTITY", inputs),
+            "evidence_state": _evidence_state(epistemic_class="CURATED"),
             "synthetic": synthetic,
             "created_at": s.get("retrieved_at") or now,
             "extracted_at": now,
@@ -254,6 +295,9 @@ def build_streams(
         }
         if obs_loc is not None:
             observation_rows[canon_obs_id]["location"] = obs_loc
+        obs_state = _obs_evidence_state(obs, has_point=obs_loc is not None)
+        entities[ent_id]["evidence_state"] = obs_state
+        observation_rows[canon_obs_id]["evidence_state"] = dict(obs_state)
 
         # detected_by (observation -> source entity)
         tgt = src_entity_id.get(raw_sid) or _fid("ent", "source", raw_sid)
@@ -269,6 +313,7 @@ def build_streams(
                 "normalized_name": _norm(muni), "entity_type": "municipality",
                 "jurisdiction": "PR", "confidence": 0.95,
                 "lineage": _lineage("MUNICIPALITY_ENTITY", inputs),
+                "evidence_state": _evidence_state(epistemic_class="CURATED"),
                 "synthetic": synthetic, "created_at": when, "extracted_at": now,
             })
             rid = _fid("rel", ent_id, "located_in", muni_id)
@@ -284,6 +329,7 @@ def build_streams(
             "source_ref": "skywatcher-pr",
             "confidence": 0.95,
             "lineage": _lineage("AIRFIELD_REGISTRY", ["airfields.json"]),
+            "evidence_state": _evidence_state(epistemic_class="CURATED"),
             "synthetic": False,
             "created_at": now,
             "extracted_at": now,
@@ -300,6 +346,8 @@ def build_streams(
                 "jurisdiction": "PR",
                 "confidence": float(af.get("confidence", 0.9)),
                 "lineage": _lineage("AIRFIELD_ENTITY", ["airfields.json"]),
+                # A registry point stands in for the whole landing area.
+                "evidence_state": _evidence_state(epistemic_class="CURATED"),
                 "synthetic": False,
                 "facility_id": fid,
                 "facility_type": af.get("facility_type", "unknown_landing_area"),
@@ -312,6 +360,7 @@ def build_streams(
                 if af.get("municipio"):
                     loc["municipio"] = af["municipio"]
                 entities[ent_id]["location"] = loc
+                entities[ent_id]["evidence_state"]["geometry_precision"] = "REPRESENTATIVE_POINT"
             except (KeyError, TypeError, ValueError):
                 pass
 
@@ -325,6 +374,7 @@ def build_streams(
             "source_ref": "skywatcher-pr",
             "confidence": 0.85,
             "lineage": _lineage("HANGAR_REGISTRY", ["hangar_zones.json"]),
+            "evidence_state": _evidence_state(epistemic_class="CURATED"),
             "synthetic": False,
             "created_at": now,
             "extracted_at": now,
@@ -341,6 +391,7 @@ def build_streams(
                 "jurisdiction": "PR",
                 "confidence": float(hz.get("confidence", 0.7)),
                 "lineage": _lineage("HANGAR_ZONE_ENTITY", ["hangar_zones.json"]),
+                "evidence_state": _evidence_state(epistemic_class="CURATED"),
                 "synthetic": False,
                 "zone_id": zid,
                 "facility_id": hz.get("facility_id", ""),
@@ -352,6 +403,7 @@ def build_streams(
             try:
                 lat_f, lon_f = float(hz["lat"]), float(hz["lon"])
                 entities[ent_id]["location"] = {"lat": round(lat_f, 6), "lon": round(lon_f, 6)}
+                entities[ent_id]["evidence_state"]["geometry_precision"] = "REPRESENTATIVE_POINT"
             except (KeyError, TypeError, ValueError):
                 pass
 
@@ -373,6 +425,8 @@ def build_streams(
                 "jurisdiction": "PR",
                 "confidence": confidence,
                 "lineage": _lineage("ENDPOINT_EVENT_ENTITY", ["endpoint_events.json"]),
+                # Endpoint events are computed facility/zone matches.
+                "evidence_state": _evidence_state(epistemic_class="COMPUTED"),
                 "synthetic": _bool(ee.get("synthetic", False)),
                 "endpoint_event_id": evt_id,
                 "observation_id": ee.get("observation_id", ""),
@@ -420,6 +474,8 @@ def build_streams(
             "confidence": confidence,
             "attributes": _alert_attributes(al),
             "lineage": _lineage("ALERT_STREAM", ["alerts.json"]),
+            # Producer-declared anomaly alerts are analytic outputs, not measurements.
+            "evidence_state": _evidence_state(epistemic_class="COMPUTED"),
             "synthetic": synthetic,
             "created_at": when,
             "extracted_at": now,
@@ -463,6 +519,7 @@ def _rel(rid, sid, src_ent, tgt_ent, rtype, confidence, synthetic, created, now)
         "source_entity_id": src_ent, "target_entity_id": tgt_ent,
         "relationship_type": rtype, "evidence_source_id": sid,
         "confidence": confidence, "lineage": _lineage("RELATIONSHIP", ["observations.csv"]),
+        "evidence_state": _evidence_state(epistemic_class="CURATED"),
         "synthetic": synthetic, "created_at": created, "extracted_at": now,
     }
 
