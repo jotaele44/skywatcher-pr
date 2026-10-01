@@ -87,7 +87,7 @@ function formatBytes(value) {
 
 function toneForJob(status) {
   if (status === "COMPLETED") return "ready";
-  if (status === "FAILED" || status === "CANCELED") return "danger";
+  if (status === "FAILED" || status === "CANCELED") return "blocked";
   if (status === "PAUSED") return "warn";
   if (status === "RUNNING" || status === "QUEUED") return "info";
   return "muted";
@@ -546,7 +546,7 @@ function ResultsTable({ job, decisions, setDecisions, rationales, setRationales 
                 </td>
                 <td className="px-3 py-2">
                   <StatusChip
-                    tone={row.status === "FAILED" ? "danger" : row.extraction_status === "UNRESOLVED" ? "warn" : "ready"}
+                    tone={row.status === "FAILED" ? "blocked" : row.extraction_status === "UNRESOLVED" ? "warn" : "ready"}
                     label={row.status}
                     icon={null}
                   />
