@@ -265,7 +265,8 @@
         "python_symbol:src/skywatcher/core/knowledge_implications.py:sha256_canonical",
         "python_symbol:src/skywatcher/core/knowledge_implications.py:dependency_digest",
         "python_symbol:src/skywatcher/core/knowledge_implications.py:classify_delta",
-        "python_symbol:src/skywatcher/core/knowledge_implications.py:deterministic_verbal_output"
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:deterministic_verbal_output",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:invalidate_implications_for_artifacts"
       ]
     }
   ]
