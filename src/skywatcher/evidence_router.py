@@ -64,6 +64,12 @@ SKILL_REGISTRY: tuple[SkillSpec, ...] = (
     SkillSpec("ALTITUDE_VALIDITY", ("altitude_validity",), "fr24/event_export.py"),
     SkillSpec("STOP_HOVER_LANDING", ("trajectory", "landing_takeoff"), "fr24/event_export.py"),
     SkillSpec("SOURCE_IDENTITY_BINDING", ("provenance", "source_identity"), "scripts/reconcile_fr24_media_identity.py"),
+    SkillSpec(
+        "SCREENSHOT_TO_MFL",
+        ("visual_evidence", "aircraft_identity", "temporal_reconstruction", "provenance", "source_identity"),
+        "src/skywatcher/fr24/screenshot_processor.py",
+        prerequisites=("RLSM", "FR24_SCREENSHOT_INVENTORY"),
+    ),
 )
 
 
