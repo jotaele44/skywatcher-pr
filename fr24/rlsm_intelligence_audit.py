@@ -667,7 +667,11 @@ def _safe_ratio(numerator: int, denominator: int) -> float | None:
 
 
 def evaluate_gold(
-    conn: sqlite3.Connection, gold_path: Path, expected_size: int = 300
+    conn: sqlite3.Connection,
+    gold_path: Path,
+    expected_size: int = 300,
+    *,
+    require_independent_review: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     errors: list[dict[str, Any]] = []
     try:
@@ -695,6 +699,10 @@ def evaluate_gold(
             [{"kind": "gold_sample_missing", "severity": "high", "path": gold_path.as_posix()}],
         )
     tp = fp = fn = resolved = unresolved = 0
+    duplicate_resolved = 0
+    independent_review_violations = 0
+    unannotated_label_rows = 0
+    resolved_ids: set[int] = set()
     frame_correct = frame_total = track_correct = track_total = 0
     aircraft_correct = aircraft_total = 0
     label_iou_values: list[float] = []
@@ -717,6 +725,51 @@ def evaluate_gold(
             continue
         resolved += 1
         sid, _sha = resolved_row
+        if sid in resolved_ids:
+            duplicate_resolved += 1
+            errors.append(
+                {
+                    "kind": "gold_duplicate_screenshot",
+                    "severity": "high",
+                    "gold_index": index,
+                    "screenshot_id": sid,
+                }
+            )
+        else:
+            resolved_ids.add(sid)
+
+        if require_independent_review:
+            annotator = str(gold_row.get("annotator") or "").strip()
+            reviewer = str(gold_row.get("reviewed_by") or "").strip()
+            if not annotator or not reviewer or annotator.casefold() == reviewer.casefold():
+                independent_review_violations += 1
+                errors.append(
+                    {
+                        "kind": "gold_independent_review_missing",
+                        "severity": "high",
+                        "gold_index": index,
+                        "screenshot_id": sid,
+                        "annotator_present": bool(annotator),
+                        "reviewer_present": bool(reviewer),
+                        "distinct_reviewers": bool(
+                            annotator
+                            and reviewer
+                            and annotator.casefold() != reviewer.casefold()
+                        ),
+                    }
+                )
+            if "labels" not in gold_row or not isinstance(gold_row.get("labels"), list):
+                unannotated_label_rows += 1
+                errors.append(
+                    {
+                        "kind": "gold_labels_not_explicitly_annotated",
+                        "severity": "high",
+                        "gold_index": index,
+                        "screenshot_id": sid,
+                        "note": "labels must be present as an array, including [] for reviewed absence",
+                    }
+                )
+
         expected_labels = _label_values(gold_row.get("labels"))
         predicted_rows = conn.execute(
             "SELECT normalized_label, bbox_x, bbox_y, bbox_w, bbox_h FROM labeled_pins WHERE screenshot_id=?",
@@ -788,14 +841,29 @@ def evaluate_gold(
         if precision is not None and recall is not None and precision + recall
         else None
     )
-    status = "ready" if len(rows) == expected_size and unresolved == 0 else "incomplete"
+    status = (
+        "ready"
+        if (
+            len(rows) == expected_size
+            and unresolved == 0
+            and duplicate_resolved == 0
+            and independent_review_violations == 0
+            and unannotated_label_rows == 0
+        )
+        else "incomplete"
+    )
     metrics = {
         "path": gold_path.as_posix(),
         "status": status,
         "records": len(rows),
         "expected_records": expected_size,
         "resolved_records": resolved,
+        "unique_resolved_records": len(resolved_ids),
         "unresolved_records": unresolved,
+        "duplicate_resolved_records": duplicate_resolved,
+        "independent_review_required": require_independent_review,
+        "independent_review_violations": independent_review_violations,
+        "unannotated_label_rows": unannotated_label_rows,
         "label_metrics": {
             "true_positive": tp,
             "false_positive": fp,
@@ -1119,7 +1187,11 @@ def run(
     capabilities = audit_capabilities(conn)
     provenance, provenance_errors = audit_provenance(conn)
     geolocation, geolocation_errors = audit_geolocation(conn)
-    gold, gold_errors = evaluate_gold(conn, gold_path)
+    gold, gold_errors = evaluate_gold(
+        conn,
+        gold_path,
+        require_independent_review=True,
+    )
     gates = build_gates(accounting, ocr, capabilities, geolocation, provenance, gold)
     certification = (
         "PASS"
