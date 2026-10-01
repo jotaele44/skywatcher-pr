@@ -142,7 +142,7 @@ class ScreenshotCertification:
             raise ScreenshotCertificationError("RLSM database is unavailable")
         components = []
         aggregate = hashlib.sha256()
-        for suffix in ("", "-wal", "-shm"):
+        for suffix in ("", "-wal"):
             path = Path(str(self.db_path) + suffix)
             if not path.is_file():
                 continue
@@ -156,8 +156,9 @@ class ScreenshotCertification:
             aggregate.update(b"\n")
         return {
             "identity_class": "SOURCE_MANIFESTATION",
-            "format": "sqlite_bundle_v1",
+            "format": "sqlite_durable_manifestation_v1",
             "components": components,
+            "excluded_transient_components": ["-shm"],
             "sha256": aggregate.hexdigest(),
         }
 
