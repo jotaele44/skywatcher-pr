@@ -8,9 +8,10 @@ identity, causation, or geometry authority.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import asdict, dataclass
-from typing import Any, Mapping
+from typing import Any
 
 from .domain_registry import validate_domain_path
 
