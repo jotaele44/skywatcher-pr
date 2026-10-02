@@ -1,0 +1,98 @@
+schema_version: ilap.side_quests.v1
+status: CANDIDATE
+certification: OPEN
+
+corpora:
+  palm_tree:
+    required_classes:
+      - PALM_LIKE_CROWN
+      - PALM_TREE_CANDIDATE
+      - NON_PALM_TREE_CROWN
+      - BANANA_PLANT_CONFUSER
+      - BROADLEAF_CROWN_CONFUSER
+      - SHADOW_CONFUSER
+      - CANOPY_GAP_CONFUSER
+    required_strata: [coastal, urban, karst, mountain, agricultural, dense_canopy]
+    split_policy: SOURCE_LINEAGE_GROUPED
+
+  roof_tarp_pool_glare:
+    required_classes:
+      - BLUE_ROOF_CANDIDATE
+      - NON_BLUE_ROOF
+      - BLUE_TARP_CONFUSER
+      - POOL_OR_CISTERN_CONFUSER
+      - WATER_SURFACE_CONFUSER
+      - SPECULAR_GLARE_CONFUSER
+      - RENDERING_COLOR_SHIFT_CONFUSER
+    split_policy: SOURCE_LINEAGE_GROUPED
+
+  vehicle_baseline:
+    strata:
+      - RURAL_RESIDENCE_OR_COMPOUND
+      - AGRICULTURAL_OR_FARM_COMPOUND
+      - RELIGIOUS_SITE
+      - EDUCATIONAL_SITE
+      - RETAIL_OR_SERVICE_SITE
+      - CONSTRUCTION_OR_STAGING_SITE
+      - REPAIR_DEALERSHIP_OR_VEHICLE_YARD
+      - MUNICIPAL_OR_PUBLIC_WORKS_SITE
+      - RECREATION_OR_EVENT_SITE
+    required_fields:
+      - visible_vehicle_count
+      - count_uncertainty
+      - usable_scene_fraction
+      - parking_area_estimate
+      - imagery_epoch
+      - comparison_stratum
+    anomaly_threshold_state: CALIBRATION_REQUIRED
+
+  path_network:
+    required_classes:
+      - AGRICULTURAL_ROWS
+      - SERVICE_PATH_NETWORK
+      - TRAIL_NETWORK
+      - DRAINAGE_NETWORK
+      - TERRACING
+      - EROSIONAL_GULLIES
+      - ROAD_NETWORK
+      - UNRESOLVED_PATH_PATTERN
+    required_measurements:
+      - path_density
+      - branch_factor
+      - junction_count
+      - loop_count
+      - dead_end_count
+      - mean_segment_length
+      - slope_alignment
+      - row_alignment
+      - building_connection_ratio
+    thresholds_state: CALIBRATION_REQUIRED
+
+  access_friction:
+    provisional_reference_classes: [LOW, MEDIUM, HIGH]
+    required_inputs:
+      - straight_line_distance_m
+      - network_travel_distance_m
+      - detour_ratio
+      - independent_vehicle_access_routes
+      - bridge_dependency
+      - gate_or_barrier_observation
+      - road_class
+      - road_surface
+      - mean_slope_deg
+      - local_relief_m
+      - settlement_density
+      - trail_access
+      - water_access
+      - coastal_access
+    class_threshold_state: CALIBRATION_REQUIRED
+
+hard_rules:
+  HUMAN_ANNOTATION_IS_GROUND_TRUTH: false
+  DERIVED_COPY_IS_INDEPENDENT_SOURCE: false
+  RAW_VEHICLE_COUNT_IMPLIES_ANOMALY: false
+  REMOTENESS_IMPLIES_SUSPICIOUSNESS: false
+  BLUE_SURFACE_IMPLIES_BLUE_ROOF: false
+  PALM_LIKE_CROWN_IMPLIES_SPECIES: false
+  PATH_PATTERN_IMPLIES_PURPOSE: false
+  ACCESS_FRICTION_IMPLIES_PURPOSE: false
