@@ -1,0 +1,342 @@
+{
+  "PHASE": "2 — SPACE RECONCILIATION",
+  "BASE_SHA": "a43b730e2db58cd7a459b15a789eb690122021bc",
+  "HEAD_SHA": "e77ae6a0500dd15ea26001ffd5a66ee5cc339384",
+  "TESTED_PR_HEAD": "31488eab27779431fd2f76454159efe1dcb58e73",
+  "TESTED_TREE": "d4dcdfda68b01d014766f83c7bf60dff3fcf7501",
+  "REPOSITORY": {
+    "full_name": "jotaele44/skywatcher-pr",
+    "id": 1261399537,
+    "rename_executed": false
+  },
+  "FILES_CHANGED": [
+    ".federation/gui-capabilities.json",
+    "frontend/src/App.jsx",
+    "frontend/src/api/federationClient.js",
+    "frontend/src/components/skywatcher/Sidebar.jsx",
+    "frontend/src/pages/SpaceTrackControl.jsx",
+    "frontend/tests/gui-parity.spec.mjs",
+    "schemas/pitirre_observation.v1.schema.json",
+    "server/backend/main.py",
+    "server/backend/spacetrack_router.py",
+    "src/skywatcher/core/spacetrack/__init__.py",
+    "src/skywatcher/core/spacetrack/adapters.py",
+    "src/skywatcher/core/spacetrack/certification.py",
+    "src/skywatcher/core/spacetrack/collector.py",
+    "src/skywatcher/core/spacetrack/contracts.py",
+    "src/skywatcher/core/spacetrack/contradictions.py",
+    "src/skywatcher/core/spacetrack/control_plane.py",
+    "src/skywatcher/core/spacetrack/materialize.py",
+    "src/skywatcher/core/spacetrack/models.py",
+    "src/skywatcher/core/spacetrack/pitirre_adapter.py",
+    "src/skywatcher/core/spacetrack/query.py",
+    "src/skywatcher/core/spacetrack/reentry.py",
+    "src/skywatcher/core/spacetrack/storage.py",
+    "src/skywatcher/core/spacetrack/transport.py",
+    "tests/test_spacetrack_control_plane.py",
+    "tests/test_spacetrack_endpoints.py",
+    "tests/test_spacetrack_pitirre_adapter.py"
+  ],
+  "FILES_ADDED": [
+    "frontend/src/pages/SpaceTrackControl.jsx",
+    "server/backend/spacetrack_router.py",
+    "src/skywatcher/core/spacetrack/__init__.py",
+    "src/skywatcher/core/spacetrack/adapters.py",
+    "src/skywatcher/core/spacetrack/certification.py",
+    "src/skywatcher/core/spacetrack/collector.py",
+    "src/skywatcher/core/spacetrack/contracts.py",
+    "src/skywatcher/core/spacetrack/contradictions.py",
+    "src/skywatcher/core/spacetrack/control_plane.py",
+    "src/skywatcher/core/spacetrack/materialize.py",
+    "src/skywatcher/core/spacetrack/models.py",
+    "src/skywatcher/core/spacetrack/pitirre_adapter.py",
+    "src/skywatcher/core/spacetrack/query.py",
+    "src/skywatcher/core/spacetrack/reentry.py",
+    "src/skywatcher/core/spacetrack/storage.py",
+    "src/skywatcher/core/spacetrack/transport.py",
+    "tests/test_spacetrack_control_plane.py",
+    "tests/test_spacetrack_endpoints.py",
+    "tests/test_spacetrack_pitirre_adapter.py"
+  ],
+  "FILES_REMOVED": [],
+  "TEST_COMMANDS": [
+    "pytest -q --cov --cov-report=term-missing:skip-covered",
+    "pytest Space-Track, PITIRRE foundation and module-boundary suites",
+    "ruff check .",
+    "python scripts/check_gui_parity.py",
+    "npm run lint",
+    "npm test -- --run",
+    "npm run build",
+    "npm run test:gui-parity"
+  ],
+  "TEST_PASS": {
+    "backend": 1696,
+    "targeted": 84,
+    "frontend_unit": 95,
+    "gui": 19,
+    "lint": true,
+    "gui_parity": true,
+    "build": true,
+    "coverage_percent": 67.79
+  },
+  "TEST_FAIL": 0,
+  "TEST_SKIP": {
+    "backend": 34
+  },
+  "CI_CHECKS": [
+    {
+      "name": "CodeQL",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "GUI Reachability E2E",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Analyze python",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Analyze javascript-typescript",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "test-adsb (3.12)",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "test-imagery (3.12)",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "test (3.11)",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "test (3.10)",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "lock",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "lint",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "test (3.12)",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "test-adsb (3.11)",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "test-imagery (3.11)",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "frontend",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "build (macos-latest)",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "build (windows-latest)",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "build (ubuntu-latest)",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "drift",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Federation GUI Capability Parity",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "haf-contract",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "satim-phase2-contracts",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "federation-compatibility",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "satim-runtime-smoke-tests",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "gitleaks",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "boundary",
+      "state": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "drift",
+      "state": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "CI_SCOPE": "PR head 31488eab27779431fd2f76454159efe1dcb58e73; post-merge workflow results not certified",
+  "SCHEMA_CHANGES": [
+    "pitirre_observation.v1.schema.json adds spacetrack_normalized_gp to legacy_contract enum"
+  ],
+  "MIGRATION_COUNTS": {
+    "source_rows": {
+      "input": 0,
+      "migrated": 0,
+      "retained_legacy": 0,
+      "excluded_with_reason": 0,
+      "failed": 0,
+      "unresolved": 0
+    },
+    "branch_path_comparison": {
+      "input": 96,
+      "retained_main_only": 74,
+      "reconciled_intersection": 5,
+      "reused_space_only": 17,
+      "residue": 0
+    },
+    "integration_paths": {
+      "input": 26,
+      "modified": 8,
+      "added": 18,
+      "removed": 0
+    }
+  },
+  "INTERSECTION": 5,
+  "A_ONLY": 74,
+  "B_ONLY": 17,
+  "UNION": 96,
+  "SYMMETRIC_DIFFERENCE": 91,
+  "FACTS": [
+    "PR321 existing implementation reused and merged; no duplicate Space-Track engine",
+    "All 26 current PR check runs succeeded",
+    "PR339 foundation already merged",
+    "Unknown materialization counts remain null; measured empty materializations remain zero",
+    "Unknown decay stages remain UNRESOLVED",
+    "GP adapter preserves complete raw/normalized source row and manifestation; SPACE.ORBITAL only"
+  ],
+  "COMPUTED": [
+    "26 integration paths = 8 modified + 18 added",
+    "96 comparison paths = 74 main-only + 5 overlapping + 17 SPACE-only",
+    "Remote tested tree matched staged local tree exactly"
+  ],
+  "BINDING": [
+    "AIR|LAND|WATER|SPACE",
+    "ROAD=LAND.TRANSPORT.ROAD",
+    "UNKNOWN must not become zero",
+    "Prediction is not historical decay fact",
+    "Historical provenance must be preserved"
+  ],
+  "INFERENCES": [
+    "Regression evidence supports bounded SPACE reconciliation; it does not certify all PITIRRE"
+  ],
+  "UNKNOWN": [
+    "Post-merge CI results",
+    "Live authenticated Space-Track transport behavior; not exercised",
+    "Additional WATER identity and hydrologic authority gaps pending inventory"
+  ],
+  "PASS": [
+    "SPACE reconciliation bounded implementation",
+    "AIR regression suite",
+    "Lossless GP adapter",
+    "GUI capability parity",
+    "PR CI"
+  ],
+  "FAIL": [],
+  "OPEN": [
+    "WATER",
+    "LAND",
+    "ROAD",
+    "generic correlation",
+    "namespace migration",
+    "repository rename",
+    "whole-PITIRRE certification"
+  ],
+  "BLOCKED": [
+    "PHASE3 WATER: missing coastal coordinates default to zero"
+  ],
+  "PROVISIONAL": [
+    "Whole-PITIRRE transformation"
+  ],
+  "UNRESOLVED": [
+    "WATER corridor UNKNOWN semantics"
+  ],
+  "SUPERSEDED": [
+    "Earlier PR321 CI failures and legacy fixture failures repaired in tested head"
+  ],
+  "CONTRADICTIONS": [
+    {
+      "path": "src/skywatcher/fusion/coastal_corridor_index.py",
+      "rule": "Never convert UNKNOWN into zero",
+      "evidence": "lat = float(event.get(\"lat\", 0.0)); lon = float(event.get(\"lon\", 0.0))",
+      "reproduction": {
+        "corridor": {
+          "corridor_id": "fixture",
+          "name": "fixture",
+          "center_lat": 0,
+          "center_lon": 0,
+          "radius_km": 1
+        },
+        "missing_coordinate_event": {
+          "event_id": "missing-coordinates"
+        },
+        "result": {
+          "corridor_id": "fixture",
+          "corridor_distance_km": 0
+        },
+        "explicit_zero_event": {
+          "event_id": "known-zero",
+          "lat": 0,
+          "lon": 0
+        },
+        "same_assignment": true
+      },
+      "disposition": "Stop WATER promotion; architecture unchanged"
+    }
+  ],
+  "FALSIFIERS": [
+    "Any lost raw field, unexpected AIR regression, identity inferred from name or proximity, prediction promoted to historical fact, or red required CI invalidates the corresponding bounded pass"
+  ],
+  "ROLLBACK_POINT": "a43b730e2db58cd7a459b15a789eb690122021bc; merged source lineage retained",
+  "NEXT_DEPENDENCY": "Resolve missing-coordinate WATER corridor contract with explicit unknown/fail-closed behavior before promotion. No WATER implementation changes made."
+}
