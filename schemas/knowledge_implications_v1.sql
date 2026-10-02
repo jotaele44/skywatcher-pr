@@ -88,8 +88,12 @@ CREATE TABLE IF NOT EXISTS swk_implication (
   run_id TEXT NOT NULL REFERENCES swk_knowledge_run(run_id),
   analysis_owner TEXT NOT NULL CHECK(analysis_owner IN
     ('CORE','RLSM','FPIM','SATIM','CORRIM')),
-  domain_scope_json TEXT NOT NULL DEFAULT '{"domains":[]}' CHECK(
-    json_valid(domain_scope_json) AND json_type(domain_scope_json,'$.domains')='array'
+  domain_scope_json TEXT NOT NULL CHECK(
+    json_valid(domain_scope_json)
+    AND json_type(domain_scope_json)='object'
+    AND json_type(domain_scope_json,'$.domains')='array'
+    AND json_extract(domain_scope_json,'$.scope_mode')
+        IN ('PHYSICAL','CROSS_DOMAIN','NON_PHYSICAL')
   ),
   implication_type TEXT NOT NULL CHECK(implication_type IN
     ('LOCAL','CORPUS','CONTROL','MODEL','COVERAGE','CONTRADICTION')),
