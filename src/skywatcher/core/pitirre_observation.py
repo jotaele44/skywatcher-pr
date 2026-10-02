@@ -48,10 +48,20 @@ def _required_text(row: Mapping[str, Any], field: str) -> str:
     return value
 
 
-def _required_number(row: Mapping[str, Any], field: str) -> int | float:
+def _required_coordinate(
+    row: Mapping[str, Any],
+    field: str,
+    *,
+    minimum: float,
+    maximum: float,
+) -> int | float:
     value = row.get(field)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ObservationAdapterError(f"{field} must be numeric")
+    if not minimum <= value <= maximum:
+        raise ObservationAdapterError(
+            f"{field} must be between {minimum} and {maximum}"
+        )
     return value
 
 
@@ -97,8 +107,8 @@ def adapt_airspace_observation(row: Mapping[str, Any]) -> PitirreObservation:
     observation_id = _required_text(row, "observation_id")
     event_time = _required_text(row, "event_datetime")
     source_id = _required_text(row, "source_id")
-    lat = _required_number(row, "lat")
-    lon = _required_number(row, "lon")
+    lat = _required_coordinate(row, "lat", minimum=-90, maximum=90)
+    lon = _required_coordinate(row, "lon", minimum=-180, maximum=180)
 
     return _envelope(
         row=row,
