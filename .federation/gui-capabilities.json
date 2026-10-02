@@ -281,6 +281,38 @@
           "tests/test_gui_parity.py"
         ]
       }
+    },
+    {
+      "id": "pitirre-domain-foundation",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Core domain-registry and lossless observation-envelope contracts. They support migration, validation, and downstream correlation but do not constitute a standalone user workflow or GUI surface.",
+      "backend": {
+        "files": [
+          "src/skywatcher/core/domain_registry.py",
+          "src/skywatcher/core/pitirre_observation.py"
+        ],
+        "symbols": [
+          "src/skywatcher/core/domain_registry.py:DomainPath",
+          "src/skywatcher/core/domain_registry.py:DomainRegistryError",
+          "src/skywatcher/core/domain_registry.py:road_domain_path",
+          "src/skywatcher/core/domain_registry.py:validate_domain_path",
+          "src/skywatcher/core/pitirre_observation.py:ObservationAdapterError",
+          "src/skywatcher/core/pitirre_observation.py:PitirreObservation",
+          "src/skywatcher/core/pitirre_observation.py:adapt_airspace_observation",
+          "src/skywatcher/core/pitirre_observation.py:adapt_maritime_baseline"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_pitirre_domain_registry.py",
+          "tests/test_pitirre_observation.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
     }
   ],
   "exceptions": []
