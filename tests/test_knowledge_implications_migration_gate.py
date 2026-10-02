@@ -131,3 +131,34 @@ def test_atomic_migration_helper_rejects_embedded_transaction_control():
     finally:
         conn.close()
 
+def test_released_migrations_require_open_transaction():
+    assert [migration.version for migration in migrations.MIGRATIONS] == [1, 2, 3]
+    assert all(migration.requires_open_transaction for migration in migrations.MIGRATIONS)
+
+
+def test_released_0001_failure_rolls_back_schema_and_version_receipt(
+    tmp_path, monkeypatch
+):
+    original = db.read_schema_sql()
+    monkeypatch.setattr(
+        db,
+        "read_schema_sql",
+        lambda: original
+        + "\nCREATE TABLE aircraft(deliberate_duplicate INTEGER);\n",
+    )
+    path = tmp_path / "released-0001-failure.db"
+    conn = db.connect(path)
+    try:
+        with pytest.raises(migrations.MigrationError, match="migration 1"):
+            migrations.apply_migrations(conn, target=1)
+
+        assert db.get_schema_version(conn) == 0
+        present = set(db.list_tables(conn))
+        assert "schema_version" in present
+        assert "aircraft" not in present
+        assert "screenshots" not in present
+        assert "ingestion_batches" not in present
+        assert conn.execute("PRAGMA foreign_key_check").fetchall() == []
+    finally:
+        conn.close()
+
