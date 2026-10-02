@@ -32,7 +32,7 @@ def conn():
 def seed(db):
     db.execute("INSERT INTO swk_knowledge_run(run_id,input_manifest_sha256,ruleset_sha256,baseline_commit,started_utc) VALUES(?,?,?,?,?)", ("r1",ZERO,ZERO,"example-commit","2026-09-30T00:00:00Z"))
     db.execute("INSERT INTO swk_source_artifact(artifact_id,source_namespace,external_source_key_raw,source_kind,evidence_tier,visibility_class,created_utc) VALUES(?,?,?,?,?,?,?)", ("e1","RLSM_LOCAL","source:screenshot:1","SCREENSHOT","UNKNOWN","V0","2026-09-30T00:00:00Z"))
-    db.execute("INSERT INTO swk_implication(implication_id,run_id,analysis_owner,implication_type,epistemic_class,delta_type,statement,scope_json,ruleset_version,dependency_sha256,created_utc) VALUES(?,?,?,?,?,?,?,?,?,?,?)", ("i1","r1","FPIM","LOCAL","INFERENCE","NEW","A structured statement; no mission inferred","{}","v1",ZERO,"2026-09-30T00:00:00Z"))
+    db.execute("INSERT INTO swk_implication(implication_id,run_id,analysis_owner,domain_scope_json,implication_type,epistemic_class,delta_type,statement,scope_json,ruleset_version,dependency_sha256,created_utc) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", ("i1","r1","FPIM",'{"scope_mode":"PHYSICAL","domains":["AIR"]}',"LOCAL","INFERENCE","NEW","A structured statement; no mission inferred","{}","v1",ZERO,"2026-09-30T00:00:00Z"))
 
 
 def test_sql_idempotent_and_foreign_keys():
@@ -212,10 +212,10 @@ def test_implication_lineage_rejects_transitive_cycle_and_updates():
             db.execute(
                 """
                 INSERT INTO swk_implication(
-                  implication_id,run_id,analysis_owner,implication_type,epistemic_class,
+                  implication_id,run_id,analysis_owner,domain_scope_json,implication_type,epistemic_class,
                   delta_type,statement,scope_json,ruleset_version,dependency_sha256,created_utc
-                ) VALUES(?, 'r1','FPIM','CORPUS','INFERENCE','REFINES',?,
-                         '{}','v1',?,'now')
+                ) VALUES(?, 'r1','FPIM','{"scope_mode":"PHYSICAL","domains":["AIR"]}',
+                         'CORPUS','INFERENCE','REFINES',?,'{}','v1',?,'now')
                 """,
                 (implication_id, f"statement-{implication_id}", ZERO),
             )
@@ -247,10 +247,10 @@ def test_artifact_invalidation_propagates_to_all_descendants():
             db.execute(
                 """
                 INSERT INTO swk_implication(
-                  implication_id,run_id,analysis_owner,implication_type,epistemic_class,
+                  implication_id,run_id,analysis_owner,domain_scope_json,implication_type,epistemic_class,
                   delta_type,statement,scope_json,ruleset_version,dependency_sha256,created_utc
-                ) VALUES(?, 'r1','FPIM','CORPUS','INFERENCE','REFINES',?,
-                         '{}','v1',?,'now')
+                ) VALUES(?, 'r1','FPIM','{"scope_mode":"PHYSICAL","domains":["AIR"]}',
+                         'CORPUS','INFERENCE','REFINES',?,'{}','v1',?,'now')
                 """,
                 (implication_id, f"statement-{implication_id}", ZERO),
             )
