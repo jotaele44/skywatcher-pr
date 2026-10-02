@@ -11,6 +11,8 @@ import sqlite3
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from .domain_registry import TOP_LEVEL_DOMAINS, validate_domain_path
+
 COUNTER_KEYS = (
     "source_manifestation_count",
     "unresolved_candidate_count",
@@ -86,17 +88,106 @@ def classify_delta(before: Mapping[str, Any], after: Mapping[str, Any]) -> dict[
     return out
 
 
+def validate_domain_scope(scope: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate an exact PITIRRE physical-domain scope without normalization."""
+    if not isinstance(scope, Mapping):
+        raise ValueError("domain_scope must be an object")
+    allowed = {"scope_mode", "domains", "paths"}
+    if set(scope) - allowed:
+        raise ValueError("domain_scope contains unsupported fields")
+
+    mode = scope.get("scope_mode")
+    if mode not in {"PHYSICAL", "CROSS_DOMAIN", "NON_PHYSICAL"}:
+        raise ValueError("invalid domain scope_mode")
+
+    domains = scope.get("domains")
+    if not isinstance(domains, list) or any(
+        not isinstance(value, str) or not value for value in domains
+    ):
+        raise ValueError("domain_scope.domains must be a list of canonical strings")
+    if len(domains) != len(set(domains)):
+        raise ValueError("domain_scope.domains must be unique")
+    if any(value not in TOP_LEVEL_DOMAINS for value in domains):
+        raise ValueError("domain_scope contains unsupported PITIRRE domain")
+
+    if mode == "PHYSICAL" and len(domains) != 1:
+        raise ValueError("PHYSICAL scope requires exactly one domain")
+    if mode == "CROSS_DOMAIN" and len(domains) < 2:
+        raise ValueError("CROSS_DOMAIN scope requires at least two domains")
+    if mode == "NON_PHYSICAL" and domains:
+        raise ValueError("NON_PHYSICAL scope cannot carry physical domains")
+
+    paths = scope.get("paths", [])
+    if not isinstance(paths, list):
+        raise ValueError("domain_scope.paths must be a list")
+    if mode == "NON_PHYSICAL" and paths:
+        raise ValueError("NON_PHYSICAL scope cannot carry domain paths")
+
+    validated_paths: list[dict[str, str | None]] = []
+    for path in paths:
+        if not isinstance(path, Mapping):
+            raise ValueError("each domain path must be an object")
+        if set(path) - {"domain", "subdomain", "network_type"}:
+            raise ValueError("domain path contains unsupported fields")
+        domain = path.get("domain")
+        subdomain = path.get("subdomain")
+        network_type = path.get("network_type")
+        if not isinstance(domain, str) or not domain:
+            raise ValueError("domain path requires canonical domain")
+        if subdomain is not None and not isinstance(subdomain, str):
+            raise ValueError("subdomain must be a string or null")
+        if network_type is not None and not isinstance(network_type, str):
+            raise ValueError("network_type must be a string or null")
+        resolved = validate_domain_path(
+            domain,
+            subdomain=subdomain,
+            network_type=network_type,
+        )
+        if domains and resolved.domain not in domains:
+            raise ValueError("domain path is outside declared domain denominator")
+        validated_paths.append(
+            {
+                "domain": resolved.domain,
+                "subdomain": resolved.subdomain,
+                "network_type": resolved.network_type,
+            }
+        )
+
+    return {
+        "scope_mode": mode,
+        "domains": list(domains),
+        "paths": validated_paths,
+    }
+
+
 def deterministic_verbal_output(implication: Mapping[str, Any]) -> str:
     """Only render adjudicated structured data. No freeform invented conclusions."""
-    required = ("statement", "epistemic_class", "implication_type", "delta_type",
-                "certification_state", "source_refs", "limitations")
+    required = (
+        "statement",
+        "epistemic_class",
+        "implication_type",
+        "delta_type",
+        "certification_state",
+        "source_refs",
+        "limitations",
+        "analysis_owner",
+        "domain_scope",
+    )
     if any(k not in implication for k in required):
         raise ValueError("incomplete implication; cannot render")
     if implication["certification_state"] == "PASS" and not implication["source_refs"]:
         raise ValueError("PASS has no source references")
     if implication.get("validity_state") not in ("CURRENT", "RECOMPUTED"):
         raise ValueError("stale or invalid implication cannot render as current")
+    domain_scope = validate_domain_scope(implication["domain_scope"])
+    domain_label = (
+        " + ".join(domain_scope["domains"])
+        if domain_scope["domains"]
+        else domain_scope["scope_mode"]
+    )
     return (f"{implication['epistemic_class']} · {implication['implication_type']}\n"
+            f"Owner: {implication['analysis_owner']}\n"
+            f"Domain scope: {domain_label}\n"
             f"{implication['statement']}\n"
             f"Knowledge delta: {implication['delta_type']}\n"
             f"Sources: {', '.join(implication['source_refs']) or 'none'}\n"
