@@ -258,3 +258,66 @@ def invalidate_implications_for_artifacts(
     )
     return affected
 
+def render_current_implication(
+    conn: sqlite3.Connection,
+    implication_id: str,
+) -> str:
+    """Render one persisted current implication from its structured evidence."""
+    if not isinstance(implication_id, str) or not implication_id:
+        raise ValueError("implication_id is required")
+    row = conn.execute(
+        """
+        SELECT analysis_owner,domain_scope_json,implication_type,epistemic_class,
+               delta_type,statement,limitations_json,validity_state,
+               certification_state
+        FROM swk_implication
+        WHERE implication_id=?
+        """,
+        (implication_id,),
+    ).fetchone()
+    if row is None:
+        raise ValueError("implication not found")
+    (
+        analysis_owner,
+        domain_scope_json,
+        implication_type,
+        epistemic_class,
+        delta_type,
+        statement,
+        limitations_json,
+        validity_state,
+        certification_state,
+    ) = row
+    sources = [
+        f"{role}:{artifact_id}"
+        for artifact_id, role in conn.execute(
+            """
+            SELECT artifact_id,evidence_role
+            FROM swk_implication_evidence
+            WHERE implication_id=?
+            ORDER BY evidence_role,artifact_id
+            """,
+            (implication_id,),
+        )
+    ]
+    limitations = json.loads(limitations_json)
+    domain_scope = json.loads(domain_scope_json)
+    if not isinstance(limitations, list):
+        raise ValueError("persisted limitations_json must be an array")
+    if not isinstance(domain_scope, dict):
+        raise ValueError("persisted domain_scope_json must be an object")
+    return deterministic_verbal_output(
+        {
+            "statement": statement,
+            "epistemic_class": epistemic_class,
+            "implication_type": implication_type,
+            "delta_type": delta_type,
+            "certification_state": certification_state,
+            "validity_state": validity_state,
+            "source_refs": sources,
+            "limitations": limitations,
+            "analysis_owner": analysis_owner,
+            "domain_scope": domain_scope,
+        }
+    )
+
