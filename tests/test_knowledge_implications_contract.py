@@ -15,6 +15,7 @@ from skywatcher.core.knowledge_implications import (
     dependency_digest,
     deterministic_verbal_output,
     invalidate_implications_for_artifacts,
+    render_current_implication,
     validate_domain_scope,
 )
 
@@ -407,4 +408,28 @@ def test_sql_domain_scope_gate_rejects_invalid_tokens_and_cardinality():
         assert db.execute(
             "SELECT analysis_owner FROM swk_implication WHERE implication_id='cross-ok'"
         ).fetchone()[0] == "CORRIM"
+
+def test_persisted_verbal_renderer_uses_current_structured_state_only():
+    with conn() as db:
+        seed(db)
+        db.execute(
+            """
+            UPDATE swk_implication
+            SET limitations_json='["geometry does not establish mission"]'
+            WHERE implication_id='i1'
+            """
+        )
+        db.execute("INSERT INTO swk_implication_evidence VALUES('i1','e1','SUPPORT')")
+        db.execute(
+            "UPDATE swk_implication SET certification_state='PASS' WHERE implication_id='i1'"
+        )
+        rendered = render_current_implication(db, "i1")
+        assert "Owner: FPIM" in rendered
+        assert "Domain scope: AIR" in rendered
+        assert "SUPPORT:e1" in rendered
+        assert "geometry does not establish mission" in rendered
+
+        invalidate_implications_for_artifacts(db, ["e1"])
+        with pytest.raises(ValueError, match="stale"):
+            render_current_implication(db, "i1")
 
