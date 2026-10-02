@@ -58,12 +58,12 @@ class Migration:
 
 
 _TRANSACTION_CONTROL_RE = re.compile(
-    r"(?is)(?:^|;)\\s*(?:"
-    r"BEGIN(?:\\s+(?:TRANSACTION|DEFERRED|IMMEDIATE|EXCLUSIVE))?"
+    r"(?is)(?:^|;)\s*(?:"
+    r"BEGIN(?:\s+(?:TRANSACTION|DEFERRED|IMMEDIATE|EXCLUSIVE))?"
     r"|COMMIT"
-    r"|ROLLBACK(?:\\s+TRANSACTION)?"
-    r"|END\\s+TRANSACTION"
-    r")\\s*;"
+    r"|ROLLBACK(?:\s+TRANSACTION)?"
+    r"|END\s+TRANSACTION"
+    r")\s*;"
 )
 
 
