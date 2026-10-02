@@ -132,3 +132,25 @@ def test_boolean_is_not_accepted_as_coordinate_number():
                 "lon": -66.0,
             }
         )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("lat", 90.0001),
+        ("lat", -90.0001),
+        ("lon", 180.0001),
+        ("lon", -180.0001),
+    ],
+)
+def test_out_of_range_coordinates_fail_closed(field, value):
+    row = {
+        "record_id": "x",
+        "source": "source-a",
+        "observed_at": "2026-09-01T00:00:00Z",
+        "lat": 18.0,
+        "lon": -66.0,
+    }
+    row[field] = value
+    with pytest.raises(ObservationAdapterError):
+        adapt_maritime_baseline(row)
