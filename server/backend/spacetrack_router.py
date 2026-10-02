@@ -18,7 +18,7 @@ from skywatcher.core.spacetrack import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-router = APIRouter(prefix="/api/space-track", tags=["space-track"])
+router = APIRouter(tags=["space-track"])
 
 
 def _store() -> SpaceTrackStore:
@@ -56,7 +56,7 @@ def _source_status(store: SpaceTrackStore) -> list[dict[str, Any]]:
     return rows
 
 
-@router.get("/status")
+@router.get("/api/space-track/status")
 def space_track_status() -> dict[str, Any]:
     store = _store()
     static = certify_static_contracts()
@@ -72,13 +72,13 @@ def space_track_status() -> dict[str, Any]:
         "materializations": {
             "space_objects": {
                 "available": objects is not None,
-                "object_count": objects.get("object_count", 0) if objects else 0,
-                "contradiction_count": len(objects.get("contradictions", [])) if objects else 0,
+                "object_count": objects.get("object_count") if objects is not None else None,
+                "contradiction_count": len(objects["contradictions"]) if objects is not None and "contradictions" in objects else None,
             },
             "reentry_events": {
                 "available": reentry is not None,
-                "event_count": len(reentry.get("events", [])) if reentry else 0,
-                "contradiction_count": len(reentry.get("contradictions", [])) if reentry else 0,
+                "event_count": len(reentry["events"]) if reentry is not None and "events" in reentry else None,
+                "contradiction_count": len(reentry["contradictions"]) if reentry is not None and "contradictions" in reentry else None,
             },
         },
         "execution": {
@@ -90,7 +90,7 @@ def space_track_status() -> dict[str, Any]:
     }
 
 
-@router.get("/objects")
+@router.get("/api/space-track/objects")
 def space_track_objects() -> dict[str, Any]:
     value = _store().load_materialization("space_objects")
     if value is None:
@@ -102,7 +102,7 @@ def space_track_objects() -> dict[str, Any]:
     return {"state": "AVAILABLE", **value}
 
 
-@router.get("/reentry")
+@router.get("/api/space-track/reentry")
 def space_track_reentry() -> dict[str, Any]:
     value = _store().load_materialization("reentry_events")
     if value is None:

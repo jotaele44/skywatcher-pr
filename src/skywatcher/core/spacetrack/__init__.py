@@ -8,7 +8,6 @@ Space-Track directly.
 
 from .certification import certify_local_runtime, certify_static_contracts
 from .collector import CollectionResult, DownloadResult, SpaceTrackCollector
-from .contradictions import ContradictionRegister
 from .contracts import (
     CONTROLLER_CONTRACTS,
     SOURCE_CONTRACTS,
@@ -16,6 +15,7 @@ from .contracts import (
     SourceContract,
     get_source_contract,
 )
+from .contradictions import ContradictionRegister
 from .control_plane import (
     SpaceTrackControlPlane,
     classify_archive_equivalence,

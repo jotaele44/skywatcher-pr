@@ -3,10 +3,11 @@ import { FileUp, Plane, RotateCcw } from "lucide-react";
 import { FLIGHT_INGEST_STATUS, parseFlightFiles } from "@/lib/skywatcher";
 
 const MAX_FILES = 12;
-const ACCEPT = ".csv,.kml,text/csv,application/vnd.google-earth.kml+xml";
+const ACCEPT = ".csv,.kml,.html,.htm,text/csv,text/html,application/vnd.google-earth.kml+xml";
 
 const STATUS_LABEL = {
   [FLIGHT_INGEST_STATUS.READY]: "Ready",
+  [FLIGHT_INGEST_STATUS.CORPUS_READY]: "Corpus ready",
   [FLIGHT_INGEST_STATUS.EMPTY_TRACK]: "Empty track",
   [FLIGHT_INGEST_STATUS.SCHEMA_UNRESOLVED]: "Schema unresolved",
   [FLIGHT_INGEST_STATUS.COORDINATE_BINDING_UNRESOLVED]: "Coordinates unresolved",
@@ -16,7 +17,7 @@ const STATUS_LABEL = {
 };
 
 function resultTone(status) {
-  if (status === FLIGHT_INGEST_STATUS.READY) return "text-emerald-300 border-emerald-400/30 bg-emerald-400/10";
+  if (status === FLIGHT_INGEST_STATUS.READY || status === FLIGHT_INGEST_STATUS.CORPUS_READY) return "text-emerald-300 border-emerald-400/30 bg-emerald-400/10";
   if (status === FLIGHT_INGEST_STATUS.EMPTY_TRACK) return "text-amber-300 border-amber-400/30 bg-amber-400/10";
   return "text-red-300 border-red-400/30 bg-red-400/10";
 }
@@ -60,9 +61,11 @@ export default function SpatialFlightRenderer({
       files: results.length,
       ready: ready.length,
       empty: results.filter((result) => result.status === FLIGHT_INGEST_STATUS.EMPTY_TRACK).length,
+      corpus: results.reduce((sum, result) => sum + (result.records?.length || 0), 0),
       unresolved: results.filter(
         (result) =>
           result.status !== FLIGHT_INGEST_STATUS.READY &&
+          result.status !== FLIGHT_INGEST_STATUS.CORPUS_READY &&
           result.status !== FLIGHT_INGEST_STATUS.EMPTY_TRACK,
       ).length,
       points: ready.reduce((sum, result) => sum + result.points.length, 0),
@@ -140,7 +143,7 @@ export default function SpatialFlightRenderer({
 
         <p className="text-[10px] text-muted-foreground">
           Up to {maxFiles} local files · CSV header discovery scans up to 500 rows · FR24 Position, split coordinates,
-          segment tables, KML Point/LineString/MultiGeometry, and gx:Track supported.
+          segment tables, KML Point/LineString/MultiGeometry, gx:Track, and Master Flight Log HTML backups supported.
         </p>
 
         {batchError && (
@@ -157,10 +160,11 @@ export default function SpatialFlightRenderer({
 
         {results.length > 0 && (
           <>
-            <div className="grid grid-cols-2 gap-2 text-[10px] sm:grid-cols-5" role="status">
+            <div className="grid grid-cols-2 gap-2 text-[10px] sm:grid-cols-6" role="status">
               <Summary label="Files" value={summary.files} />
               <Summary label="Ready" value={summary.ready} />
               <Summary label="Empty" value={summary.empty} />
+              <Summary label="Corpus" value={summary.corpus} />
               <Summary label="Unresolved" value={summary.unresolved} />
               <Summary label="Points" value={summary.points} />
             </div>
@@ -172,7 +176,7 @@ export default function SpatialFlightRenderer({
                     <div className="min-w-0">
                       <p className="truncate text-xs font-semibold text-foreground">{result.source}</p>
                       <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {result.manifestation || "UNCLASSIFIED"} · {result.points.length} accepted points
+                        {result.manifestation || result.snapshot?.format || "UNCLASSIFIED"} · {result.points?.length || 0} accepted points{result.records ? ` · ${result.records.length} corpus records` : ""}
                       </p>
                     </div>
                     <span className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${resultTone(result.status)}`}>

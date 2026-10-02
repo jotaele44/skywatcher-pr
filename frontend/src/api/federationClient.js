@@ -201,6 +201,22 @@ const flightCorpusV4 = {
   familyProvenance: () => request('/flight-corpus/v4/family-provenance'),
 };
 
+const flightAcquisition = {
+  p1Status: () => request('/flight-acquisition/p1/status'),
+};
+
+const flightCorpusArchive = {
+  listSnapshots: () => request('/flight-corpus/archive/snapshots'),
+  getSnapshot: (snapshotId) => request(`/flight-corpus/archive/snapshots/${encode(snapshotId)}`),
+  getCoverage: (snapshotId, params = {}) => request(
+    `/flight-corpus/archive/snapshots/${encode(snapshotId)}/coverage${queryString(params)}`
+  ),
+  persistSnapshot: (payload) => request('/flight-corpus/archive/snapshots', {
+    method: 'POST',
+    body: payload,
+  }),
+};
+
 const spaceTrack = {
   status: () => request('/space-track/status'),
   objects: () => request('/space-track/objects'),
@@ -226,5 +242,7 @@ export const federation = {
   system,
   flightCorpusV4,
   spaceTrack,
+  flightCorpusArchive,
+  flightAcquisition,
   request,
 };

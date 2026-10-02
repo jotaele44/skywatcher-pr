@@ -49,6 +49,7 @@ export default function SpaceTrackControl() {
     try {
       setStatus(await federation.spaceTrack.status());
     } catch (err) {
+      setStatus(null);
       setError(err?.message || "Unable to read the local Space-Track status.");
     } finally {
       setLoading(false);
@@ -113,13 +114,13 @@ export default function SpaceTrackControl() {
         />
         <Metric
           label="Space objects"
-          value={objects?.object_count ?? 0}
-          detail={objects?.available ? `${objects.contradiction_count} contradiction(s)` : "Not materialized"}
+          value={objects?.object_count ?? "UNKNOWN"}
+          detail={objects?.available ? `${objects.contradiction_count ?? "UNKNOWN"} contradiction(s)` : "Not materialized"}
         />
         <Metric
           label="Reentry events"
-          value={reentry?.event_count ?? 0}
-          detail={reentry?.available ? `${reentry.contradiction_count} contradiction(s)` : "Not materialized"}
+          value={reentry?.event_count ?? "UNKNOWN"}
+          detail={reentry?.available ? `${reentry.contradiction_count ?? "UNKNOWN"} contradiction(s)` : "Not materialized"}
         />
       </div>
 
@@ -154,7 +155,7 @@ export default function SpaceTrackControl() {
           <div className="space-y-3 text-xs">
             <div className="flex items-center justify-between border-b border-border/60 pb-2">
               <span className="text-muted-foreground">Local store</span>
-              <StateBadge value={status?.execution?.local_store_present ? "PASS" : "BLOCKED"} />
+              <StateBadge value={status?.execution?.local_store_present === true ? "PASS" : status?.execution?.local_store_present === false ? "BLOCKED" : "UNKNOWN"} />
             </div>
             <div className="flex items-center justify-between border-b border-border/60 pb-2">
               <span className="text-muted-foreground">Browser → Space-Track</span>

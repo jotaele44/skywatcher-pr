@@ -42,11 +42,12 @@
     ],
     "implicit_routes": [],
     "exclude": [
-      "**/tests/**",
-      "**/*.test.*",
       "**/*.spec.*",
+      "**/*.test.*",
       "**/components/ui/**",
+      "**/tests/**",
       "scripts/check_gui_parity.py",
+      "scripts/import_fr24_icon_reference_library.py",
       "scripts/validate_flight_corpus_v4_import.py",
       "src/skywatcher/flight_corpus_v4.py"
     ]
@@ -59,7 +60,12 @@
       "requires_terminal": false,
       "backend": {
         "files": [
-          "server/backend/main.py"
+          "server/backend/main.py",
+          "server/backend/console/fr24_control_plane.py",
+          "scripts/load_fr24_control_plane.py",
+          "src/skywatcher/fr24/flight_corpus.py",
+          "src/skywatcher/fr24/flight_coverage.py",
+          "src/skywatcher/fr24/acquisition_receipts.py"
         ],
         "endpoints": [
           "GET /api/apps/public-settings",
@@ -83,7 +89,13 @@
           "GET /api/flight-corpus/v4/deep-interface",
           "GET /api/flight-corpus/v4/route-family-recurrence",
           "GET /api/flight-corpus/v4/airport-edge-recurrence",
-          "GET /api/flight-corpus/v4/family-provenance"
+          "GET /api/flight-corpus/v4/family-provenance",
+          "GET /api/flight-corpus/archive/snapshots",
+          "GET /api/flight-corpus/archive/snapshots/{snapshot_id}",
+          "POST /api/flight-corpus/archive/snapshots",
+          "GET /api/flight-corpus/archive/snapshots/{snapshot_id}/coverage",
+          "GET /api/flight-acquisition/p1/status",
+          "GET /api/flight-corpus/v4/family-split-summary"
         ],
         "symbols": [
           "server/backend/main.py:geo_observations",
@@ -100,7 +112,29 @@
           "server/backend/main.py:flight_corpus_v4_deep_interface",
           "server/backend/main.py:flight_corpus_v4_route_family_recurrence",
           "server/backend/main.py:flight_corpus_v4_airport_edge_recurrence",
-          "server/backend/main.py:flight_corpus_v4_family_provenance"
+          "server/backend/main.py:flight_corpus_v4_family_provenance",
+          "server/backend/console/fr24_control_plane.py:BridgeSummary",
+          "server/backend/console/fr24_control_plane.py:ingest_fr24_control_plane",
+          "scripts/load_fr24_control_plane.py:main",
+          "server/backend/main.py:flight_corpus_archive_snapshots",
+          "server/backend/main.py:flight_corpus_archive_snapshot",
+          "server/backend/main.py:flight_corpus_archive_persist",
+          "src/skywatcher/fr24/flight_corpus.py:CorpusPersistenceError",
+          "src/skywatcher/fr24/flight_corpus.py:PersistResult",
+          "src/skywatcher/fr24/flight_corpus.py:persist_corpus_snapshot",
+          "src/skywatcher/fr24/flight_corpus.py:read_corpus_snapshot",
+          "server/backend/main.py:flight_corpus_archive_coverage",
+          "src/skywatcher/fr24/flight_coverage.py:build_coverage_ledger",
+          "server/backend/main.py:flight_acquisition_p1_status",
+          "src/skywatcher/fr24/acquisition_receipts.py:AcquisitionReceiptError",
+          "src/skywatcher/fr24/acquisition_receipts.py:load_manifest",
+          "src/skywatcher/fr24/acquisition_receipts.py:validate_manifest",
+          "src/skywatcher/fr24/acquisition_receipts.py:next_discovery_target",
+          "src/skywatcher/fr24/acquisition_receipts.py:record_discovery",
+          "src/skywatcher/fr24/acquisition_receipts.py:record_blocked_auth",
+          "src/skywatcher/fr24/acquisition_receipts.py:export_harvest_carryover",
+          "src/skywatcher/fr24/acquisition_receipts.py:status_summary",
+          "server/backend/main.py:flight_corpus_v4_family_split_summary"
         ]
       },
       "frontend": {
@@ -117,7 +151,8 @@
           "/readiness",
           "/calibration",
           "/console",
-          "/spatial-truth"
+          "/spatial-truth",
+          "/flight-archive"
         ],
         "e2e_routes": [
           "/",
@@ -132,7 +167,8 @@
           "/readiness",
           "/calibration",
           "/console",
-          "/spatial-truth"
+          "/spatial-truth",
+          "/flight-archive"
         ],
         "components": [
           "frontend/src/api/federationClient.js",
@@ -156,7 +192,9 @@
           "frontend/src/components/skywatcher/SpatialToolsPanel.jsx",
           "frontend/src/components/skywatcher/TrackTimeScrubber.jsx",
           "frontend/src/components/skywatcher/SpatialFlightRenderer.jsx",
-          "frontend/src/components/ProgramTimeline.jsx"
+          "frontend/src/components/ProgramTimeline.jsx",
+          "frontend/src/lib/flightIngestion.js",
+          "frontend/src/pages/FlightArchive.jsx"
         ],
         "discoverability": [
           "frontend/src/components/skywatcher/Sidebar.jsx"
@@ -168,7 +206,14 @@
           "tests/test_manual_review_queue.py",
           "tests/test_fr24_dashboard_data.py",
           "tests/test_satim_calibration.py",
-          "tests/test_geo_municipios_routes.py"
+          "tests/test_geo_municipios_routes.py",
+          "tests/test_fr24_control_plane_bridge.py",
+          "tests/test_flight_corpus_archive_api.py",
+          "tests/test_flight_corpus_persistence.py",
+          "tests/test_flight_corpus_migration.py",
+          "tests/test_flight_coverage.py",
+          "tests/test_acquisition_receipts.py",
+          "tests/test_acquisition_status_api.py"
         ],
         "contract": [
           "tests/test_gui_parity.py"
@@ -177,7 +222,9 @@
           "frontend/src/lib/app-params.test.js",
           "frontend/src/components/skywatcher/PuertoRicoMapShell.test.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.test.jsx",
-          "frontend/src/components/skywatcher/SpatialFlightRenderer.test.jsx"
+          "frontend/src/components/skywatcher/SpatialFlightRenderer.test.jsx",
+          "frontend/src/lib/flightIngestion.test.js",
+          "frontend/src/lib/masterFlightLog.test.js"
         ],
         "e2e": [
           "frontend/tests/gui-parity.spec.mjs"
@@ -206,6 +253,68 @@
       }
     },
     {
+      "id": "fr24-poi-icon-registry",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Shared screenshot taxonomy/provenance infrastructure consumed by RLSM icon review; it is not a separate end-user workflow. The one-time local reference-library importer is a bootstrap utility and is excluded from GUI capability discovery.",
+      "backend": {
+        "files": [
+          "src/skywatcher/registry/fr24_poi_icons.py"
+        ],
+        "symbols": [
+          "src/skywatcher/registry/fr24_poi_icons.py:allowed_icon_class_ids",
+          "src/skywatcher/registry/fr24_poi_icons.py:archive_member_manifest",
+          "src/skywatcher/registry/fr24_poi_icons.py:load_registry",
+          "src/skywatcher/registry/fr24_poi_icons.py:resolve_icon_class",
+          "src/skywatcher/registry/fr24_poi_icons.py:validate_registry",
+          "src/skywatcher/registry/fr24_poi_icons.py:validate_registry_file",
+          "src/skywatcher/registry/fr24_poi_icons.py:verify_source_archive"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_fr24_poi_icon_registry.py",
+          "tests/test_rlsm_operator_regressions.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
+    },
+    {
+      "id": "pitirre-domain-foundation",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Core domain-registry and lossless observation-envelope contracts. They support migration, validation, and downstream correlation but do not constitute a standalone user workflow or GUI surface.",
+      "backend": {
+        "files": [
+          "src/skywatcher/core/domain_registry.py",
+          "src/skywatcher/core/pitirre_observation.py"
+        ],
+        "symbols": [
+          "src/skywatcher/core/domain_registry.py:DomainPath",
+          "src/skywatcher/core/domain_registry.py:DomainRegistryError",
+          "src/skywatcher/core/domain_registry.py:road_domain_path",
+          "src/skywatcher/core/domain_registry.py:validate_domain_path",
+          "src/skywatcher/core/pitirre_observation.py:ObservationAdapterError",
+          "src/skywatcher/core/pitirre_observation.py:PitirreObservation",
+          "src/skywatcher/core/pitirre_observation.py:adapt_airspace_observation",
+          "src/skywatcher/core/pitirre_observation.py:adapt_maritime_baseline"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_pitirre_domain_registry.py",
+          "tests/test_pitirre_observation.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
+    },
+    {
       "id": "space-track-control-plane",
       "classification": "internal",
       "status": "active",
@@ -225,7 +334,8 @@
           "src/skywatcher/core/spacetrack/query.py",
           "src/skywatcher/core/spacetrack/reentry.py",
           "src/skywatcher/core/spacetrack/storage.py",
-          "src/skywatcher/core/spacetrack/transport.py"
+          "src/skywatcher/core/spacetrack/transport.py",
+          "src/skywatcher/core/spacetrack/pitirre_adapter.py"
         ],
         "symbols": [
           "src/skywatcher/core/spacetrack/adapters.py:normalize_satcat",
@@ -288,12 +398,14 @@
           "src/skywatcher/core/spacetrack/storage.py:SpaceTrackStore",
           "src/skywatcher/core/spacetrack/transport.py:TransportResponse",
           "src/skywatcher/core/spacetrack/transport.py:ReadOnlyTransport",
-          "src/skywatcher/core/spacetrack/transport.py:UrlLibReadOnlyTransport"
+          "src/skywatcher/core/spacetrack/transport.py:UrlLibReadOnlyTransport",
+          "src/skywatcher/core/spacetrack/pitirre_adapter.py:adapt_gp_batch_row"
         ]
       },
       "tests": {
         "backend": [
-          "tests/test_spacetrack_control_plane.py"
+          "tests/test_spacetrack_control_plane.py",
+          "tests/test_spacetrack_pitirre_adapter.py"
         ]
       }
     },

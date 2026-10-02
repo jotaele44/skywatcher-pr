@@ -49,6 +49,7 @@ __all__ = [
     "mission_classification",
     "database",
     "database_migrations",
+    "flight_corpus",
     "spiderweb_export",
 ]
 

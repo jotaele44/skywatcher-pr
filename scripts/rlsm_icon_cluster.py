@@ -31,6 +31,15 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "src"))
+
+from skywatcher.registry.fr24_poi_icons import (  # noqa: E402
+    allowed_icon_class_ids,
+    load_registry,
+    resolve_icon_class,
+    validate_registry,
+)
+
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 CLASSES_JSON = REPO / "data" / "reference" / "icon_classes.json"
 
@@ -98,6 +107,12 @@ def main() -> int:
     if not DB.exists():
         print(f"[icon-cluster] no DB at {DB}", file=sys.stderr)
         return 1
+
+    registry = load_registry()
+    registry_check = validate_registry(registry)
+    if registry_check["status"] != "pass":
+        print(json.dumps(registry_check, indent=2), file=sys.stderr)
+        return 2
 
     conn = sqlite3.connect(str(DB), timeout=30.0)
     conn.execute("PRAGMA busy_timeout = 30000")
@@ -185,8 +200,10 @@ def main() -> int:
     CLASSES_JSON.write_text(json.dumps({
         "_comment": ("Fill in icon_class for each cluster, then run "
                      "`python3 scripts/rlsm_icon_cluster.py --apply`. "
-                     "Suggested vocabulary: airport, heliport, aircraft, navaid, "
-                     "city_dot, seaport, ui_chrome, noise."),
+                     "Use a declared source/reserved class or one of its explicit aliases."),
+        "registry_id": registry["registry_id"],
+        "classification_contract": "operator_review_required",
+        "allowed_icon_class_ids": allowed_icon_class_ids(registry),
         "hamming_threshold": args.threshold,
         "hue_split_deg": HUE_SPLIT_DEG,
         "clusters": clusters,
@@ -216,14 +233,40 @@ def _apply(conn: sqlite3.Connection) -> int:
               file=sys.stderr)
         return 1
     data = json.loads(CLASSES_JSON.read_text())
+    registry = load_registry()
+    registry_check = validate_registry(registry)
+    if registry_check["status"] != "pass":
+        print(json.dumps(registry_check, indent=2), file=sys.stderr)
+        conn.close()
+        return 2
+
     n = 0
+    unresolved = []
     for c in data.get("clusters", []):
         name = (c.get("icon_class") or "").strip()
         if not name:
             continue
+        resolved = resolve_icon_class(name, registry)
+        if resolved["resolution_status"] != "resolved":
+            unresolved.append({
+                "cluster_id": c.get("cluster_id"),
+                "raw_icon_class": name,
+                "resolution": resolved,
+            })
+            continue
+        class_id = resolved["icon_class_id"]
         conn.execute("UPDATE icon_observations SET icon_class=? WHERE cluster_id=?",
-                     (name, c["cluster_id"]))
+                     (class_id, c["cluster_id"]))
         n += conn.execute("SELECT changes()").fetchone()[0]
+    if unresolved:
+        conn.rollback()
+        print(json.dumps({
+            "status": "review_required",
+            "reason": "one or more icon classes are not uniquely declared",
+            "unresolved": unresolved,
+        }, indent=2), file=sys.stderr)
+        conn.close()
+        return 2
     conn.commit()
 
     unnamed = conn.execute(

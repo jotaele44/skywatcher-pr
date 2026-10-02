@@ -66,12 +66,21 @@ def _migration_0002_adsb_state_vectors(conn: sqlite3.Connection) -> None:
     conn.executescript(path.read_text(encoding="utf-8"))
 
 
+def _migration_0003_flight_corpus(conn: sqlite3.Connection) -> None:
+    """Add the canonical flight-corpus / source-manifestation ledger."""
+    path = db.REPO_ROOT / "schemas" / "flight_corpus.sql"
+    conn.executescript(path.read_text(encoding="utf-8"))
+
+
 # Ordered migration ledger. Append new migrations with the next integer version;
 # never edit or reorder an already-released migration.
 MIGRATIONS: list[Migration] = [
     Migration(1, "base FR24 canonical schema (10 tables)", _migration_0001_base_schema),
     Migration(
         2, "adsb_state_vectors table (automated OpenSky poll)", _migration_0002_adsb_state_vectors
+    ),
+    Migration(
+        3, "canonical flight corpus and source manifestations", _migration_0003_flight_corpus
     ),
 ]
 

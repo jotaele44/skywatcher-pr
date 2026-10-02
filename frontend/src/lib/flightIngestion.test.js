@@ -29,6 +29,62 @@ describe("browser flight ingestion contract", () => {
     });
   });
 
+  it("preserves registration, callsign, ICAO24, and aircraft type independently", () => {
+    const result = parseFlightCsv(
+      [
+        "Timestamp,UTC,Callsign,Registration,Hex,Aircraft_Type,Position,Altitude,Speed,Direction",
+        '1766761782,2025-12-26T15:09:42Z,C6062,N600UH,A7C001,C172,"18.338324,-65.651604",250,35,333',
+      ].join("\n"),
+      "identity.csv",
+    );
+
+    expect(result.status).toBe(FLIGHT_INGEST_STATUS.READY);
+    expect(result.points[0]).toMatchObject({
+      callsign: "C6062",
+      registration: "N600UH",
+      icao24: "A7C001",
+      aircraftType: "C172",
+    });
+    expect(result.identity).toEqual({
+      status: "SOURCE_IDENTITY_PRESENT",
+      callsigns: ["C6062"],
+      registrations: ["N600UH"],
+      icao24s: ["A7C001"],
+      aircraftTypes: ["C172"],
+      conflicts: [],
+    });
+  });
+
+  it("keeps registration identity when source callsign is blank", () => {
+    const result = parseFlightCsv(
+      [
+        "Timestamp,UTC,Callsign,Registration,Hex,Position",
+        '1766761782,2025-12-26T15:09:42Z,,N600UH,A7C001,"18.338324,-65.651604"',
+      ].join("\n"),
+    );
+
+    expect(result.points[0].callsign).toBeNull();
+    expect(result.points[0].registration).toBe("N600UH");
+    expect(result.identity.status).toBe("SOURCE_IDENTITY_PRESENT");
+    expect(result.identity.callsigns).toEqual([]);
+    expect(result.identity.registrations).toEqual(["N600UH"]);
+  });
+
+  it("preserves conflicting nonblank identity observations without selecting a winner", () => {
+    const result = parseFlightCsv(
+      [
+        "UTC,Registration,Position",
+        '2026-01-01T00:00:00Z,N600UH,"18.1,-66.1"',
+        '2026-01-01T00:01:00Z,N407PR,"18.2,-66.2"',
+      ].join("\n"),
+    );
+
+    expect(result.status).toBe(FLIGHT_INGEST_STATUS.READY);
+    expect(result.identity.status).toBe("UNRESOLVED_CONFLICT");
+    expect(result.identity.registrations).toEqual(["N407PR", "N600UH"]);
+    expect(result.identity.conflicts).toEqual(["registration"]);
+  });
+
   it("discovers an FR24 header after a long preamble", () => {
     const preamble = Array.from({ length: 75 }, (_, index) => `metadata row ${index}`);
     const result = parseFlightCsv(
@@ -103,6 +159,33 @@ describe("browser flight ingestion contract", () => {
     });
   });
 
+  it("preserves FR24 KML callsign and registration as separate identity fields", () => {
+    const result = parseFlightKml(
+      '<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>' +
+        "<name>-/HBAL124</name>" +
+        "<description><![CDATA[" +
+        '<div>Aircraft (BALL) High Altitude Balloon Registration ' +
+        '<a href="https://mobile.flightradar24.com/reg/n519hb">N519HB</a></div>' +
+        "]]></description>" +
+        "<Placemark><Point><coordinates>-104.545074,33.314163,0</coordinates></Point></Placemark>" +
+        "</Document></kml>",
+    );
+
+    expect(result.status).toBe(FLIGHT_INGEST_STATUS.READY);
+    expect(result.points[0]).toMatchObject({
+      callsign: "HBAL124",
+      registration: "N519HB",
+      aircraftType: "BALL",
+    });
+    expect(result.identity).toMatchObject({
+      status: "SOURCE_IDENTITY_PRESENT",
+      callsigns: ["HBAL124"],
+      registrations: ["N519HB"],
+      aircraftTypes: ["BALL"],
+      conflicts: [],
+    });
+  });
+
   it("accepts LineString-only KML", () => {
     const result = parseFlightKml(
       '<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Placemark><LineString>' +
@@ -135,6 +218,18 @@ describe("browser flight ingestion contract", () => {
     );
 
     expect(result.status).toBe(FLIGHT_INGEST_STATUS.EMPTY_TRACK);
+  });
+
+  it("routes Master Flight Log HTML into corpus metadata without route points", async () => {
+    const html = new File(
+      ['<script>window.MFL_SEED={"format":"master-flight-log-backup","version":1,"flights":{"2025-08":[{"h":"abc","fid":"f1","cs":"N1","n":2,"t0":1754062238,"t1":1754062240,"la0":18.1,"lo0":-66.1,"la1":18.2,"lo1":-66.2,"s":[]}]}};</script>'],
+      "Master Flight Log.html",
+      { type: "text/html" },
+    );
+    const [result] = await parseFlightFiles([html]);
+    expect(result.status).toBe(FLIGHT_INGEST_STATUS.CORPUS_READY);
+    expect(result.records).toHaveLength(1);
+    expect(result.points).toBeUndefined();
   });
 
   it("isolates file failures inside one browser upload batch", async () => {
