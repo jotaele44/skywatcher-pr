@@ -15,6 +15,7 @@ from skywatcher.core.knowledge_implications import (
     dependency_digest,
     deterministic_verbal_output,
     invalidate_implications_for_artifacts,
+    validate_domain_scope,
 )
 
 REPO = Path(__file__).resolve().parents[1]
@@ -80,9 +81,18 @@ def test_dependency_hash_order_invariance_and_duplicate_rejection():
 
 
 def test_no_invalid_verbal_promotion():
-    inp=dict(statement="route curvature measured",epistemic_class="COMPUTED",implication_type="LOCAL",
-             delta_type="NO_MATERIAL_CHANGE",certification_state="PASS",
-             validity_state="STALE",source_refs=["source:e1"],limitations=[])
+    inp=dict(
+        statement="route curvature measured",
+        epistemic_class="COMPUTED",
+        implication_type="LOCAL",
+        delta_type="NO_MATERIAL_CHANGE",
+        certification_state="PASS",
+        validity_state="STALE",
+        source_refs=["source:e1"],
+        limitations=[],
+        analysis_owner="FPIM",
+        domain_scope={"scope_mode": "PHYSICAL", "domains": ["AIR"]},
+    )
     with pytest.raises(ValueError,match="stale"):
         deterministic_verbal_output(inp)
     inp.update(validity_state="CURRENT",source_refs=[])
@@ -297,4 +307,61 @@ def test_fr24_image_skill_declares_activation_gated_cumulative_handoff():
     assert "screenshot count is" in skill
     assert "never substituted for canonical event count" in skill
     assert "NOT_ENABLED" in skill
+
+def test_pitirre_domain_scope_validation_is_explicit_and_non_normalizing():
+    assert validate_domain_scope(
+        {
+            "scope_mode": "PHYSICAL",
+            "domains": ["LAND"],
+            "paths": [
+                {
+                    "domain": "LAND",
+                    "subdomain": "TRANSPORT",
+                    "network_type": "ROAD",
+                }
+            ],
+        }
+    ) == {
+        "scope_mode": "PHYSICAL",
+        "domains": ["LAND"],
+        "paths": [
+            {
+                "domain": "LAND",
+                "subdomain": "TRANSPORT",
+                "network_type": "ROAD",
+            }
+        ],
+    }
+    with pytest.raises(ValueError, match="unsupported PITIRRE domain"):
+        validate_domain_scope({"scope_mode": "PHYSICAL", "domains": ["road"]})
+    with pytest.raises(ValueError, match="at least two domains"):
+        validate_domain_scope({"scope_mode": "CROSS_DOMAIN", "domains": ["AIR"]})
+    with pytest.raises(ValueError, match="cannot carry physical domains"):
+        validate_domain_scope(
+            {"scope_mode": "NON_PHYSICAL", "domains": ["AIR"]}
+        )
+
+
+def test_verbal_output_renders_domain_scope_without_promoting_mission():
+    rendered = deterministic_verbal_output(
+        {
+            "statement": "Two adjudicated observations satisfy the configured window.",
+            "epistemic_class": "COMPUTED",
+            "implication_type": "CORPUS",
+            "delta_type": "STRENGTHENS",
+            "certification_state": "PASS",
+            "validity_state": "CURRENT",
+            "source_refs": ["source:a", "source:b"],
+            "limitations": ["co-occurrence does not establish coordination"],
+            "analysis_owner": "CORRIM",
+            "domain_scope": {
+                "scope_mode": "CROSS_DOMAIN",
+                "domains": ["AIR", "WATER"],
+            },
+        }
+    )
+    assert "Owner: CORRIM" in rendered
+    assert "Domain scope: AIR + WATER" in rendered
+    assert "coordination" in rendered
+    assert "mission" not in rendered.lower()
 
