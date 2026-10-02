@@ -21,6 +21,7 @@ temporary databases only.
 
 from __future__ import annotations
 
+import re
 import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -53,6 +54,35 @@ class Migration:
     version: int
     description: str
     apply: Callable[[sqlite3.Connection], None]
+    requires_open_transaction: bool = False
+
+
+_TRANSACTION_CONTROL_RE = re.compile(
+    r"(?im)^\\s*(?:BEGIN|COMMIT|END|ROLLBACK)\\b"
+)
+
+
+def _begin_atomic_sql_script(conn: sqlite3.Connection, sql: str) -> None:
+    """Execute controlled migration SQL inside one caller-owned transaction.
+
+    The function intentionally leaves the transaction open so apply_migrations()
+    can insert the schema_version receipt and commit both DDL and receipt
+    together. Transaction-control statements inside the supplied script are
+    rejected because they could silently break that atomicity boundary.
+    """
+    if conn.in_transaction:
+        raise sqlite3.OperationalError(
+            "atomic migration script requires a clean connection"
+        )
+    if _TRANSACTION_CONTROL_RE.search(sql):
+        raise sqlite3.OperationalError(
+            "migration SQL must not contain transaction-control statements"
+        )
+    conn.executescript("BEGIN IMMEDIATE;\n" + sql)
+    if not conn.in_transaction:
+        raise sqlite3.OperationalError(
+            "migration SQL escaped the required open transaction"
+        )
 
 
 def _migration_0001_base_schema(conn: sqlite3.Connection) -> None:
@@ -121,6 +151,10 @@ def apply_migrations(
             continue
         try:
             migration.apply(conn)
+            if migration.requires_open_transaction and not conn.in_transaction:
+                raise sqlite3.OperationalError(
+                    "migration did not preserve the required open transaction"
+                )
             conn.execute(
                 "INSERT INTO schema_version (version, description, applied_at) "
                 "VALUES (?, ?, ?)",
