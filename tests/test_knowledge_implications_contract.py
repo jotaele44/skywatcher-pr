@@ -365,3 +365,46 @@ def test_verbal_output_renders_domain_scope_without_promoting_mission():
     assert "coordination" in rendered
     assert "mission" not in rendered.lower()
 
+def test_sql_domain_scope_gate_rejects_invalid_tokens_and_cardinality():
+    with conn() as db:
+        seed(db)
+        cases = [
+            '{"scope_mode":"PHYSICAL","domains":["ROAD"]}',
+            '{"scope_mode":"PHYSICAL","domains":["AIR","WATER"]}',
+            '{"scope_mode":"CROSS_DOMAIN","domains":["AIR"]}',
+            '{"scope_mode":"CROSS_DOMAIN","domains":["AIR","AIR"]}',
+            '{"scope_mode":"NON_PHYSICAL","domains":["SPACE"]}',
+        ]
+        for index, domain_scope in enumerate(cases, start=1):
+            with pytest.raises(sqlite3.IntegrityError, match="physical-domain"):
+                db.execute(
+                    """
+                    INSERT INTO swk_implication(
+                      implication_id,run_id,analysis_owner,domain_scope_json,
+                      implication_type,epistemic_class,delta_type,statement,
+                      scope_json,ruleset_version,dependency_sha256,created_utc
+                    ) VALUES(?, 'r1','CORE',?,'LOCAL','INFERENCE','NEW',
+                             'invalid domain scope fixture','{}','v1',?,'now')
+                    """,
+                    (f"bad-domain-{index}", domain_scope, ZERO),
+                )
+
+        db.execute(
+            """
+            INSERT INTO swk_implication(
+              implication_id,run_id,analysis_owner,domain_scope_json,
+              implication_type,epistemic_class,delta_type,statement,
+              scope_json,ruleset_version,dependency_sha256,created_utc
+            ) VALUES(
+              'cross-ok','r1','CORRIM',
+              '{"scope_mode":"CROSS_DOMAIN","domains":["AIR","WATER"]}',
+              'CORPUS','INFERENCE','NEW','valid cross-domain fixture',
+              '{}','v1',?,'now'
+            )
+            """,
+            (ZERO,),
+        )
+        assert db.execute(
+            "SELECT analysis_owner FROM swk_implication WHERE implication_id='cross-ok'"
+        ).fetchone()[0] == "CORRIM"
+
