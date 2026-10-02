@@ -58,7 +58,7 @@ class Migration:
 
 
 _TRANSACTION_CONTROL_RE = re.compile(
-    r"(?im)^\\s*(?:BEGIN|COMMIT|END|ROLLBACK)\\b"
+    r"(?im)^\s*(?:BEGIN|COMMIT|END|ROLLBACK)\b"
 )
 
 
