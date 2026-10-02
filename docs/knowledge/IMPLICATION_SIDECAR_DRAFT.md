@@ -16,7 +16,7 @@ Normative ownership follows ontology v2.0 as amended by active v2.1, while the r
 - `schemas/knowledge_implications_v1.sql`: 12 prefixed sidecar tables and 10 safety triggers. It is deliberately absent from `MIGRATIONS`.
 - `src/skywatcher/core/knowledge_implications.py`: canonical serialization/hashing, bounded denominator delta logic, DB-backed structured verbal rendering, explicit limitations/alternatives/falsifiers, and recursive stale invalidation for implications directly or transitively dependent on displaced source artifacts.
 - `tests/test_knowledge_implications_contract.py`: 22 positive/negative contract gates, including PITIRRE physical-domain scope validation and the FR24 image-skill handoff lock.
-- `tests/test_knowledge_implications_migration_gate.py`: 5 migration-atomicity gates, including the unsafe unwrapped-`executescript` negative control and prospective 0004 schema-version receipt rollback/commit tests.
+- `tests/test_knowledge_implications_migration_gate.py`: 7 migration-atomicity gates, including the unsafe unwrapped-`executescript` negative control, released 0001 rollback, and prospective 0004 schema-version receipt rollback/commit tests.
 - `tests/test_knowledge_implications_existing_db_integration.py`: 4 representative integration gates against released 0001 and 0003 database states.
 - `skills/skywatcher-fr24-image-analysis/SKILL.md`: existing skill upgraded with an activation-gated cumulative implication handoff; the stage must report `NOT_ENABLED` until sidecar activation gates close.
 - `.federation/gui-capabilities.json`: one explicit expiring draft exception for the internal Core module/symbols; this does not claim GUI parity for an inactive capability.
@@ -32,7 +32,7 @@ When a source dependency is explicitly displaced, `invalidate_implications_for_a
 
 ## Migration certification boundary
 
-The integration suite creates isolated temporary databases using the repository's actual migration framework:
+The integration suite creates isolated temporary databases using the repository's actual migration framework. The released 0001–0003 migration functions are now routed through the same caller-owned transaction primitive, so their DDL and `schema_version` receipt commit together instead of relying on `executescript()`'s implicit-commit behavior:
 
 1. **0001 → sidecar**: populate representative batch/screenshot/aircraft/flight/link rows; apply sidecar; assert old-table row conservation, schema-version conservation, FK integrity, and repeatable sidecar application.
 2. **0003 → sidecar**: persist a representative MFL snapshot through `persist_corpus_snapshot()`; apply sidecar; assert MFL records/manifestations and schema version are unchanged.
@@ -54,6 +54,7 @@ These are representative repository fixtures, **not the operator-local corpus** 
 | Hash/delta/lineage/stale-invalidation hardening | Implemented; final CI must PASS |
 | Genuine operator-corpus screenshot ↔ MFL adjudication | **BLOCKED — corpus is machine-local** |
 | Operator-local full RLSM replay and gold sample | **BLOCKED — external to GitHub CI** |
+| Released 0001–0003 migration transaction hardening | Implemented; final CI must PASS |
 | Exact prospective 0004 migration-ledger atomicity | Implemented; final CI must PASS |
 | Migration 0004 registration | **BLOCKED** until operator-corpus gates close; registration itself remains intentionally absent |
 | Active ingestion/API/GUI wiring | **BLOCKED** |
