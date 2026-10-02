@@ -14,8 +14,8 @@ Normative ownership follows ontology v2.0 as amended by active v2.1, while the r
 ## Draft implementation
 
 - `schemas/knowledge_implications_v1.sql`: 12 prefixed sidecar tables and 10 safety triggers. It is deliberately absent from `MIGRATIONS`.
-- `src/skywatcher/core/knowledge_implications.py`: canonical serialization/hashing, bounded denominator delta logic, structured verbal rendering, and explicit recursive stale invalidation for implications directly or transitively dependent on displaced source artifacts.
-- `tests/test_knowledge_implications_contract.py`: 21 positive/negative contract gates, including PITIRRE physical-domain scope validation and the FR24 image-skill handoff lock.
+- `src/skywatcher/core/knowledge_implications.py`: canonical serialization/hashing, bounded denominator delta logic, DB-backed structured verbal rendering, explicit limitations/alternatives/falsifiers, and recursive stale invalidation for implications directly or transitively dependent on displaced source artifacts.
+- `tests/test_knowledge_implications_contract.py`: 22 positive/negative contract gates, including PITIRRE physical-domain scope validation and the FR24 image-skill handoff lock.
 - `tests/test_knowledge_implications_migration_gate.py`: 5 migration-atomicity gates, including the unsafe unwrapped-`executescript` negative control and prospective 0004 schema-version receipt rollback/commit tests.
 - `tests/test_knowledge_implications_existing_db_integration.py`: 4 representative integration gates against released 0001 and 0003 database states.
 - `skills/skywatcher-fr24-image-analysis/SKILL.md`: existing skill upgraded with an activation-gated cumulative implication handoff; the stage must report `NOT_ENABLED` until sidecar activation gates close.
@@ -28,7 +28,7 @@ The draft now fails closed on malformed canonical hashes, unconstrained knowledg
 
 Source-byte identity, source namespace identity, subject identity, and canonical event identity remain separate. Near-duplicate/discovery-key collisions are preserved as separate candidate artifacts. Contradictory support/counterevidence is retained rather than resolved by overwrite.
 
-When a source dependency is explicitly displaced, `invalidate_implications_for_artifacts()` walks descendant lineage and marks all current/recomputed affected implications `STALE`, reopening their certification. It does not infer replacements or recompute a conclusion automatically.
+When a source dependency is explicitly displaced, `invalidate_implications_for_artifacts()` walks descendant lineage and marks all current/recomputed affected implications `STALE`, reopening their certification. `render_current_implication()` reads the persisted implication/evidence state and refuses stale output. Neither function infers replacements, missions, or recomputed conclusions automatically.
 
 ## Migration certification boundary
 
