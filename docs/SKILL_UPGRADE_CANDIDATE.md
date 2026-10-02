@@ -2,13 +2,13 @@
 
 **State:** APPLIED_TO_EXISTING_FR24_IMAGE_SKILL_ON_DRAFT_BRANCH; NOT_MERGED. Operator-corpus validation and sidecar activation remain blocked.
 
-The existing `skills/skywatcher-fr24-image-analysis/SKILL.md` now carries an activation-gated cumulative implication handoff. The following gates are the broader workflow upgrade:
+The existing `skills/skywatcher-fr24-image-analysis/SKILL.md` now carries an activation-gated cumulative implication handoff. The upgrade is reconciled with the PITIRRE `AIR | LAND | WATER | SPACE` foundation without rewriting historical SkyWatcher provenance. The following gates are the broader workflow upgrade:
 
 1. Parse raw source and preserve every manifestation before event adjudication. Namespace external keys by source system/database and frozen source manifestation.
 2. Never derive event, airframe, operator, mission, site, or facility identity from name only, registration only, count equality, hash equality, nearest-only, proximity-only, same-category, or source absence.
 3. Separate V0 observations, V1 computed features, independently adjudicated identity, FPIM interpretation, SATIM interpretation, and CORRIM cross-domain association.
 4. Respect active v2.1 evidence axes: T1–T4 tier, V0–V4 visibility, provenance, availability, geometry, temporal precision, review state, confidence, and priority remain orthogonal. Screenshot+track support is not T5 and never increments an event denominator without same-event binding.
-5. Every implication must carry a typed implication class, owning domain, support/counterevidence/control roles, scope, ruleset version, and dependency hash. Hypotheses cannot become independent evidence for themselves.
+5. Every implication must carry a typed implication class, **analysis owner** and separately validated **physical-domain scope**, support/counterevidence/control roles, ruleset version, and dependency hash. Analytical ownership is not a physical domain. Hypotheses cannot become independent evidence for themselves.
 6. Report an explicit knowledge delta after adjudication or `NO_MATERIAL_CHANGE`. Source-manifestation growth and canonical-event growth are separate counters.
 7. A changed/displaced dependency must recursively stale every affected implication descendant before any result can be rendered current. Frozen prior states remain auditable.
 8. Implication lineage must be acyclic and immutable. Tied or cyclic top evidence remains unresolved; deterministic graph traversal is not evidentiary support.
