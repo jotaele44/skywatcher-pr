@@ -16,7 +16,7 @@ Normative ownership follows ontology v2.0 as amended by active v2.1, while the r
 - `schemas/knowledge_implications_v1.sql`: 12 prefixed sidecar tables and 8 safety triggers. It is deliberately absent from `MIGRATIONS`.
 - `src/skywatcher/core/knowledge_implications.py`: canonical serialization/hashing, bounded denominator delta logic, structured verbal rendering, and explicit recursive stale invalidation for implications directly or transitively dependent on displaced source artifacts.
 - `tests/test_knowledge_implications_contract.py`: 20 positive/negative contract gates, including PITIRRE physical-domain scope validation and the FR24 image-skill handoff lock.
-- `tests/test_knowledge_implications_migration_gate.py`: 2 DDL-atomicity gates, including the unsafe unwrapped-`executescript` negative control.
+- `tests/test_knowledge_implications_migration_gate.py`: 5 migration-atomicity gates, including the unsafe unwrapped-`executescript` negative control and prospective 0004 schema-version receipt rollback/commit tests.
 - `tests/test_knowledge_implications_existing_db_integration.py`: 4 representative integration gates against released 0001 and 0003 database states.
 - `skills/skywatcher-fr24-image-analysis/SKILL.md`: existing skill upgraded with an activation-gated cumulative implication handoff; the stage must report `NOT_ENABLED` until sidecar activation gates close.
 - `.federation/gui-capabilities.json`: one explicit expiring draft exception for the internal Core module/symbols; this does not claim GUI parity for an inactive capability.
@@ -54,7 +54,8 @@ These are representative repository fixtures, **not the operator-local corpus** 
 | Hash/delta/lineage/stale-invalidation hardening | Implemented; final CI must PASS |
 | Genuine operator-corpus screenshot ↔ MFL adjudication | **BLOCKED — corpus is machine-local** |
 | Operator-local full RLSM replay and gold sample | **BLOCKED — external to GitHub CI** |
-| Migration 0004 registration | **BLOCKED** until operator-corpus and exact migration-ledger atomicity gates close |
+| Exact prospective 0004 migration-ledger atomicity | Implemented; final CI must PASS |
+| Migration 0004 registration | **BLOCKED** until operator-corpus gates close; registration itself remains intentionally absent |
 | Active ingestion/API/GUI wiring | **BLOCKED** |
 | Production/whole-repository certification | **BLOCKED** |
 
