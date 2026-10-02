@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS swk_subject_ref (
   subject_id TEXT PRIMARY KEY,
   subject_kind TEXT NOT NULL CHECK(subject_kind IN
     ('MFL_RECORD','RLSM_SCREENSHOT','RECONSTRUCTED_FLIGHT','AIRCRAFT_CANDIDATE',
-     'AOI','FPIM_FINDING','SATIM_FINDING','CORRIM_ASSOCIATION','OTHER')),
+     'PITIRRE_OBSERVATION','PITIRRE_EVENT','AOI','FPIM_FINDING','SATIM_FINDING',
+     'CORRIM_ASSOCIATION','OTHER')),
   source_namespace TEXT NOT NULL CHECK(source_namespace IN
     ('SKYWATCHER_PRIMARY','RLSM_LOCAL','MFL_SNAPSHOT','EXTERNAL','USER_UPLOAD')),
   external_record_key_raw TEXT NOT NULL,
@@ -85,7 +86,11 @@ CREATE TABLE IF NOT EXISTS swk_knowledge_run (
 CREATE TABLE IF NOT EXISTS swk_implication (
   implication_id TEXT PRIMARY KEY,
   run_id TEXT NOT NULL REFERENCES swk_knowledge_run(run_id),
-  domain_owner TEXT NOT NULL CHECK(domain_owner IN ('SATIM','FPIM','CORRIM')),
+  analysis_owner TEXT NOT NULL CHECK(analysis_owner IN
+    ('CORE','RLSM','FPIM','SATIM','CORRIM')),
+  domain_scope_json TEXT NOT NULL DEFAULT '{"domains":[]}' CHECK(
+    json_valid(domain_scope_json) AND json_type(domain_scope_json,'$.domains')='array'
+  ),
   implication_type TEXT NOT NULL CHECK(implication_type IN
     ('LOCAL','CORPUS','CONTROL','MODEL','COVERAGE','CONTRADICTION')),
   epistemic_class TEXT NOT NULL CHECK(epistemic_class IN ('INFERENCE','COMPUTED','UNKNOWN')),
@@ -264,8 +269,8 @@ BEGIN SELECT RAISE(ABORT,'PASS support is immutable; reopen first'); END;
 -- The statement and analytical basis of a certified implication are versioned
 -- by adding another object, never edited in place.
 CREATE TRIGGER IF NOT EXISTS tr_swk_pass_content_immutable
-BEFORE UPDATE OF domain_owner,implication_type,epistemic_class,delta_type,
-                 statement,scope_json,ruleset_version,dependency_sha256,run_id
+BEFORE UPDATE OF analysis_owner,domain_scope_json,implication_type,epistemic_class,
+                 delta_type,statement,scope_json,ruleset_version,dependency_sha256,run_id
 ON swk_implication
 WHEN OLD.certification_state='PASS'
 BEGIN SELECT RAISE(ABORT,'certified implication is immutable; supersede it'); END;
