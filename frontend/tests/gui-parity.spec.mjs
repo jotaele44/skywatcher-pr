@@ -96,6 +96,11 @@ test("interactive map exposes spatial and track workflows", async ({ page }) => 
 });
 
 test("municipio density failure retries into scoped evidence", async ({ page }) => {
+  // This regression exercises the local density API, not upstream basemap uptime.
+  await page.route(/^https:\/\/[abc]\.tile\.openstreetmap\.org\//, (route) => route.fulfill({
+    status: 200, contentType: "image/png",
+    body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAABFUlEQVR4nO3BMQEAAADCoPVP7WsIoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeAMBPAABPO1TCQAAAABJRU5ErkJggg==", "base64"),
+  }));
   const consoleErrors = [];
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
@@ -163,4 +168,40 @@ test("municipio density failure retries into scoped evidence", async ({ page }) 
   await expect(page.getByText("2 matched · 1 unresolved · 3 total · identity effect NONE · CANDIDATE_NOT_IDENTITY").first()).toBeVisible();
   expect(attempts).toBe(2);
   expect(consoleErrors).toEqual([]);
+});
+
+
+test("Space-Track distinguishes unavailable counts from materialized zero and retries safely", async ({ page }) => {
+  let mode = "unavailable";
+  await page.route("**/api/space-track/status", async (route) => {
+    if (mode === "failure") {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ detail: "fixture outage" }) });
+      return;
+    }
+    const available = mode === "empty";
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      static_contract: { state: "PASS" }, runtime: { state: "BLOCKED", gates: [] }, sources: [],
+      execution: { local_store_present: available, browser_upstream_calls: false, operator_writes: "HARD_DISABLED", credentials_embedded: false },
+      materializations: {
+        space_objects: { available, object_count: available ? 0 : null, contradiction_count: available ? 0 : null },
+        reentry_events: { available, event_count: available ? 0 : null, contradiction_count: available ? 0 : null },
+      },
+    }) });
+  });
+  await page.goto("/space-track");
+  const objects = page.getByText("Space objects", { exact: true }).locator("..");
+  const reentry = page.getByText("Reentry events", { exact: true }).locator("..");
+  await expect(objects.getByText("UNKNOWN", { exact: true })).toBeVisible();
+  await expect(reentry.getByText("UNKNOWN", { exact: true })).toBeVisible();
+  mode = "empty";
+  await page.getByRole("button", { name: "Reload local status" }).click();
+  await expect(objects.getByText("0", { exact: true })).toBeVisible();
+  await expect(reentry.getByText("0", { exact: true })).toBeVisible();
+  mode = "failure";
+  await page.getByRole("button", { name: "Reload local status" }).click();
+  await expect(page.getByText("Local status unavailable", { exact: true })).toBeVisible();
+  await expect(objects.getByText("UNKNOWN", { exact: true })).toBeVisible();
+  mode = "empty";
+  await page.getByRole("button", { name: "Reload local status" }).click();
+  await expect(objects.getByText("0", { exact: true })).toBeVisible();
 });
