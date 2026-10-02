@@ -2,11 +2,16 @@ import json
 from pathlib import Path
 
 import pytest
+from jsonschema import Draft202012Validator
 
 from skywatcher.core.domain_registry import (
+    AIR_SUBDOMAINS,
     DOMAIN_REGISTRY_VERSION,
+    LAND_SUBDOMAINS,
+    SPACE_SUBDOMAINS,
     TOP_LEVEL_DOMAINS,
     TRANSPORT_NETWORK_TYPES,
+    WATER_SUBDOMAINS,
     DomainRegistryError,
     road_domain_path,
     validate_domain_path,
@@ -14,10 +19,21 @@ from skywatcher.core.domain_registry import (
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 REGISTRY_PATH = REPO_ROOT / "configs" / "pitirre_domain_registry.json"
+SCHEMA_PATH = REPO_ROOT / "schemas" / "pitirre_domain_registry.v1.schema.json"
 
 
 def _registry() -> dict:
     return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+
+
+def _schema() -> dict:
+    return json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+
+
+def test_serialized_registry_validates_against_its_schema():
+    schema = _schema()
+    Draft202012Validator.check_schema(schema)
+    Draft202012Validator(schema).validate(_registry())
 
 
 def test_canonical_top_level_denominator_is_exact_and_ordered():
@@ -27,6 +43,17 @@ def test_canonical_top_level_denominator_is_exact_and_ordered():
 
 def test_registry_version_matches_core_contract():
     assert _registry()["registry_version"] == DOMAIN_REGISTRY_VERSION
+
+
+def test_serialized_subdomains_match_core_contract():
+    domains = _registry()["domains"]
+    assert domains["AIR"]["subdomains"] == list(AIR_SUBDOMAINS)
+    assert domains["LAND"]["subdomains"] == list(LAND_SUBDOMAINS)
+    assert domains["WATER"]["subdomains"] == list(WATER_SUBDOMAINS)
+    assert domains["SPACE"]["subdomains"] == list(SPACE_SUBDOMAINS)
+    assert domains["LAND"]["transport_network_types"] == list(
+        TRANSPORT_NETWORK_TYPES
+    )
 
 
 def test_road_is_land_transport_network_not_top_level_domain():
