@@ -330,7 +330,8 @@
         "python_symbol:src/skywatcher/core/knowledge_implications.py:classify_delta",
         "python_symbol:src/skywatcher/core/knowledge_implications.py:deterministic_verbal_output",
         "python_symbol:src/skywatcher/core/knowledge_implications.py:invalidate_implications_for_artifacts",
-        "python_symbol:src/skywatcher/core/knowledge_implications.py:validate_domain_scope"
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:validate_domain_scope",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:render_current_implication"
       ]
     }
   ]
