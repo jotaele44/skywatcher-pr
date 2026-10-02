@@ -208,6 +208,56 @@ CREATE TABLE IF NOT EXISTS swk_contradiction (
 );
 
 
+-- Physical-domain scope is a separate PITIRRE axis from analytical ownership.
+-- Validate exact canonical tokens and cardinality at the database boundary too.
+CREATE TRIGGER IF NOT EXISTS tr_swk_imp_domain_scope_insert
+BEFORE INSERT ON swk_implication
+WHEN
+  (json_extract(NEW.domain_scope_json,'$.scope_mode')='PHYSICAL'
+    AND json_array_length(NEW.domain_scope_json,'$.domains')<>1)
+  OR
+  (json_extract(NEW.domain_scope_json,'$.scope_mode')='CROSS_DOMAIN'
+    AND json_array_length(NEW.domain_scope_json,'$.domains')<2)
+  OR
+  (json_extract(NEW.domain_scope_json,'$.scope_mode')='NON_PHYSICAL'
+    AND json_array_length(NEW.domain_scope_json,'$.domains')<>0)
+  OR EXISTS (
+    SELECT 1
+    FROM json_each(NEW.domain_scope_json,'$.domains')
+    WHERE type<>'text' OR value NOT IN ('AIR','LAND','WATER','SPACE')
+  )
+  OR (
+    SELECT COUNT(*) FROM json_each(NEW.domain_scope_json,'$.domains')
+  ) <> (
+    SELECT COUNT(DISTINCT value)
+    FROM json_each(NEW.domain_scope_json,'$.domains')
+  )
+BEGIN SELECT RAISE(ABORT,'invalid PITIRRE physical-domain scope'); END;
+
+CREATE TRIGGER IF NOT EXISTS tr_swk_imp_domain_scope_update
+BEFORE UPDATE OF domain_scope_json ON swk_implication
+WHEN
+  (json_extract(NEW.domain_scope_json,'$.scope_mode')='PHYSICAL'
+    AND json_array_length(NEW.domain_scope_json,'$.domains')<>1)
+  OR
+  (json_extract(NEW.domain_scope_json,'$.scope_mode')='CROSS_DOMAIN'
+    AND json_array_length(NEW.domain_scope_json,'$.domains')<2)
+  OR
+  (json_extract(NEW.domain_scope_json,'$.scope_mode')='NON_PHYSICAL'
+    AND json_array_length(NEW.domain_scope_json,'$.domains')<>0)
+  OR EXISTS (
+    SELECT 1
+    FROM json_each(NEW.domain_scope_json,'$.domains')
+    WHERE type<>'text' OR value NOT IN ('AIR','LAND','WATER','SPACE')
+  )
+  OR (
+    SELECT COUNT(*) FROM json_each(NEW.domain_scope_json,'$.domains')
+  ) <> (
+    SELECT COUNT(DISTINCT value)
+    FROM json_each(NEW.domain_scope_json,'$.domains')
+  )
+BEGIN SELECT RAISE(ABORT,'invalid PITIRRE physical-domain scope'); END;
+
 -- Reject transitive implication-lineage cycles; deterministic graph shape is
 -- not evidence, but cyclic support would make recomputation non-auditable.
 CREATE TRIGGER IF NOT EXISTS tr_swk_lineage_cycle_insert
