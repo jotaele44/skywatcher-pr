@@ -38,7 +38,8 @@
       "frontend/src/App.jsx"
     ],
     "navigation_files": [
-      "frontend/src/components/skywatcher/Sidebar.jsx"
+      "frontend/src/components/skywatcher/Sidebar.jsx",
+      "frontend/src/components/skywatcher/Layout.jsx"
     ],
     "implicit_routes": [],
     "exclude": [
@@ -175,6 +176,11 @@
           "frontend/src/lib/AuthContext.jsx",
           "frontend/src/lib/observation-density.js",
           "frontend/src/lib/SkywatcherData.jsx",
+          "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx",
+          "frontend/src/components/skywatcher/drawers/ObservationDetailDrawer.jsx",
+          "frontend/src/components/skywatcher/drawers/RouteDetailDrawer.jsx",
+          "frontend/src/components/skywatcher/drawers/ReviewDetailDrawer.jsx",
+          "frontend/src/components/ui/toast.jsx",
           "frontend/src/pages/Dashboard.jsx",
           "frontend/src/pages/Observations.jsx",
           "frontend/src/pages/Aircraft.jsx",
@@ -197,7 +203,8 @@
           "frontend/src/pages/FlightArchive.jsx"
         ],
         "discoverability": [
-          "frontend/src/components/skywatcher/Sidebar.jsx"
+          "frontend/src/components/skywatcher/Sidebar.jsx",
+          "frontend/src/components/skywatcher/Layout.jsx"
         ]
       },
       "tests": {
@@ -220,6 +227,10 @@
         ],
         "unit": [
           "frontend/src/lib/app-params.test.js",
+          "frontend/src/lib/SkywatcherData.test.jsx",
+          "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.test.jsx",
+          "frontend/src/components/skywatcher/drawers/DiagnosticWriteFailure.test.jsx",
+          "frontend/src/pages/Observations.test.jsx",
           "frontend/src/components/skywatcher/PuertoRicoMapShell.test.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.test.jsx",
           "frontend/src/components/skywatcher/SpatialFlightRenderer.test.jsx",
@@ -227,7 +238,25 @@
           "frontend/src/lib/masterFlightLog.test.js"
         ],
         "e2e": [
-          "frontend/tests/gui-parity.spec.mjs"
+          "frontend/tests/gui-parity.spec.mjs",
+          "frontend/tests/zip-design.spec.mjs"
+        ]
+      }
+    },
+    {
+      "id": "airspace-export-integrity",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Package validation is a release-integrity gate, not a separate interactive GUI workflow.",
+      "analysis": {
+        "symbols": [
+          "scripts/validate_airspace_export.py:load_csv_observations"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_validate_airspace_export.py"
         ]
       }
     },

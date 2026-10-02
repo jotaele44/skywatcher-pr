@@ -295,7 +295,7 @@ except ImportError as exc:
 #
 #   PRII_WRITE_TOKEN set    -> mutating routes require Authorization: Bearer <token>
 #   PRII_WRITE_TOKEN unset  -> mutating routes are served to clients on a local
-#                              network (loopback, RFC1918 private, link-local)
+#                              network (loopback, RFC1918, IPv6 ULA, link-local)
 #                              and refused for public addresses
 #
 # The private-range allowance is deliberate: containerized or LAN deployments see
@@ -310,17 +310,30 @@ except ImportError as exc:
 #
 # Reads are unaffected in every case.
 _WRITE_TOKEN = os.environ.get("PRII_WRITE_TOKEN", "")
+_LOCAL_NETWORKS = tuple(
+    ipaddress.ip_network(network)
+    for network in (
+        "127.0.0.0/8",
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "169.254.0.0/16",
+        "::1/128",
+        "fc00::/7",
+        "fe80::/10",
+    )
+)
 
 
 def _is_local_network(host: str) -> bool:
-    """True for loopback, RFC1918 private, and link-local client addresses."""
-    if host in ("localhost", ""):
-        return host == "localhost"
+    """True only for loopback, private, and link-local client addresses."""
+    if host == "localhost":
+        return True
     try:
         ip = ipaddress.ip_address(host)
     except ValueError:
         return False
-    return ip.is_loopback or ip.is_private or ip.is_link_local
+    return any(network.version == ip.version and ip in network for network in _LOCAL_NETWORKS)
 
 
 def require_write_access(request: Request) -> None:
@@ -1133,8 +1146,9 @@ def auth_me() -> dict[str, Any]:
 
 
 @app.post("/api/query")
-def query(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def query(request: Request, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     """Answer only from persisted craft profiles, with deterministic fallback."""
+    require_write_access(request)
     payload = payload or {}
     prompt = str(payload.get("prompt") or payload.get("q") or "").strip()
     if not prompt:

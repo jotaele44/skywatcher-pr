@@ -7,6 +7,7 @@ import SyntheticDataBadge from "../SyntheticDataBadge";
 import ReviewActions from "../ReviewActions";
 import { useSkywatcher, useResolvers } from "@/lib/SkywatcherData";
 import { REVIEW_STATUS } from "@/lib/skywatcher";
+import { toast } from "@/components/ui/use-toast";
 
 export default function RouteDetailDrawer({ id, onClose, go }) {
   const d = useSkywatcher();
@@ -17,6 +18,18 @@ export default function RouteDetailDrawer({ id, onClose, go }) {
   const capture = r.captureById(route.capture_id);
   const obs = r.observationById(route.observation_id);
   const rs = REVIEW_STATUS[route.review_status] || REVIEW_STATUS.new;
+  const updateReviewStatus = async (status) => {
+    try {
+      await d.updateRecord("routes", route.id, { review_status: status });
+      toast({ title: "Diagnostic state updated", description: `Review status set to ${status}.` });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Review status was not updated",
+        description: String(error?.message ?? error),
+      });
+    }
+  };
 
   return (
     <SideDrawer
@@ -33,7 +46,7 @@ export default function RouteDetailDrawer({ id, onClose, go }) {
       }
     >
       <Section title="Review State" icon={Gauge}>
-        <ReviewActions current={route.review_status} onChange={(s) => d.updateRecord("routes", route.id, { review_status: s })} />
+        <ReviewActions current={route.review_status} onChange={updateReviewStatus} />
       </Section>
 
       <Section title="Segment Geometry" icon={RouteIcon}>
