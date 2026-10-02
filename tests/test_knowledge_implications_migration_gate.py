@@ -11,6 +11,9 @@ from pathlib import Path
 
 import pytest
 
+from skywatcher.fr24 import database as db
+from skywatcher.fr24 import database_migrations as migrations
+
 SQL = (Path(__file__).resolve().parents[1] / "schemas" / "knowledge_implications_v1.sql").read_text(encoding="utf-8")
 # sqlite PRAGMA foreign_keys must be enabled outside the explicit transaction.
 DDL = SQL.replace("PRAGMA foreign_keys = ON;", "", 1)
@@ -50,3 +53,81 @@ def test_unwrapped_executescript_is_demonstrably_not_atomic():
         db.executescript(DDL + "\nCREATE TABLE swk_implication (deliberate_duplicate INTEGER);")
     db.rollback()
     assert len(_sidecar_objects(db)) > 0
+
+def test_prospective_0004_ledger_receipt_commits_with_sidecar(tmp_path, monkeypatch):
+    path = tmp_path / "future-success.db"
+    conn = db.connect(path)
+    try:
+        assert migrations.apply_migrations(conn, target=3) == [1, 2, 3]
+
+        def apply_future(connection: sqlite3.Connection) -> None:
+            migrations._begin_atomic_sql_script(connection, SQL)
+
+        future = migrations.Migration(
+            4,
+            "knowledge implication sidecar prospective fixture",
+            apply_future,
+            requires_open_transaction=True,
+        )
+        monkeypatch.setattr(migrations, "MIGRATIONS", [*migrations.MIGRATIONS, future])
+
+        assert migrations.apply_migrations(conn, target=4) == [4]
+        assert db.get_schema_version(conn) == 4
+        assert len(_sidecar_objects(conn)) > 0
+        assert conn.execute(
+            "SELECT description FROM schema_version WHERE version=4"
+        ).fetchone()[0] == "knowledge implication sidecar prospective fixture"
+        assert conn.execute("PRAGMA foreign_key_check").fetchall() == []
+    finally:
+        conn.close()
+
+
+def test_prospective_0004_failure_rolls_back_ddl_and_ledger(tmp_path, monkeypatch):
+    path = tmp_path / "future-failure.db"
+    conn = db.connect(path)
+    try:
+        assert migrations.apply_migrations(conn, target=3) == [1, 2, 3]
+
+        def apply_future(connection: sqlite3.Connection) -> None:
+            migrations._begin_atomic_sql_script(
+                connection,
+                SQL
+                + "\nCREATE TABLE swk_implication "
+                  "(deliberate_duplicate INTEGER);\n",
+            )
+
+        future = migrations.Migration(
+            4,
+            "knowledge implication sidecar deliberate failure",
+            apply_future,
+            requires_open_transaction=True,
+        )
+        monkeypatch.setattr(migrations, "MIGRATIONS", [*migrations.MIGRATIONS, future])
+
+        with pytest.raises(migrations.MigrationError, match="migration 4"):
+            migrations.apply_migrations(conn, target=4)
+
+        assert db.get_schema_version(conn) == 3
+        assert conn.execute(
+            "SELECT COUNT(*) FROM schema_version WHERE version=4"
+        ).fetchone()[0] == 0
+        assert _sidecar_objects(conn) == []
+        assert conn.execute("PRAGMA foreign_key_check").fetchall() == []
+    finally:
+        conn.close()
+
+
+def test_atomic_migration_helper_rejects_embedded_transaction_control():
+    conn = sqlite3.connect(":memory:")
+    try:
+        with pytest.raises(sqlite3.OperationalError, match="transaction-control"):
+            migrations._begin_atomic_sql_script(
+                conn,
+                "BEGIN; CREATE TABLE forbidden(id INTEGER); COMMIT;",
+            )
+        assert conn.execute(
+            "SELECT COUNT(*) FROM sqlite_master WHERE name='forbidden'"
+        ).fetchone()[0] == 0
+    finally:
+        conn.close()
+
