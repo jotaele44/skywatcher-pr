@@ -105,6 +105,15 @@ CREATE TABLE IF NOT EXISTS swk_implication (
      'SUPERSEDES','NO_MATERIAL_CHANGE')),
   statement TEXT NOT NULL CHECK(length(trim(statement))>0),
   scope_json TEXT NOT NULL CHECK(json_valid(scope_json)),
+  limitations_json TEXT NOT NULL DEFAULT '[]' CHECK(
+    json_valid(limitations_json) AND json_type(limitations_json)='array'
+  ),
+  alternatives_json TEXT NOT NULL DEFAULT '[]' CHECK(
+    json_valid(alternatives_json) AND json_type(alternatives_json)='array'
+  ),
+  falsifiers_json TEXT NOT NULL DEFAULT '[]' CHECK(
+    json_valid(falsifiers_json) AND json_type(falsifiers_json)='array'
+  ),
   ruleset_version TEXT NOT NULL,
   dependency_sha256 TEXT NOT NULL CHECK(
     length(dependency_sha256)=64 AND dependency_sha256 NOT GLOB '*[^0-9a-f]*'
@@ -324,7 +333,8 @@ BEGIN SELECT RAISE(ABORT,'PASS support is immutable; reopen first'); END;
 -- by adding another object, never edited in place.
 CREATE TRIGGER IF NOT EXISTS tr_swk_pass_content_immutable
 BEFORE UPDATE OF analysis_owner,domain_scope_json,implication_type,epistemic_class,
-                 delta_type,statement,scope_json,ruleset_version,dependency_sha256,run_id
+                 delta_type,statement,scope_json,limitations_json,alternatives_json,
+                 falsifiers_json,ruleset_version,dependency_sha256,run_id
 ON swk_implication
 WHEN OLD.certification_state='PASS'
 BEGIN SELECT RAISE(ABORT,'certified implication is immutable; supersede it'); END;
