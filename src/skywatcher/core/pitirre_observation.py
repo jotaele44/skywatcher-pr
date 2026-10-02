@@ -144,8 +144,8 @@ def adapt_maritime_baseline(row: Mapping[str, Any]) -> PitirreObservation:
     observation_id = _required_text(row, "record_id")
     event_time = _required_text(row, "observed_at")
     source_id = _required_text(row, "source")
-    lat = _required_number(row, "lat")
-    lon = _required_number(row, "lon")
+    lat = _required_coordinate(row, "lat", minimum=-90, maximum=90)
+    lon = _required_coordinate(row, "lon", minimum=-180, maximum=180)
 
     return _envelope(
         row=row,
