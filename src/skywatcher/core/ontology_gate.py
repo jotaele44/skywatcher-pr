@@ -19,6 +19,7 @@ REQUIRED_CONFIGS = [
     "hangar_registry.yaml",
     "lz_registry.yaml",
     "poi_registry.yaml",
+    "fr24_poi_icon_registry.json",
     "operator_registry.yaml",
     "facility_operator_registry.yaml",
     "aircraft_aliases.yaml",
@@ -103,6 +104,18 @@ def run_gate(config_dir: Path = Path("configs")) -> dict[str, object]:
         ]:
             if principles.get(required_rule) is not True:
                 failures.append(f"location naming guardrail missing or false: {required_rule}")
+
+    fr24_icon_path = config_dir / "fr24_poi_icon_registry.json"
+    if fr24_icon_path.exists():
+        from skywatcher.registry.fr24_poi_icons import validate_registry_file
+
+        try:
+            icon_registry = validate_registry_file(fr24_icon_path)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            failures.append(f"fr24 POI icon registry unreadable: {exc}")
+        else:
+            for failure in icon_registry.get("failures", []):
+                failures.append(f"fr24 POI icon registry failed validation: {failure}")
 
     facility_operator_path = config_dir / "facility_operator_registry.yaml"
     if facility_operator_path.exists():
