@@ -210,7 +210,7 @@
       "classification": "internal",
       "status": "active",
       "requires_terminal": false,
-      "rationale": "Read-only acquisition, provenance, schema, rate-limit, normalization, and immutable-storage infrastructure. It exposes no standalone human workflow; future Space-Track dashboard/status capabilities must be separately GUI-mapped when API endpoints are added.",
+      "rationale": "Read-only acquisition, provenance, schema, rate-limit, normalization, and immutable-storage infrastructure. It exposes no standalone human workflow; future Space-Track dashboard/status capabilities must be separately GUI-mapped when API endpoints are added. Decay-role normalization preserves UNRESOLVED for unrecognized precedence; it does not infer historical assertions from missing evidence.",
       "backend": {
         "files": [
           "src/skywatcher/core/spacetrack/__init__.py",

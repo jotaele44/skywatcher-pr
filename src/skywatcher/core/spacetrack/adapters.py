@@ -70,6 +70,7 @@ def normalize_decay(row: dict[str, Any]) -> dict[str, Any]:
     raw = _raw_copy(row)
     precedence = raw.get("PRECEDENCE")
     source = _string_or_none(raw.get("SOURCE"))
+    stage = classify_decay_stage(precedence)
     return {
         "norad_cat_id": _string_or_none(raw.get("NORAD_CAT_ID")),
         "object_id": _string_or_none(raw.get("INTLDES") or raw.get("OBJECT_ID")),
@@ -78,11 +79,13 @@ def normalize_decay(row: dict[str, Any]) -> dict[str, Any]:
         "decay_epoch": _string_or_none(raw.get("DECAY_EPOCH")),
         "source": source,
         "precedence": precedence,
-        "decay_stage": classify_decay_stage(precedence),
+        "decay_stage": stage,
         "assertion_role": (
             "PREDICTION"
             if source in {"60day_msg", "tip_msg"} or str(precedence) in {"3", "4"}
             else "HISTORICAL"
+            if stage in {"SATCAT_CURRENT_DECAY", "DECAY_ANNOUNCEMENT"}
+            else "UNRESOLVED"
         ),
         "raw": raw,
     }

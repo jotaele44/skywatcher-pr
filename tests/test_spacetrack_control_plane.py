@@ -13,17 +13,17 @@ from skywatcher.core.spacetrack.certification import (
     certify_static_contracts,
 )
 from skywatcher.core.spacetrack.collector import SpaceTrackCollector
-from skywatcher.core.spacetrack.contradictions import ContradictionRegister
 from skywatcher.core.spacetrack.contracts import SOURCE_CONTRACTS, get_source_contract
+from skywatcher.core.spacetrack.contradictions import ContradictionRegister
 from skywatcher.core.spacetrack.control_plane import (
+    RateGate,
+    SpaceTrackControlPlane,
     archive_snapshot,
     classify_archive_equivalence,
     classify_decay_stage,
-    RateGate,
     schema_snapshot,
     set_comparison,
     source_arithmetic,
-    SpaceTrackControlPlane,
 )
 from skywatcher.core.spacetrack.materialize import (
     materialize_space_objects,
@@ -39,7 +39,6 @@ from skywatcher.core.spacetrack.query import build_incremental_query
 from skywatcher.core.spacetrack.reentry import materialize_reentry_events
 from skywatcher.core.spacetrack.storage import SpaceTrackStore
 from skywatcher.core.spacetrack.transport import TransportResponse
-
 
 UTC = timezone.utc
 
@@ -789,3 +788,33 @@ def test_collector_classifies_unauthorized_controller_without_guessing(tmp_path)
     result = collector.collect_json("organization", now=now)
     assert result.state is CertificationState.BLOCKED
     assert result.blocker == "UNAUTHORIZED"
+
+
+@pytest.mark.parametrize("precedence", [None, "unexpected", "", 0, 5])
+def test_unknown_decay_precedence_preserves_unresolved_role(precedence):
+    source = {
+        "NORAD_CAT_ID": "123456789",
+        "PRECEDENCE": precedence,
+        "DECAY_EPOCH": "2026-10-01T00:00:00Z",
+        "raw_note": " preserve  spacing ",
+    }
+    normalized = normalize_decay(source)
+    assert normalized["decay_stage"] == "UNRESOLVED"
+    assert normalized["assertion_role"] == "UNRESOLVED"
+    assert normalized["raw"] == source
+    events, contradictions = materialize_reentry_events([normalized], [])
+    assert events[0].canonical_decay_date is None
+    assert events[0].assertions[0].role == "UNRESOLVED"
+    assert contradictions == ()
+
+
+@pytest.mark.parametrize("precedence,role", [(1, "HISTORICAL"), (2, "HISTORICAL"), (3, "PREDICTION"), (4, "PREDICTION")])
+def test_recognized_decay_roles_remain_compatible(precedence, role):
+    normalized = normalize_decay({"PRECEDENCE": precedence})
+    assert normalized["assertion_role"] == role
+
+
+@pytest.mark.parametrize("source", ["tip_msg", "60day_msg"])
+def test_explicit_prediction_source_never_becomes_historical(source):
+    normalized = normalize_decay({"SOURCE": source, "PRECEDENCE": 2})
+    assert normalized["assertion_role"] == "PREDICTION"
