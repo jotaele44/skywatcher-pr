@@ -186,6 +186,7 @@ def validate_gold_review(
     gold_path: Path,
     *,
     expected_records: int = EXPECTED_GOLD_RECORDS,
+    corpus_root: Path | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     rows = _load_records(gold_path)
     errors: list[dict[str, Any]] = []
@@ -199,6 +200,8 @@ def validate_gold_review(
         )
     resolved_rows: list[dict[str, Any]] = []
     seen: set[int] = set()
+    source_bytes_verified = 0
+    source_byte_failures = 0
     with _open_readonly(rlsm_db) as conn:
         _require_tables(conn, {"screenshots"}, "RLSM")
         for index, row in enumerate(rows):
@@ -241,12 +244,44 @@ def validate_gold_review(
                         "screenshot_id": sid,
                     }
                 )
+            source_sha = str(screenshot["sha256"]).lower()
+            rel_path = str(screenshot["rel_path"])
+            if corpus_root is not None:
+                relative = Path(rel_path)
+                canonical_prefix = Path("data") / "FR24_baseline"
+                try:
+                    relative = relative.relative_to(canonical_prefix)
+                except ValueError:
+                    pass
+                source_path = corpus_root / relative
+                if not source_path.is_file():
+                    source_byte_failures += 1
+                    errors.append(
+                        {
+                            "kind": "gold_source_missing",
+                            "index": index,
+                            "screenshot_id": sid,
+                            "path": str(source_path),
+                        }
+                    )
+                elif sha256_file(source_path).lower() != source_sha:
+                    source_byte_failures += 1
+                    errors.append(
+                        {
+                            "kind": "gold_source_sha256_mismatch",
+                            "index": index,
+                            "screenshot_id": sid,
+                            "path": str(source_path),
+                        }
+                    )
+                else:
+                    source_bytes_verified += 1
             resolved_rows.append(
                 {
                     "screenshot_id": sid,
-                    "sha256": str(screenshot["sha256"]).lower(),
+                    "sha256": source_sha,
                     "filename": str(screenshot["filename"]),
-                    "rel_path": str(screenshot["rel_path"]),
+                    "rel_path": rel_path,
                     "gold_annotator": annotator,
                     "gold_reviewer": reviewer,
                 }
@@ -255,6 +290,8 @@ def validate_gold_review(
         "records": len(rows),
         "expected_records": expected_records,
         "unique_resolved_records": len(seen),
+        "source_bytes_verified": source_bytes_verified,
+        "source_byte_failures": source_byte_failures,
         "error_count": len(errors),
         "status": "PASS" if not errors and len(rows) == expected_records else "FAIL",
     }
@@ -628,7 +665,11 @@ def preflight(
         )
     if not corpus_root.is_dir():
         raise OperatorCertificationError(f"corpus root not found: {corpus_root}")
-    gold_metrics, _ = validate_gold_review(rlsm_db, gold_path)
+    gold_metrics, _ = validate_gold_review(
+        rlsm_db,
+        gold_path,
+        corpus_root=corpus_root,
+    )
     with _open_readonly(rlsm_db) as rlsm:
         _require_tables(
             rlsm,
@@ -647,6 +688,10 @@ def preflight(
         )
         mfl_records = int(
             mfl.execute("SELECT COUNT(*) FROM flight_corpus_records").fetchone()[0]
+        )
+    if any(migration.version == 4 for migration in database_migrations.MIGRATIONS):
+        raise OperatorCertificationError(
+            "migration 0004 is registered; operator certification requires it disabled"
         )
     return {
         "schema_version": SCHEMA_VERSION,
