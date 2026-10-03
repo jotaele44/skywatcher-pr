@@ -330,8 +330,10 @@ def test_gold_identity_conflict_fails_closed(tmp_path: Path) -> None:
 
 
 def test_missing_operator_database_fails_closed(tmp_path: Path) -> None:
+    gold = tmp_path / "present.jsonl"
+    gold.write_text("", encoding="utf-8")
     with pytest.raises(OperatorCertificationError, match="database not found"):
-        validate_gold_review(tmp_path / "missing.sqlite", tmp_path / "missing.jsonl")
+        validate_gold_review(tmp_path / "missing.sqlite", gold)
 
 def test_gold_source_byte_mutation_fails_when_corpus_is_verified(tmp_path: Path) -> None:
     rlsm, _mfl, corpus, gold = _make_operator_fixture(tmp_path)
