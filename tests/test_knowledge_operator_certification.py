@@ -184,13 +184,12 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
 def test_gold_review_requires_exact_independent_300(tmp_path: Path) -> None:
     rlsm, _mfl, _corpus, gold = _make_operator_fixture(tmp_path)
     metrics, resolved = validate_gold_review(rlsm, gold)
-    assert metrics == {
-        "records": 300,
-        "expected_records": 300,
-        "unique_resolved_records": 300,
-        "error_count": 0,
-        "status": "PASS",
-    }
+    assert metrics["records"] == 300
+    assert metrics["expected_records"] == 300
+    assert metrics["unique_resolved_records"] == 300
+    assert metrics["source_byte_failures"] == 0
+    assert metrics["error_count"] == 0
+    assert metrics["status"] == "PASS"
     assert len(resolved) == 300
 
     rows = gold.read_text(encoding="utf-8").splitlines()
@@ -333,3 +332,50 @@ def test_gold_identity_conflict_fails_closed(tmp_path: Path) -> None:
 def test_missing_operator_database_fails_closed(tmp_path: Path) -> None:
     with pytest.raises(OperatorCertificationError, match="database not found"):
         validate_gold_review(tmp_path / "missing.sqlite", tmp_path / "missing.jsonl")
+
+def test_gold_source_byte_mutation_fails_when_corpus_is_verified(tmp_path: Path) -> None:
+    rlsm, _mfl, corpus, gold = _make_operator_fixture(tmp_path)
+    metrics, _ = validate_gold_review(rlsm, gold, corpus_root=corpus)
+    assert metrics["status"] == "PASS"
+    assert metrics["source_bytes_verified"] == 300
+    assert metrics["source_manifest_sha256"]
+
+    (corpus / "frame-0001.png").write_bytes(b"mutated")
+    metrics, _ = validate_gold_review(rlsm, gold, corpus_root=corpus)
+    assert metrics["status"] == "FAIL"
+    assert metrics["source_byte_failures"] == 1
+
+
+def test_blocked_package_cannot_contain_pass_implications(tmp_path: Path) -> None:
+    rlsm, mfl, _corpus, gold = _make_operator_fixture(tmp_path)
+    candidates, _ = discover_binding_candidates(rlsm, mfl, gold)
+    reviewed = _review(candidates)
+    review = tmp_path / "review.jsonl"
+    _write_jsonl(review, reviewed)
+
+    sidecar = tmp_path / "blocked-sidecar.sqlite"
+    materialize_review_sidecar(
+        sidecar_path=sidecar,
+        schema_sql=(
+            REPO / "schemas" / "knowledge_implications_v1.sql"
+        ).read_text(encoding="utf-8"),
+        reviewed_rows=reviewed,
+        rlsm_db_sha256=sha256_file(rlsm),
+        mfl_db_sha256=sha256_file(mfl),
+        gold_sha256=sha256_file(gold),
+        review_sha256=sha256_file(review),
+        git_sha="b" * 40,
+        package_status="BLOCKED",
+    )
+    conn = sqlite3.connect(sidecar)
+    assert conn.execute(
+        "SELECT COUNT(*) FROM swk_implication WHERE certification_state='PASS'"
+    ).fetchone()[0] == 0
+    assert conn.execute(
+        "SELECT COUNT(*) FROM swk_subject_ref WHERE identity_state='PASS'"
+    ).fetchone()[0] == 0
+    assert conn.execute(
+        "SELECT certification_state FROM swk_knowledge_state"
+    ).fetchone()[0] == "BLOCKED"
+    conn.close()
+
