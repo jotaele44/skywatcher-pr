@@ -21,12 +21,18 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from jsonschema import Draft202012Validator
+
 from ..fr24 import database_migrations
 from .knowledge_implications import canonical_json
 
 SCHEMA_VERSION = "skywatcher.operator-certification.v1"
 REVIEW_SCHEMA_VERSION = "skywatcher.operator-binding-review.v1"
 EXPECTED_GOLD_RECORDS = 300
+REPO_ROOT = Path(__file__).resolve().parents[3]
+REVIEW_SCHEMA_PATH = (
+    REPO_ROOT / "schemas" / "knowledge" / "operator_binding_review.v1.schema.json"
+)
 
 DISCOVERY_BASES = {
     "CALLSIGN_EXACT_CASEFOLD",
@@ -535,6 +541,30 @@ def write_review_template(
     )
 
 
+def _validate_review_schema(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    if not REVIEW_SCHEMA_PATH.is_file():
+        raise OperatorCertificationError(
+            f"binding review schema not found: {REVIEW_SCHEMA_PATH}"
+        )
+    schema = json.loads(REVIEW_SCHEMA_PATH.read_text(encoding="utf-8"))
+    validator = Draft202012Validator(schema)
+    errors: list[dict[str, Any]] = []
+    for index, row in enumerate(rows):
+        for error in sorted(
+            validator.iter_errors(dict(row)),
+            key=lambda item: (tuple(str(part) for part in item.path), item.message),
+        ):
+            errors.append(
+                {
+                    "kind": "review_schema_error",
+                    "index": index,
+                    "path": "/".join(str(part) for part in error.path),
+                    "error": error.message,
+                }
+            )
+    return errors
+
+
 def _review_core(row: Mapping[str, Any]) -> dict[str, Any]:
     keys = (
         "schema_version",
@@ -555,7 +585,7 @@ def validate_binding_review(
     review = _load_records(review_path)
     expected = {str(row["candidate_id"]): row for row in candidates}
     actual: dict[str, dict[str, Any]] = {}
-    errors: list[dict[str, Any]] = []
+    errors: list[dict[str, Any]] = _validate_review_schema(review)
     for index, row in enumerate(review):
         candidate_id = str(row.get("candidate_id") or "")
         if not candidate_id or candidate_id in actual:
@@ -1333,11 +1363,23 @@ def certify_operator_package(
         },
     }
     report_path = output_dir / "operator_certification_report.json"
+    markdown_path = output_dir / "operator_certification_report.md"
+    report["outputs"] = {
+        "json": str(report_path),
+        "markdown": str(markdown_path),
+        "sidecar": (
+            str(output_dir / "operator_sidecar.sqlite")
+            if sidecar.get("path")
+            else None
+        ),
+        "frozen_review": str(frozen_review_path),
+        "candidate_manifest": str(current_manifest_path),
+        "candidate_rows": str(current_candidates_path),
+    }
     report_path.write_text(
         json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
-    markdown_path = output_dir / "operator_certification_report.md"
     markdown_path.write_text(
         "\n".join(
             [
@@ -1360,16 +1402,4 @@ def certify_operator_package(
         ),
         encoding="utf-8",
     )
-    report["outputs"] = {
-        "json": str(report_path),
-        "markdown": str(markdown_path),
-        "sidecar": (
-            str(output_dir / "operator_sidecar.sqlite")
-            if sidecar.get("path")
-            else None
-        ),
-        "frozen_review": str(frozen_review_path),
-        "candidate_manifest": str(current_manifest_path),
-        "candidate_rows": str(current_candidates_path),
-    }
     return report
