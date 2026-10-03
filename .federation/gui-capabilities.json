@@ -512,7 +512,14 @@
         "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:materialize_review_sidecar",
         "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:certify_operator_package",
         "python_module:scripts/knowledge_operator_certification.py",
-        "python_symbol:scripts/knowledge_operator_certification.py:main"
+        "python_symbol:scripts/knowledge_operator_certification.py:main",
+        "analysis_module:scripts/knowledge_operator_certification.py",
+        "analysis_symbol:scripts/knowledge_operator_certification.py:main",
+        "cli_surface:scripts/knowledge_operator_certification.py",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:OperatorCertificationError",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:git_head",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:sha256_canonical",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:sha256_file"
       ]
     }
   ]
