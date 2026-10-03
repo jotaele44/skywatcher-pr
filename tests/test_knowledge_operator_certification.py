@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from pathlib import Path
@@ -54,8 +55,10 @@ def _make_operator_fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
     )
     gold_rows = []
     for index in range(1, 301):
-        sha = f"{index:064x}"[-64:]
         filename = f"frame-{index:04d}.png"
+        payload = f"fixture-frame-{index}".encode("utf-8")
+        sha = hashlib.sha256(payload).hexdigest()
+        (corpus / filename).write_bytes(payload)
         rel_path = f"data/FR24_baseline/{filename}"
         conn.execute(
             "INSERT INTO screenshots VALUES(?,?,?,?,?,?)",
