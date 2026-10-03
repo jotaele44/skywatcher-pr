@@ -190,7 +190,9 @@ python3 scripts/knowledge_operator_certification.py certify \
   --output-dir "$OUT"
 ```
 
-The command re-hashes RLSM, MFL, gold, and binding-review inputs; re-runs the current RLSM v2 audit; recomputes the candidate denominator from the frozen local databases; verifies that the reviewed file contains the exact candidate set; requires every candidate to have a terminal review decision; requires both positive and negative controls; and writes the reviewed implications to a scratch database.
+The command freezes the reviewed JSONL bytes at start; validates every row against `schemas/knowledge/operator_binding_review.v1.schema.json`; hashes both raw database files and consistent logical SQLite snapshots; re-verifies the 300 source-image bytes and their manifest after audit; re-runs the current RLSM v2 audit; recomputes the candidate denominator from the frozen local databases; verifies that the reviewed file contains the exact candidate set; requires every candidate to have a terminal review decision; requires both positive and negative controls; and writes the reviewed implications to a scratch database only when the review contract itself is not FAIL.
+
+A scratch sidecar is immutable with respect to its frozen input manifest. An identical rerun may reuse it; changed inputs at the same output path fail closed instead of overwriting prior evidence. Use a new output directory for a materially changed review.
 
 A certification run returns:
 
@@ -218,6 +220,8 @@ Required report claims for any PASS:
 
 ```text
 inputs_stable_during_certification = true
+gold_review.source_byte_failures = 0
+gold_review.source_manifest_sha256 = <frozen SHA-256>
 candidate_discovery_exhaustive_within_declared_rules = true
 candidate_discovery_universal = false
 canonical_event_count_changed = false
