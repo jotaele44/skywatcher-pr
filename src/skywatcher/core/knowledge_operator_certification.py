@@ -798,13 +798,6 @@ def materialize_review_sidecar(
     git_sha: str,
     package_status: str,
 ) -> dict[str, Any]:
-    if sidecar_path.exists():
-        sidecar_path.unlink()
-    sidecar_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(sidecar_path)
-    conn.execute("PRAGMA foreign_keys = ON")
-    _apply_sidecar_schema(conn, schema_sql)
-
     manifest = {
         "git_sha": git_sha,
         "rlsm_db_sha256": rlsm_db_sha256,
@@ -814,6 +807,41 @@ def materialize_review_sidecar(
         "candidate_ids": sorted(str(row["candidate_id"]) for row in reviewed_rows),
     }
     input_sha = sha256_canonical(manifest)
+    if sidecar_path.exists():
+        existing = sqlite3.connect(f"file:{sidecar_path.resolve()}?mode=ro", uri=True)
+        try:
+            row = existing.execute(
+                """
+                SELECT input_manifest_sha256
+                FROM swk_knowledge_run
+                ORDER BY rowid
+                LIMIT 1
+                """
+            ).fetchone()
+        except sqlite3.Error as exc:
+            raise OperatorCertificationError(
+                "existing scratch sidecar is unreadable; use a new output directory"
+            ) from exc
+        finally:
+            existing.close()
+        if row is None or str(row[0]) != input_sha:
+            raise OperatorCertificationError(
+                "scratch sidecar already exists for different inputs; "
+                "use a new output directory"
+            )
+        return {
+            "path": str(sidecar_path),
+            "sha256": sha256_file(sidecar_path),
+            "run_id": f"opcert-{input_sha[:20]}",
+            "reused_identical_inputs": True,
+            "canonical_event_count_claimed": False,
+            "migration_0004_registered": False,
+        }
+
+    sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(sidecar_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    _apply_sidecar_schema(conn, schema_sql)
     ruleset_sha = sha256_canonical(
         {
             "schema_version": SCHEMA_VERSION,
@@ -1186,6 +1214,7 @@ def materialize_review_sidecar(
         "run_id": run_id,
         "state_id": state_id,
         "counts": counts,
+        "reused_identical_inputs": False,
         "canonical_event_count_claimed": False,
         "migration_0004_registered": False,
     }
