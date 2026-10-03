@@ -473,6 +473,17 @@ def test_scratch_sidecar_reuses_identical_inputs_but_preserves_changed_run(
         match="already exists for different inputs",
     ):
         materialize_review_sidecar(**changed)
+
+    changed_status = dict(kwargs)
+    changed_status["package_status"] = "BLOCKED"
+    with pytest.raises(
+        OperatorCertificationError,
+        match="already exists for different inputs",
+    ):
+        materialize_review_sidecar(**changed_status)
+
+    assert second["state_id"] == first["state_id"]
+    assert second["counts"] == first["counts"]
     assert Path(kwargs["sidecar_path"]).is_file()
     assert sha256_file(Path(kwargs["sidecar_path"])) == first["sha256"]
 
