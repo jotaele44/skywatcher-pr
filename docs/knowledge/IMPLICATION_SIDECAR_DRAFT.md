@@ -22,7 +22,7 @@ Normative ownership follows ontology v2.0 as amended by active v2.1, while the r
 - `.federation/gui-capabilities.json`: one explicit expiring draft exception for the internal Core module/symbols; this does not claim GUI parity for an inactive capability.
 - `src/skywatcher/core/knowledge_operator_certification.py` + `scripts/knowledge_operator_certification.py`: read-only operator-corpus certification package; it freezes RLSM/MFL/gold hashes, generates a bounded gold-300 screenshot↔MFL candidate union, validates reviewed positive/negative controls, runs the existing RLSM v2 audit, and writes only a scratch sidecar.
 - `schemas/knowledge/operator_binding_review.v1.schema.json`: immutable candidate-core + operator decision contract.
-- `tests/test_knowledge_operator_certification.py`: operator package regression fixtures; repository tests do not substitute for local corpus execution.
+- `tests/test_knowledge_operator_certification.py`: 13 operator-package regression gates covering the gold-300 denominator, bounded candidate union, strong positive/negative controls, JSON-Schema review validation, source-byte drift, logical database freezing, fail-closed blocked/failed materialization, and immutable scratch-sidecar reuse. Repository tests do not substitute for local corpus execution.
 - `docs/knowledge/OPERATOR_CORPUS_CERTIFICATION_RUNBOOK.md`: exact local commands and PASS boundary.
 - `docs/SKILL_UPGRADE_CANDIDATE.md`: draft-branch skill amendment.
 
@@ -57,6 +57,7 @@ These are representative repository fixtures, **not the operator-local corpus** 
 | Deliberate DDL-failure rollback | Implemented; final CI must PASS |
 | Hash/delta/lineage/stale-invalidation hardening | Implemented; final CI must PASS |
 | Operator-corpus screenshot ↔ MFL certification tooling | Implemented; final CI must PASS |
+| Operator review schema / source-byte / logical-SQLite freeze | Implemented; final CI must PASS |
 | Genuine operator-corpus screenshot ↔ MFL adjudication | **BLOCKED — runbook must execute on machine-local corpus** |
 | Operator-local full RLSM replay and gold sample | **BLOCKED — exact local command is now defined; evidence remains external to GitHub CI** |
 | Released 0001–0003 migration transaction hardening | Implemented; final CI must PASS |
