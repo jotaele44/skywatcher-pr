@@ -78,7 +78,7 @@
       "properties": {
         "adapter_version": {"const": "pitirre-observation-adapter-v0.1"},
         "legacy_contract": {
-          "enum": ["airspace_observation", "maritime_baseline"]
+          "enum": ["airspace_observation", "maritime_baseline", "spacetrack_normalized_gp"]
         }
       }
     }
