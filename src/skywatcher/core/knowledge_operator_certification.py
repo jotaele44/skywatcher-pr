@@ -803,6 +803,7 @@ def materialize_review_sidecar(
         "mfl_db_sha256": mfl_db_sha256,
         "gold_sha256": gold_sha256,
         "review_sha256": review_sha256,
+        "package_status": package_status,
         "candidate_ids": sorted(str(row["candidate_id"]) for row in reviewed_rows),
     }
     input_sha = sha256_canonical(manifest)
@@ -828,10 +829,33 @@ def materialize_review_sidecar(
                 "scratch sidecar already exists for different inputs; "
                 "use a new output directory"
             )
+        run_id = f"opcert-{input_sha[:20]}"
+        existing = sqlite3.connect(f"file:{sidecar_path.resolve()}?mode=ro", uri=True)
+        try:
+            state_row = existing.execute(
+                "SELECT state_id FROM swk_knowledge_state WHERE run_id=?",
+                (run_id,),
+            ).fetchone()
+            counts = {
+                table: int(
+                    existing.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                )
+                for table in (
+                    "swk_source_artifact",
+                    "swk_artifact_manifestation",
+                    "swk_subject_ref",
+                    "swk_implication",
+                    "swk_knowledge_state",
+                )
+            }
+        finally:
+            existing.close()
         return {
             "path": str(sidecar_path),
             "sha256": sha256_file(sidecar_path),
-            "run_id": f"opcert-{input_sha[:20]}",
+            "run_id": run_id,
+            "state_id": state_row[0] if state_row is not None else None,
+            "counts": counts,
             "reused_identical_inputs": True,
             "canonical_event_count_claimed": False,
             "migration_0004_registered": False,
