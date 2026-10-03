@@ -138,7 +138,6 @@ notes
 At least one independent strong basis is mandatory:
 
 ```text
-DISPLAYED_SOURCE_FLIGHT_ID
 NATIVE_TRACK_MATCH
 AUTHORITATIVE_SOURCE_LINK
 REVIEWED_TIME_ROUTE_CONTINUITY
@@ -149,6 +148,7 @@ and `independent_evidence_refs` must contain at least one concrete evidence refe
 The following are **insufficient by themselves**:
 
 ```text
+DISPLAYED_SOURCE_FLIGHT_ID
 CALLSIGN_ONLY
 REGISTRATION_ONLY
 SPATIAL_PROXIMITY
