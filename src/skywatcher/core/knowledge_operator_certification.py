@@ -318,7 +318,6 @@ def validate_gold_review(
                     "filename": str(screenshot["filename"]),
                     "rel_path": rel_path,
                     "gold_annotator": annotator,
-                    "gold_reviewer": reviewer,
                 }
             )
     metrics = {
