@@ -2,7 +2,7 @@
 
 **Status:** Draft-only; inactive.  
 **Original pinned parent:** `b9b1491c7662532476c053f404d422848c4f63e9`.  
-**Reconciled main:** `a43b730e2db58cd7a459b15a789eb690122021bc` (PITIRRE AIR | LAND | WATER | SPACE foundation).  
+**Reconciled main:** `093d53a67f4f3f326b46fcf1f8083e943c337ef0` (current PITIRRE AIR | LAND | WATER | SPACE foundation plus Space-Track/frontend integration).  
 **Scope:** Additive sidecar schema, deterministic Core primitives, and certification tests. There is **no** normal-startup database hook, migration 0004 registration, operational ingestion, API/GUI consumer, MFL rewrite, or production certification.
 
 ## Repo-grounded contracts
@@ -20,7 +20,11 @@ Normative ownership follows ontology v2.0 as amended by active v2.1, while the r
 - `tests/test_knowledge_implications_existing_db_integration.py`: 4 representative integration gates against released 0001 and 0003 database states.
 - `skills/skywatcher-fr24-image-analysis/SKILL.md`: existing skill upgraded with an activation-gated cumulative implication handoff; the stage must report `NOT_ENABLED` until sidecar activation gates close.
 - `.federation/gui-capabilities.json`: one explicit expiring draft exception for the internal Core module/symbols; this does not claim GUI parity for an inactive capability.
-- `docs/SKILL_UPGRADE_CANDIDATE.md`: proposed, uninstalled operational skill amendment.
+- `src/skywatcher/core/knowledge_operator_certification.py` + `scripts/knowledge_operator_certification.py`: read-only operator-corpus certification package; it freezes RLSM/MFL/gold hashes, generates a bounded gold-300 screenshot↔MFL candidate union, validates reviewed positive/negative controls, runs the existing RLSM v2 audit, and writes only a scratch sidecar.
+- `schemas/knowledge/operator_binding_review.v1.schema.json`: immutable candidate-core + operator decision contract.
+- `tests/test_knowledge_operator_certification.py`: operator package regression fixtures; repository tests do not substitute for local corpus execution.
+- `docs/knowledge/OPERATOR_CORPUS_CERTIFICATION_RUNBOOK.md`: exact local commands and PASS boundary.
+- `docs/SKILL_UPGRADE_CANDIDATE.md`: draft-branch skill amendment.
 
 ## Hardened invariants
 
@@ -52,8 +56,9 @@ These are representative repository fixtures, **not the operator-local corpus** 
 | 0001 and 0003 isolated compatibility tests | Implemented; final CI must PASS |
 | Deliberate DDL-failure rollback | Implemented; final CI must PASS |
 | Hash/delta/lineage/stale-invalidation hardening | Implemented; final CI must PASS |
-| Genuine operator-corpus screenshot ↔ MFL adjudication | **BLOCKED — corpus is machine-local** |
-| Operator-local full RLSM replay and gold sample | **BLOCKED — external to GitHub CI** |
+| Operator-corpus screenshot ↔ MFL certification tooling | Implemented; final CI must PASS |
+| Genuine operator-corpus screenshot ↔ MFL adjudication | **BLOCKED — runbook must execute on machine-local corpus** |
+| Operator-local full RLSM replay and gold sample | **BLOCKED — exact local command is now defined; evidence remains external to GitHub CI** |
 | Released 0001–0003 migration transaction hardening | Implemented; final CI must PASS |
 | Exact prospective 0004 migration-ledger atomicity | Implemented; final CI must PASS |
 | Migration 0004 registration | **BLOCKED** until operator-corpus gates close; registration itself remains intentionally absent |
