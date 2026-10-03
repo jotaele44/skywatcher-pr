@@ -1174,7 +1174,10 @@ def certify_operator_package(
     audit_runner: Callable[..., Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    review_sha_before = sha256_file(review_path)
+    review_bytes = review_path.read_bytes()
+    review_sha_before = hashlib.sha256(review_bytes).hexdigest()
+    frozen_review_path = output_dir / "binding_review.frozen.jsonl"
+    frozen_review_path.write_bytes(review_bytes)
     before = preflight(
         repo_root=repo_root,
         rlsm_db=rlsm_db,
@@ -1189,7 +1192,7 @@ def certify_operator_package(
         gold_path,
     )
     binding_metrics, binding_errors = validate_binding_review(
-        review_path,
+        frozen_review_path,
         candidates,
     )
 
@@ -1250,7 +1253,7 @@ def certify_operator_package(
         status = "BLOCKED"
 
     reviewed_by_id = {
-        str(row["candidate_id"]): row for row in _load_records(review_path)
+        str(row["candidate_id"]): row for row in _load_records(frozen_review_path)
     }
     reviewed_rows = [
         reviewed_by_id[row["candidate_id"]]
@@ -1260,17 +1263,25 @@ def certify_operator_package(
     sidecar_schema = (
         repo_root / "schemas" / "knowledge_implications_v1.sql"
     ).read_text(encoding="utf-8")
-    sidecar = materialize_review_sidecar(
-        sidecar_path=output_dir / "operator_sidecar.sqlite",
-        schema_sql=sidecar_schema,
-        reviewed_rows=reviewed_rows,
-        rlsm_db_sha256=after_hashes["rlsm_db_logical_sha256"],
-        mfl_db_sha256=after_hashes["mfl_db_logical_sha256"],
-        gold_sha256=after_hashes["gold_sha256"],
-        review_sha256=after_hashes["review_sha256"],
-        git_sha=before["git_sha"],
-        package_status=status,
-    )
+    if binding_metrics["status"] == "FAIL":
+        sidecar = {
+            "status": "NOT_MATERIALIZED",
+            "reason": "binding_review_failed",
+            "migration_0004_registered": False,
+            "canonical_event_count_claimed": False,
+        }
+    else:
+        sidecar = materialize_review_sidecar(
+            sidecar_path=output_dir / "operator_sidecar.sqlite",
+            schema_sql=sidecar_schema,
+            reviewed_rows=reviewed_rows,
+            rlsm_db_sha256=after_hashes["rlsm_db_logical_sha256"],
+            mfl_db_sha256=after_hashes["mfl_db_logical_sha256"],
+            gold_sha256=after_hashes["gold_sha256"],
+            review_sha256=review_sha_before,
+            git_sha=before["git_sha"],
+            package_status=status,
+        )
 
     current_candidates_path = output_dir / "binding_candidates.recomputed.jsonl"
     current_manifest_path = output_dir / "binding_candidate_manifest.json"
@@ -1296,6 +1307,8 @@ def certify_operator_package(
             "gold_sha256": after_hashes["gold_sha256"],
             "review_path": str(review_path),
             "review_sha256": after_hashes["review_sha256"],
+            "frozen_review_path": str(frozen_review_path),
+            "frozen_review_sha256": review_sha_before,
             "corpus_root": str(corpus_root),
             "inputs_stable_during_certification": stable,
         },
@@ -1350,7 +1363,12 @@ def certify_operator_package(
     report["outputs"] = {
         "json": str(report_path),
         "markdown": str(markdown_path),
-        "sidecar": str(output_dir / "operator_sidecar.sqlite"),
+        "sidecar": (
+            str(output_dir / "operator_sidecar.sqlite")
+            if sidecar.get("path")
+            else None
+        ),
+        "frozen_review": str(frozen_review_path),
         "candidate_manifest": str(current_manifest_path),
         "candidate_rows": str(current_candidates_path),
     }
