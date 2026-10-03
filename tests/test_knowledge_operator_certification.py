@@ -156,8 +156,8 @@ def _review(candidates: list[dict]) -> list[dict]:
     assert len(reviewed) == 2
     first, second = reviewed
     first["decision"] = "SAME_EVENT"
-    first["decision_basis"] = ["DISPLAYED_SOURCE_FLIGHT_ID"]
-    first["independent_evidence_refs"] = ["screen:displayed-flight-id:flight-111"]
+    first["decision_basis"] = ["NATIVE_TRACK_MATCH"]
+    first["independent_evidence_refs"] = ["track:native:fixture-111"]
     first["reviewed_by"] = "binding-reviewer"
     first["reviewed_at"] = "2026-10-03T12:00:00Z"
     first["notes"] = "positive control"
@@ -511,4 +511,22 @@ def test_zero_unresolved_residue_required_for_operator_pass(tmp_path: Path) -> N
     assert metrics["positive_and_negative_controls_present"] is True
     assert metrics["unresolved"] == 1
     assert metrics["status"] == "BLOCKED"
+
+def test_displayed_source_flight_id_alone_cannot_close_same_event(
+    tmp_path: Path,
+) -> None:
+    rlsm, mfl, _corpus, gold = _make_operator_fixture(tmp_path)
+    candidates, _ = discover_binding_candidates(rlsm, mfl, gold)
+    reviewed = _review(candidates)
+    reviewed[0]["decision_basis"] = ["DISPLAYED_SOURCE_FLIGHT_ID"]
+    reviewed[0]["independent_evidence_refs"] = ["screen:displayed-flight-id:flight-111"]
+    review = tmp_path / "displayed-id-only.jsonl"
+    _write_jsonl(review, reviewed)
+
+    metrics, errors = validate_binding_review(review, candidates)
+    assert metrics["status"] == "FAIL"
+    assert any(
+        error["kind"] == "same_event_without_independent_strong_basis"
+        for error in errors
+    )
 
