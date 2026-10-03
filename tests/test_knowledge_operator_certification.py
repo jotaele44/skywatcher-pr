@@ -476,3 +476,28 @@ def test_scratch_sidecar_reuses_identical_inputs_but_preserves_changed_run(
     assert Path(kwargs["sidecar_path"]).is_file()
     assert sha256_file(Path(kwargs["sidecar_path"])) == first["sha256"]
 
+def test_zero_unresolved_residue_required_for_operator_pass(tmp_path: Path) -> None:
+    rlsm, mfl, _corpus, gold = _make_operator_fixture(tmp_path)
+    candidates, _ = discover_binding_candidates(rlsm, mfl, gold)
+    third = json.loads(json.dumps(candidates[0]))
+    third["candidate_id"] = "f" * 64
+    candidates = [*candidates, third]
+
+    reviewed = _review(candidates[:2])
+    unresolved = json.loads(json.dumps(third))
+    unresolved["decision"] = "UNRESOLVED"
+    unresolved["decision_basis"] = []
+    unresolved["independent_evidence_refs"] = []
+    unresolved["reviewed_by"] = "binding-reviewer"
+    unresolved["reviewed_at"] = "2026-10-03T12:10:00Z"
+    unresolved["notes"] = "insufficient independent evidence"
+    reviewed.append(unresolved)
+
+    review = tmp_path / "review-with-residue.jsonl"
+    _write_jsonl(review, reviewed)
+    metrics, errors = validate_binding_review(review, candidates)
+    assert errors == []
+    assert metrics["positive_and_negative_controls_present"] is True
+    assert metrics["unresolved"] == 1
+    assert metrics["status"] == "BLOCKED"
+
