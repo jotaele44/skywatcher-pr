@@ -56,7 +56,7 @@ def _make_operator_fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
     gold_rows = []
     for index in range(1, 301):
         filename = f"frame-{index:04d}.png"
-        payload = f"fixture-frame-{index}".encode("utf-8")
+        payload = f"fixture-frame-{index}".encode()
         sha = hashlib.sha256(payload).hexdigest()
         (corpus / filename).write_bytes(payload)
         rel_path = f"data/FR24_baseline/{filename}"
