@@ -379,3 +379,61 @@ def test_blocked_package_cannot_contain_pass_implications(tmp_path: Path) -> Non
     ).fetchone()[0] == "BLOCKED"
     conn.close()
 
+def test_binding_review_json_schema_rejects_unknown_fields(tmp_path: Path) -> None:
+    rlsm, mfl, _corpus, gold = _make_operator_fixture(tmp_path)
+    candidates, _ = discover_binding_candidates(rlsm, mfl, gold)
+    reviewed = _review(candidates)
+    reviewed[0]["invented_field"] = "must fail closed"
+    review = tmp_path / "review-schema-invalid.jsonl"
+    _write_jsonl(review, reviewed)
+
+    metrics, errors = validate_binding_review(review, candidates)
+    assert metrics["status"] == "FAIL"
+    assert any(error["kind"] == "review_schema_error" for error in errors)
+
+
+def test_failed_review_does_not_materialize_sidecar_and_report_freezes_outputs(
+    tmp_path: Path,
+) -> None:
+    rlsm, mfl, corpus, gold = _make_operator_fixture(tmp_path)
+    candidates, _ = discover_binding_candidates(rlsm, mfl, gold)
+    reviewed = _review(candidates)
+    reviewed[0]["decision_basis"] = ["CALLSIGN_ONLY"]
+    review = tmp_path / "review-invalid.jsonl"
+    _write_jsonl(review, reviewed)
+
+    def fake_audit(**kwargs):
+        out = Path(kwargs["outputs_dir"])
+        out.mkdir(parents=True, exist_ok=True)
+        return {
+            "certification_status": "PASS",
+            "required_gates": ["fixture"],
+            "gates": {"fixture": {"status": "PASS"}},
+            "error_count": 0,
+        }
+
+    output = tmp_path / "failed-out"
+    report = certify_operator_package(
+        repo_root=REPO,
+        rlsm_db=rlsm,
+        mfl_db=mfl,
+        corpus_root=corpus,
+        gold_path=gold,
+        review_path=review,
+        output_dir=output,
+        audit_runner=fake_audit,
+    )
+    assert report["certification_status"] == "FAIL"
+    assert report["sidecar"]["status"] == "NOT_MATERIALIZED"
+    assert report["outputs"]["sidecar"] is None
+    assert not (output / "operator_sidecar.sqlite").exists()
+    frozen = Path(report["outputs"]["frozen_review"])
+    assert frozen.is_file()
+    assert frozen.read_bytes() == review.read_bytes()
+
+    persisted = json.loads(
+        (output / "operator_certification_report.json").read_text(encoding="utf-8")
+    )
+    assert persisted["outputs"] == report["outputs"]
+    assert persisted["sidecar"]["status"] == "NOT_MATERIALIZED"
+
