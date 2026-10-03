@@ -1,6 +1,6 @@
 # Skill upgrade candidate — Skywatcher provenance-bound cumulative implication
 
-**State:** APPLIED_TO_EXISTING_FR24_IMAGE_SKILL_ON_DRAFT_BRANCH; NOT_MERGED. Operator-corpus validation and sidecar activation remain blocked.
+**State:** APPLIED_TO_EXISTING_FR24_IMAGE_SKILL_ON_DRAFT_BRANCH; NOT_MERGED. Operator-corpus validation and sidecar activation remain blocked; the exact read-only local certification procedure is now implemented under `docs/knowledge/OPERATOR_CORPUS_CERTIFICATION_RUNBOOK.md`.
 
 The existing `skills/skywatcher-fr24-image-analysis/SKILL.md` now carries an activation-gated cumulative implication handoff. The upgrade is reconciled with the PITIRRE `AIR | LAND | WATER | SPACE` foundation without rewriting historical SkyWatcher provenance. The following gates are the broader workflow upgrade:
 
@@ -18,3 +18,6 @@ The existing `skills/skywatcher-fr24-image-analysis/SKILL.md` now carries an act
 12. Any SQLite schema extension must have a positive explicit-transaction rollback fixture and a negative unwrapped-`executescript` fixture before migration registration.
 13. Migration compatibility must test released database states for schema-version conservation, existing-row conservation, FK integrity, idempotence, and no event multiplication.
 14. Repository CI/synthetic fixtures do not certify an operator-local corpus. Require operator replay and independently reviewed gold/identity evidence before enabling normal-startup migration, active consumers, or production certification.
+15. Operator screenshot↔MFL certification must be bounded to an explicitly frozen candidate denominator. Current v0.1 discovery is exhaustive only within the independently reviewed gold-300 frames and exact case-folded callsign/registration-folder rules; it is not universal flight-link discovery.
+16. SAME_EVENT requires at least one independent strong binding basis plus an evidence reference; DIFFERENT_EVENT requires independent exclusion/contradiction evidence. CALLSIGN_ONLY, REGISTRATION_ONLY, SPATIAL_PROXIMITY, and NEAREST_TIME cannot close identity.
+17. Operator certification writes reviewed relations into a separate scratch sidecar only. RLSM, MFL, canonical event counts, and migration 0004 remain unchanged until a later explicit activation decision.
