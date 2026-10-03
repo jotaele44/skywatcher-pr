@@ -245,11 +245,12 @@ All of the following must close simultaneously:
 7. every candidate row reviewed;
 8. at least one independently supported SAME_EVENT positive control;
 9. at least one independently supported DIFFERENT_EVENT negative control;
-10. zero review-core drift or unknown review basis;
-11. RLSM/MFL/gold hashes unchanged during certification;
-12. scratch-sidecar foreign-key check = zero failures;
-13. canonical MFL mutation remains disabled;
-14. migration 0004 remains unregistered.
+10. **zero UNRESOLVED candidate residue inside the bounded candidate denominator**;
+11. zero review-core drift or unknown review basis;
+12. RLSM/MFL/gold/review and gold-source manifests unchanged during certification;
+13. scratch-sidecar foreign-key check = zero failures;
+14. canonical MFL mutation remains disabled;
+15. migration 0004 remains unregistered.
 
 If any evidence dependency changes after review, regenerate the candidate template. Do not transplant decisions to a changed candidate ID.
 
