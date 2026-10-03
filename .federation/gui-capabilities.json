@@ -519,7 +519,8 @@
         "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:OperatorCertificationError",
         "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:git_head",
         "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:sha256_canonical",
-        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:sha256_file"
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:sha256_file",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:sqlite_logical_sha256"
       ]
     }
   ]
