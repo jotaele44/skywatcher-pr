@@ -10,6 +10,7 @@ canonical flight-history rows.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import sqlite3
@@ -19,8 +20,8 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from .knowledge_implications import canonical_json
 from ..fr24 import database_migrations
+from .knowledge_implications import canonical_json
 
 SCHEMA_VERSION = "skywatcher.operator-certification.v1"
 REVIEW_SCHEMA_VERSION = "skywatcher.operator-binding-review.v1"
@@ -73,8 +74,7 @@ def git_head(repo_root: Path) -> str:
             ["git", "rev-parse", "HEAD"],
             cwd=repo_root,
             check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
     except (OSError, subprocess.CalledProcessError) as exc:
@@ -249,10 +249,8 @@ def validate_gold_review(
             if corpus_root is not None:
                 relative = Path(rel_path)
                 canonical_prefix = Path("data") / "FR24_baseline"
-                try:
+                with contextlib.suppress(ValueError):
                     relative = relative.relative_to(canonical_prefix)
-                except ValueError:
-                    pass
                 source_path = corpus_root / relative
                 if not source_path.is_file():
                     source_byte_failures += 1
@@ -1184,9 +1182,11 @@ def certify_operator_package(
     status = "PASS"
     if not stable:
         status = "UNRESOLVED"
-    elif before["gold_review"]["status"] != "PASS":
-        status = "FAIL"
-    elif audit_status == "FAIL" or binding_metrics["status"] == "FAIL":
+    elif (
+        before["gold_review"]["status"] != "PASS"
+        or audit_status == "FAIL"
+        or binding_metrics["status"] == "FAIL"
+    ):
         status = "FAIL"
     elif audit_status != "PASS" or binding_metrics["status"] != "PASS":
         status = "BLOCKED"
