@@ -15,6 +15,7 @@ import hashlib
 import json
 import sqlite3
 import subprocess
+import tempfile
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
@@ -66,6 +67,28 @@ def sha256_file(path: Path) -> str:
 
 def sha256_canonical(value: Any) -> str:
     return hashlib.sha256(canonical_json(value)).hexdigest()
+
+
+def sqlite_logical_sha256(path: Path) -> str:
+    """Hash a consistent SQLite logical snapshot without mutating the source."""
+    if not path.is_file():
+        raise OperatorCertificationError(f"database not found: {path}")
+    tmp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".sqlite", delete=False) as tmp:
+            tmp_path = Path(tmp.name)
+        with _open_readonly(path) as source:
+            destination = sqlite3.connect(tmp_path)
+            try:
+                source.backup(destination)
+                destination.commit()
+            finally:
+                destination.close()
+        return sha256_file(tmp_path)
+    finally:
+        if tmp_path is not None:
+            with contextlib.suppress(FileNotFoundError):
+                tmp_path.unlink()
 
 
 def git_head(repo_root: Path) -> str:
@@ -202,6 +225,7 @@ def validate_gold_review(
     seen: set[int] = set()
     source_bytes_verified = 0
     source_byte_failures = 0
+    source_manifest_entries: list[dict[str, Any]] = []
     with _open_readonly(rlsm_db) as conn:
         _require_tables(conn, {"screenshots"}, "RLSM")
         for index, row in enumerate(rows):
@@ -274,6 +298,13 @@ def validate_gold_review(
                     )
                 else:
                     source_bytes_verified += 1
+                    source_manifest_entries.append(
+                        {
+                            "screenshot_id": sid,
+                            "rel_path": rel_path,
+                            "sha256": source_sha,
+                        }
+                    )
             resolved_rows.append(
                 {
                     "screenshot_id": sid,
@@ -290,6 +321,11 @@ def validate_gold_review(
         "unique_resolved_records": len(seen),
         "source_bytes_verified": source_bytes_verified,
         "source_byte_failures": source_byte_failures,
+        "source_manifest_sha256": (
+            sha256_canonical(sorted(source_manifest_entries, key=lambda item: item["screenshot_id"]))
+            if corpus_root is not None and source_byte_failures == 0
+            else None
+        ),
         "error_count": len(errors),
         "status": "PASS" if not errors and len(rows) == expected_records else "FAIL",
     }
@@ -697,8 +733,10 @@ def preflight(
         "git_sha": head,
         "rlsm_db": str(rlsm_db),
         "rlsm_db_sha256": sha256_file(rlsm_db),
+        "rlsm_db_logical_sha256": sqlite_logical_sha256(rlsm_db),
         "mfl_db": str(mfl_db),
         "mfl_db_sha256": sha256_file(mfl_db),
+        "mfl_db_logical_sha256": sqlite_logical_sha256(mfl_db),
         "corpus_root": str(corpus_root),
         "gold_path": str(gold_path),
         "gold_sha256": sha256_file(gold_path),
@@ -1132,6 +1170,7 @@ def certify_operator_package(
     audit_runner: Callable[..., Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
+    review_sha_before = sha256_file(review_path)
     before = preflight(
         repo_root=repo_root,
         rlsm_db=rlsm_db,
@@ -1167,16 +1206,31 @@ def certify_operator_package(
     )
     audit_status = str(audit.get("certification_status") or "BLOCKED")
 
+    gold_after, _ = validate_gold_review(
+        rlsm_db,
+        gold_path,
+        corpus_root=corpus_root,
+    )
     after_hashes = {
         "rlsm_db_sha256": sha256_file(rlsm_db),
+        "rlsm_db_logical_sha256": sqlite_logical_sha256(rlsm_db),
         "mfl_db_sha256": sha256_file(mfl_db),
+        "mfl_db_logical_sha256": sqlite_logical_sha256(mfl_db),
         "gold_sha256": sha256_file(gold_path),
         "review_sha256": sha256_file(review_path),
     }
     stable = (
         before["rlsm_db_sha256"] == after_hashes["rlsm_db_sha256"]
+        and before["rlsm_db_logical_sha256"]
+        == after_hashes["rlsm_db_logical_sha256"]
         and before["mfl_db_sha256"] == after_hashes["mfl_db_sha256"]
+        and before["mfl_db_logical_sha256"]
+        == after_hashes["mfl_db_logical_sha256"]
         and before["gold_sha256"] == after_hashes["gold_sha256"]
+        and review_sha_before == after_hashes["review_sha256"]
+        and before["gold_review"].get("source_manifest_sha256")
+        == gold_after.get("source_manifest_sha256")
+        and gold_after["status"] == "PASS"
     )
 
     status = "PASS"
@@ -1206,8 +1260,8 @@ def certify_operator_package(
         sidecar_path=output_dir / "operator_sidecar.sqlite",
         schema_sql=sidecar_schema,
         reviewed_rows=reviewed_rows,
-        rlsm_db_sha256=after_hashes["rlsm_db_sha256"],
-        mfl_db_sha256=after_hashes["mfl_db_sha256"],
+        rlsm_db_sha256=after_hashes["rlsm_db_logical_sha256"],
+        mfl_db_sha256=after_hashes["mfl_db_logical_sha256"],
         gold_sha256=after_hashes["gold_sha256"],
         review_sha256=after_hashes["review_sha256"],
         git_sha=before["git_sha"],
@@ -1230,8 +1284,10 @@ def certify_operator_package(
         "inputs": {
             "rlsm_db": str(rlsm_db),
             "rlsm_db_sha256": after_hashes["rlsm_db_sha256"],
+            "rlsm_db_logical_sha256": after_hashes["rlsm_db_logical_sha256"],
             "mfl_db": str(mfl_db),
             "mfl_db_sha256": after_hashes["mfl_db_sha256"],
+            "mfl_db_logical_sha256": after_hashes["mfl_db_logical_sha256"],
             "gold_path": str(gold_path),
             "gold_sha256": after_hashes["gold_sha256"],
             "review_path": str(review_path),
