@@ -930,7 +930,11 @@ def materialize_review_sidecar(
         )
 
         subject_id = f"binding-{candidate_id[:24]}"
-        state = "PASS" if decision == "SAME_EVENT" else "CANDIDATE_NOT_IDENTITY"
+        state = (
+            "PASS"
+            if decision == "SAME_EVENT" and package_status == "PASS"
+            else "CANDIDATE_NOT_IDENTITY"
+        )
         conn.execute(
             """
             INSERT INTO swk_subject_ref(
@@ -1069,7 +1073,7 @@ def materialize_review_sidecar(
             """,
             (implication_id, subject_id, "ABOUT"),
         )
-        if decision in {"SAME_EVENT", "DIFFERENT_EVENT"}:
+        if package_status == "PASS" and decision in {"SAME_EVENT", "DIFFERENT_EVENT"}:
             conn.execute(
                 """
                 UPDATE swk_implication
