@@ -437,3 +437,40 @@ def test_failed_review_does_not_materialize_sidecar_and_report_freezes_outputs(
     assert persisted["outputs"] == report["outputs"]
     assert persisted["sidecar"]["status"] == "NOT_MATERIALIZED"
 
+def test_scratch_sidecar_reuses_identical_inputs_but_preserves_changed_run(
+    tmp_path: Path,
+) -> None:
+    rlsm, mfl, _corpus, gold = _make_operator_fixture(tmp_path)
+    candidates, _ = discover_binding_candidates(rlsm, mfl, gold)
+    reviewed = _review(candidates)
+    review = tmp_path / "review.jsonl"
+    _write_jsonl(review, reviewed)
+    kwargs = {
+        "sidecar_path": tmp_path / "sidecar.sqlite",
+        "schema_sql": (
+            REPO / "schemas" / "knowledge_implications_v1.sql"
+        ).read_text(encoding="utf-8"),
+        "reviewed_rows": reviewed,
+        "rlsm_db_sha256": sha256_file(rlsm),
+        "mfl_db_sha256": sha256_file(mfl),
+        "gold_sha256": sha256_file(gold),
+        "review_sha256": sha256_file(review),
+        "git_sha": "c" * 40,
+        "package_status": "PASS",
+    }
+    first = materialize_review_sidecar(**kwargs)
+    second = materialize_review_sidecar(**kwargs)
+    assert first["reused_identical_inputs"] is False
+    assert second["reused_identical_inputs"] is True
+    assert first["sha256"] == second["sha256"]
+
+    changed = dict(kwargs)
+    changed["review_sha256"] = "d" * 64
+    with pytest.raises(
+        OperatorCertificationError,
+        match="already exists for different inputs",
+    ):
+        materialize_review_sidecar(**changed)
+    assert Path(kwargs["sidecar_path"]).is_file()
+    assert sha256_file(Path(kwargs["sidecar_path"])) == first["sha256"]
+
