@@ -696,7 +696,7 @@ def validate_binding_review(
     status = "PASS"
     if errors:
         status = "FAIL"
-    elif not bounded_controls:
+    elif not bounded_controls or counts["UNRESOLVED"] > 0:
         status = "BLOCKED"
     metrics = {
         "candidate_count": len(candidates),
