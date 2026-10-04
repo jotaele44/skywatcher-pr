@@ -21,6 +21,7 @@ temporary databases only.
 
 from __future__ import annotations
 
+import re
 import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -53,34 +54,88 @@ class Migration:
     version: int
     description: str
     apply: Callable[[sqlite3.Connection], None]
+    requires_open_transaction: bool = False
+
+
+_TRANSACTION_CONTROL_RE = re.compile(
+    r"(?is)(?:^|;)\s*(?:"
+    r"BEGIN(?:\s+(?:TRANSACTION|DEFERRED|IMMEDIATE|EXCLUSIVE))?"
+    r"|COMMIT"
+    r"|ROLLBACK(?:\s+TRANSACTION)?"
+    r"|END\s+TRANSACTION"
+    r")\s*;"
+)
+
+
+def _begin_atomic_sql_script(conn: sqlite3.Connection, sql: str) -> None:
+    """Execute controlled migration SQL inside one caller-owned transaction.
+
+    The function intentionally leaves the transaction open so apply_migrations()
+    can insert the schema_version receipt and commit both DDL and receipt
+    together. Transaction-control statements inside the supplied script are
+    rejected because they could silently break that atomicity boundary.
+    """
+    if conn.in_transaction:
+        raise sqlite3.OperationalError(
+            "atomic migration script requires a clean connection"
+        )
+    if _TRANSACTION_CONTROL_RE.search(sql):
+        raise sqlite3.OperationalError(
+            "migration SQL must not contain transaction-control statements"
+        )
+
+    # Connection-level PRAGMAs cannot be changed reliably inside a transaction.
+    # Apply the two canonical repository directives first, then remove them from
+    # the transactional DDL payload. Unknown PRAGMAs remain untouched.
+    script = sql
+    for pragma in ("PRAGMA foreign_keys = ON;", "PRAGMA journal_mode = WAL;"):
+        if pragma in script:
+            conn.execute(pragma)
+            script = script.replace(pragma, "")
+    conn.executescript("BEGIN IMMEDIATE;\n" + script)
+    if not conn.in_transaction:
+        raise sqlite3.OperationalError(
+            "migration SQL escaped the required open transaction"
+        )
 
 
 def _migration_0001_base_schema(conn: sqlite3.Connection) -> None:
     """Apply the canonical base schema from schemas/database_schema.sql."""
-    conn.executescript(db.read_schema_sql())
+    _begin_atomic_sql_script(conn, db.read_schema_sql())
 
 
 def _migration_0002_adsb_state_vectors(conn: sqlite3.Connection) -> None:
     """Apply the adsb_state_vectors table from schemas/adsb_state_vectors.sql."""
     path = db.REPO_ROOT / "schemas" / "adsb_state_vectors.sql"
-    conn.executescript(path.read_text(encoding="utf-8"))
+    _begin_atomic_sql_script(conn, path.read_text(encoding="utf-8"))
 
 
 def _migration_0003_flight_corpus(conn: sqlite3.Connection) -> None:
     """Add the canonical flight-corpus / source-manifestation ledger."""
     path = db.REPO_ROOT / "schemas" / "flight_corpus.sql"
-    conn.executescript(path.read_text(encoding="utf-8"))
+    _begin_atomic_sql_script(conn, path.read_text(encoding="utf-8"))
 
 
 # Ordered migration ledger. Append new migrations with the next integer version;
 # never edit or reorder an already-released migration.
 MIGRATIONS: list[Migration] = [
-    Migration(1, "base FR24 canonical schema (10 tables)", _migration_0001_base_schema),
     Migration(
-        2, "adsb_state_vectors table (automated OpenSky poll)", _migration_0002_adsb_state_vectors
+        1,
+        "base FR24 canonical schema (10 tables)",
+        _migration_0001_base_schema,
+        requires_open_transaction=True,
     ),
     Migration(
-        3, "canonical flight corpus and source manifestations", _migration_0003_flight_corpus
+        2,
+        "adsb_state_vectors table (automated OpenSky poll)",
+        _migration_0002_adsb_state_vectors,
+        requires_open_transaction=True,
+    ),
+    Migration(
+        3,
+        "canonical flight corpus and source manifestations",
+        _migration_0003_flight_corpus,
+        requires_open_transaction=True,
     ),
 ]
 
@@ -121,6 +176,10 @@ def apply_migrations(
             continue
         try:
             migration.apply(conn)
+            if migration.requires_open_transaction and not conn.in_transaction:
+                raise sqlite3.OperationalError(
+                    "migration did not preserve the required open transaction"
+                )
             conn.execute(
                 "INSERT INTO schema_version (version, description, applied_at) "
                 "VALUES (?, ?, ?)",
