@@ -15,7 +15,6 @@ from dataclasses import dataclass
 
 __all__ = [
     "HIGH_THRESHOLD",
-    "MissionInferenceProhibitedError",
     "MissionClassificationStatus",
     "MissionClassification",
     "classify",
@@ -24,10 +23,6 @@ __all__ = [
 HIGH_THRESHOLD = 0.85
 _HIGHLY_SPECULATIVE = "highly_speculative"
 _EVIDENCE_GATED = "evidence_gated"
-
-
-class MissionInferenceProhibitedError(RuntimeError):
-    """Raised when active code attempts mission/intent inference."""
 
 
 class MissionClassificationStatus:
@@ -66,7 +61,7 @@ def classify(
 ) -> MissionClassification:
     """Replay the historical speculative gate only with explicit legacy opt-in."""
     if not legacy_compat:
-        raise MissionInferenceProhibitedError(
+        raise RuntimeError(
             "mission/intent inference is prohibited by active ontology v2.1; "
             "use source-declared labels or explicit Legacy replay"
         )
