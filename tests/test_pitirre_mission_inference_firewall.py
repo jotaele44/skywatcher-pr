@@ -5,9 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from skywatcher.fpim import aircraft_profile
-from skywatcher.fr24 import spiderweb_export
-
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -24,6 +21,8 @@ def test_active_ontology_keeps_mission_inference_unauthorized():
 
 
 def test_fpim_deduced_profile_does_not_consume_legacy_type_mission_table():
+    from skywatcher.fpim import aircraft_profile
+
     source = Path(aircraft_profile.__file__).read_text(encoding="utf-8")
     deduce = source.split("def _deduce_profile", 1)[1].split("def _enrich_from_db", 1)[0]
     assert "AIRCRAFT_TYPE_MISSIONS.items()" not in deduce
@@ -31,6 +30,8 @@ def test_fpim_deduced_profile_does_not_consume_legacy_type_mission_table():
 
 
 def test_federation_export_never_promotes_legacy_mission_fields():
+    from skywatcher.fr24 import spiderweb_export
+
     source = Path(spiderweb_export.__file__).read_text(encoding="utf-8")
     assert "mc.classify" not in source
     record = spiderweb_export.build_bridge_record(
