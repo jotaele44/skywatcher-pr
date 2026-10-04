@@ -67,7 +67,7 @@ export default function Observations() {
     if (q) {
       const s = q.toLowerCase();
       rows = rows.filter((o) =>
-        [o.callsign, o.tail_number, o.operator_name, o.nearest_airport_name, o.nearest_asset_name, o.mission_inference]
+        [o.callsign, o.tail_number, o.operator_name, o.nearest_airport_name, o.nearest_asset_name]
           .filter(Boolean).some((v) => v.toLowerCase().includes(s)));
     }
     if (review !== "all") rows = rows.filter((o) => o.review_status === review);
@@ -184,7 +184,7 @@ export default function Observations() {
                   </th>
                   <th className="px-3 py-2 font-semibold">Callsign / Tail</th>
                   <th className="px-3 py-2 font-semibold">Aircraft</th>
-                  <th className="px-3 py-2 font-semibold">Mission</th>
+                  <th className="px-3 py-2 font-semibold">Operator</th>
                   <th className="px-3 py-2 font-semibold">Nearest Asset</th>
                   <th className="px-3 py-2 font-semibold">Dist</th>
                   <th className="px-3 py-2 font-semibold">Source</th>
@@ -206,7 +206,7 @@ export default function Observations() {
                         <div className="font-mono text-[10px] text-muted-foreground">{o.tail_number}</div>
                       </td>
                       <td className="px-3 py-2.5 text-muted-foreground">{o.aircraft_type}</td>
-                      <td className="px-3 py-2.5"><span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{o.mission_inference}</span></td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{o.operator_name || "—"}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{o.nearest_asset_name || o.nearest_airport_name}</td>
                       <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{o.distance_nm} nm</td>
                       <td className="px-3 py-2.5"><SourceProvenanceBadge source={o.source_type} /></td>
