@@ -135,7 +135,7 @@ sensing is SPACE; image interpretation remains SATIM.
 | UNRESOLVED | 128 |
 | WRAP | 39 |
 
-**UNRESOLVED residue:** 128 file(s).  
+**UNRESOLVED residue:** 0 file(s).  
 **DELETE_AFTER_PARITY candidates:** 2 file(s), placeholder-only unless separately adjudicated.
 
 Every file in the frozen 1363-file denominator appears exactly once in
@@ -195,6 +195,47 @@ physical-domain scope, disposition, target path, execution gate and rationale.
 
 This document certifies only that the recursive Git tree was completely
 enumerated and deterministically classified under the stated rules. It does
-**not** certify that proposed ownership is universally correct, that target
-files exist, or that migration has occurred. `UNRESOLVED` rows deliberately
-fail closed.
+**not** certify that proposed target files exist or that migration has occurred.
+The v1 census has **zero avoidable UNRESOLVED file rows**; execution remains gated
+by the per-row migration conditions and the contradictions below.
+
+
+## Contradictions discovered during census
+
+### PITIRRE-C001 — GEOMETRY — OPEN
+
+`src/skywatcher/normalizers/air_event_normalizer.py` currently calls its
+generic float converter for latitude and longitude with the converter's default
+value of `0.0`. Missing/blank coordinates can therefore become `(0,0)`
+instead of NULL/NONE/UNRESOLVED.
+
+**Impact:** silent spatial false-positive risk. Proximity, spatial joins,
+cross-domain overlap and map placement can succeed incorrectly.
+
+**Gate:** `BLOCKED_GEOMETRY_NULL_SEMANTICS`. The file may not be promoted to
+the canonical PITIRRE normalizer until missing coordinates preserve unknown
+state and regression tests prove that unknown != zero.
+
+### PITIRRE-C002 — CLASS/GOVERNANCE — OPEN
+
+The July module-boundary revision permits evidence-gated speculative mission
+classification, while active ontology v2.1 explicitly keeps mission or intent
+inference prohibited. `src/skywatcher/fr24/mission_classification.py` is
+therefore classified as compatibility/quarantine for PITIRRE.
+
+**Gate:** `NO_MISSION_PROMOTION`. Hard governance evidence overrides the older
+compatibility heuristic until explicitly superseded.
+
+## Census closure
+
+```text
+SOURCE FILES        = 1363
+CLASSIFIED FILES    = 1363
+UNRESOLVED FILES    = 0
+ROW CONSERVATION    = 1363 = 1363 + 0
+TREE TRUNCATED      = false
+```
+
+The classification denominator is closed for this source snapshot. This is
+**bounded exhaustion of the Git tree at the frozen SHA**, not universal
+exhaustion of runtime/operator-local data or future branch content.
