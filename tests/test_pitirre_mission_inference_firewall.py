@@ -1,19 +1,19 @@
 """PITIRRE-C002 regression firewall for active mission/intent inference."""
 
-from __future__ import annotations
 
-import json
-from pathlib import Path
+def _root():
+    from pathlib import Path
 
-
-ROOT = Path(__file__).resolve().parents[1]
+    return Path(__file__).resolve().parents[1]
 
 
 def _text(relative: str) -> str:
-    return (ROOT / relative).read_text(encoding="utf-8")
+    return (_root() / relative).read_text(encoding="utf-8")
 
 
 def test_active_ontology_keeps_mission_inference_unauthorized():
+    import json
+
     manifest = json.loads(
         _text("docs/architecture/SKYWATCHER_ONTOLOGY_FREEZE_MANIFEST_v2_0.json")
     )
@@ -23,7 +23,8 @@ def test_active_ontology_keeps_mission_inference_unauthorized():
 def test_fpim_deduced_profile_does_not_consume_legacy_type_mission_table():
     from skywatcher.fpim import aircraft_profile
 
-    source = Path(aircraft_profile.__file__).read_text(encoding="utf-8")
+    source = _text("src/skywatcher/fpim/aircraft_profile.py")
+    assert source == _text(str(aircraft_profile.__file__).split(str(_root()) + "/", 1)[-1])
     deduce = source.split("def _deduce_profile", 1)[1].split("def _enrich_from_db", 1)[0]
     assert "AIRCRAFT_TYPE_MISSIONS.items()" not in deduce
     assert "primary_mission = mission" not in deduce
@@ -32,7 +33,7 @@ def test_fpim_deduced_profile_does_not_consume_legacy_type_mission_table():
 def test_federation_export_never_promotes_legacy_mission_fields():
     from skywatcher.fr24 import spiderweb_export
 
-    source = Path(spiderweb_export.__file__).read_text(encoding="utf-8")
+    source = _text("src/skywatcher/fr24/spiderweb_export.py")
     assert "mc.classify" not in source
     record = spiderweb_export.build_bridge_record(
         {
@@ -56,6 +57,8 @@ def test_corrim_ilap_does_not_export_mission_type():
 
 
 def test_evidence_registry_marks_mission_capabilities_prohibited():
+    import json
+
     registry = json.loads(_text("config/evidence_skill_registry.json"))
     assert "mission_classification" in registry["prohibited_capabilities"]
     assert "mission_inference" in registry["prohibited_capabilities"]
@@ -66,11 +69,11 @@ def test_evidence_registry_marks_mission_capabilities_prohibited():
 
 def test_canonical_frontend_has_no_mission_inference_field():
     offenders = []
-    for path in (ROOT / "frontend" / "src").rglob("*"):
+    for path in (_root() / "frontend" / "src").rglob("*"):
         if path.suffix not in {".js", ".jsx", ".ts", ".tsx"}:
             continue
         if "mission_inference" in path.read_text(encoding="utf-8"):
-            offenders.append(str(path.relative_to(ROOT)))
+            offenders.append(str(path.relative_to(_root())))
     assert offenders == []
 
 
