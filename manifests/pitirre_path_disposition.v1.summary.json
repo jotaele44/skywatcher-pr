@@ -199,7 +199,7 @@
       "OPEN": 0,
       "RESOLVED": 2
     },
-    "displaced_rules_superceded": 1,
-    "note": "Post-freeze branch artifacts are not part of the frozen 1,363-file source census."
+    "note": "Post-freeze branch artifacts are not part of the frozen 1,363-file source census.",
+    "displaced_rules_superseded": 1
   }
 }
