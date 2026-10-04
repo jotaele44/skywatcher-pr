@@ -36,8 +36,8 @@ def test_build_bridge_record_is_schema_valid():
     assert set(rec["confidence"]) == {"score", "method"}
     # C4: review_status crosswalked (promoted -> approved)
     assert rec["review_status"] == "approved"
-    # C1: mission gated
-    assert rec["mission_classification"]["status"] in ("highly_speculative", "evidence_gated")
+    # PITIRRE-C002 / active ontology v2.1: legacy mission fields are not promoted.
+    assert rec["mission_classification"] is None
     # C2: no 'confirmed' terminal-accept token
     assert rec["review_status"] != "confirmed"
 
@@ -72,6 +72,7 @@ def test_export_package_roundtrip(tmp_path):
     rec = json.loads(lines[0])
     assert se.validate_bridge_record(rec) == []
     assert rec["validated_track_geometry"]["type"] == "LineString"
+    assert rec["mission_classification"] is None
 
 
 def test_integer_aircraft_id_is_stringified():
