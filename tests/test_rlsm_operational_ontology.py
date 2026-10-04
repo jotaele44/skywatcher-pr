@@ -4,6 +4,7 @@ from pipeline.normalize_locations import load_simple_yaml, normalize_location
 from pipeline.normalize_missions import normalize_blackout, normalize_mission
 from pipeline.normalize_operators import normalize_aircraft_identity, normalize_operator
 from pipeline.rlsm_ontology_gate import run_gate
+from skywatcher.core.ontology_gate import REQUIRED_CONFIGS
 
 CONFIG_DIR = Path("configs")
 
@@ -27,10 +28,15 @@ def test_operator_alias_resolution():
     assert record["operator_id"] == "op_uscg_cluster"
 
 
-def test_mission_alias_resolution():
-    assert normalize_mission("grid inspection", CONFIG_DIR)["mission_canonical"] == "UTILITY_INSPECTION"
-    assert normalize_mission("coastal patrol", CONFIG_DIR)["mission_canonical"] == "MARITIME_PATROL"
-    assert normalize_mission("private charter", CONFIG_DIR)["mission_canonical"] == "PRIVATE_CHARTER"
+def test_mission_alias_resolution_is_source_label_only():
+    record = normalize_mission("grid inspection", CONFIG_DIR)
+    assert record["mission_canonical"] == "UTILITY_INSPECTION"
+    assert record["source_label_only"] is True
+    assert record["inference_allowed"] is False
+
+
+def test_rlsm_readiness_does_not_depend_on_mission_vocabulary():
+    assert "mission_vocab.yaml" not in REQUIRED_CONFIGS
 
 
 def test_gap_terms_preserve_uncertainty():
