@@ -1,8 +1,8 @@
 """
 AIRCRAFT PROFILE — FPIM aircraft-identity resolution.
 
-AircraftProfile      — Structured profile for a known or deduced aircraft
-AircraftIntelligence — N-number → owner/operator/mission lookup
+AircraftProfile      — Structured profile for a known or source-enriched aircraft
+AircraftIntelligence — N-number → identity/operator/source-declared metadata lookup
 """
 
 import sqlite3
@@ -19,7 +19,9 @@ CALLSIGN_PREFIXES = {
     "YN": {"country": "Nicaragua", "registry": "Civil aviation"},
 }
 
-# Aircraft type to mission profile mapping
+# Legacy compatibility table. Active FPIM logic MUST NOT use aircraft type to
+# infer mission or intent. The symbol remains importable for historical callers
+# until the compatibility surface is retired.
 AIRCRAFT_TYPE_MISSIONS = {
     "H125": "Power Line Inspection",
     "AS50": "Power Line Inspection",
@@ -73,8 +75,11 @@ class AircraftProfile:
 
 class AircraftIntelligence:
     """
-    Looks up aircraft ownership and mission from known database,
-    then deduces from available signals if not found.
+    Looks up aircraft identity/operator metadata from source records.
+
+    Mission labels are populated only from KNOWN_OPERATORS entries explicitly
+    treated as source-declared metadata. Unknown aircraft never receive a mission
+    guess from aircraft type, callsign shape, route, or flight history.
     """
 
     def __init__(self, db_path: str = str(Path.home() / "flight_database.db")):
@@ -105,27 +110,26 @@ class AircraftIntelligence:
         return profile
 
     def _deduce_profile(self, callsign: str) -> AircraftProfile:
-        """Infer profile from N-number structure and flight history.
+        """Build a non-mission profile from callsign structure and DB history.
 
-        Note: the aircraft-type -> mission fallback below (AIRCRAFT_TYPE_MISSIONS)
-        is a secondary, lower-confidence mission guess distinct from the
-        operator-provided KNOWN_OPERATORS ground truth above. It is preserved
-        here unchanged for backward compatibility (requirement to not alter
-        existing behavior); see docs/MODULE_SPEC_FPIM.md's technical-debt note
-        for why it isn't quarantined alongside FlightMissionAnalyzer.
+        This compatibility method retains the historical name, but it does not
+        deduce purpose. Aircraft type and operator may be copied from source DB
+        history; mission remains Unknown unless an authoritative KNOWN_OPERATORS
+        record supplied it in lookup_aircraft().
         """
         profile = AircraftProfile(
             callsign=callsign,
+            primary_mission="Unknown",
+            confidence_level=0.20,
             data_source="deduced",
         )
 
-        # Country from prefix
+        # Country from registration/callsign prefix is identity context, not mission.
         for prefix, info in CALLSIGN_PREFIXES.items():
             if callsign.startswith(prefix):
                 profile.country = info["country"]
                 break
 
-        # Try to find aircraft type from flight history and map to mission
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -140,17 +144,9 @@ class AircraftIntelligence:
                 a_type, operator = row
                 profile.aircraft_type = a_type or ""
                 profile.operator = operator or "Unknown"
-                for type_key, mission in AIRCRAFT_TYPE_MISSIONS.items():
-                    if type_key in (a_type or "").upper():
-                        profile.primary_mission = mission
-                        profile.confidence_level = 0.60
-                        break
+                profile.data_source = "db_history"
         except Exception:
             pass
-
-        if not profile.primary_mission:
-            profile.primary_mission = "Unknown"
-            profile.confidence_level = 0.20
 
         return profile
 
@@ -188,7 +184,11 @@ class AircraftIntelligence:
             f"  Operator:          {profile.operator}",
             f"  Country:           {profile.country}",
             "",
-            f"  Primary Mission:   {profile.primary_mission}",
+            (
+                f"  Source-declared Mission: {profile.primary_mission}"
+                if profile.data_source == "known_db"
+                else "  Mission:           Unknown (inference prohibited)"
+            ),
         ]
 
         if profile.secondary_missions:
