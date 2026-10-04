@@ -8,7 +8,7 @@ from skywatcher.fr24 import mission_classification as mc
 
 
 def test_active_classification_fails_closed():
-    with pytest.raises(mc.MissionInferenceProhibitedError):
+    with pytest.raises(RuntimeError, match="mission/intent inference is prohibited"):
         mc.classify("patrol", 0.95)
 
 
