@@ -9,6 +9,7 @@ from typing import Any
 
 
 def _float(value: Any, default: float = 0.0) -> float:
+    """Parse a non-spatial numeric value with a caller-selected fallback."""
     try:
         if value in (None, ""):
             return default
@@ -31,6 +32,52 @@ def _first_text(record: Mapping[str, Any], names: tuple[str, ...]) -> str:
     return ""
 
 
+def _first_coordinate_value(
+    record: Mapping[str, Any],
+    primary: str,
+    fallback: str,
+) -> tuple[str | None, Any]:
+    """Choose one source coordinate field without treating numeric zero as missing.
+
+    A present, non-blank primary value is authoritative for parsing even when it
+    is invalid; an invalid primary value must not silently fall through to the
+    fallback field. Blank/missing primary values may use the fallback.
+    """
+    if primary in record and record.get(primary) not in (None, ""):
+        return primary, record.get(primary)
+    if fallback in record and record.get(fallback) not in (None, ""):
+        return fallback, record.get(fallback)
+    if primary in record:
+        return primary, record.get(primary)
+    if fallback in record:
+        return fallback, record.get(fallback)
+    return None, None
+
+
+def _coordinate(
+    value: Any,
+    *,
+    minimum: float,
+    maximum: float,
+) -> tuple[float | None, str]:
+    """Parse a coordinate fail-closed.
+
+    Missing and invalid coordinates remain non-spatial. In particular they never
+    default to 0.0, because (0, 0) is a real location rather than a null sentinel.
+    """
+    if value in (None, ""):
+        return None, "MISSING"
+    if isinstance(value, bool):
+        return None, "INVALID"
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None, "INVALID"
+    if not minimum <= number <= maximum:
+        return None, "INVALID"
+    return number, "VALID"
+
+
 def _iso(value: Any) -> str:
     raw = _text(value)
     if raw:
@@ -47,6 +94,11 @@ def normalize_air_event(record: Mapping[str, Any], source: str = "fr24_exports")
     Source-native identity dimensions are preserved independently. A blank
     callsign may fall back to registration for the legacy display field, but
     the source_identity block records that the callsign itself was unobserved.
+
+    Coordinate handling is deliberately stricter than other numeric fields:
+    missing/invalid latitude or longitude produces nullable geometry plus an
+    explicit geometry status; it never fabricates the geographic point (0, 0).
+    Raw source coordinate values are preserved separately.
     """
 
     source_callsign = _first_text(record, ("callsign", "call_sign"))
@@ -73,8 +125,23 @@ def normalize_air_event(record: Mapping[str, Any], source: str = "fr24_exports")
     observed_at = _iso(
         record.get("observed_at") or record.get("timestamp") or record.get("event_timestamp")
     )
-    lat = _float(record.get("lat") or record.get("latitude"))
-    lon = _float(record.get("lon") or record.get("longitude"))
+
+    lat_field, lat_raw = _first_coordinate_value(record, "lat", "latitude")
+    lon_field, lon_raw = _first_coordinate_value(record, "lon", "longitude")
+    lat, lat_status = _coordinate(lat_raw, minimum=-90.0, maximum=90.0)
+    lon, lon_status = _coordinate(lon_raw, minimum=-180.0, maximum=180.0)
+    if lat_status == "VALID" and lon_status == "VALID":
+        geometry_status = "LOCATED"
+    elif "INVALID" in {lat_status, lon_status}:
+        geometry_status = "INVALID"
+    else:
+        geometry_status = "UNRESOLVED"
+
+    # Preserve historical deterministic IDs for valid coordinates. Unknown or
+    # invalid coordinates include their raw/state material so distinct source
+    # manifestations are not collapsed merely because both parse to None.
+    fingerprint_lat = str(lat) if lat is not None else f"{lat_status}:{lat_raw!r}"
+    fingerprint_lon = str(lon) if lon is not None else f"{lon_status}:{lon_raw!r}"
     fingerprint = "|".join(
         [
             source,
@@ -83,8 +150,8 @@ def normalize_air_event(record: Mapping[str, Any], source: str = "fr24_exports")
             source_callsign,
             source_registration,
             source_icao24,
-            str(lat),
-            str(lon),
+            fingerprint_lat,
+            fingerprint_lon,
         ]
     )
     identity_present = any(
@@ -92,6 +159,7 @@ def normalize_air_event(record: Mapping[str, Any], source: str = "fr24_exports")
     )
 
     return {
+        "schema_version": "2.0",
         "event_id": "air_" + sha1(fingerprint.encode("utf-8")).hexdigest()[:16],
         "source": source,
         "source_tier": "T1" if source == "adsb_exchange" else "T2",
@@ -99,6 +167,19 @@ def normalize_air_event(record: Mapping[str, Any], source: str = "fr24_exports")
         "observed_at": observed_at,
         "lat": lat,
         "lon": lon,
+        "geometry_status": geometry_status,
+        "coordinate_status": {
+            "lat": lat_status,
+            "lon": lon_status,
+        },
+        "source_coordinates": {
+            "selected_lat_field": lat_field,
+            "selected_lon_field": lon_field,
+            "lat_raw": record.get("lat") if "lat" in record else None,
+            "latitude_raw": record.get("latitude") if "latitude" in record else None,
+            "lon_raw": record.get("lon") if "lon" in record else None,
+            "longitude_raw": record.get("longitude") if "longitude" in record else None,
+        },
         "aircraft_id": aircraft_id,
         "registration": source_registration or None,
         "callsign": callsign,
