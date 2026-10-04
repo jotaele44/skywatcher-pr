@@ -129,11 +129,11 @@ sensing is SPACE; image interpretation remains SATIM.
 | Disposition | Files |
 |---|---:|
 | DELETE_AFTER_PARITY | 2 |
-| MOVE | 813 |
+| MOVE | 818 |
 | QUARANTINE | 64 |
-| RETAIN | 317 |
-| UNRESOLVED | 128 |
-| WRAP | 39 |
+| RETAIN | 439 |
+| WRAP | 40 |
+| UNRESOLVED | 0 |
 
 **UNRESOLVED residue:** 0 file(s).  
 **DELETE_AFTER_PARITY candidates:** 2 file(s), placeholder-only unless separately adjudicated.
