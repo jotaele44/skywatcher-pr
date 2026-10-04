@@ -202,7 +202,7 @@ by the per-row migration conditions and the contradictions below.
 
 ## Contradictions discovered during census
 
-### PITIRRE-C001 — GEOMETRY — OPEN
+### PITIRRE-C001 — GEOMETRY — RESOLVED
 
 `src/skywatcher/normalizers/air_event_normalizer.py` currently calls its
 generic float converter for latitude and longitude with the converter's default
@@ -212,19 +212,37 @@ instead of NULL/NONE/UNRESOLVED.
 **Impact:** silent spatial false-positive risk. Proximity, spatial joins,
 cross-domain overlap and map placement can succeed incorrectly.
 
-**Gate:** `BLOCKED_GEOMETRY_NULL_SEMANTICS`. The file may not be promoted to
-the canonical PITIRRE normalizer until missing coordinates preserve unknown
-state and regression tests prove that unknown != zero.
+**Resolution:** PASS. Missing/invalid coordinates now remain nullable with
+explicit geometry state and raw source-coordinate preservation; legitimate zero
+coordinates remain valid. Cross-domain overlap skips unresolved/invalid
+geometry. The former `BLOCKED_GEOMETRY_NULL_SEMANTICS` gate is closed by the
+regressions verified on PR #341 at `b5f8c607c2fa347276cbfe438ba0f8e0dbcf4b8b`.
 
-### PITIRRE-C002 — CLASS/GOVERNANCE — OPEN
+### PITIRRE-C002 — CLASS/GOVERNANCE — RESOLVED
 
 The July module-boundary revision permits evidence-gated speculative mission
 classification, while active ontology v2.1 explicitly keeps mission or intent
 inference prohibited. `src/skywatcher/fr24/mission_classification.py` is
 therefore classified as compatibility/quarantine for PITIRRE.
 
-**Gate:** `NO_MISSION_PROMOTION`. Hard governance evidence overrides the older
-compatibility heuristic until explicitly superseded.
+**Resolution:** PASS. Ontology v2.1 controls; the July speculative-mission
+permission is SUPERSEDED. Active mission/intent inference is removed from FPIM,
+CORRIM, routing, federation export, API normalization and GUI presentation;
+Legacy replay remains explicitly noncanonical. The
+`NO_MISSION_PROMOTION` gate is now enforced and passed on PR #341 at
+`b5f8c607c2fa347276cbfe438ba0f8e0dbcf4b8b`.
+
+## Post-freeze adjudication receipt
+
+The 1,363-file denominator remains the immutable source census at
+`main@2100e6527d49abc302b804d3175feea9ce614eb4`. The implementation branch is
+a later state and is not retroactively inserted into that denominator.
+
+C001/C002 were repaired and regression-gated on PR #341. At verification
+basis head `b5f8c607c2fa347276cbfe438ba0f8e0dbcf4b8b`, Skywatcher CI, GUI parity/E2E, federation,
+security/governance gates, CodeQL and all three desktop-platform builds passed.
+This closes only the two contradiction prerequisites; physical Core/AIR
+migration and repository rename remain separate later vectors.
 
 ## Census closure
 
