@@ -164,16 +164,19 @@
     {
       "id": "PITIRRE-C001",
       "class": "GEOMETRY",
-      "state": "OPEN",
+      "state": "RESOLVED",
       "path": "src/skywatcher/normalizers/air_event_normalizer.py",
       "finding": "Missing/blank latitude and longitude are currently converted to 0.0 by the generic _float default.",
       "consequence": "A record with unknown coordinates can silently become spatially located at (0,0), corrupting proximity, joins, maps and downstream cross-domain analysis.",
-      "migration_gate": "BLOCKED_GEOMETRY_NULL_SEMANTICS"
+      "migration_gate": "GEOMETRY_NULL_SEMANTICS_PASS",
+      "resolution": "Missing/invalid AIR coordinates preserve nullable unresolved geometry; legitimate numeric zero remains valid; unresolved/invalid geometry is excluded from cross-domain spatial overlap.",
+      "verification_basis_head": "b5f8c607c2fa347276cbfe438ba0f8e0dbcf4b8b",
+      "verification_pr": 341
     },
     {
       "id": "PITIRRE-C002",
       "class": "CLASS/GOVERNANCE",
-      "state": "OPEN",
+      "state": "RESOLVED",
       "paths": [
         "docs/ADR_SKYWATCHER_MODULE_BOUNDARIES.md",
         "docs/architecture/ADR_SKYWATCHER_ANALYTICAL_ONTOLOGY_v2_1.md",
@@ -181,7 +184,22 @@
       ],
       "finding": "The older module-boundary revision permits evidence-gated speculative mission classification, while active ontology v2.1 states that mission or intent inference of any kind remains prohibited.",
       "consequence": "Mission classification cannot be promoted into the canonical PITIRRE active surface without explicit governance adjudication.",
-      "migration_gate": "NO_MISSION_PROMOTION"
+      "migration_gate": "NO_MISSION_PROMOTION_PASS",
+      "resolution": "Ontology v2.1 controls; active mission/intent inference is prohibited and legacy classification remains quarantined/noncanonical. The older speculative-mission permission is SUPERSEDED.",
+      "verification_basis_head": "b5f8c607c2fa347276cbfe438ba0f8e0dbcf4b8b",
+      "verification_pr": 341
     }
-  ]
+  ],
+  "post_freeze_adjudication": {
+    "source_census_denominator_preserved": 1363,
+    "source_snapshot": "main@2100e6527d49abc302b804d3175feea9ce614eb4",
+    "verification_basis_head": "b5f8c607c2fa347276cbfe438ba0f8e0dbcf4b8b",
+    "pull_request": 341,
+    "contradiction_counts": {
+      "OPEN": 0,
+      "RESOLVED": 2
+    },
+    "displaced_rules_superceded": 1,
+    "note": "Post-freeze branch artifacts are not part of the frozen 1,363-file source census."
+  }
 }
