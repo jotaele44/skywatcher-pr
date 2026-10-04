@@ -1,3 +1,4 @@
+import { Blob as NodeBlob } from "node:buffer";
 import { vi, expect } from "vitest";
 expect.extend({
   toBeTrue(received){return {pass:received===true,message:()=>`expected ${received} to be true`};},
@@ -19,3 +20,29 @@ function compat(spy){const api=spy;api.and={returnValue(v){spy.mockReturnValue(v
 globalThis.spyOn=(target,key)=>compat(vi.spyOn(target,key));
 globalThis.jasmine={createSpy(name){return compat(vi.fn().mockName(name));},any(ctor){return expect.any(ctor);},objectContaining(obj){return expect.objectContaining(obj);}};
 if(typeof window!=="undefined"){Object.defineProperty(window,"matchMedia",{configurable:true,writable:true,value:(query)=>({matches:false,media:query,onchange:null,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){},dispatchEvent(){return false}})});}
+
+globalThis.Blob = NodeBlob;
+if (typeof window !== "undefined") window.Blob = NodeBlob;
+
+globalThis.expectAsync = (promise) => ({
+  async toBeResolved() {
+    await promise;
+  },
+  async toBeRejected() {
+    let rejected=false;
+    try { await promise; } catch { rejected=true; }
+    if (!rejected) throw new Error("expected promise to be rejected");
+  },
+  async toBeRejectedWithError(expected) {
+    let rejected=false, error;
+    try { await promise; } catch (e) { rejected=true; error=e; }
+    if (!rejected) throw new Error("expected promise to be rejected");
+    const message=String(error?.message ?? error);
+    if (expected instanceof RegExp && !expected.test(message)) {
+      throw new Error(`expected rejected error to match ${expected}, received ${message}`);
+    }
+    if (typeof expected === "string" && !message.includes(expected)) {
+      throw new Error(`expected rejected error to contain ${expected}, received ${message}`);
+    }
+  },
+});
