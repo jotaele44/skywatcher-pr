@@ -21,8 +21,8 @@ Ownership map (mission responsibilities 1-18):
     telemetry_validation   -> error/failure accounting (13),
                               schema validation (17)
     review_status          -> review-status handling (14)
-    mission_classification -> gated mission classification
-                              (speculative-until-evidence-gated policy)
+    mission_classification -> LEGACY compatibility gate only; active mission/
+                              intent inference prohibited by ontology v2.1
     database               -> database schema (15)
     database_migrations    -> database initialization + migrations (16)
     spiderweb_export       -> Skywatcher canonical export + Spiderweb bridge
