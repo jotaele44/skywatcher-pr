@@ -191,6 +191,32 @@ physical-domain scope, disposition, target path, execution gate and rationale.
 12. Rename repository only as a late explicit stage.
 13. Retire wrappers only after dependency exhaustion and regression PASS.
 
+## Migration execution progress
+
+### Core + AIR foundation — PASS
+
+PR #341 now contains the first verified physical migration slice, with code
+verification basis `d955195f9bb17ce0d2d480a922915c4416578a83`.
+
+Implemented canonical targets:
+
+- `src/pitirre/core/domains/registry.py`;
+- `src/pitirre/core/contracts/observation.py`;
+- `src/pitirre/core/contracts/air_event.py`;
+- `src/pitirre/core/normalization/air_event.py`;
+- `src/pitirre/domains/air/` with AVIATION, AIRSPACE, AEROSTAT and
+  ATMOSPHERIC_SENSOR package identities;
+- `src/pitirre/compat/skywatcher/` compatibility namespace.
+
+The historical implementation paths for the three migrated census rows are now
+thin wrappers, not independent implementations. Core/domain layering is enforced
+by the module-boundary gate, and `src/pitirre` participates in coverage/static
+analysis.
+
+**Scope boundary:** this is AIR/Core **foundation**, not complete AIR or Core
+migration. MFL authority, remaining AIR rows, analytical FPIM/SATIM/CORRIM code,
+repository rename and wrapper retirement remain later gated work.
+
 ## Certification boundary
 
 This document certifies only that the recursive Git tree was completely
