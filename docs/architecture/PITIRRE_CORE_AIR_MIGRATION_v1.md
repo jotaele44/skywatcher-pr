@@ -1,6 +1,6 @@
 # PITIRRE Core + AIR Migration v1
 
-**State:** CANDIDATE_PENDING_CI  
+**State:** PASS / FOUNDATION_ONLY  
 **Branch:** `pitirre/repo-map-v1`  
 **Parent census:** `main@2100e6527d49abc302b804d3175feea9ce614eb4`  
 **Parent contradiction closure:** PR #341 / `bc842858a0ce97b97627b2fedde201aeebc8f7e4`
@@ -51,4 +51,26 @@ analytical logic.
 - Ruff + frontend + federation/GUI regression gates;
 - coverage ratchet with `src/pitirre` included.
 
-Promotion to PASS must use the exact final branch head after all changes.
+## Verification
+
+Code/behavior verification basis: `d955195f9bb17ce0d2d480a922915c4416578a83`.
+
+All registered PR #341 workflows completed successfully on that exact code
+head: Skywatcher CI (Python 3.10/3.11/3.12, frontend, lint, lock, imagery,
+ADS-B), GUI capability parity + reachability E2E, Federation Compatibility,
+HAF, Admin Control Plane, SATIM Phase 2/runtime, pip-audit, Secret Scan,
+CodeQL, federation template drift and desktop builds on Windows/macOS/Linux.
+
+One compatibility regression was found during the first run:
+`skywatcher.core.spacetrack.pitirre_adapter` imports the historical private
+helper `_envelope`. The wrapper initially omitted it. The final implementation
+preserves `_envelope` as an alias to the canonical helper and has a permanent
+regression assertion.
+
+## Certification boundary
+
+PASS is limited to this foundation slice. It certifies the three migrated
+implementation rows, compatibility identity, the AIR package/subdomain
+foundation and the stated regression gates. It does not certify complete Core
+migration, complete AIR migration, repository rename, wrapper retirement, MFL
+migration, or any SATIM/FPIM/CORRIM physical move.
