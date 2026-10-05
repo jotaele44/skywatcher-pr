@@ -233,6 +233,40 @@
       "air_domain_migration_complete": false,
       "core_migration_complete": false,
       "repository_rename_authorized": false
+    },
+    "air_adsb_storage_v1": {
+      "state": "PASS",
+      "scope": "AIR_ADSB_AND_CORE_FR24_STORAGE_ONLY",
+      "verification_basis_head": "3ff7a084dee5149b9014b9b91bf176cfdfa2822b",
+      "pull_request": 341,
+      "source_census_denominator_preserved": 1363,
+      "migrated_row_count": 9,
+      "migrated_rows": [
+        "adsb/__init__.py",
+        "adsb/config.py",
+        "adsb/models.py",
+        "adsb/providers/__init__.py",
+        "adsb/providers/base.py",
+        "adsb/providers/opensky.py",
+        "adsb/sink.py",
+        "src/skywatcher/fr24/database.py",
+        "src/skywatcher/fr24/database_migrations.py"
+      ],
+      "canonical_targets": [
+        "src/pitirre/domains/air/aviation/adsb/",
+        "src/pitirre/core/storage/fr24/"
+      ],
+      "invariants": [
+        "MFL authority unchanged",
+        "source manifestation != observation != event != entity",
+        "ADS-B position/callsign does not prove aircraft identity",
+        "ADS-B observation does not imply mission or intent",
+        "FR24 lineage != FR24 ingest ownership of shared persistence"
+      ],
+      "all_registered_workflows_passed": true,
+      "air_domain_migration_complete": false,
+      "core_migration_complete": false,
+      "repository_rename_authorized": false
     }
   }
 }
