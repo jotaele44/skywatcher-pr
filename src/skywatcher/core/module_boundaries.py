@@ -150,6 +150,7 @@ SHIM_MODULE_BUCKETS: dict[str, str] = {
     "skywatcher.normalizers.air_event_normalizer": "core",
     "skywatcher.fr24.database": "core",
     "skywatcher.fr24.database_migrations": "core",
+    "adsb": "domain",
     "pitirre.compat.skywatcher.core.domain_registry": "core",
     "pitirre.compat.skywatcher.core.pitirre_observation": "core",
     "pitirre.compat.skywatcher.normalizers.air_event_normalizer": "core",
