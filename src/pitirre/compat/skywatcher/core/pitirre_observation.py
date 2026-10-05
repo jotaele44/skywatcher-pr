@@ -5,6 +5,7 @@ from pitirre.core.contracts.observation import (
     OBSERVATION_SCHEMA_VERSION,
     ObservationAdapterError,
     PitirreObservation,
+    _envelope,
     adapt_airspace_observation,
     adapt_maritime_baseline,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "OBSERVATION_SCHEMA_VERSION",
     "ObservationAdapterError",
     "PitirreObservation",
+    "_envelope",
     "adapt_airspace_observation",
     "adapt_maritime_baseline",
 ]
