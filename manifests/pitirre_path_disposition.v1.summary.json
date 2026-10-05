@@ -201,5 +201,38 @@
     },
     "note": "Post-freeze branch artifacts are not part of the frozen 1,363-file source census.",
     "displaced_rules_superseded": 1
+  },
+  "post_freeze_migrations": {
+    "core_air_foundation_v1": {
+      "state": "PASS",
+      "scope": "FOUNDATION_ONLY",
+      "verification_basis_head": "d955195f9bb17ce0d2d480a922915c4416578a83",
+      "pull_request": 341,
+      "source_census_denominator_preserved": 1363,
+      "migrated_rows": [
+        "src/skywatcher/core/domain_registry.py",
+        "src/skywatcher/core/pitirre_observation.py",
+        "src/skywatcher/normalizers/air_event_normalizer.py"
+      ],
+      "canonical_targets": [
+        "src/pitirre/core/domains/registry.py",
+        "src/pitirre/core/contracts/observation.py",
+        "src/pitirre/core/normalization/air_event.py"
+      ],
+      "compatibility_namespaces": [
+        "src/skywatcher/",
+        "src/pitirre/compat/skywatcher/"
+      ],
+      "air_subdomains_instantiated": [
+        "AIR.AVIATION",
+        "AIR.AIRSPACE",
+        "AIR.AEROSTAT",
+        "AIR.ATMOSPHERIC_SENSOR"
+      ],
+      "all_registered_workflows_passed": true,
+      "air_domain_migration_complete": false,
+      "core_migration_complete": false,
+      "repository_rename_authorized": false
+    }
   }
 }
