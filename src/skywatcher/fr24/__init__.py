@@ -23,14 +23,15 @@ Ownership map (mission responsibilities 1-18):
     review_status          -> review-status handling (14)
     mission_classification -> LEGACY compatibility gate only; active mission/
                               intent inference prohibited by ontology v2.1
-    database               -> database schema (15)
-    database_migrations    -> database initialization + migrations (16)
+    database               -> compatibility alias to PITIRRE Core storage (15)
+    database_migrations    -> compatibility alias to PITIRRE Core migrations (16)
     spiderweb_export       -> Skywatcher canonical export + Spiderweb bridge
                               serialization (18)
 
-The modules here wrap and re-export the existing, tested implementations rather
-than duplicating logic, so the pre-existing ``fr24/*`` test suite continues to
-pass while this package provides the consolidated boundary the mission requires.
+The ingest-specific modules remain under this package. Database persistence has
+moved canonically to ``pitirre.core.storage.fr24``; the two historical database
+module paths are compatibility aliases. This preserves tested callers without
+making FR24 ingest the owner of shared persistence infrastructure.
 """
 
 from __future__ import annotations
