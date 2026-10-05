@@ -21,6 +21,8 @@ def test_observation_contract_aliases_are_the_canonical_objects():
 
     assert legacy.PitirreObservation is canonical.PitirreObservation
     assert compat.PitirreObservation is canonical.PitirreObservation
+    assert legacy._envelope is canonical._envelope
+    assert compat._envelope is canonical._envelope
     assert legacy.adapt_airspace_observation is canonical.adapt_airspace_observation
     assert compat.adapt_maritime_baseline is canonical.adapt_maritime_baseline
 
