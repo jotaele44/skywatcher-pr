@@ -43,6 +43,7 @@ src/pitirre/
 │   ├── temporal/
 │   ├── spatial/
 │   ├── normalization/
+│   ├── storage/
 │   ├── knowledge/
 │   ├── replay/
 │   ├── registries/
@@ -113,7 +114,8 @@ sensing is SPACE; image interpretation remains SATIM.
 ## Analytical ownership
 
 - **CORE:** shared contracts, provenance, evidence axes, identity, temporal and
-  spatial references, registries, replay, readiness and certification primitives.
+  spatial references, normalization, persistence/storage primitives, registries,
+  replay, readiness and certification primitives.
 - **RLSM:** source inventory, hashing, OCR/visible extraction, pixel geometry,
   localization, immutable extraction receipts and review queues.
 - **SATIM:** imagery/terrain interpretation, artifact assessment, registration,
