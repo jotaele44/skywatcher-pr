@@ -10,6 +10,7 @@ repository or rewriting historical SkyWatcher provenance.
 - `contracts/observation.py` — lossless cross-domain observation envelope.
 - `contracts/air_event.py` — AIR event v2 schema loading/validation.
 - `normalization/air_event.py` — nullable-geometry AIR normalization.
+- `storage/fr24/` — canonical SQLite persistence/migration primitives for FR24-lineage aviation data.
 
 ## Dependency rule
 
@@ -18,7 +19,7 @@ dependencies. It must not import SATIM, FPIM, CORRIM or Legacy analytical code.
 
 ## Planned Core families
 
-The repository map reserves provenance, evidence, identity, temporal, spatial,
+The repository map reserves provenance, evidence, identity, temporal, spatial, additional storage families,
 knowledge, replay, registries, readiness, governance and federation families.
 They are migrated only when their manifest rows reach their own parity gates;
 empty directories are not created merely to make the target tree look complete.
