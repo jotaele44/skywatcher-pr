@@ -34,6 +34,13 @@ MODULE_BOUNDARIES: dict[str, list[str]] = {
     "core": [
         "src/skywatcher/core/**/*.py",
         "src/skywatcher/registry/**/*.py",
+        "src/pitirre/core/**/*.py",
+    ],
+    # Physical-domain packages are orthogonal to SATIM/FPIM/CORRIM analytical
+    # ownership. Domain packages may consume Core contracts but may not bypass
+    # them to depend directly on analytical implementations.
+    "domain": [
+        "src/pitirre/domains/**/*.py",
     ],
     "satim": [
         "src/skywatcher/satim/**/*.py",
@@ -107,6 +114,7 @@ MODULE_BOUNDARIES: dict[str, list[str]] = {
 
 ALLOWED_IMPORTS: dict[str, set[str]] = {
     "core": {"core"},
+    "domain": {"core", "domain"},
     "satim": {"core", "satim"},
     "fpim": {"core", "fpim"},
     "corrim": {"core", "satim", "fpim", "corrim"},
@@ -137,6 +145,12 @@ SHIM_MODULE_BUCKETS: dict[str, str] = {
     "pipeline.normalize_missions": "core",
     "pipeline.normalize_operators": "core",
     "pipeline.db_utils": "core",
+    "skywatcher.core.domain_registry": "core",
+    "skywatcher.core.pitirre_observation": "core",
+    "skywatcher.normalizers.air_event_normalizer": "core",
+    "pitirre.compat.skywatcher.core.domain_registry": "core",
+    "pitirre.compat.skywatcher.core.pitirre_observation": "core",
+    "pitirre.compat.skywatcher.normalizers.air_event_normalizer": "core",
     "aircraft_intelligence": "fpim",
     "gis_intelligence": "corrim",
     "ilap_airspace_bridge": "corrim",
