@@ -48,6 +48,6 @@ OPENSKY_CLIENT_ID = os.getenv("OPENSKY_CLIENT_ID", "")
 OPENSKY_CLIENT_SECRET = os.getenv("OPENSKY_CLIENT_SECRET", "")
 
 # ── Sink ──────────────────────────────────────────────────────────────────────
-# Written through src/skywatcher/fr24/database.py's connect()/migration
-# machinery, same DB-path precedence as the rest of the FR24 pipeline.
+# Written through pitirre.core.storage.fr24 connect()/migration machinery,
+# with the same DB-path precedence retained from the FR24 lineage.
 SKYWATCHER_DB = os.getenv("SKYWATCHER_DB", "")
