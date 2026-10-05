@@ -241,7 +241,8 @@
           "frontend/tests/gui-parity.spec.mjs",
           "frontend/tests/zip-design.spec.mjs"
         ]
-      }
+      },
+      "rationale": " GUI reachability regression file syntax restored so declared routes and diagnostic failure-state tests can execute."
     },
     {
       "id": "airspace-export-integrity",
