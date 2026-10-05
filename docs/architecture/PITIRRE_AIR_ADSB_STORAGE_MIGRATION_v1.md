@@ -1,6 +1,6 @@
 # PITIRRE AIR ADS-B + Core Storage Migration v1
 
-**State:** CANDIDATE_PENDING_PARITY_CI  
+**State:** PASS / CLAIM_SCOPED  
 **Branch:** `pitirre/repo-map-v1`  
 **Frozen source census:** `main@2100e6527d49abc302b804d3175feea9ce614eb4`  
 **Prior certified foundation head:** `a46850b5fd7ee5ee8a51556521e5b4caf5a653bd`
@@ -65,5 +65,27 @@ new analytical owner, or Lens Realignment.
 - MFL authority remains unchanged;
 - frozen source blob SHA/size values remain provenance evidence.
 
-Promotion to PASS requires exact-head CI after the explicit parity firewall is
-present.
+## Verification
+
+Verification basis: `3ff7a084dee5149b9014b9b91bf176cfdfa2822b`.
+
+All registered PR #341 workflows completed successfully on that exact head:
+Skywatcher CI (Python 3.10/3.11/3.12, frontend, lint, lock, ADS-B and imagery),
+GUI capability parity + GUI Reachability E2E, Federation Compatibility, HAF,
+Admin Control Plane Boundary, SATIM Phase 2/runtime, pip-audit, Secret Scan,
+CodeQL, federation template drift, and desktop builds on Windows/macOS/Linux.
+
+The explicit parity firewall proves:
+
+- root ADS-B facade objects resolve to the canonical AIR.AVIATION objects;
+- module-alias files resolve to the canonical modules rather than duplicate logic;
+- canonical ADS-B sink writes through the canonical Core storage contract;
+- historical SkyWatcher FR24 database modules alias the canonical Core modules;
+- repository/schema path calculations still resolve to the same repository assets;
+- migrated root files contain no duplicate class/function implementations.
+
+## Certification boundary
+
+PASS is claim-scoped to these nine rows. It does not certify complete AIR,
+complete Core, MFL/corpus migration, FR24 ingest migration, repository rename,
+or compatibility-wrapper retirement.
