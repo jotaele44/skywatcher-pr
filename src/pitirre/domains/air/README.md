@@ -24,3 +24,15 @@ AIR is a physical-domain namespace, not an analytical owner.
 
 `events.py` is an AIR facade over the Core-owned AIR event normalizer and v2
 contract validator. It deliberately contains no duplicate normalization logic.
+
+
+## ADS-B migration
+
+`aviation/adsb/` is the canonical implementation for automated ADS-B state
+vectors, provider registry/configuration, OpenSky adaptation and persistence
+sink behavior. The historical root `adsb/` package remains a compatibility
+facade/alias surface.
+
+ADS-B state vectors remain observations/source manifestations. They do not
+establish aircraft identity by callsign alone and do not authorize mission or
+intent inference.
