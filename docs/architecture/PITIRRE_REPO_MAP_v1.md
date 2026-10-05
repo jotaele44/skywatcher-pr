@@ -219,6 +219,23 @@ analysis.
 migration. MFL authority, remaining AIR rows, analytical FPIM/SATIM/CORRIM code,
 repository rename and wrapper retirement remain later gated work.
 
+### AIR.AVIATION ADS-B + Core FR24 storage — PASS
+
+Verification basis: `3ff7a084dee5149b9014b9b91bf176cfdfa2822b`.
+
+Seven frozen ADS-B rows now have canonical implementations under
+`src/pitirre/domains/air/aviation/adsb/`, with root `adsb/` retained as a
+compatibility surface. Two frozen FR24 persistence rows now live canonically
+under `src/pitirre/core/storage/fr24/`, with historical
+`skywatcher.fr24.database*` paths retained as module aliases.
+
+The frozen manifest's pre-existing `core/storage/fr24` target exposed a
+human-readable topology omission; `core/storage/` has therefore been added to
+the displayed topology. No domain/owner taxonomy changed.
+
+This slice preserves MFL authority and does not promote ADS-B observations into
+aircraft identity, mission, or intent findings.
+
 ## Certification boundary
 
 This document certifies only that the recursive Git tree was completely
