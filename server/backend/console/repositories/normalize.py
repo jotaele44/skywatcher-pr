@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -37,15 +38,16 @@ def as_bool(value: Any) -> bool:
 
 def as_float(value: Any) -> float | None:
     try:
-        return float(str(value).strip())
-    except (TypeError, ValueError):
+        number = float(str(value).strip())
+        return number if math.isfinite(number) else None
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
 def as_int(value: Any) -> int | None:
     try:
         return int(float(str(value).strip()))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
 
 

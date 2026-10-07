@@ -21,6 +21,7 @@ import hashlib
 import ipaddress
 import json
 import logging
+import math
 import os
 import secrets
 import sqlite3
@@ -555,7 +556,8 @@ def coerce(value: str) -> Any:
         return int(value)
     except ValueError:
         try:
-            return float(value)
+            number = float(value)
+            return number if math.isfinite(number) else None
         except ValueError:
             return value
 

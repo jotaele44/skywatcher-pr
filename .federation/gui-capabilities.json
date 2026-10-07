@@ -223,7 +223,8 @@
           "tests/test_acquisition_status_api.py"
         ],
         "contract": [
-          "tests/test_gui_parity.py"
+          "tests/test_gui_parity.py",
+          "tests/test_review_numeric_boundaries.py"
         ],
         "unit": [
           "frontend/src/lib/app-params.test.js",

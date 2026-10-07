@@ -258,4 +258,11 @@ test("FR24 capture edits report persistence failures and omit unsupported action
   await expect(page.getByText("Diagnostic state updated", { exact: true })).toHaveCount(0);
   expect(writeAttempts).toBe(1);
 });
+
+test("console artifact responses contain valid JSON", async ({ page, request }) => {
+  await page.goto("/console", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#root")).toBeVisible();
+  const response = await request.get("http://127.0.0.1:8000/api/entities/FlightObservation");
+  expect(response.status()).toBe(200);
+  expect(Array.isArray(await response.json())).toBe(true);
 });

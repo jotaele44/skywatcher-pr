@@ -11,6 +11,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import math
 import sqlite3
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -92,7 +93,8 @@ def _first(row: dict[str, Any], aliases: tuple[str, ...]) -> str:
 def _float(value: Any) -> float | None:
     try:
         raw = _text(value)
-        return float(raw) if raw else None
+        number = float(raw) if raw else None
+        return number if number is not None and math.isfinite(number) else None
     except (TypeError, ValueError):
         return None
 
