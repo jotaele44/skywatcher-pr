@@ -25,10 +25,10 @@ jobs:
           set -euo pipefail
           bash .recovery/skywatcher-exact/run_exact.sh
           ROOT="$RUNNER_TEMP/recovered"
-cp .recovery/skywatcher-successor-v1/skywatcherAcquisition.tsx "$ROOT/helpers/skywatcherAcquisition.tsx"
-cp .recovery/skywatcher-successor-v1/skywatcherAcquisition.spec.tsx "$ROOT/helpers/skywatcherAcquisition.spec.tsx"
-cp .recovery/skywatcher-successor-v1/skywatcherIdentity.tsx "$ROOT/helpers/skywatcherIdentity.tsx"
-cp .recovery/skywatcher-successor-v1/skywatcherIdentity.spec.tsx "$ROOT/helpers/skywatcherIdentity.spec.tsx"
+          cp .recovery/skywatcher-successor-v1/skywatcherAcquisition.tsx "$ROOT/helpers/skywatcherAcquisition.tsx"
+          cp .recovery/skywatcher-successor-v1/skywatcherAcquisition.spec.tsx "$ROOT/helpers/skywatcherAcquisition.spec.tsx"
+          cp .recovery/skywatcher-successor-v1/skywatcherIdentity.tsx "$ROOT/helpers/skywatcherIdentity.tsx"
+          cp .recovery/skywatcher-successor-v1/skywatcherIdentity.spec.tsx "$ROOT/helpers/skywatcherIdentity.spec.tsx"
           cd "$RUNNER_TEMP/recovered"
           npx vite build
           NPM_CONFIG_LEGACY_PEER_DEPS=true npm install --save-dev --no-audit --no-fund --ignore-scripts playwright@1.55.0
