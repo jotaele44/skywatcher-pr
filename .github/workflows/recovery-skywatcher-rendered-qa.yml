@@ -61,7 +61,7 @@ jobs:
             const consoleErrors = [];
             page.on("console", msg => { if (msg.type() === "error") consoleErrors.push(msg.text()); });
             page.on("pageerror", error => consoleErrors.push(String(error)));
-            const response = await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+            const response = await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 15000 });\n            await page.waitForTimeout(1500);
             const metrics = await page.evaluate(() => ({
               bodyTextLength: document.body.innerText.trim().length,
               documentClientWidth: document.documentElement.clientWidth,
