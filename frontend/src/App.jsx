@@ -23,6 +23,7 @@ import Calibration from '@/pages/Calibration';
 import AnalysisLenses from '@/pages/AnalysisLenses';
 import SpatialTruth from '@/pages/SpatialTruth';
 import FlightArchive from '@/pages/FlightArchive';
+import SpaceTrackControl from '@/pages/SpaceTrackControl';
 import ILAPReviewLab from '@/pages/ILAPReviewLab';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
             <Route path="/analysis" element={<AnalysisLenses />} />
             <Route path="/spatial-truth" element={<SpatialTruth />} />
             <Route path="/flight-archive" element={<FlightArchive />} />
+            <Route path="/space-track" element={<SpaceTrackControl />} />
             <Route path="/ilap-review" element={<ILAPReviewLab />} />
           </Route>
           {/* Auth routes render only when authentication is actually required.
