@@ -1,0 +1,28 @@
+{
+  "manifest_version": "pitirre-repo-transformation-v1",
+  "status": "CANDIDATE_NOT_RENAME_EXECUTED",
+  "source_repository": {
+    "github_repository_id": "1261399537",
+    "repository_full_name": "jotaele44/skywatcher-pr",
+    "repository_name": "skywatcher-pr",
+    "default_branch": "main",
+    "frozen_main_sha": "afbf2f8ea31e9fdd449f0d369727022956817213"
+  },
+  "target_repository": {
+    "proposed_repository_name": "pitirre-pr",
+    "logical_continuity": "SAME_LOGICAL_REPOSITORY",
+    "rename_executed": false
+  },
+  "domain_model": {
+    "registry_version": "pitirre-domain-registry-v0.1",
+    "top_level_domains": ["AIR", "LAND", "WATER", "SPACE"],
+    "road_binding": "LAND.TRANSPORT.ROAD"
+  },
+  "preservation_rules": [
+    "PRESERVE_GIT_HISTORY",
+    "PRESERVE_HISTORICAL_SKYWATCHER_PROVENANCE",
+    "PRESERVE_EXISTING_AIR_BEHAVIOR_UNTIL_EXPLICIT_MIGRATION",
+    "DO_NOT_GLOBAL_REPLACE_SKYWATCHER_SYMBOLS",
+    "REPOSITORY_NAME_IS_NOT_REPOSITORY_IDENTITY"
+  ]
+}
