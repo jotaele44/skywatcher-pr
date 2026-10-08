@@ -22,6 +22,8 @@ import Readiness from '@/pages/Readiness';
 import Calibration from '@/pages/Calibration';
 import AnalysisLenses from '@/pages/AnalysisLenses';
 import SpatialTruth from '@/pages/SpatialTruth';
+import FlightArchive from '@/pages/FlightArchive';
+import SpaceTrackControl from '@/pages/SpaceTrackControl';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -65,6 +67,8 @@ const AuthenticatedApp = () => {
             <Route path="/calibration" element={<Calibration />} />
             <Route path="/analysis" element={<AnalysisLenses />} />
             <Route path="/spatial-truth" element={<SpatialTruth />} />
+            <Route path="/flight-archive" element={<FlightArchive />} />
+            <Route path="/space-track" element={<SpaceTrackControl />} />
           </Route>
           {/* Auth routes render only when authentication is actually required.
               In diagnostic mode the backend implements no /auth/login,

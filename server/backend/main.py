@@ -14,6 +14,8 @@ Start with:
 
 from __future__ import annotations
 
+import base64
+import binascii
 import csv
 import hashlib
 import ipaddress
@@ -26,7 +28,7 @@ import sys
 import uuid
 from collections import Counter
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +45,25 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
+from server.backend.spacetrack_router import router as spacetrack_router
+from skywatcher.fr24 import database as skywatcher_db
+from skywatcher.fr24.acquisition_receipts import (
+    AcquisitionReceiptError,
+    next_discovery_target,
+)
+from skywatcher.fr24.acquisition_receipts import (
+    load_manifest as load_acquisition_manifest,
+)
+from skywatcher.fr24.acquisition_receipts import (
+    status_summary as acquisition_status_summary,
+)
+from skywatcher.fr24.flight_corpus import (
+    CorpusPersistenceError,
+    persist_corpus_snapshot,
+    read_corpus_snapshot,
+)
+from skywatcher.fr24.flight_coverage import build_coverage_ledger
+
 AIRPORTS_PATH = ROOT / "data" / "reference" / "pr_airports.jsonl"
 EXPORTS_DIR = ROOT / "exports"
 SYNTHETIC_PACKAGE = EXPORTS_DIR / "examples" / "synthetic_airspace_package"
@@ -53,12 +74,14 @@ RLSM_MARKER_VERSION = "rlsm-aircraft-marker-v1"
 RLSM_GEOREF_VERSION = "rlsm-spatial-georef-v1"
 RLSM_MAX_POSITION_ERROR_M = 500
 ADSB_DB = Path(os.environ["SKYWATCHER_DB"]) if os.environ.get("SKYWATCHER_DB") else ROOT / "data" / "skywatcher.db"
+CORPUS_IMPORT_MAX_BYTES = int(os.environ.get("SKYWATCHER_CORPUS_IMPORT_MAX_BYTES", str(64 * 1024 * 1024)))
 # Committed as .json rather than .geojson: this repo's .gitignore blanket-excludes
 # *.geojson (data-policy convention for generated/runtime export artifacts), but
 # this is checked-in reference boundary data, the same file already committed by
 # aguayluz-pr and ovnis-pr under the identical name→GEOID shape.
 MUNICIPIOS_PATH = ROOT / "data" / "geo" / "pr_municipios_boundaries.json"
 FLIGHT_CORPUS_V4_DIR = ROOT / "data" / "flight_tracks" / "corpus_v4"
+P1_ACQUISITION_MANIFEST = ROOT / "data" / "flight_acquisition" / "p1_2026-09-25.json"
 
 
 
@@ -76,6 +99,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(console_router)
+app.include_router(spacetrack_router)
 
 def _flight_corpus_v4_contract() -> dict[str, Any]:
     path = ROOT / "config" / "flight_corpus_v4.json"
@@ -219,6 +243,21 @@ def flight_corpus_v4_family_provenance() -> dict[str, Any]:
     }
 
 
+@app.get("/api/flight-corpus/v4/family-split-summary")
+def flight_corpus_v4_family_split_summary() -> dict[str, Any]:
+    path, member, availability = _verified_v4_member("complete_link_family_split_summary.csv")
+    if path is None:
+        return {"availability": availability, "member": member, "rows": [], "row_count": 0}
+    rows = read_csv(path)
+    return {
+        "availability": availability,
+        "member": member,
+        "rows": rows,
+        "row_count": len(rows),
+        "interpretation": {"family_is_identity": False, "subfamily_is_mission": False, "minus_one_is_canonical_family": False},
+    }
+
+
 # Session-scoped mutations from the review UI; never written to disk.
 _overlay: dict[str, dict[str, dict[str, Any]]] = {}
 _created: dict[str, list[dict[str, Any]]] = {}
@@ -256,7 +295,7 @@ except ImportError as exc:
 #
 #   PRII_WRITE_TOKEN set    -> mutating routes require Authorization: Bearer <token>
 #   PRII_WRITE_TOKEN unset  -> mutating routes are served to clients on a local
-#                              network (loopback, RFC1918 private, link-local)
+#                              network (loopback, RFC1918, IPv6 ULA, link-local)
 #                              and refused for public addresses
 #
 # The private-range allowance is deliberate: containerized or LAN deployments see
@@ -271,17 +310,30 @@ except ImportError as exc:
 #
 # Reads are unaffected in every case.
 _WRITE_TOKEN = os.environ.get("PRII_WRITE_TOKEN", "")
+_LOCAL_NETWORKS = tuple(
+    ipaddress.ip_network(network)
+    for network in (
+        "127.0.0.0/8",
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "169.254.0.0/16",
+        "::1/128",
+        "fc00::/7",
+        "fe80::/10",
+    )
+)
 
 
 def _is_local_network(host: str) -> bool:
-    """True for loopback, RFC1918 private, and link-local client addresses."""
-    if host in ("localhost", ""):
-        return host == "localhost"
+    """True only for loopback, private, and link-local client addresses."""
+    if host == "localhost":
+        return True
     try:
         ip = ipaddress.ip_address(host)
     except ValueError:
         return False
-    return ip.is_loopback or ip.is_private or ip.is_link_local
+    return any(network.version == ip.version and ip in network for network in _LOCAL_NETWORKS)
 
 
 def require_write_access(request: Request) -> None:
@@ -310,6 +362,168 @@ if not _WRITE_TOKEN:
         "a local network and are refused for public addresses. Set the token "
         "before exposing this server beyond a trusted network."
     )
+
+
+@app.get("/api/flight-corpus/archive/snapshots")
+def flight_corpus_archive_snapshots() -> list[dict[str, Any]]:
+    """List persisted corpus snapshots without creating a database as a read side effect."""
+    if not ADSB_DB.is_file():
+        return []
+    try:
+        conn = skywatcher_db.connect(ADSB_DB, readonly=True)
+        try:
+            rows = conn.execute(
+                """
+                SELECT snapshot_id, source_kind, source_ref, source_filename,
+                       source_sha256, format_name, format_version, exported_at,
+                       ingested_at, record_count, status
+                FROM flight_corpus_snapshots
+                ORDER BY snapshot_id DESC
+                """
+            ).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+    except sqlite3.OperationalError:
+        return []
+
+
+@app.get("/api/flight-corpus/archive/snapshots/{snapshot_id}")
+def flight_corpus_archive_snapshot(snapshot_id: int) -> dict[str, Any]:
+    """Read one frozen corpus snapshot and rehydrate its normalized records."""
+    if not ADSB_DB.is_file():
+        raise HTTPException(status_code=404, detail="corpus database not found")
+    try:
+        stored = read_corpus_snapshot(ADSB_DB, snapshot_id)
+    except CorpusPersistenceError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    records = []
+    for row in stored["records"]:
+        normalized = row.get("normalized_record")
+        if not isinstance(normalized, dict):
+            normalized = {}
+        records.append(
+            {
+                **normalized,
+                "raw": row.get("raw_record"),
+                "persistence": {
+                    "corpus_record_id": row.get("corpus_record_id"),
+                    "identity_status": row.get("identity_status"),
+                    "manifestation_count": len(row.get("manifestations") or []),
+                },
+            }
+        )
+    if len(records) != stored["snapshot"]["record_count"]:
+        raise HTTPException(status_code=409, detail="persisted snapshot row-count mismatch")
+    return {
+        "snapshot": stored["snapshot"],
+        "sources": stored.get("sources", []),
+        "records": records,
+    }
+
+
+@app.get("/api/flight-corpus/archive/snapshots/{snapshot_id}/coverage")
+def flight_corpus_archive_coverage(
+    snapshot_id: int,
+    as_of: str | None = Query(default=None),
+) -> dict[str, Any]:
+    """Return deterministic coverage/acquisition state for one persisted snapshot."""
+    if not ADSB_DB.is_file():
+        raise HTTPException(status_code=404, detail="corpus database not found")
+    try:
+        stored = read_corpus_snapshot(ADSB_DB, snapshot_id)
+    except CorpusPersistenceError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    normalized: list[dict[str, Any]] = []
+    for row in stored["records"]:
+        record = row.get("normalized_record")
+        if isinstance(record, dict):
+            normalized.append(record)
+
+    as_of_date: date | None = None
+    if as_of:
+        try:
+            as_of_date = date.fromisoformat(as_of)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="as_of must be YYYY-MM-DD") from exc
+
+    ledger = build_coverage_ledger(normalized, as_of=as_of_date)
+    ledger["snapshot"] = {
+        "snapshot_id": snapshot_id,
+        "source_sha256": stored["snapshot"].get("source_sha256"),
+        "record_count": stored["snapshot"].get("record_count"),
+        "status": stored["snapshot"].get("status"),
+    }
+    if ledger["summary"]["input_records"] != stored["snapshot"]["record_count"]:
+        raise HTTPException(status_code=409, detail="coverage input row-count mismatch")
+    return ledger
+
+
+@app.get("/api/flight-acquisition/p1/status")
+def flight_acquisition_p1_status() -> dict[str, Any]:
+    """Expose the frozen P1 acquisition receipt and its next blocked target."""
+    if not P1_ACQUISITION_MANIFEST.is_file():
+        raise HTTPException(status_code=404, detail="P1 acquisition manifest not found")
+    try:
+        manifest = load_acquisition_manifest(P1_ACQUISITION_MANIFEST)
+    except (OSError, json.JSONDecodeError, AcquisitionReceiptError) as exc:
+        raise HTTPException(status_code=500, detail=f"invalid P1 acquisition manifest: {exc}") from exc
+
+    return {
+        "summary": acquisition_status_summary(manifest),
+        "execution_receipt": manifest.get("execution_receipt"),
+        "next_discovery_target": next_discovery_target(manifest),
+        "targets": manifest.get("targets", []),
+        "source_corpus_sha256": manifest.get("source_corpus_sha256"),
+        "coverage_ledger_merge_sha": manifest.get("coverage_ledger_merge_sha"),
+        "generated_as_of": manifest.get("generated_as_of"),
+    }
+
+
+@app.post("/api/flight-corpus/archive/snapshots", dependencies=_WRITE_GUARD)
+def flight_corpus_archive_persist(payload: dict[str, Any]) -> dict[str, Any]:
+    """Persist one reviewed corpus snapshot from exact source bytes plus parsed records."""
+    encoded = payload.get("source_bytes_base64")
+    if not isinstance(encoded, str) or not encoded:
+        raise HTTPException(status_code=400, detail="source_bytes_base64 is required")
+    # Reject obviously oversized base64 before allocating the decoded bytes.
+    if len(encoded) > ((CORPUS_IMPORT_MAX_BYTES + 2) // 3) * 4 + 4:
+        raise HTTPException(status_code=413, detail="corpus source exceeds import byte limit")
+    try:
+        source_bytes = base64.b64decode(encoded, validate=True)
+    except (binascii.Error, ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail="invalid source_bytes_base64") from exc
+    if len(source_bytes) > CORPUS_IMPORT_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="corpus source exceeds import byte limit")
+
+    records = payload.get("records")
+    if not isinstance(records, list):
+        raise HTTPException(status_code=400, detail="records must be a list")
+
+    try:
+        result = persist_corpus_snapshot(
+            ADSB_DB,
+            source_bytes=source_bytes,
+            source_kind=str(payload.get("source_kind") or "master_flight_log_html"),
+            source_ref=payload.get("source_ref"),
+            source_filename=payload.get("source_filename"),
+            format_name=str(payload.get("format_name") or "master-flight-log-backup"),
+            format_version=payload.get("format_version"),
+            exported_at=payload.get("exported_at"),
+            records=records,
+        )
+    except CorpusPersistenceError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    return {
+        "snapshot_id": result.snapshot_id,
+        "source_sha256": result.source_sha256,
+        "record_count": result.record_count,
+        "manifestation_count": result.manifestation_count,
+        "duplicate_snapshot": result.duplicate_snapshot,
+    }
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -932,8 +1146,9 @@ def auth_me() -> dict[str, Any]:
 
 
 @app.post("/api/query")
-def query(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def query(request: Request, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     """Answer only from persisted craft profiles, with deterministic fallback."""
+    require_write_access(request)
     payload = payload or {}
     prompt = str(payload.get("prompt") or payload.get("q") or "").strip()
     if not prompt:

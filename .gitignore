@@ -112,3 +112,6 @@ exports/spiderweb/
 # runtime logs, tokens, secrets
 *.log
 *.token
+
+# FR24 icon reference pixels are operator-local until redistribution rights are verified.
+data/local_reference/fr24_icon_library/

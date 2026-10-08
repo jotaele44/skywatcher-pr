@@ -19,20 +19,50 @@ export default function CaptureDetailDrawer({ id, onClose, go }) {
   const routes = r.routesForCapture(cap.capture_id);
   const is = INGEST_STATUS[cap.ingest_status] || INGEST_STATUS.queued;
 
-  const setStatus = (s, msg) => {
-    d.updateRecord("captures", cap.id, { ingest_status: s });
-    toast({ title: "Diagnostic state updated", description: msg });
+  const setStatus = async (s, msg) => {
+    try {
+      await d.updateRecord("captures", cap.id, { ingest_status: s });
+      toast({ title: "Diagnostic state updated", description: msg });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Diagnostic update failed",
+        description: String(error?.message ?? error),
+      });
+    }
   };
-  const placeholder = (msg) => toast({ title: "Repository-side action (placeholder)", description: msg });
   const openReview = async () => {
-    await d.createReview({
-      review_id: `rev_cap_${Date.now()}`, item_type: "capture", item_id: cap.capture_id,
-      reason: "Manual review opened from FR24 Intake for capture metadata.",
-      severity: "medium", assigned_to: "operator_diagnostic", review_status: "open",
-      recommended_action: "Review capture metadata and extraction quality.",
-      created_at: new Date().toISOString(), notes: "Created from capture drawer (diagnostic).", synthetic_flag: true,
-    });
-    toast({ title: "Manual review item created", description: `Linked to ${cap.capture_id}` });
+    try {
+      await d.createReview({
+        review_id: `rev_cap_${Date.now()}`, item_type: "capture", item_id: cap.capture_id,
+        reason: "Manual review opened from FR24 Intake for capture metadata.",
+        severity: "medium", assigned_to: "operator_diagnostic", review_status: "open",
+        recommended_action: "Review capture metadata and extraction quality.",
+        created_at: new Date().toISOString(), notes: "Created from capture drawer (diagnostic).", synthetic_flag: true,
+      });
+      toast({ title: "Manual review item created", description: `Linked to ${cap.capture_id}` });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Manual review was not created",
+        description: String(error?.message ?? error),
+      });
+    }
+  };
+  const copyHash = async () => {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard access is unavailable in this browser.");
+      }
+      await navigator.clipboard.writeText(cap.sha256_hash);
+      toast({ title: "Hash copied" });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Hash not copied",
+        description: String(error?.message ?? error),
+      });
+    }
   };
 
   return (
@@ -51,12 +81,10 @@ export default function CaptureDetailDrawer({ id, onClose, go }) {
       footer={
         <div className="space-y-2">
           <p className="text-[10px] text-muted-foreground">
-            FR24 ingest is repository-side. Federation only visualizes capture metadata and review state — these actions update diagnostic state only.
+            FR24 ingest and observation linking are repository-side workflows. This drawer only updates diagnostic state; it does not queue or process captures.
           </p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => placeholder("Capture queued (diagnostic placeholder, no execution).")} className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground/80 hover:text-primary">Queue Capture</button>
             <button onClick={openReview} className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground/80 hover:text-[hsl(38_100%_62%)]">Open Manual Review</button>
-            <button onClick={() => placeholder("Observation link recorded (diagnostic placeholder).")} className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground/80 hover:text-primary">Link Observation</button>
             <button onClick={() => setStatus("duplicate", "Marked as duplicate.")} className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground/80 hover:text-[hsl(262_60%_76%)]">Mark Duplicate</button>
             <button onClick={() => setStatus("rejected", "Capture rejected.")} className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground/80 hover:text-[hsl(4_90%_66%)]">Reject Capture</button>
           </div>
@@ -73,7 +101,7 @@ export default function CaptureDetailDrawer({ id, onClose, go }) {
         <div className="mt-2 flex items-center gap-2 rounded border border-border bg-[hsl(220_30%_4%)] px-3 py-2">
           <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">sha256</span>
           <code className="flex-1 overflow-x-auto whitespace-nowrap font-mono text-[10px] text-foreground/70 scrollbar-thin">{cap.sha256_hash}</code>
-          <button onClick={() => { navigator.clipboard?.writeText(cap.sha256_hash); toast({ title: "Hash copied" }); }} className="text-muted-foreground hover:text-primary"><Copy className="h-3 w-3" /></button>
+          <button type="button" aria-label="Copy SHA-256 hash" onClick={copyHash} className="text-muted-foreground hover:text-primary"><Copy className="h-3 w-3" /></button>
         </div>
       </Section>
 

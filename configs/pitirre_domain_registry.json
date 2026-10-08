@@ -1,0 +1,66 @@
+{
+  "registry_version": "pitirre-domain-registry-v0.1",
+  "status": "CANDIDATE_BINDING",
+  "top_level_domains": ["AIR", "LAND", "WATER", "SPACE"],
+  "domains": {
+    "AIR": {
+      "description": "Atmospheric aviation and airborne observation domain.",
+      "lineage": "SkyWatcher",
+      "subdomains": [
+        "AVIATION",
+        "AIRSPACE",
+        "AEROSTAT",
+        "ATMOSPHERIC_SENSOR"
+      ]
+    },
+    "LAND": {
+      "description": "Terrestrial place, infrastructure, mobility, terrain and field-observation domain.",
+      "subdomains": [
+        "TERRAIN",
+        "FACILITY",
+        "INFRASTRUCTURE",
+        "TRANSPORT",
+        "VEHICLE",
+        "CONSTRUCTION",
+        "SENSOR",
+        "FIELD_ACTIVITY"
+      ],
+      "transport_network_types": [
+        "ROAD",
+        "RAIL",
+        "TRAIL",
+        "OTHER_NETWORK"
+      ]
+    },
+    "WATER": {
+      "description": "Aquatic, hydrologic, coastal and maritime observation domain.",
+      "subdomains": [
+        "HYDROLOGIC",
+        "COASTAL",
+        "MARITIME"
+      ]
+    },
+    "SPACE": {
+      "description": "Orbital, space-derived, launch, reentry and space-weather observation domain.",
+      "subdomains": [
+        "ORBITAL",
+        "SATELLITE",
+        "LAUNCH",
+        "REENTRY",
+        "REMOTE_SENSING",
+        "SPACE_WEATHER",
+        "GROUND_SEGMENT"
+      ]
+    }
+  },
+  "binding_rules": {
+    "road_domain_state": "LAND.TRANSPORT.ROAD",
+    "road_is_top_level": false,
+    "domain_registry_is_extensible": true,
+    "historical_skywatcher_provenance_must_not_be_rewritten": true,
+    "co_location_does_not_imply_relationship": true,
+    "relationship_does_not_imply_causation": true,
+    "proximity_does_not_imply_road_access": true,
+    "road_adjacency_does_not_imply_connectivity": true
+  }
+}

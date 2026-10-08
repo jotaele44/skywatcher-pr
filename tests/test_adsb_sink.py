@@ -36,7 +36,8 @@ def _state(**overrides) -> StateVector:
 def test_migration_0002_creates_table(tmp_path):
     dbp = tmp_path / "s.db"
     result = migrations.initialize_database(dbp)
-    assert result.applied == [1, 2]
+    assert 2 in result.applied
+    assert result.schema_version == migrations.LATEST_VERSION
     conn = db.connect(dbp, readonly=True)
     try:
         assert "adsb_state_vectors" in db.list_tables(conn)

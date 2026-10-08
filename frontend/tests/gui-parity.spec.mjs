@@ -96,6 +96,11 @@ test("interactive map exposes spatial and track workflows", async ({ page }) => 
 });
 
 test("municipio density failure retries into scoped evidence", async ({ page }) => {
+  // This regression exercises the local density API, not upstream basemap uptime.
+  await page.route(/^https:\/\/[abc]\.tile\.openstreetmap\.org\//, (route) => route.fulfill({
+    status: 200, contentType: "image/png",
+    body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAABFUlEQVR4nO3BMQEAAADCoPVP7WsIoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeAMBPAABPO1TCQAAAABJRU5ErkJggg==", "base64"),
+  }));
   const consoleErrors = [];
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
@@ -163,4 +168,94 @@ test("municipio density failure retries into scoped evidence", async ({ page }) 
   await expect(page.getByText("2 matched · 1 unresolved · 3 total · identity effect NONE · CANDIDATE_NOT_IDENTITY").first()).toBeVisible();
   expect(attempts).toBe(2);
   expect(consoleErrors).toEqual([]);
+});
+
+test("Space-Track distinguishes unavailable counts from materialized zero and retries safely", async ({ page }) => {
+  let mode = "unavailable";
+  await page.route("**/api/space-track/status", async (route) => {
+    if (mode === "failure") {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ detail: "fixture outage" }) });
+      return;
+    }
+    const available = mode === "empty";
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      static_contract: { state: "PASS" }, runtime: { state: "BLOCKED", gates: [] }, sources: [],
+      execution: { local_store_present: available, browser_upstream_calls: false, operator_writes: "HARD_DISABLED", credentials_embedded: false },
+      materializations: {
+        space_objects: { available, object_count: available ? 0 : null, contradiction_count: available ? 0 : null },
+        reentry_events: { available, event_count: available ? 0 : null, contradiction_count: available ? 0 : null },
+      },
+    }) });
+  });
+  await page.goto("/space-track");
+  const objects = page.getByText("Space objects", { exact: true }).locator("..");
+  const reentry = page.getByText("Reentry events", { exact: true }).locator("..");
+  await expect(objects.getByText("UNKNOWN", { exact: true })).toBeVisible();
+  await expect(reentry.getByText("UNKNOWN", { exact: true })).toBeVisible();
+  mode = "empty";
+  await page.getByRole("button", { name: "Reload local status" }).click();
+  await expect(objects.getByText("0", { exact: true })).toBeVisible();
+  await expect(reentry.getByText("0", { exact: true })).toBeVisible();
+  mode = "failure";
+  await page.getByRole("button", { name: "Reload local status" }).click();
+  await expect(page.getByText("Local status unavailable", { exact: true })).toBeVisible();
+  await expect(objects.getByText("UNKNOWN", { exact: true })).toBeVisible();
+  mode = "empty";
+  await page.getByRole("button", { name: "Reload local status" }).click();
+  await expect(objects.getByText("0", { exact: true })).toBeVisible();
+});
+
+test("FR24 capture edits report persistence failures and omit unsupported actions", async ({ page }) => {
+  let writeAttempts = 0;
+  await page.route("**/entities/FR24Captures**", async (route) => {
+    if (route.request().method() === "PATCH") {
+      writeAttempts += 1;
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        headers: {
+          "access-control-allow-origin": "http://127.0.0.1:5173",
+          "access-control-allow-credentials": "true",
+        },
+        body: JSON.stringify({ message: "diagnostic store unavailable" }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: {
+        "access-control-allow-origin": "http://127.0.0.1:5173",
+        "access-control-allow-credentials": "true",
+      },
+      body: JSON.stringify([{
+        id: "capture-row-1",
+        capture_id: "CAP-1",
+        file_name: "capture.json",
+        capture_type: "screenshot",
+        ingest_status: "queued",
+        manual_review_required: false,
+        synthetic_flag: true,
+        sha256_hash: "abc123",
+        captured_at: "2026-01-01T00:00:00Z",
+        linked_observation_count: 0,
+        provenance_note: "E2E capture",
+      }]),
+    });
+  });
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.getByRole("link", { name: "FR24 Intake", exact: true }).click();
+  await page.getByText("capture.json", { exact: true }).click();
+  await expect(page.getByRole("heading", { name: "capture.json", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Queue Capture" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Link Observation" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Reject Capture", exact: true }).click();
+  await expect(page.getByText("Diagnostic update failed", { exact: true })).toBeVisible();
+  await expect(page.getByRole("table").getByText("Queued", { exact: true })).toBeVisible();
+  await expect(page.locator(".fixed.inset-0.z-50").getByText("Queued", { exact: true })).toBeVisible();
+  await expect(page.getByText("Diagnostic state updated", { exact: true })).toHaveCount(0);
+  expect(writeAttempts).toBe(1);
+});
 });
