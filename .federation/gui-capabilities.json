@@ -43,14 +43,14 @@
     ],
     "implicit_routes": [],
     "exclude": [
-      "**/*.spec.*",
-      "**/*.test.*",
-      "**/components/ui/**",
       "**/tests/**",
+      "**/*.test.*",
+      "**/*.spec.*",
+      "**/components/ui/**",
       "scripts/check_gui_parity.py",
-      "scripts/import_fr24_icon_reference_library.py",
       "scripts/validate_flight_corpus_v4_import.py",
-      "src/skywatcher/flight_corpus_v4.py"
+      "src/skywatcher/flight_corpus_v4.py",
+      "scripts/import_fr24_icon_reference_library.py"
     ]
   },
   "capabilities": [
@@ -309,6 +309,93 @@
           "tests/test_server_smoke.py"
         ]
       }
+    },
+    {
+      "id": "screenshot-to-mfl-intake",
+      "classification": "operator",
+      "status": "staged",
+      "requires_terminal": false,
+      "rationale": "Authenticated local screenshot extraction and manual review are available; corpus-level certification and canonical MFL promotion remain gated.",
+      "backend": {
+        "files": [
+          "server/backend/screenshot_router.py",
+          "src/skywatcher/fr24/screenshot_jobs.py",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py",
+          "src/skywatcher/fr24/screenshot_mfl_projection.py",
+          "src/skywatcher/fr24/screenshot_certification.py"
+        ],
+        "endpoints": [
+          "GET /{job_id}",
+          "GET /{job_id}/results",
+          "POST /{job_id}/control",
+          "POST /{job_id}/review",
+          "GET /{job_id}/items/{item_id}/image",
+          "GET /certification/status",
+          "GET /certification/template",
+          "GET /certification/runs",
+          "POST /certification/audit"
+        ],
+        "symbols": [
+          "server/backend/screenshot_router.py:create_run",
+          "server/backend/screenshot_router.py:list_runs",
+          "server/backend/screenshot_router.py:get_run",
+          "server/backend/screenshot_router.py:get_results",
+          "server/backend/screenshot_router.py:control_run",
+          "server/backend/screenshot_router.py:review_item",
+          "server/backend/screenshot_router.py:require_screenshot_access",
+          "src/skywatcher/fr24/screenshot_jobs.py:ScreenshotJobs",
+          "src/skywatcher/fr24/screenshot_jobs.py:validate_settings",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:extract_into_rlsm",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:provisional_fields",
+          "server/backend/screenshot_router.py:store",
+          "src/skywatcher/fr24/screenshot_jobs.py:digest",
+          "src/skywatcher/fr24/screenshot_jobs.py:now",
+          "server/backend/screenshot_router.py:preview_item",
+          "src/skywatcher/fr24/screenshot_mfl_projection.py:project_screenshot_fields",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:_perceptual_duplicate_candidates",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:_rendered_track_observation",
+          "src/skywatcher/fr24/screenshot_rlsm_adapter.py:_persisted_georeference_evidence",
+          "server/backend/screenshot_router.py:certification_service",
+          "server/backend/screenshot_router.py:certification_status",
+          "server/backend/screenshot_router.py:certification_template",
+          "server/backend/screenshot_router.py:certification_runs",
+          "server/backend/screenshot_router.py:certification_audit",
+          "src/skywatcher/fr24/screenshot_certification.py:ScreenshotCertification",
+          "src/skywatcher/fr24/screenshot_certification.py:ScreenshotCertificationError"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/fr24"
+        ],
+        "e2e_routes": [
+          "/fr24"
+        ],
+        "components": [
+          "frontend/src/pages/FR24Intake.jsx",
+          "frontend/src/components/skywatcher/ScreenshotProcessor.jsx",
+          "frontend/src/api/federationClient.js"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_screenshot_to_mfl_intake.py",
+          "tests/test_screenshot_intake_api.py",
+          "tests/test_screenshot_certification.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      },
+      "feature_flag": "SKYWATCHER_SCREENSHOT_TOKEN",
+      "tracking": "https://github.com/jotaele44/skywatcher-pr/pull/331",
+      "expires_on": "2026-12-31"
     },
     {
       "id": "fr24-poi-icon-registry",
