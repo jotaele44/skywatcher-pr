@@ -515,5 +515,42 @@
       }
     }
   ],
-  "exceptions": []
+  "exceptions": [
+    {
+      "id": "knowledge-implications-v0-1-draft",
+      "reason": "Draft-only, inactive cumulative-implication and operator-certification capability. Repository CI may exercise it, but normal-startup migration, operator-corpus activation, and production GUI are intentionally blocked. Track explicitly rather than claim false GUI parity.",
+      "owner": "Skywatcher Core",
+      "tracking": "https://github.com/jotaele44/skywatcher-pr/pull/332",
+      "expires_on": "2026-10-31",
+      "candidate_ids": [
+        "python_module:src/skywatcher/core/knowledge_implications.py",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:canonical_json",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:sha256_canonical",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:dependency_digest",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:classify_delta",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:deterministic_verbal_output",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:invalidate_implications_for_artifacts",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:validate_domain_scope",
+        "python_symbol:src/skywatcher/core/knowledge_implications.py:render_current_implication",
+        "python_module:src/skywatcher/core/knowledge_operator_certification.py",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:validate_gold_review",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:discover_binding_candidates",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:write_review_template",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:validate_binding_review",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:preflight",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:materialize_review_sidecar",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:certify_operator_package",
+        "python_module:scripts/knowledge_operator_certification.py",
+        "python_symbol:scripts/knowledge_operator_certification.py:main",
+        "analysis_module:scripts/knowledge_operator_certification.py",
+        "analysis_symbol:scripts/knowledge_operator_certification.py:main",
+        "cli_surface:scripts/knowledge_operator_certification.py",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:OperatorCertificationError",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:git_head",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:sha256_canonical",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:sha256_file",
+        "python_symbol:src/skywatcher/core/knowledge_operator_certification.py:sqlite_logical_sha256"
+      ]
+    }
+  ]
 }
