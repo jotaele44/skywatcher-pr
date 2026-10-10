@@ -63,7 +63,6 @@ export default function ObservationDetailDrawer({ id, onClose, go }) {
           <Field label="Tail Number" mono>{obs.tail_number}</Field>
           <Field label="Operator">{obs.operator_name}</Field>
           <Field label="Operator Category">{obs.operator_category}</Field>
-          <Field label="Mission Inference">{obs.mission_inference}</Field>
           <Field label="Observed At">{obs.observed_at ? new Date(obs.observed_at).toLocaleString() : "—"}</Field>
           <Field label="Altitude" mono>{obs.altitude_ft} ft</Field>
           <Field label="Speed" mono>{obs.speed_kt} kt</Field>

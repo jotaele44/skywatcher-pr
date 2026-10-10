@@ -244,3 +244,31 @@ inside the transaction before commit; malformed records roll the entire snapshot
 back; foreign keys reject orphan records/manifestations; and the browser separates
 preview from the explicit persistence action. Persisted snapshots can be read back
 through the archive API and loaded into the same Archive/Coverage/Timeline views.
+
+
+---
+
+## Revision 2026-10-04 — PITIRRE-C002 supersession
+
+The 2026-07-20 subsection that permitted `speculative-until-gated` mission
+classification is retained above as historical decision provenance but is
+**SUPERSEDED** by active Analytical Ontology v2.1 and PITIRRE-C002.
+
+Binding current behavior:
+
+- mission or intent inference is prohibited in active Core/RLSM/SATIM/FPIM/CORRIM;
+- `src/skywatcher/fr24/mission_classification.py` is Legacy compatibility only
+  and fails closed unless a caller explicitly requests legacy replay;
+- legacy replay results carry `active_use_allowed=false` and
+  `canonical_state=LEGACY_QUARANTINED`;
+- canonical Spiderweb/federation exports emit
+  `mission_classification=null`;
+- FPIM no longer maps aircraft type to mission;
+- source-/operator-declared mission labels may be preserved as sourced metadata,
+  but are not derived from trajectory, type, identity, proximity, recurrence or
+  behavior;
+- RLSM readiness does not depend on mission vocabulary.
+
+This supersession does not rewrite historical database columns or prior artifacts.
+Those remain readable as Legacy/source manifestations and carry no active
+promotion authority.
