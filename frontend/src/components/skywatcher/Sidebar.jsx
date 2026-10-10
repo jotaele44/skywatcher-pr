@@ -3,12 +3,13 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Map, Plane, IdCard, Camera, Route as RouteIcon,
   Building2, TowerControl, ClipboardCheck, Share2, GaugeCircle,
-  Crosshair, ScanSearch, ScanEye, Archive,
+  Crosshair, ScanSearch, ScanEye, Archive, Satellite,
 } from "lucide-react";
 import { PROGRAM } from "@/lib/skywatcher";
 import brandMark from "@/assets/icon-64.png?inline";
 
 const NAV = [
+  { to: "/space-track", label: "Space-Track Control", icon: Satellite },
   { to: "/", label: "Command Dashboard", icon: LayoutDashboard },
   { to: "/console", label: "Interactive Console", icon: Map },
   { to: "/observations", label: "Airspace Observations", icon: Plane },

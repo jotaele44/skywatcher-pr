@@ -109,12 +109,22 @@ export default function Observations() {
     const ids = [...selected];
     if (!ids.length) return;
     setBulkBusy(true);
-    for (const id of ids) {
-      await d.updateRecord("observations", id, { review_status: status });
-    }
+    const results = await Promise.allSettled(
+      ids.map((id) => d.updateRecord("observations", id, { review_status: status })),
+    );
+    const failedIds = new Set(
+      results.flatMap((result, index) => result.status === "rejected" ? [ids[index]] : []),
+    );
     setBulkBusy(false);
-    setSelected(new Set());
-    toast({ title: `${ids.length} observation${ids.length > 1 ? "s" : ""} ${verb}`, description: "Diagnostic review status updated." });
+    setSelected((previous) => new Set([...previous].filter((id) => failedIds.has(id))));
+    const failed = failedIds.size;
+    toast({
+      variant: failed ? "destructive" : "default",
+      title: failed ? "Bulk update incomplete" : `${ids.length} observation${ids.length > 1 ? "s" : ""} ${verb}`,
+      description: failed
+        ? `${ids.length - failed} updated; ${failed} failed. Failed observations remain selected for retry.`
+        : "Diagnostic review status updated.",
+    });
   };
 
   if (d.loading) return <LoadingState />;
