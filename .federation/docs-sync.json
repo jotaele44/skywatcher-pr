@@ -1,0 +1,62 @@
+{
+  "_comment": "Documentation-sync policy for skywatcher-pr (thehub-pr ADR 0010). Read by tools/check_docs_sync.py. couplings: when a covered path changes, the doc must change in the same diff, or the commit/PR says 'Docs-Impact: none - <reason>'. Seeded conservatively: each coupling was replayed over this repo's recent history and never fired. Add couplings for docs that enumerate things; do not add ones that fire on routine work.",
+  "schema_version": "prii_docs_sync_v1",
+  "mode": "enforce",
+  "base_branch": "main",
+  "exempt_docs": [
+    "AUDIT.md",
+    "docs/*AUDIT*.md",
+    "docs/*PLAN*.md",
+    "docs/*LEDGER*",
+    "docs/*REPORT*.md",
+    "docs/**/*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*"
+  ],
+  "ignore_refs": [
+    "data/**",
+    "outputs/**",
+    "reports/**",
+    "exports/**",
+    "server/*.db",
+    "frontend/dist/**",
+    "frontend/node_modules/**",
+    "node_modules/**"
+  ],
+  "couplings": [
+    {
+      "doc": "README.md",
+      "covers": [
+        "schemas/airspace_observation.schema.json",
+        "schemas/airspace_export_manifest.schema.json"
+      ],
+      "on": ["delete", "rename"],
+      "why": "'Federation export contract' names the two export schemas inside a code block that the reference check does not read."
+    },
+    {
+      "doc": "README.md",
+      "covers": [
+        "scripts/build_craft_profiles.py",
+        "scripts/skywatcher_query.py",
+        "scripts/validate_airspace_export.py"
+      ],
+      "on": ["delete", "rename"],
+      "why": "'Craft profiles & querying' and 'Federation export contract' tell contributors to run these scripts, inside code blocks that the reference check does not read."
+    },
+    {
+      "doc": "README.md",
+      "covers": [".github/workflows/ci.yml"],
+      "on": ["add", "delete", "rename", "modify"],
+      "why": "'Develop' states which Python versions CI tests and which dependency set it installs."
+    },
+    {
+      "doc": "docs/GUI_CAPABILITY_PARITY.md",
+      "covers": [
+        ".federation/gui-*.json",
+        "scripts/check_gui_parity.py",
+        "tests/test_gui_parity.py",
+        ".github/workflows/gui-capability-parity.yml"
+      ],
+      "on": ["add", "delete", "rename"],
+      "why": "'Repository files' lists the parity manifest, baseline, detector, tests and gate."
+    }
+  ]
+}
