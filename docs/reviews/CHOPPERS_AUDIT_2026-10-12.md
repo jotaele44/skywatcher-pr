@@ -56,3 +56,14 @@ Local reproducible evidence bundle includes `choppers_audit.py`, `choppers_recon
 3. Resolve `N173B/N691CM/PSIVZ` and airport-code/geometry differences independently.
 4. Publish a canonical non-synthetic Skywatcher package; validate admission in TheHub on an actual immutable input snapshot.
 5. Run producer/consumer/API/GUI regression suites and preserve commit SHA, CI run URLs, hashes, reviewed outputs and release decision. Train the reusable skill/agent **after** passing its golden-case and negative-case gates.
+
+## Addendum: independent raw-point parity gate (2026-10-12)
+
+A subsequent exhaustive scan of the **26 consolidated raw-point CSV members** read **356,201 raw records** and compared them by (Callsign, LegID) with all 816 reconciled flight keys:
+- **804** flight keys match the advertised point count exactly (356,199 matched raw rows).
+- **11** N167C flight legs, totaling **12,554** advertised points, have no consolidated raw-point CSV in this selected archive lane.
+- **1** N409TD flight leg, `409f1b26` (2 points), has two raw records containing a **blank callsign** and the matching LegID. Those remain **unassigned candidate telemetry**, not silently rewritten.
+- **0** mismatched counts among matched flight keys, **2** unmatched raw rows and **12** total legs without exact compound-key raw parity.
+- **Raw parity certification gate: FAIL.** The index closure remains PASS and must not be confused with raw telemetry parity. The standalone audit bundle includes `raw_parity.json`, `raw_parity_legs.csv` and a negative regression for this exact condition.
+
+This addendum does not authorize inference of aircraft identity from LegID alone. The affected two raw records require explicit source adjudication.
