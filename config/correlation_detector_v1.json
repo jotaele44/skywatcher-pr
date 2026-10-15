@@ -1,0 +1,352 @@
+{
+  "schema_version": "skywatcher.correlation_detector.v1",
+  "status": "PROVISIONAL",
+  "evidence_state": "COMPUTED",
+  "source_basis": {
+    "corpus": "Master Flight Log + recovered per-flight FR24 CSV manifestations",
+    "point_source": "01_Aircraft_Data(3) raw CSV manifestations",
+    "snapshot_source_state": "BLOCKED_SOURCE_BYTES",
+    "note": "Regression states are descriptive trajectory classes. They do not establish coordination, mission, targeting, or intent."
+  },
+  "parameters": {
+    "max_match_delta_seconds": 5,
+    "max_duration_gap_seconds": 30,
+    "minimum_track_overlap_seconds": 60,
+    "brief_proximity_seconds": 60,
+    "co_route_min_seconds": 120,
+    "close_distance_km": 5,
+    "out_of_area_distance_km": 50,
+    "ground_altitude_ft": 500,
+    "ground_fraction_threshold": 0.7,
+    "co_route_heading_difference_deg": 30,
+    "co_route_speed_difference_kt": 30,
+    "crossing_heading_difference_deg": 60
+  },
+  "interpretation_gates": {
+    "synchronized_proximity_is_coordination": false,
+    "airborne_co_route_is_common_tasking": false,
+    "repeated_airborne_co_route_is_mission": false,
+    "shared_airport_is_shared_mission": false,
+    "out_of_area_concurrency_is_coordinate_artifact": false,
+    "no_synchronized_event_is_no_relationship": false
+  },
+  "geometry_recovery": {
+    "N5854Z": {
+      "master_flights": 111,
+      "geometry_recovered": 86,
+      "snapshot_only_unresolved": 25,
+      "recovery_fraction": 0.7747747747747747,
+      "certification_state": "PROVISIONAL"
+    },
+    "N936DM": {
+      "master_flights": 25,
+      "geometry_recovered": 0,
+      "unresolved": 25,
+      "recovery_fraction": 0,
+      "certification_state": "BLOCKED"
+    }
+  },
+  "promoted_descriptive_candidate": {
+    "aircraft": [
+      "N196DM",
+      "N407PR"
+    ],
+    "date": "2025-09-12",
+    "classification": "REPEATED_AIRBORNE_CO_ROUTE_CANDIDATE",
+    "event_count": 2,
+    "mission": "UNKNOWN",
+    "coordination": "UNKNOWN",
+    "targeting": "UNKNOWN",
+    "intent": "UNKNOWN"
+  },
+  "regression_pairs": [
+    {
+      "aircraft": [
+        "N407PR",
+        "N5854Z"
+      ],
+      "v0_reported_count": 20,
+      "representative_state": "BRIEF_PROXIMITY",
+      "observed_classifications": {
+        "TIME_ONLY": 8,
+        "UNRESOLVED_SYNC_SPARSE": 1,
+        "BRIEF_PROXIMITY": 1
+      }
+    },
+    {
+      "aircraft": [
+        "N5854Z",
+        "N620GG"
+      ],
+      "v0_reported_count": 11,
+      "representative_state": "OUT_OF_AREA_CONCURRENT",
+      "observed_classifications": {
+        "TIME_ONLY": 2,
+        "OUT_OF_AREA_CONCURRENT": 2
+      }
+    },
+    {
+      "aircraft": [
+        "N407PR",
+        "N620GG"
+      ],
+      "v0_reported_count": 10,
+      "representative_state": "SHARED_AIRPORT_OR_GROUND_PATTERN",
+      "observed_classifications": {
+        "TIME_ONLY": 5,
+        "SHARED_AIRPORT_OR_GROUND_PATTERN": 2
+      }
+    },
+    {
+      "aircraft": [
+        "N407PR",
+        "N767PD"
+      ],
+      "v0_reported_count": 9,
+      "representative_state": "CROSSING_TRAJECTORIES",
+      "observed_classifications": {
+        "SHARED_AIRPORT_OR_GROUND_PATTERN": 1,
+        "CROSSING_TRAJECTORIES": 1,
+        "OUT_OF_AREA_CONCURRENT": 3,
+        "TIME_ONLY": 2
+      }
+    },
+    {
+      "aircraft": [
+        "N5854Z",
+        "N767PD"
+      ],
+      "v0_reported_count": 9,
+      "representative_state": "UNRESOLVED_SYNC_SPARSE",
+      "observed_classifications": {
+        "UNRESOLVED_SYNC_SPARSE": 1
+      }
+    },
+    {
+      "aircraft": [
+        "N5854Z",
+        "N999ZY"
+      ],
+      "v0_reported_count": 8,
+      "representative_state": "SHARED_AIRPORT_OR_GROUND_PATTERN",
+      "observed_classifications": {
+        "TIME_ONLY": 3,
+        "SHARED_AIRPORT_OR_GROUND_PATTERN": 1
+      }
+    },
+    {
+      "aircraft": [
+        "N620GG",
+        "N767PD"
+      ],
+      "v0_reported_count": 8,
+      "representative_state": "SHARED_AIRPORT_OR_GROUND_PATTERN",
+      "observed_classifications": {
+        "OUT_OF_AREA_CONCURRENT": 4,
+        "SHARED_AIRPORT_OR_GROUND_PATTERN": 1,
+        "BRIEF_PROXIMITY": 1,
+        "TIME_ONLY": 1
+      }
+    },
+    {
+      "aircraft": [
+        "N400AH",
+        "N5854Z"
+      ],
+      "v0_reported_count": 7,
+      "representative_state": "OUT_OF_AREA_CONCURRENT",
+      "observed_classifications": {
+        "OUT_OF_AREA_CONCURRENT": 1
+      }
+    },
+    {
+      "aircraft": [
+        "N322AC",
+        "N684JB"
+      ],
+      "v0_reported_count": 7,
+      "representative_state": "BRIEF_PROXIMITY",
+      "observed_classifications": {
+        "BRIEF_PROXIMITY": 1,
+        "OUT_OF_AREA_CONCURRENT": 2,
+        "TIME_ONLY": 3,
+        "UNRESOLVED_SYNC_SPARSE": 1
+      }
+    },
+    {
+      "aircraft": [
+        "N407PR",
+        "N999ZY"
+      ],
+      "v0_reported_count": 6,
+      "representative_state": "BRIEF_PROXIMITY",
+      "observed_classifications": {
+        "BRIEF_PROXIMITY": 1,
+        "OUT_OF_AREA_CONCURRENT": 3,
+        "TIME_ONLY": 1
+      }
+    },
+    {
+      "aircraft": [
+        "N196DM",
+        "N5854Z"
+      ],
+      "v0_reported_count": 5,
+      "representative_state": "TIME_ONLY",
+      "observed_classifications": {
+        "TIME_ONLY": 3,
+        "OUT_OF_AREA_CONCURRENT": 1
+      }
+    },
+    {
+      "aircraft": [
+        "N767PD",
+        "N999ZY"
+      ],
+      "v0_reported_count": 4,
+      "representative_state": "TIME_ONLY",
+      "observed_classifications": {
+        "OUT_OF_AREA_CONCURRENT": 2,
+        "TIME_ONLY": 2
+      }
+    },
+    {
+      "aircraft": [
+        "N196DM",
+        "N407PR"
+      ],
+      "v0_reported_count": 3,
+      "representative_state": "AIRBORNE_CO_ROUTE",
+      "observed_classifications": {
+        "AIRBORNE_CO_ROUTE": 2
+      },
+      "date": "2025-09-12"
+    },
+    {
+      "aircraft": [
+        "N13VL",
+        "N5854Z"
+      ],
+      "v0_reported_count": 3,
+      "representative_state": "NO_SYNCHRONIZED_EVENT",
+      "observed_classifications": {}
+    },
+    {
+      "aircraft": [
+        "N400AH",
+        "N767PD"
+      ],
+      "v0_reported_count": 3,
+      "representative_state": "NO_SYNCHRONIZED_EVENT",
+      "observed_classifications": {}
+    },
+    {
+      "aircraft": [
+        "N684JB",
+        "N999ZY"
+      ],
+      "v0_reported_count": 3,
+      "representative_state": "NO_SYNCHRONIZED_EVENT",
+      "observed_classifications": {}
+    },
+    {
+      "aircraft": [
+        "N13VL",
+        "N615BD"
+      ],
+      "v0_reported_count": 3,
+      "representative_state": "OUT_OF_AREA_CONCURRENT",
+      "observed_classifications": {
+        "OUT_OF_AREA_CONCURRENT": 3
+      }
+    },
+    {
+      "aircraft": [
+        "N5854Z",
+        "N615BD"
+      ],
+      "v0_reported_count": 2,
+      "representative_state": "TIME_ONLY",
+      "observed_classifications": {
+        "TIME_ONLY": 1
+      }
+    },
+    {
+      "aircraft": [
+        "N322AC",
+        "N615BD"
+      ],
+      "v0_reported_count": 2,
+      "representative_state": "BRIEF_PROXIMITY",
+      "observed_classifications": {
+        "BRIEF_PROXIMITY": 1,
+        "OUT_OF_AREA_CONCURRENT": 1
+      }
+    },
+    {
+      "aircraft": [
+        "N615BD",
+        "N684JB"
+      ],
+      "v0_reported_count": 2,
+      "representative_state": "TIME_ONLY",
+      "observed_classifications": {
+        "UNRESOLVED_SYNC_SPARSE": 1,
+        "TIME_ONLY": 4
+      }
+    },
+    {
+      "aircraft": [
+        "N400AH",
+        "N620GG"
+      ],
+      "v0_reported_count": 2,
+      "representative_state": "OUT_OF_AREA_CONCURRENT",
+      "observed_classifications": {
+        "OUT_OF_AREA_CONCURRENT": 2
+      }
+    },
+    {
+      "aircraft": [
+        "N13VL",
+        "N400AH"
+      ],
+      "v0_reported_count": 2,
+      "representative_state": "OUT_OF_AREA_CONCURRENT",
+      "observed_classifications": {
+        "OUT_OF_AREA_CONCURRENT": 2
+      }
+    },
+    {
+      "aircraft": [
+        "N684JB",
+        "N767PD"
+      ],
+      "v0_reported_count": 2,
+      "representative_state": "NO_SYNCHRONIZED_EVENT",
+      "observed_classifications": {}
+    },
+    {
+      "aircraft": [
+        "N540DB",
+        "N936DM"
+      ],
+      "v0_reported_count": 2,
+      "representative_state": "BLOCKED_GEOMETRY",
+      "observed_classifications": {
+        "BLOCKED_GEOMETRY": 1
+      }
+    },
+    {
+      "aircraft": [
+        "N684JB",
+        "N98JC"
+      ],
+      "v0_reported_count": 2,
+      "representative_state": "OUT_OF_AREA_CONCURRENT",
+      "observed_classifications": {
+        "OUT_OF_AREA_CONCURRENT": 2
+      }
+    }
+  ]
+}
