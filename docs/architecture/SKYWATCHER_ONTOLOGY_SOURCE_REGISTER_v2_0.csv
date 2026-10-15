@@ -22,7 +22,7 @@ schemas/satim_output_contract.schema.json,schema,SATIM output fields
 schemas/fpim_output_contract.schema.json,schema,FPIM output fields
 schemas/corrim_correlation_output.schema.json,schema,CORRIM output fields
 tests/test_schema_satim_fpim_corrim_contracts.py,tests,contract fixtures
-src/skywatcher/fpim/aircraft_profile.py,FPIM,active mission inference
+src/skywatcher/fpim/aircraft_profile.py,FPIM,aircraft identity/operator profile; source-declared mission metadata only; type-to-mission fallback superseded by PITIRRE-C002
 schemas/aircraft_intelligence_report.schema.json,schema,mission profile schema
 src/skywatcher/legacy/quarantined_mission_inference.py,Legacy,quarantined mission inference
 src/skywatcher/corrim/ilap_airspace_bridge.py,CORRIM,ILAP heuristics and output fields

@@ -18,6 +18,26 @@ def _record_id(record: Mapping[str, object]) -> str:
     return str(record.get("record_id") or record.get("event_id") or "unknown")
 
 
+def _coordinates(record: Mapping[str, object]) -> tuple[float, float] | None:
+    """Return validated (lat, lon) or None; unknown geometry never becomes zero."""
+    if record.get("geometry_status") in {"UNRESOLVED", "INVALID"}:
+        return None
+    raw_lat = record.get("lat")
+    raw_lon = record.get("lon")
+    if raw_lat in (None, "") or raw_lon in (None, ""):
+        return None
+    if isinstance(raw_lat, bool) or isinstance(raw_lon, bool):
+        return None
+    try:
+        lat = float(raw_lat)
+        lon = float(raw_lon)
+    except (TypeError, ValueError):
+        return None
+    if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
+        return None
+    return lat, lon
+
+
 def find_cross_domain_overlaps(
     air_events: Sequence[Mapping[str, object]],
     context_records: Sequence[Mapping[str, object]],
@@ -36,15 +56,21 @@ def find_cross_domain_overlaps(
     for air in air_events:
         if air.get("tactical_public_tracking") is not False:
             continue
+        air_coords = _coordinates(air)
+        if air_coords is None:
+            continue
         air_time = _parse_time(air["observed_at"])
         for ctx in context_records:
             if ctx.get("operational_use_allowed") is not False:
+                continue
+            ctx_coords = _coordinates(ctx)
+            if ctx_coords is None:
                 continue
             ctx_time = _parse_time(ctx["observed_at"])
             minutes = abs((air_time - ctx_time).total_seconds()) / 60.0
             if minutes > max_minutes:
                 continue
-            distance = haversine_km(float(air["lat"]), float(air["lon"]), float(ctx["lat"]), float(ctx["lon"]))
+            distance = haversine_km(air_coords[0], air_coords[1], ctx_coords[0], ctx_coords[1])
             if distance > max_distance_km:
                 continue
             corridor_match = air.get("corridor_id") and air.get("corridor_id") == ctx.get("corridor_id")
