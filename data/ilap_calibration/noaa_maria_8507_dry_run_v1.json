@@ -1,0 +1,41 @@
+{
+  "schema_version": "noaa_maria_8507_dry_run.v1",
+  "generated_utc": "2026-09-18T05:22:25Z",
+  "command_equivalent": "python -m scripts.source_adapters.noaa_maria_2017.cli dry-run --output-root <runtime>",
+  "selected_items": [
+    {
+      "request_id": "noaa-maria-8507-20170924bC0660430w183000n",
+      "item_id": "20170924bC0660430w183000n",
+      "source_id": "NOAA_MARIA_2017_8507",
+      "source_lineage_id": "NOAA_MARIA_2017_8507::20170924b",
+      "source_lineage_semantics": "FILENAME_ACQUISITION_BATCH_CONSERVATIVE",
+      "url": "https://coastalimagery.blob.core.windows.net/digitalcoast/HurricaneMaria_2017_8507/20170924bC0660430w183000n.tif",
+      "expected_content": "image",
+      "filename_hint": "20170924bC0660430w183000n.tif",
+      "imagery_epoch": "UNKNOWN",
+      "temporal_evidence": {
+        "filename_date_candidate": "2017-09-24",
+        "stac_datetime": "2017-09-22T00:00:00Z",
+        "state": "CONTRADICTION_TIME"
+      },
+      "rights": {
+        "fetch": "ALLOWED",
+        "training": "ALLOWED",
+        "redistribution": "ALLOWED"
+      },
+      "review_status": "dry_run",
+      "change_state": "NOT_FETCHED"
+    }
+  ],
+  "arithmetic": {
+    "requested": 1,
+    "dry_run_records": 1,
+    "unresolved_item_identity": 0
+  },
+  "certification": "PASS_DRY_RUN_PLAN_ONLY",
+  "rights_binding": {
+    "state": "PASS",
+    "noaa_inport_access_constraints": "None",
+    "data_gov_license": "CC0-1.0"
+  }
+}
