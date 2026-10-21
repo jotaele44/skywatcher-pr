@@ -41,5 +41,33 @@ class ConsumerContractTests(unittest.TestCase):
             build_consumer_package([dict(self.record, person_name="private")], source_receipt=self.receipt)
 
 
+    def test_five_events_publish_one_group(self):
+        records = [
+            dict(self.record, source_record_id=f"r{i}", event_id=f"event{i}")
+            for i in range(5)
+        ]
+        receipt = dict(
+            self.receipt,
+            record_count=5,
+            canonical_records_sha256=hashlib.sha256(canonical_bytes(records)).hexdigest(),
+        )
+        package = build_consumer_package(records, source_receipt=receipt)
+        self.assertEqual(package["groups"], [
+            {"category": "MARITIME_RESCUE", "status": "CLOSED", "year": "2024", "count": 5}
+        ])
+
+    def test_four_events_do_not_publish_group(self):
+        records = [
+            dict(self.record, source_record_id=f"r{i}", event_id=f"event{i}")
+            for i in range(4)
+        ]
+        receipt = dict(
+            self.receipt,
+            record_count=4,
+            canonical_records_sha256=hashlib.sha256(canonical_bytes(records)).hexdigest(),
+        )
+        self.assertEqual(build_consumer_package(records, source_receipt=receipt)["groups"], [])
+
+
 if __name__ == "__main__":
     unittest.main()
