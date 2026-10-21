@@ -1,0 +1,23 @@
+{
+  "schema_version": "pitirre-source-catalog-v0.1",
+  "certification": "DISCOVERY_ONLY",
+  "as_of": "2026-10-21",
+  "sources": [
+    {
+      "id": "pr_alertas",
+      "url": "https://www.alertas.pr.gov/personas-desaparecidas",
+      "publisher": "Puerto Rico Government",
+      "scope": "MISSING_PERSON",
+      "admission": "BLOCKED_PERSON_LEVEL",
+      "notes": "Official active-person notices; never import personal identifiers into aggregate adapter. Published notices change with recovery and withdrawal."
+    },
+    {
+      "id": "uscg_pr",
+      "url": "https://www.news.uscg.mil/Press-Releases/Tag/198983/puerto-rico/",
+      "publisher": "U.S. Coast Guard",
+      "scope": "MARITIME_RESCUE|MIGRANT_SMUGGLING|DRUG_INTERDICTION",
+      "admission": "MANUAL_PUBLICATION_REVIEW",
+      "notes": "Published press releases; distinguish migrant interception, actual smuggling charges, narcotics seizure, and rescue. Per-article documents need frozen bytes, timestamps, immutable identifiers and source-level screening."
+    }
+  ]
+}
