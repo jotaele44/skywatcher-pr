@@ -24,7 +24,7 @@ class ConsumerContractTests(unittest.TestCase):
 
     def test_no_person_level_release(self):
         p = build_consumer_package([self.record], source_receipt=self.receipt)
-        self.assertEqual(p["groups"][0]["count"], 1)
+        self.assertEqual(p["groups"], [])
         self.assertNotIn("source_record_id", str(p))
         self.assertEqual(p["certification"], "AUDIT_ONLY")
 
