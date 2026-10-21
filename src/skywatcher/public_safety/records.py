@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import date
-from typing import Mapping
+from collections.abc import Mapping
 
 CATEGORIES = frozenset({"MISSING_PERSON", "HUMAN_TRAFFICKING", "MIGRANT_SMUGGLING", "MARITIME_RESCUE", "DRUG_INTERDICTION"})
 STATUSES = frozenset({"REPORTED", "ACTIVE", "RECOVERED", "CLOSED", "CHARGED", "CONVICTED", "ACQUITTED", "DISMISSED", "UNRESOLVED"})
