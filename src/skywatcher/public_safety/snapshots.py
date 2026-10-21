@@ -25,6 +25,10 @@ def validate_snapshot(snapshot: Mapping, *, source_bytes: bytes) -> dict:
     """Validate immutable source receipt, record identities, and publication safety."""
     if not isinstance(snapshot, Mapping) or set(snapshot) != FIELDS:
         raise PublicSafetyError("snapshot schema mismatch")
+    if not isinstance(snapshot["source_id"], str) or not snapshot["source_id"].strip():
+        raise PublicSafetyError("source_id required")
+    if not isinstance(snapshot["source_url"], str) or not snapshot["source_url"].startswith("https://"):
+        raise PublicSafetyError("HTTPS source_url required")
     if not isinstance(source_bytes, bytes):
         raise PublicSafetyError("raw source bytes required")
     digest = snapshot["raw_sha256"]
