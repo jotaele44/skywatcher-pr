@@ -45,8 +45,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
-from server.backend.spacetrack_router import router as spacetrack_router
 from server.backend.grid_v2_api import router as grid_v2_router
+from server.backend.spacetrack_router import router as spacetrack_router
 from skywatcher.fr24 import database as skywatcher_db
 from skywatcher.fr24.acquisition_receipts import (
     AcquisitionReceiptError,
