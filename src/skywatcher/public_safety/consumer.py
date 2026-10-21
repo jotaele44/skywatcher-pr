@@ -32,7 +32,7 @@ def build_consumer_package(records, *, source_receipt: Mapping) -> dict:
         raise PublicSafetyError("source receipt does not bind exact records")
     counts = Counter((r["category"], r["status"], r["event_date"][:4]) for r in validated)
     rows = [{"category": category, "status": status, "year": year, "count": n}
-            for (category, status, year), n in sorted(counts.items())]
+            for (category, status, year), n in sorted(counts.items()) if n >= 5]
     return {"schema_version": SCHEMA, "publication": "PUBLIC_AGGREGATE",
             "source_receipt_sha256": hashlib.sha256(json.dumps(dict(source_receipt), sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
-            "row_count": len(validated), "groups": rows, "certification": "AUDIT_ONLY"}
+            "groups": rows, "certification": "AUDIT_ONLY"}
