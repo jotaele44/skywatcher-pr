@@ -5,9 +5,9 @@ or automated operational tasking. This layer stores source references and status
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from copy import deepcopy
 from datetime import date
-from collections.abc import Mapping
 
 CATEGORIES = frozenset({"MISSING_PERSON", "HUMAN_TRAFFICKING", "MIGRANT_SMUGGLING", "MARITIME_RESCUE", "DRUG_INTERDICTION"})
 STATUSES = frozenset({"REPORTED", "ACTIVE", "RECOVERED", "CLOSED", "CHARGED", "CONVICTED", "ACQUITTED", "DISMISSED", "UNRESOLVED"})
