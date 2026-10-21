@@ -514,6 +514,29 @@
           "frontend/tests/gui-parity.spec.mjs"
         ]
       }
+    },
+    {
+      "id": "public-safety-evidence-staging",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Non-operational, source-metadata-only validation primitive; no consumer entry point, ingest scheduler, or user-facing capability exists. This manifest binding records only the bounded internal contract, not completion of public-safety workflows. Any future live source/UI capability requires separate GUI wiring and E2E acceptance.",
+      "analysis": {
+        "files": [
+          "src/skywatcher/public_safety/__init__.py",
+          "src/skywatcher/public_safety/records.py"
+        ],
+        "symbols": [
+          "src/skywatcher/public_safety/records.py:PublicSafetyError",
+          "src/skywatcher/public_safety/records.py:reconcile_events",
+          "src/skywatcher/public_safety/records.py:validate_event"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_public_safety_records.py"
+        ]
+      }
     }
   ],
   "exceptions": []
