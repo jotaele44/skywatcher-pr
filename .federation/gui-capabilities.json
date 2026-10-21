@@ -528,7 +528,8 @@
           "src/skywatcher/public_safety/snapshots.py",
           "src/skywatcher/public_safety/adapters.py",
           "src/skywatcher/public_safety/consumer.py",
-          "src/skywatcher/public_safety/changes.py"
+          "src/skywatcher/public_safety/changes.py",
+          "src/skywatcher/public_safety/catalog.py"
         ],
         "symbols": [
           "src/skywatcher/public_safety/records.py:PublicSafetyError",
@@ -539,7 +540,8 @@
           "src/skywatcher/public_safety/snapshots.py:validate_snapshot",
           "src/skywatcher/public_safety/adapters.py:admit_public_snapshot",
           "src/skywatcher/public_safety/consumer.py:build_consumer_package",
-          "src/skywatcher/public_safety/changes.py:compare_receipts"
+          "src/skywatcher/public_safety/changes.py:compare_receipts",
+          "src/skywatcher/public_safety/catalog.py:validate_source_catalog"
         ]
       },
       "tests": {
@@ -548,7 +550,8 @@
           "tests/test_public_safety_snapshots.py",
           "tests/test_public_safety_adapters.py",
           "tests/test_public_safety_consumer.py",
-          "tests/test_public_safety_changes.py"
+          "tests/test_public_safety_changes.py",
+          "tests/test_public_safety_catalog.py"
         ]
       }
     }
