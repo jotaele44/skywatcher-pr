@@ -524,17 +524,22 @@
       "analysis": {
         "files": [
           "src/skywatcher/public_safety/__init__.py",
-          "src/skywatcher/public_safety/records.py"
+          "src/skywatcher/public_safety/records.py",
+          "src/skywatcher/public_safety/snapshots.py"
         ],
         "symbols": [
           "src/skywatcher/public_safety/records.py:PublicSafetyError",
           "src/skywatcher/public_safety/records.py:reconcile_events",
-          "src/skywatcher/public_safety/records.py:validate_event"
+          "src/skywatcher/public_safety/records.py:validate_event",
+          "src/skywatcher/public_safety/snapshots.py:canonical_bytes",
+          "src/skywatcher/public_safety/snapshots.py:certify_rollback",
+          "src/skywatcher/public_safety/snapshots.py:validate_snapshot"
         ]
       },
       "tests": {
         "contract": [
-          "tests/test_public_safety_records.py"
+          "tests/test_public_safety_records.py",
+          "tests/test_public_safety_snapshots.py"
         ]
       }
     }
