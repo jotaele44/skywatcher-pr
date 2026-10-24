@@ -1,4 +1,4 @@
-version: rlsm_operational_ontology_v0_1
+version: rlsm_operational_ontology_v0_2
 visibility_classes:
   V0: screenshot_visible
   V1: screenshot_inferable
@@ -14,7 +14,6 @@ required_registries:
   - configs/operator_registry.yaml
   - configs/facility_operator_registry.yaml
   - configs/aircraft_aliases.yaml
-  - configs/mission_vocab.yaml
   - configs/behavior_vocab.yaml
   # Renamed at rebase time (2026-06-02): main's `configs/corridor_registry.yaml`
   # is an observed-corridor catalog (canonical_id / flights_logged / top_pois);
@@ -42,3 +41,5 @@ normalization_rules:
   never_merge_na_aircraft_without_cluster_evidence: true
   route_unknowns_to_review: true
   block_ocr_baseline_until_alias_tests_pass: true
+  mission_labels_source_only: true
+  mission_or_intent_inference_prohibited: true

@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 
 from skywatcher.core.normalize_locations import load_simple_yaml, normalize_location
-from skywatcher.core.normalize_missions import normalize_blackout, normalize_mission
+from skywatcher.core.normalize_missions import normalize_blackout
 from skywatcher.core.normalize_operators import normalize_aircraft_identity, normalize_operator
 
 REQUIRED_CONFIGS = [
@@ -23,7 +23,6 @@ REQUIRED_CONFIGS = [
     "operator_registry.yaml",
     "facility_operator_registry.yaml",
     "aircraft_aliases.yaml",
-    "mission_vocab.yaml",
     "behavior_vocab.yaml",
     # Renamed at rebase time (2026-06-02). See pipeline/normalize_locations.py
     # comment — main's `configs/corridor_registry.yaml` is the observed catalog;
@@ -176,11 +175,6 @@ def run_gate(config_dir: Path = Path("configs")) -> dict[str, object]:
             failures.append(f"masked aircraft handling failed: {raw} -> {ident}")
         if ident.get("merge_policy") != "do_not_merge_without_cluster_evidence":
             failures.append(f"masked aircraft merge policy missing: {raw}")
-
-    for raw in ["grid inspection", "coastal patrol", "private charter"]:
-        mission = normalize_mission(raw, config_dir=config_dir)
-        if mission.get("mission_canonical") == "UNKNOWN":
-            failures.append(f"mission alias failed: {raw} -> {mission}")
 
     operator = normalize_operator("USCG", config_dir=config_dir)
     if operator.get("resolution_status") != "resolved":

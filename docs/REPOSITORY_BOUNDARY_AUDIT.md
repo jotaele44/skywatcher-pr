@@ -50,3 +50,20 @@ plus a schema-validated hub-canonical consumer.
   an empty DB previously). No behavioral regression, but operationally the
   federation live-export path (`ready_for_hub_live_execution=false` in
   skywatcher) must be enabled before end-to-end runs are meaningful.
+
+
+---
+
+## Supersession notice — 2026-10-04
+
+Phase-10 contradiction **C1** above records the July 2026 resolution and remains
+historical evidence. It is **SUPERSEDED** for current behavior by active
+Analytical Ontology v2.1 and PITIRRE-C002.
+
+Current canonical boundary:
+
+- mission/intent inference is not an active SkyWatcher/PITIRRE capability;
+- the shared bridge field remains schema-readable for backward compatibility,
+  but the current producer emits `mission_classification=null`;
+- historical `flights.mission_*` fields remain readable but are not promoted;
+- source-declared labels remain distinguishable from inferred mission.

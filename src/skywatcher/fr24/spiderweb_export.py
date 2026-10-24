@@ -8,7 +8,7 @@ This module encodes the contradiction resolutions in one place:
     * confidence  -> {"score", "method"}                     (C3)
     * review_status crosswalked to the Spiderweb vocabulary   (C4)
     * coordinate_method uses the widened enum                 (C5)
-    * mission_classification is OPTIONAL and gated            (C1)
+    * mission_classification is always null in canonical exports (C1/v2.1)
     * generated_at_utc is the canonical timestamp name        (C7)
     * terminal-accept labels ('confirmed') never emitted      (C2)
 
@@ -27,7 +27,6 @@ from pathlib import Path
 from typing import Any
 
 from . import database as db
-from . import mission_classification as mc
 from . import review_status as rs
 from . import telemetry_validation as tv
 
@@ -100,14 +99,10 @@ def build_bridge_record(
         confidence_score = 0.0
     confidence_score = max(0.0, min(1.0, confidence_score))
 
-    # Gated mission classification (never a Skywatcher-confirmed fact).
+    # Active ontology v2.1 prohibits mission/intent inference. Historical
+    # mission_* database columns remain readable for compatibility, but canonical
+    # federation exports never promote them.
     mission = None
-    if flight.get("mission_type"):
-        gated = mc.classify(
-            flight.get("mission_type"),
-            _as_float(flight.get("mission_confidence")) or 0.0,
-        )
-        mission = gated.to_dict()
 
     interval = None
     if flight.get("takeoff_time") or flight.get("landing_time"):
