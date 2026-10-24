@@ -54,13 +54,13 @@ dev = [
 fr24 = [
     "pytesseract>=0.3.13,<0.4",  # Tesseract OCR bindings (fr24 OCR modules)
     "opencv-python>=4.8,<5",     # UI segmentation / route + track vectorization
-    "numpy>=1.24",               # affine coordinate fitting / vectorization
+    "numpy>=2.2.6",               # affine coordinate fitting / vectorization
     "pyarrow>=14.0",             # columnar export (Parquet)
 ]
 # Optional GEBCO bathymetry/terrain layer (gebco/). Heavy geospatial stack;
 # not required for the core airspace engine or the federation export contract.
 geo = [
-    "numpy>=1.24",
+    "numpy>=2.2.6",
     # Upper-bounded below 1.18: newer scipy releases require Python >=3.12,
     # which breaks the universal lock across this project's 3.10-3.12 matrix.
     "scipy>=1.11,<1.18",
