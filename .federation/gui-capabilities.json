@@ -514,6 +514,28 @@
           "frontend/tests/gui-parity.spec.mjs"
         ]
       }
+    },
+    {
+      "id": "ionosphere-lossless-transport-v2",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Internal versioned read-only model-envelope adapter for the Aguayluz ionosphere preview consumer. It retains complete source rows and false operational-use flags; it adds no acquisition, normal-use CLI, interactive control, or standalone analysis workflow. The human-facing workflow is the disabled Aguayluz /ionosphere API/dashboard path. Existing v1 adapters and schema remain unchanged.",
+      "backend": {
+        "files": [
+          "src/skywatcher/core/ionosphere.py"
+        ],
+        "symbols": [
+          "src/skywatcher/core/ionosphere.py:canonical_bytes",
+          "src/skywatcher/core/ionosphere.py:build_glotec_package"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_ionosphere_transport.py",
+          "tests/test_pitirre_observation.py"
+        ]
+      }
     }
   ],
   "exceptions": []

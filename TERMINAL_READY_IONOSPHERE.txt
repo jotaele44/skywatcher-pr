@@ -1,0 +1,13 @@
+FROZEN GLOTEC TRANSPORT RC1 — INTERNAL, NONOPERATIONAL
+Root index: TERMINAL_READY.txt. Run from this repository root with Python >=3.10.
+Install minimal test dependencies: python -m pip install pytest jsonschema
+macOS/Linux/a-Shell single-line smoke: PYTHONPATH=src python -m pytest tests/test_ionosphere_transport.py tests/test_pitirre_observation.py -q
+PowerShell smoke: $env:PYTHONPATH='src'; python -m pytest tests/test_ionosphere_transport.py tests/test_pitirre_observation.py -q
+Capability parity: python scripts/check_gui_parity.py
+Integrity: shasum -a 256 -c docs/ionosphere/SHA256.txt
+PowerShell integrity sample: Get-FileHash exports/ionosphere/glotec_context.package.json -Algorithm SHA256
+Human workflow: Aguayluz disabled /ionosphere preview; this adapter has no standalone operator control.
+On failure preserve input/export/code revisions; do not redownload the source or relabel the source contract.
+Restore: keep preview flags unset; revert additive v2 adapter/schema/export only if necessary.
+Source database rollback: NOT_APPLICABLE (read-only frozen export).
+Live refresh, ROTI, installation, upgrade, native packaging and production deployment: NOT VERIFIED.
