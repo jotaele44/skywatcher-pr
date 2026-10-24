@@ -223,6 +223,10 @@ const spaceTrack = {
   reentry: () => request('/space-track/reentry'),
 };
 
+const ilap = {
+  review: () => request('/ilap/review'),
+};
+
 const system = {
   publicSettings: () => request('/apps/public-settings').catch(() => ({
     id: appParams.appId,
@@ -244,5 +248,6 @@ export const federation = {
   spaceTrack,
   flightCorpusArchive,
   flightAcquisition,
+  ilap,
   request,
 };
