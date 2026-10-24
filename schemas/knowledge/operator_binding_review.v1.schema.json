@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pitirre-pr.local/schemas/knowledge/operator_binding_review.v1.schema.json",
+  "title": "PITIRRE Operator Screenshot-to-MFL Binding Review v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "screenshot",
+    "aircraft_observation",
+    "mfl_record",
+    "candidate_basis",
+    "candidate_state",
+    "decision",
+    "decision_basis",
+    "independent_evidence_refs",
+    "reviewed_by",
+    "reviewed_at",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {"const": "skywatcher.operator-binding-review.v1"},
+    "candidate_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "screenshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["screenshot_id", "sha256", "filename", "rel_path", "gold_annotator"],
+      "properties": {
+        "screenshot_id": {"type": "integer", "minimum": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "filename": {"type": "string", "minLength": 1},
+        "rel_path": {"type": "string", "minLength": 1},
+        "gold_annotator": {"type": "string", "minLength": 1}
+      }
+    },
+    "aircraft_observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "aircraft_obs_id",
+        "registration_raw",
+        "callsign_raw",
+        "identity_status_raw",
+        "observed_at"
+      ],
+      "properties": {
+        "aircraft_obs_id": {"type": "integer", "minimum": 1},
+        "registration_raw": {"type": ["string", "null"]},
+        "callsign_raw": {"type": ["string", "null"]},
+        "identity_status_raw": {"type": ["string", "null"]},
+        "observed_at": {"type": "string", "minLength": 1}
+      }
+    },
+    "mfl_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "corpus_record_id",
+        "corpus_uid",
+        "snapshot_id",
+        "source_flight_id_raw",
+        "callsign_raw",
+        "start_time_utc",
+        "end_time_utc"
+      ],
+      "properties": {
+        "corpus_record_id": {"type": "integer", "minimum": 1},
+        "corpus_uid": {"type": "string", "minLength": 1},
+        "snapshot_id": {"type": "integer", "minimum": 1},
+        "source_flight_id_raw": {"type": ["string", "null"]},
+        "callsign_raw": {"type": ["string", "null"]},
+        "start_time_utc": {"type": ["string", "null"]},
+        "end_time_utc": {"type": ["string", "null"]}
+      }
+    },
+    "candidate_basis": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "CALLSIGN_EXACT_CASEFOLD",
+          "REGISTRATION_FOLDER_EXACT_CASEFOLD"
+        ]
+      }
+    },
+    "candidate_state": {"const": "CANDIDATE_NOT_IDENTITY"},
+    "decision": {
+      "enum": ["UNREVIEWED", "SAME_EVENT", "DIFFERENT_EVENT", "UNRESOLVED"]
+    },
+    "decision_basis": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "DISPLAYED_SOURCE_FLIGHT_ID",
+          "NATIVE_TRACK_MATCH",
+          "AUTHORITATIVE_SOURCE_LINK",
+          "REVIEWED_TIME_ROUTE_CONTINUITY",
+          "NON_OVERLAPPING_TIME",
+          "DIFFERENT_SOURCE_FLIGHT_ID",
+          "CONTRADICTORY_TRACK",
+          "AUTHORITATIVE_EXCLUSION",
+          "CALLSIGN_ONLY",
+          "REGISTRATION_ONLY",
+          "SPATIAL_PROXIMITY",
+          "NEAREST_TIME"
+        ]
+      }
+    },
+    "independent_evidence_refs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "reviewed_by": {"type": "string"},
+    "reviewed_at": {"type": "string"},
+    "notes": {"type": "string"}
+  }
+}
