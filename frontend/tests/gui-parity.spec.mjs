@@ -258,4 +258,3 @@ test("FR24 capture edits report persistence failures and omit unsupported action
   await expect(page.getByText("Diagnostic state updated", { exact: true })).toHaveCount(0);
   expect(writeAttempts).toBe(1);
 });
-});
