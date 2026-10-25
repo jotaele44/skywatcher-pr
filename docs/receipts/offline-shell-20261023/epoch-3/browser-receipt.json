@@ -1,0 +1,85 @@
+{
+  "scope": "offline-shell-only",
+  "appId": "skywatcher-pr",
+  "version": "e40b2c0dc63537c40cf2400464a54516e082740ec29873cda37c05676b992b2a",
+  "assets": 25,
+  "bytes": 2938933,
+  "results": [
+    {
+      "status": "PASS",
+      "checks": [
+        "evicted-asset-detected",
+        "verified-online-repair"
+      ]
+    },
+    {
+      "width": 1440,
+      "status": "PASS",
+      "checks": [
+        "cold-reopen",
+        "all-shell-assets",
+        "local-storage-survival",
+        "api-not-cached",
+        "offline-api-fails",
+        "deep-link-preserved",
+        "reconnect"
+      ]
+    },
+    {
+      "status": "PASS",
+      "checks": [
+        "evicted-asset-detected",
+        "verified-online-repair"
+      ]
+    },
+    {
+      "width": 393,
+      "status": "PASS",
+      "checks": [
+        "cold-reopen",
+        "all-shell-assets",
+        "local-storage-survival",
+        "api-not-cached",
+        "offline-api-fails",
+        "deep-link-preserved",
+        "reconnect"
+      ]
+    },
+    {
+      "status": "PASS",
+      "checks": [
+        "evicted-asset-detected",
+        "verified-online-repair"
+      ]
+    },
+    {
+      "width": 430,
+      "status": "PASS",
+      "checks": [
+        "cold-reopen",
+        "all-shell-assets",
+        "local-storage-survival",
+        "api-not-cached",
+        "offline-api-fails",
+        "deep-link-preserved",
+        "reconnect"
+      ]
+    },
+    {
+      "status": "PASS",
+      "checks": [
+        "waiting-update-preserves-open-document",
+        "successor-cold-offline-launch",
+        "old-cache-cleanup",
+        "other-app-cache-preserved"
+      ]
+    },
+    {
+      "status": "PASS",
+      "checks": [
+        "corrupt-asset-rejects-install",
+        "partial-cache-removed"
+      ]
+    }
+  ]
+}
