@@ -27,6 +27,7 @@ REQUIRED_GATES = (
     "icon_capture_complete",
     "no_unsupported_geolocation",
     "field_level_provenance_100",
+    "gold_source_byte_identity_100",
     "location_label_recall_gte_0_98",
 )
 
@@ -332,6 +333,31 @@ def build_gates(
             "detected": icons["detected"],
             "artifacts": icons["artifacts"],
             "artifact_failures": icons["artifact_failures"],
+        },
+    )
+
+    source_verified = int(gold.get("source_bytes_verified", 0))
+    source_failures = int(gold.get("source_byte_failures", 0))
+    gold_records = int(gold.get("records", 0))
+    if source_failures:
+        source_state = "FAIL"
+    elif (
+        gold_records == 300
+        and source_verified == 300
+        and gold.get("source_byte_verification_required")
+    ):
+        source_state = "PASS"
+    else:
+        source_state = "BLOCKED"
+    gates["gold_source_byte_identity_100"] = audit._gate(
+        source_state,
+        {
+            "verified": source_verified,
+            "records": gold_records,
+            "failures": source_failures,
+            "verification_required": bool(
+                gold.get("source_byte_verification_required")
+            ),
         },
     )
     return gates

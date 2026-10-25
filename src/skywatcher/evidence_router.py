@@ -53,6 +53,8 @@ class SkillSpec:
 SKILL_REGISTRY: tuple[SkillSpec, ...] = (
     SkillSpec("RLSM", ("visual_evidence", "label_extraction", "map_context"), "run-rlsm.sh"),
     SkillSpec("FR24_SCREENSHOT_INVENTORY", ("visual_evidence", "provenance"), "fr24/screenshot_inventory.py"),
+    SkillSpec("SCREENSHOT_TO_MFL", ("visual_evidence", "aircraft_identity", "provenance"),
+              "src/skywatcher/fr24/screenshot_jobs.py", advisory=True),
     SkillSpec("AIRCRAFT_IDENTITY", ("aircraft_identity",), "aircraft_intelligence.py"),
     SkillSpec("AIRCRAFT_MARKER_DETECTION", ("visual_evidence", "aircraft_marker"), "fr24/ui_segmenter.py"),
     SkillSpec("ROUTE_EXTRACTION", ("visual_evidence", "trajectory"), "fr24/route_extractor.py"),

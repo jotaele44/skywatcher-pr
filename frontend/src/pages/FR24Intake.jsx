@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import ScreenshotProcessor from "@/components/skywatcher/ScreenshotProcessor";
 import { Camera, Info, AlertTriangle } from "lucide-react";
 import { useSkywatcher } from "@/lib/SkywatcherData";
 import { useDrawers } from "@/components/skywatcher/drawers/DrawerHub";
@@ -36,14 +37,15 @@ export default function FR24Intake() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="FR24 Intake" subtitle="Repository-side capture metadata & review state — visualization only" icon={Camera} />
+      <PageHeader title="FR24 Intake" subtitle="Authenticated screenshot processing with RLSM extraction and separate legacy capture review" icon={Camera} />
       <DiagnosticNoticeBanner />
+      <ScreenshotProcessor />
 
       <div className="flex items-start gap-3 rounded-lg border border-[hsl(218_100%_56%/0.25)] bg-[hsl(218_100%_56%/0.06)] px-4 py-3">
         <Info className="mt-0.5 h-5 w-5 shrink-0 text-[hsl(200_100%_72%)]" />
         <p className="text-sm text-foreground/85">
-          <strong>FR24 ingest is repository-side.</strong> Federation only visualizes capture metadata and review state.
-          No scraping, OCR, or live ingestion runs here — capture actions update diagnostic state only.
+          <strong>Historical capture metadata below is read-only.</strong> The Screenshot Processor above is a separate authenticated runtime feature.
+          The historical table is diagnostic-only; OCR execution occurs only through the dedicated processing control above.
         </p>
       </div>
 
