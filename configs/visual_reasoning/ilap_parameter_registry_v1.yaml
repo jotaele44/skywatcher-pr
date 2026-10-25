@@ -1,0 +1,49 @@
+schema_version: ilap.visual.parameters.v1
+status: CALIBRATION_REQUIRED
+principles:
+  unknown_is_zero: false
+  missing_is_negative_evidence: false
+  composite_requires_calibrated_weights: true
+  score_is_probability: false
+  derived_copy_is_independent_source: false
+  proximity_is_functional_linkage: false
+
+parameters:
+  PALM:
+    morphology_threshold: {state: CALIBRATION_REQUIRED}
+    cluster_distance_m: {state: CALIBRATION_REQUIRED}
+    species_promotion_from_low_resolution: {state: PROHIBITED, value: false}
+  WATER:
+    water_probability_threshold: {state: CALIBRATION_REQUIRED}
+    hydrographic_form_thresholds: {state: CALIBRATION_REQUIRED}
+  ROOF:
+    roof_geometry_threshold: {state: CALIBRATION_REQUIRED}
+    blue_surface_threshold: {state: CALIBRATION_REQUIRED}
+    blue_roof_requires_geometry_and_color: {state: BINDING, value: true}
+  VEHICLE:
+    detector_confidence_threshold: {state: CALIBRATION_REQUIRED}
+    minimum_comparison_population: {state: CALIBRATION_REQUIRED}
+    anomaly_method: {state: CALIBRATION_REQUIRED}
+    raw_count_alone_promotes_anomaly: {state: PROHIBITED, value: false}
+  ACCESSIBILITY:
+    weight_road_access_count: {state: CALIBRATION_REQUIRED}
+    weight_network_detour_ratio: {state: CALIBRATION_REQUIRED}
+    weight_slope: {state: CALIBRATION_REQUIRED}
+    weight_local_relief: {state: CALIBRATION_REQUIRED}
+    weight_bridge_dependency: {state: CALIBRATION_REQUIRED}
+    weight_settlement_isolation: {state: CALIBRATION_REQUIRED}
+    weight_barrier_count: {state: CALIBRATION_REQUIRED}
+  LAYOUT:
+    relation_distance_thresholds: {state: CALIBRATION_REQUIRED}
+    unusualness_baseline_definition: {state: CALIBRATION_REQUIRED}
+  ILAP_COMPOSITE:
+    visual_structure_weight: {state: CALIBRATION_REQUIRED}
+    layout_unusualness_weight: {state: CALIBRATION_REQUIRED}
+    accessibility_friction_weight: {state: CALIBRATION_REQUIRED}
+    vehicle_activity_anomaly_weight: {state: CALIBRATION_REQUIRED}
+    hydrologic_context_weight: {state: CALIBRATION_REQUIRED}
+    terrain_context_weight: {state: CALIBRATION_REQUIRED}
+    infrastructure_connectivity_weight: {state: CALIBRATION_REQUIRED}
+    temporal_change_weight: {state: CALIBRATION_REQUIRED}
+    source_corroboration_weight: {state: CALIBRATION_REQUIRED}
+    promotion_threshold: {state: CALIBRATION_REQUIRED}

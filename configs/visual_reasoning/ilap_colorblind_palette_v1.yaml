@@ -1,0 +1,51 @@
+schema_version: ilap.annotation_palette.v1
+status: CANDIDATE
+
+principles:
+  COLOR_IS_UI_ENCODING_ONLY: true
+  COLOR_IS_NOT_EVIDENCE: true
+  EVIDENCE_STATE_USES_STYLE_NOT_HUE: true
+  ORIGINAL_UNMARKED_SOURCE_IMMUTABLE: true
+  MARKED_SOURCE_IS_DERIVED_ARTIFACT: true
+
+canonical_classes:
+  vegetation_palm:
+    default: "#2E8B57"
+    colorblind_safe: "#009E73"
+  roof_building:
+    default: "#2F6BFF"
+    colorblind_safe: "#0072B2"
+  managed_land_earthwork:
+    default: "#D62728"
+    colorblind_safe: "#D55E00"
+  water_hydrography:
+    default: "#17BECF"
+    colorblind_safe: "#56B4E9"
+  vehicles_parking:
+    default: "#FF7F0E"
+    colorblind_safe: "#E69F00"
+  roads_access:
+    default: "#F2C94C"
+    colorblind_safe: "#F0E442"
+  utilities_infrastructure:
+    default: "#9467BD"
+    colorblind_safe: "#CC79A7"
+  quarry_excavation:
+    default: "#8C564B"
+    colorblind_safe: "#8B6F47"
+  artifact_ui_unresolved:
+    default: "#7F7F7F"
+    colorblind_safe: "#777777"
+  control_reference:
+    default: "#FFFFFF"
+    colorblind_safe: "#FFFFFF"
+
+evidence_state_styles:
+  OBSERVED: {line: solid, width: 2, fill_opacity: 0.00}
+  CANDIDATE: {line: dashed, width: 2, fill_opacity: 0.00}
+  SUPPORTED: {line: solid, width: 2, fill_opacity: 0.12}
+  BOUND: {line: solid, width: 3, fill_opacity: 0.18}
+  UNRESOLVED: {line: dotted, width: 2, fill_opacity: 0.00}
+  CONTRADICTED: {line: cross_hatch, width: 2, fill_opacity: 0.08}
+  SUPERSEDED: {line: solid, width: 1, fill_opacity: 0.03, opacity: 0.35}
+  CERTIFIED: {line: double, width: 3, fill_opacity: 0.18}
