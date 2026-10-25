@@ -151,11 +151,11 @@ ignore_missing_imports = true
 no_implicit_optional = true
 warn_redundant_casts = true
 follow_imports = "silent"
-files = ["src/skywatcher"]
+files = ["src/skywatcher", "src/pitirre"]
 
 [tool.coverage.run]
 branch = true
-source = ["src/skywatcher", "fr24", "imagery", "pipeline"]
+source = ["src/skywatcher", "src/pitirre", "fr24", "imagery", "pipeline"]
 omit = ["tests/*", "*/__init__.py"]
 
 [tool.coverage.report]

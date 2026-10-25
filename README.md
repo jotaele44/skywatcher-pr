@@ -2,7 +2,7 @@
 
 `skywatcher-pr` is the **airspace / aircraft-intelligence producer** for the Puerto Rico Integrated Intelligence (PRII) federation. It owns FlightRadar24 screenshot/track ingestion, airspace observation generation, aircraft-intelligence enrichment, and airspace export packages for [`thehub-pr`](https://github.com/jotaele44/thehub-pr).
 
-> Skywatcher maps aircraft activity, missions, and airspace-infrastructure relationships. It does not allege wrongdoing.
+> Skywatcher maps aircraft activity, source-declared labels, and non-causal airspace/infrastructure associations. It does not infer mission or intent and does not allege wrongdoing.
 
 > **Diagnostic-only surface (ADR 0001, Phase 2).** This repo's dashboard is a
 > development and diagnostic tool for this producer only. The supported product
@@ -26,7 +26,7 @@ Skywatcher is the active owner of the FR24 pipeline migrated out of `spiderweb-p
 
 | Module | Role |
 |---|---|
-| `aircraft_intelligence.py` | Callsign to aircraft profile lookup, operator/mission inference, reports |
+| `aircraft_intelligence.py` | Callsign to aircraft profile lookup, source/operator metadata, reports; legacy mission inference symbols remain quarantined for compatibility |
 | `ilap_airspace_bridge.py` | Infrastructure-Linked Airspace Profile bridge |
 | `aasb_airspace_bridge.py` | Airspace-Asset Spatial Bridge |
 | `prii_readiness_engine.py` | Operational readiness scoring/reporting |

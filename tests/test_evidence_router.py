@@ -118,3 +118,13 @@ def test_unreadable_or_unsupported_source_fails_closed(tmp_path: Path) -> None:
     plan = route_paths([unknown])
     assert plan.gates["DENOMINATOR"] == "BLOCKED"
     assert plan.manifest.unresolved
+
+
+def test_mission_inference_is_not_a_routable_capability(tmp_path: Path) -> None:
+    image = tmp_path / "capture.jpg"
+    image.write_bytes(MINIMAL_JPEG)
+    plan = route_paths([image])
+    assert "mission_classification" not in plan.capabilities
+    assert "MISSION_INTENT_INFERENCE_PROHIBITED" in plan.safeguards
+    pattern = next(row for row in plan.skills if row["skill_id"] == "PATTERN")
+    assert "mission_classification" not in pattern["matched_capabilities"]

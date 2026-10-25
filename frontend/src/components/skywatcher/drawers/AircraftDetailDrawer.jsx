@@ -41,7 +41,7 @@ export default function AircraftDetailDrawer({ id, onClose, go }) {
           <Field label="Tail Number" mono>{ac.tail_number}</Field>
           <Field label="Operator">{ac.operator_name}</Field>
           <Field label="Operator Category">{ac.operator_category}</Field>
-          <Field label="Mission Category">{ac.mission_category}</Field>
+          <Field label="Source-declared Mission">{ac.mission_category || "—"}</Field>
           <Field label="Registry Source">{ac.registry_source}</Field>
           <Field label="Observation Count" mono>{ac.observation_count}</Field>
           <Field label="First Seen">{ac.first_seen_at ? new Date(ac.first_seen_at).toLocaleDateString() : "—"}</Field>
@@ -54,7 +54,7 @@ export default function AircraftDetailDrawer({ id, onClose, go }) {
         <div className="space-y-2">
           {observations.length ? observations.map((o) => (
             <LinkChip key={o.id} onClick={() => go.observation(o.observation_id)}
-              label={`${o.callsign} · ${o.mission_inference}`}
+              label={`${o.callsign}${o.aircraft_type ? ` · ${o.aircraft_type}` : ""}`}
               sublabel={`${o.observation_id} · ${o.observed_at ? new Date(o.observed_at).toLocaleString() : ""}`} />
           )) : <p className="text-xs text-muted-foreground">No linked observations.</p>}
         </div>

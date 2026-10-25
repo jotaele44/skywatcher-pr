@@ -1,5 +1,6 @@
 """Tests for ILAP Airspace Bridge — Task 21."""
 
+import json
 
 from ilap_airspace_bridge import (
     CONFIDENCE_WEIGHTS,
@@ -64,6 +65,14 @@ def test_ilap_bridge_corridor_candidate_output_shape(tmp_path):
             ("FLT_B", f"2024-03-15T09:{i:02d}:00", 18.44 + i * 0.001,
              -66.0 + i * 0.001, 3000, 100),
         )
+    conn.execute(
+        "INSERT INTO flights (flight_id, callsign, mission_type) VALUES (?, ?, ?)",
+        ("FLT_A", "TEST-A", "legacy-inferred-mission"),
+    )
+    conn.execute(
+        "INSERT INTO flights (flight_id, callsign, mission_type) VALUES (?, ?, ?)",
+        ("FLT_B", "TEST-B", "legacy-inferred-mission"),
+    )
     conn.commit()
     conn.close()
 
@@ -76,4 +85,8 @@ def test_ilap_bridge_corridor_candidate_output_shape(tmp_path):
     for fname in ("airspace_poi_candidates.geojson",
                   "airspace_ilap_candidates.geojson",
                   "airspace_corridor_candidates.geojson"):
-        assert (tmp_path / fname).exists(), f"Missing output: {fname}"
+        output_path = tmp_path / fname
+        assert output_path.exists(), f"Missing output: {fname}"
+        payload = json.loads(output_path.read_text(encoding="utf-8"))
+        for feature in payload["features"]:
+            assert "mission_type" not in feature.get("properties", {})

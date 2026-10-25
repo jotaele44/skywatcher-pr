@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-SOURCE_TAXONOMY_VERSION = "0.2.0"
+SOURCE_TAXONOMY_VERSION = "0.3.0"
 
 SOURCE_FAMILIES = (
     "operational_position",
@@ -183,7 +183,7 @@ def build_provenance(row: Mapping[str, Any]) -> tuple[dict[str, str | None], lis
         "attribution": row.get("attribution"),
         "artifact_path": str(row.get("artifact_path") or "legacy://unknown"),
         "artifact_sha256": row.get("artifact_sha256"),
-        "ingest_adapter": str(row.get("ingest_adapter") or "source_taxonomy_v0_2_legacy_mapper"),
+        "ingest_adapter": str(row.get("ingest_adapter") or "source_taxonomy_v0_3_legacy_mapper"),
     }
     return provenance, qa_flags
 
@@ -193,6 +193,17 @@ def normalize_observation(row: Mapping[str, Any]) -> dict[str, Any]:
 
     normalized = dict(row)
     provenance, qa_flags = build_provenance(row)
+
+    # PITIRRE-C002: active ontology v2.1 prohibits mission/intent inference.
+    # Preserve any legacy field as noncanonical source material without exposing
+    # it as an ordinary observation attribute.
+    legacy_noncanonical = dict(normalized.get("legacy_noncanonical") or {})
+    if "mission_inference" in normalized:
+        legacy_noncanonical["mission_inference_raw"] = normalized.pop("mission_inference")
+        if "legacy_mission_inference_quarantined" not in qa_flags:
+            qa_flags.append("legacy_mission_inference_quarantined")
+    if legacy_noncanonical:
+        normalized["legacy_noncanonical"] = legacy_noncanonical
     normalized.update(
         {
             "source_family": provenance["source_family"],

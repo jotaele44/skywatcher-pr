@@ -50,3 +50,17 @@ def test_unknown_source_remains_explicit_and_flagged():
     assert provenance["data_rights"] == "unknown"
     assert provenance["operational_mode"] == "unknown"
     assert "unknown_source_type" in flags
+
+
+def test_legacy_mission_inference_is_quarantined_not_exposed():
+    normalized = normalize_observation(
+        {
+            "observation_id": "obs-mission",
+            "source_id": "screen-mission",
+            "source_type": "screenshot",
+            "mission_inference": "patrol",
+        }
+    )
+    assert "mission_inference" not in normalized
+    assert normalized["legacy_noncanonical"]["mission_inference_raw"] == "patrol"
+    assert "legacy_mission_inference_quarantined" in normalized["qa_flags"]
