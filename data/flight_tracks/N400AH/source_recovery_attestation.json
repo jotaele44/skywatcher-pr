@@ -1,0 +1,85 @@
+{
+  "schema_version": "skywatcher-n400ah-source-recovery-attestation/1.0",
+  "dataset_id": "N400AH_STRUCTURED_TRACKS_2026Q2_Q3_v1",
+  "repository": "skywatcher-pr",
+  "source_hash_ledger_path": "data/flight_tracks/N400AH/source_hashes.csv",
+  "source_hash_ledger_git_blob_sha1": "cd3a7afe618f3fe29546336aa03dedbdbab679f8",
+  "ingestion_receipt_git_blob_sha1": "7fd7317f74c342eb36c10981406ef104d233967c",
+  "original_source_archive": {
+    "name": "N400AH.zip",
+    "sha256": "fa64d13aa3fc32b36b70e84e591b1a3ededb89bb3335e35dda711bb0182b264e",
+    "byte_identity_state": "UNRESOLVED"
+  },
+  "recovery_container": {
+    "name": "Choppers(1).zip",
+    "bytes": 69753399,
+    "sha256": "ace93d7f47041df32a987d5d4afd3a236f07e835dd10fbf1e082d38dceee5998",
+    "container_comparison_state": "DISTINCT_PAYLOADS",
+    "reason": "The broader recovery container contains 102 non-metadata files under Choppers/N400AH/source_flight_files, including 52 files outside the frozen 50-file source denominator. It therefore is not the original N400AH.zip manifestation."
+  },
+  "in_scope_provider_payloads": {
+    "expected": 50,
+    "matched_byte_identical": 50,
+    "missing": 0,
+    "divergent": 0,
+    "provider_csv": 25,
+    "provider_kml": 25,
+    "state": "PASS_BYTE_IDENTICAL_SUBSET"
+  },
+  "provider_csv_audit": {
+    "schema_variants": 1,
+    "schema": [
+      "Timestamp",
+      "UTC",
+      "Callsign",
+      "Position",
+      "Altitude",
+      "Speed",
+      "Direction"
+    ],
+    "track_count": 25,
+    "point_count": 12455,
+    "valid_position_count": 12455,
+    "stable_record_id_count": 12455,
+    "duplicate_record_id_count": 0,
+    "unique_provider_timestamp_count": 12455,
+    "callsign_counts": {
+      "N400AH": 12455
+    },
+    "record_id_derivation": "N400AH:<track_id>:R<source_row:05d>",
+    "coordinate_evidence_state": "VERIFIED_SOURCE_COORDINATE",
+    "source_crs": "EPSG:4326"
+  },
+  "recovered_derived_artifacts": {
+    "analysis_receipt.json": {
+      "bytes": 571,
+      "sha256": "f1a1fc3105b139c7c97cb6e5a7030d7643dc1bc57772f606399416cb1de70389",
+      "matches_ingestion_receipt": true
+    },
+    "tracks.geojson": {
+      "bytes": 1200867,
+      "sha256": "f9092648bababfc80eeeca8bbf34d5309898876247573cec2873f8619bfca9e5",
+      "matches_ingestion_receipt": true
+    }
+  },
+  "analysis_receipt_invariants": {
+    "track_count": 25,
+    "point_count": 12455,
+    "first_utc": "2026-04-09T14:08:39+00:00",
+    "last_utc": "2026-08-03T16:02:51+00:00",
+    "kml_all_point_counts_match": true,
+    "kml_global_max_delta_m": 0.0,
+    "kml_semantics": "EXPORT_CONSISTENCY_NOT_INDEPENDENT_CORROBORATION"
+  },
+  "migration": {
+    "binding_mode_candidate": "EXACT_SOURCE_POINT",
+    "migration_provenance_class": "RECOMPUTED_FROM_SOURCE_COORDINATE",
+    "grid_level": "L2",
+    "source_qualified": true,
+    "execution_state": "BLOCKED_SOURCE_NOT_CI_ADDRESSABLE",
+    "promotion_state": "CANDIDATE_NOT_CANONICAL",
+    "geometry_copied": false
+  },
+  "scope_note": "This attestation proves byte identity of the frozen 50-member provider source subset inside a distinct broader recovery container. It does not prove byte identity of the original N400AH.zip container, does not infer continuity across provider gaps, and does not certify mission, operator, passenger, ownership, or intent.",
+  "state": "PASS_SOURCE_RECOVERY"
+}
