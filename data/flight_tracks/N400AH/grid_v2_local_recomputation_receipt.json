@@ -1,0 +1,101 @@
+{
+  "schema_version": "skywatcher-n400ah-grid-v2-local-recomputation/1.0",
+  "dataset_id": "N400AH_STRUCTURED_TRACKS_2026Q2_Q3_v1",
+  "repository": "skywatcher-pr",
+  "source_recovery_commit": "7812b0795a800e8ff02b6bf54d7313a1879f8e84",
+  "source_recovery_attestation_path": "data/flight_tracks/N400AH/source_recovery_attestation.json",
+  "source_hash_ledger_path": "data/flight_tracks/N400AH/source_hashes.csv",
+  "source_hash_ledger_git_blob_sha1": "cd3a7afe618f3fe29546336aa03dedbdbab679f8",
+  "original_source_archive": {
+    "name": "N400AH.zip",
+    "sha256": "fa64d13aa3fc32b36b70e84e591b1a3ededb89bb3335e35dda711bb0182b264e",
+    "byte_identity_state": "UNRESOLVED"
+  },
+  "recovery_container": {
+    "name": "Choppers(1).zip",
+    "bytes": 69753399,
+    "sha256": "ace93d7f47041df32a987d5d4afd3a236f07e835dd10fbf1e082d38dceee5998",
+    "container_comparison_state": "DISTINCT_PAYLOADS"
+  },
+  "frozen_provider_subset": {
+    "member_count": 50,
+    "provider_csv": 25,
+    "provider_kml": 25,
+    "uncompressed_bytes": 20651134,
+    "member_identity_state": "PASS_BYTE_IDENTICAL_SUBSET",
+    "missing_members": 0,
+    "divergent_members": 0
+  },
+  "deterministic_local_source_bundle": {
+    "name": "N400AH_SOURCE_PAYLOADS_V1.zip",
+    "bytes": 941340,
+    "sha256": "5474176bf080b38174c1fbc2b15b9afc3ef6d0d69fb04612769ca1e7485ac504",
+    "member_count": 50,
+    "public_repository_path": null,
+    "publication_state": "WITHHELD_REDISTRIBUTION_RIGHTS_UNVERIFIED"
+  },
+  "rights": {
+    "repository_visibility": "PUBLIC",
+    "provider_source_redistribution_state": "UNVERIFIED",
+    "raw_provider_payloads_committed": false,
+    "derived_coordinate_rows_committed": false,
+    "per_cell_aggregate_committed": false,
+    "policy": "FAIL_CLOSED_NO_PROVIDER_OR_DERIVED_TRACK_DATA_PUBLICATION_UNTIL_RIGHTS_VERIFIED"
+  },
+  "grid": {
+    "Grid_ID": "PR_GRID_GEOGRAPHIC_V2",
+    "Grid_Version": "2.0.0-rc1",
+    "Grid_Level": "L2",
+    "CRS": "EPSG:6566",
+    "Grid_Manifest_SHA256": "8902af188ad449955119016f5747fe2393c582d9ed552fb03bcaecd9ab510aa4",
+    "Geometry_Authority": "spiderweb-pr",
+    "Authority_Code_Reference_Commit": "b8f5cf303ab7fc2b6ed006edce0fb12e1344a096",
+    "Authority_Execution_Performed": false
+  },
+  "independent_numeric_recomputation": {
+    "state": "PASS",
+    "execution_class": "INDEPENDENT_NUMERIC_RECOMPUTATION_NOT_AUTHORITY_EXECUTION",
+    "migration_input_class": "EXACT_SOURCE_POINT",
+    "migration_provenance_class": "RECOMPUTED_FROM_SOURCE_COORDINATE",
+    "coordinate_evidence_state": "VERIFIED_SOURCE_COORDINATE",
+    "source_crs": "EPSG:4326",
+    "target_crs": "EPSG:6566",
+    "transform_policy": {
+      "always_xy": true,
+      "allow_ballpark": false,
+      "only_best": true,
+      "boundary_snap_tolerance_m": "0.000001"
+    },
+    "software": {
+      "pyproj": "3.7.2",
+      "PROJ": "9.5.1"
+    },
+    "input_record_count": 12455,
+    "state_counts": {
+      "INTERIOR": 10875,
+      "OUTSIDE": 1580,
+      "EDGE_SHARED": 0,
+      "CORNER_SHARED": 0
+    },
+    "binding_row_count": 10875,
+    "boundary_snap_record_count": 0,
+    "unique_bound_l2_cell_count": 3211,
+    "cell_record_count_min": 1,
+    "cell_record_count_max": 88,
+    "row_conservation_state": "PASS",
+    "row_conservation_equation": "10875 INTERIOR + 1580 OUTSIDE = 12455 INPUT"
+  },
+  "local_aggregate_artifact": {
+    "name": "n400ah_l2_cell_counts.json",
+    "bytes": 86797,
+    "sha256": "45662554e29a86fb6eb57eb7dd7740476e2d83430d746e594422ff43bcbb28e3",
+    "public_repository_path": null,
+    "publication_state": "WITHHELD_REDISTRIBUTION_RIGHTS_UNVERIFIED"
+  },
+  "execution_state": "INDEPENDENT_NUMERIC_RECOMPUTATION_PASS",
+  "authority_execution_state": "NOT_EXECUTED",
+  "ci_reproducibility_state": "BLOCKED_REDISTRIBUTION_RIGHTS_UNVERIFIED",
+  "promotion_state": "CANDIDATE_NOT_CANONICAL",
+  "geometry_copied": false,
+  "scope_note": "This receipt records source-identity closure and an independent numerical Grid V2 recomputation without publishing provider payloads, coordinate rows, or per-cell aggregates. It is not a Spiderweb authority execution, does not resolve original N400AH.zip container byte identity, does not authorize redistribution, and does not certify mission, operator, passenger, ownership, purpose, or continuity across provider gaps."
+}
