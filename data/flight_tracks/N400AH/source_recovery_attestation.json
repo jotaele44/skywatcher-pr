@@ -68,7 +68,7 @@
     "first_utc": "2026-04-09T14:08:39+00:00",
     "last_utc": "2026-08-03T16:02:51+00:00",
     "kml_all_point_counts_match": true,
-    "kml_global_max_delta_m": 0.0,
+    "kml_global_max_delta_m": 0,
     "kml_semantics": "EXPORT_CONSISTENCY_NOT_INDEPENDENT_CORROBORATION"
   },
   "migration": {
@@ -76,10 +76,27 @@
     "migration_provenance_class": "RECOMPUTED_FROM_SOURCE_COORDINATE",
     "grid_level": "L2",
     "source_qualified": true,
-    "execution_state": "BLOCKED_SOURCE_NOT_CI_ADDRESSABLE",
+    "execution_state": "INDEPENDENT_NUMERIC_RECOMPUTATION_PASS",
     "promotion_state": "CANDIDATE_NOT_CANONICAL",
-    "geometry_copied": false
+    "geometry_copied": false,
+    "authority_execution_state": "NOT_EXECUTED",
+    "ci_reproducibility_state": "BLOCKED_REDISTRIBUTION_RIGHTS_UNVERIFIED",
+    "source_redistribution_state": "UNVERIFIED",
+    "public_source_bytes_committed": false,
+    "public_derived_coordinate_rows_committed": false,
+    "local_recomputation_receipt_path": "data/flight_tracks/N400AH/grid_v2_local_recomputation_receipt.json",
+    "local_recomputation_summary": {
+      "input_record_count": 12455,
+      "binding_row_count": 10875,
+      "interior_record_count": 10875,
+      "outside_record_count": 1580,
+      "edge_shared_record_count": 0,
+      "corner_shared_record_count": 0,
+      "unique_bound_l2_cell_count": 3211,
+      "boundary_snap_record_count": 0,
+      "state": "PASS"
+    }
   },
-  "scope_note": "This attestation proves byte identity of the frozen 50-member provider source subset inside a distinct broader recovery container. It does not prove byte identity of the original N400AH.zip container, does not infer continuity across provider gaps, and does not certify mission, operator, passenger, ownership, or intent.",
+  "scope_note": "This attestation proves byte identity of the frozen 50-member provider source subset inside a distinct broader recovery container and records an independent numerical Grid V2 recomputation. It does not prove byte identity of the original N400AH.zip container, does not constitute Spiderweb authority execution, does not authorize provider-data redistribution, does not infer continuity across provider gaps, and does not certify mission, operator, passenger, ownership, or intent.",
   "state": "PASS_SOURCE_RECOVERY"
 }

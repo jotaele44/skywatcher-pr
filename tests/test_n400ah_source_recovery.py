@@ -75,7 +75,15 @@ def test_source_ledger_and_point_denominators_close_without_migration_promotion(
     migration = value["migration"]
     assert migration["binding_mode_candidate"] == "EXACT_SOURCE_POINT"
     assert migration["source_qualified"] is True
-    assert migration["execution_state"] == "BLOCKED_SOURCE_NOT_CI_ADDRESSABLE"
+    assert migration["execution_state"] == "INDEPENDENT_NUMERIC_RECOMPUTATION_PASS"
+    assert migration["authority_execution_state"] == "NOT_EXECUTED"
+    assert (
+        migration["ci_reproducibility_state"]
+        == "BLOCKED_REDISTRIBUTION_RIGHTS_UNVERIFIED"
+    )
+    assert migration["source_redistribution_state"] == "UNVERIFIED"
+    assert migration["public_source_bytes_committed"] is False
+    assert migration["public_derived_coordinate_rows_committed"] is False
     assert migration["promotion_state"] == "CANDIDATE_NOT_CANONICAL"
     assert migration["geometry_copied"] is False
 
@@ -141,3 +149,50 @@ def test_validator_fails_closed_on_member_hash_divergence(tmp_path):
             source_hashes_path=ledger,
             prefix="payloads",
         )
+
+
+def test_local_grid_v2_recomputation_receipt_is_closed_and_non_promotional():
+    receipt_path = (
+        ROOT
+        / "data/flight_tracks/N400AH/grid_v2_local_recomputation_receipt.json"
+    )
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+
+    assert receipt["execution_state"] == "INDEPENDENT_NUMERIC_RECOMPUTATION_PASS"
+    assert receipt["authority_execution_state"] == "NOT_EXECUTED"
+    assert (
+        receipt["ci_reproducibility_state"]
+        == "BLOCKED_REDISTRIBUTION_RIGHTS_UNVERIFIED"
+    )
+    assert receipt["promotion_state"] == "CANDIDATE_NOT_CANONICAL"
+    assert receipt["geometry_copied"] is False
+
+    rights = receipt["rights"]
+    assert rights["repository_visibility"] == "PUBLIC"
+    assert rights["provider_source_redistribution_state"] == "UNVERIFIED"
+    assert rights["raw_provider_payloads_committed"] is False
+    assert rights["derived_coordinate_rows_committed"] is False
+    assert rights["per_cell_aggregate_committed"] is False
+
+    subset = receipt["frozen_provider_subset"]
+    assert subset["member_count"] == 50
+    assert subset["provider_csv"] == 25
+    assert subset["provider_kml"] == 25
+    assert subset["missing_members"] == 0
+    assert subset["divergent_members"] == 0
+
+    recomputation = receipt["independent_numeric_recomputation"]
+    assert recomputation["input_record_count"] == 12455
+    assert recomputation["binding_row_count"] == 10875
+    assert recomputation["state_counts"] == {
+        "INTERIOR": 10875,
+        "OUTSIDE": 1580,
+        "EDGE_SHARED": 0,
+        "CORNER_SHARED": 0,
+    }
+    assert recomputation["unique_bound_l2_cell_count"] == 3211
+    assert recomputation["boundary_snap_record_count"] == 0
+    assert recomputation["row_conservation_state"] == "PASS"
+
+    assert receipt["deterministic_local_source_bundle"]["public_repository_path"] is None
+    assert receipt["local_aggregate_artifact"]["public_repository_path"] is None
