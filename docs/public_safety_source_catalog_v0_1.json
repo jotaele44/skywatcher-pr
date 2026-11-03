@@ -1,0 +1,39 @@
+{
+  "schema_version": "pitirre-source-catalog-v0.1",
+  "certification": "DISCOVERY_ONLY",
+  "as_of": "2026-10-29",
+  "sources": [
+    {
+      "id": "pr_alertas",
+      "url": "https://www.alertas.pr.gov/personas-desaparecidas",
+      "publisher": "Puerto Rico Government",
+      "scope": "MISSING_PERSON",
+      "admission": "BLOCKED_PERSON_LEVEL",
+      "notes": "Official active-person notices; never import personal identifiers into aggregate adapter. Published notices change with recovery and withdrawal."
+    },
+    {
+      "id": "uscg_pr",
+      "url": "https://www.news.uscg.mil/Press-Releases/Tag/198983/puerto-rico/",
+      "publisher": "U.S. Coast Guard",
+      "scope": "MARITIME_RESCUE|MIGRANT_SMUGGLING|DRUG_INTERDICTION",
+      "admission": "MANUAL_PUBLICATION_REVIEW",
+      "notes": "Published press releases; distinguish migrant interception, actual smuggling charges, narcotics seizure, and rescue. Per-article documents need frozen bytes, timestamps, immutable identifiers and source-level screening."
+    },
+    {
+      "id": "uscg_pr_release_4591606",
+      "url": "https://www.news.uscg.mil/Press-Releases/Article/4591606/coast-guard-repatriates-75-migrants-to-dominican-republic-following-vessel-inte/",
+      "publisher": "U.S. Coast Guard",
+      "scope": "MARITIME_RESCUE|MIGRANT_SMUGGLING",
+      "admission": "MANUAL_PUBLICATION_REVIEW",
+      "notes": "Dated September 4 2026. Official report of maritime interdiction/repatriation, NOT verified criminal conviction or proof of trafficking. Event-level source candidate only; no person-level admission."
+    },
+    {
+      "id": "doj_usao_pr_hstf_2026_087",
+      "url": "https://www.justice.gov/usao-pr/pr/convictions-through-guilty-pleas-and-sentencings-homeland-security-task-force-hstf-6",
+      "publisher": "U.S. Attorney's Office District of Puerto Rico",
+      "scope": "HUMAN_TRAFFICKING|MIGRANT_SMUGGLING|DRUG_INTERDICTION",
+      "admission": "MANUAL_PUBLICATION_REVIEW",
+      "notes": "August 2026 HSTF bulletin is a mixed-charge prosecution roundup. Every court case must be classified by exact charges and disposition; HSTF affiliation does NOT itself establish trafficking."
+    }
+  ]
+}
