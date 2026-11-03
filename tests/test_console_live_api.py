@@ -179,6 +179,8 @@ def test_openaip_tile_requires_key_and_valid_coordinates(client_with, monkeypatc
     client = client_with(FakeProvider())
     monkeypatch.delenv("OPENAIP_API_KEY", raising=False)
     assert client.get("/api/console/live/tiles/openaip/3/9/9.png").status_code == 422
+    assert client.get("/api/console/live/tiles/openaip/3/-1/2.png").status_code == 422
+    assert client.get("/api/console/live/tiles/openaip/3/%2E%2E/2.png").status_code == 422
     assert client.get("/api/console/live/tiles/openaip/3/1/1.png").status_code == 503
     monkeypatch.setenv("OPENAIP_API_KEY", "secret")
     captured = {}

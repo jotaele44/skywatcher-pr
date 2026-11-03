@@ -319,6 +319,19 @@ def _fetch_openaip_tile(url: str, key: str) -> bytes:
         return response.read()
 
 
+def _tile_part(value: int) -> str:
+    """Digits-only text for one tile coordinate.
+
+    FastAPI already rejects non-integers and the caller range-checks them; this
+    keeps the upstream URL path to plain digits even if those checks change.
+    """
+
+    text = str(value)
+    if text.isdigit():
+        return text
+    raise HTTPException(status_code=422, detail="tile coordinates must be non-negative integers")
+
+
 @router.get("/tiles/openaip/{z}/{x}/{y}.png")
 def openaip_tile(z: int, x: int, y: int) -> Response:
     if not 0 <= z <= 14 or not (0 <= x < 2**z and 0 <= y < 2**z):
@@ -326,7 +339,7 @@ def openaip_tile(z: int, x: int, y: int) -> Response:
     key = _openaip_key()
     if not key:
         raise HTTPException(status_code=503, detail="OPENAIP_API_KEY is not configured on the backend")
-    url = OPENAIP_TILE_URL.format(z=z, x=x, y=y)
+    url = OPENAIP_TILE_URL.format(z=_tile_part(z), x=_tile_part(x), y=_tile_part(y))
     try:
         body = _fetch_openaip_tile(url, key)
     except urllib.error.HTTPError as exc:
