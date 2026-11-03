@@ -49,6 +49,10 @@ KT_TO_MS = 0.514444
 FPM_TO_MS = 0.00508
 EARTH_RADIUS_NM = 3440.065
 
+class UpstreamNotFound(ProviderError):
+    """adsb.lol answered 404/410: no data exists for this request."""
+
+
 Opener = Callable[[urllib.request.Request, float], tuple[int, dict[str, str], bytes]]
 
 
@@ -223,12 +227,16 @@ class AdsbLolProvider(AdsbProvider):
             try:
                 status, response_headers, raw = self._open(request, timeout or config.FETCH_TIMEOUT_S)
             except urllib.error.HTTPError as exc:
-                if exc.code in (400, 403, 404, 410, 422):
+                if exc.code in (404, 410):
+                    raise UpstreamNotFound(f"adsb.lol returned HTTP {exc.code} for {url}") from exc
+                if exc.code in (400, 403, 422):
                     raise ProviderError(f"adsb.lol returned HTTP {exc.code} for {url}") from exc
                 last_exc = exc
             except (urllib.error.URLError, OSError, TimeoutError) as exc:
                 last_exc = exc
             else:
+                if status in (404, 410):
+                    raise UpstreamNotFound(f"adsb.lol returned HTTP {status} for {url}")
                 if status >= 400:
                     raise ProviderError(f"adsb.lol returned HTTP {status} for {url}")
                 if response_headers.get("content-encoding") == "gzip" or raw[:2] == b"\x1f\x8b":

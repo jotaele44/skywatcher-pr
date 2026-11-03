@@ -413,7 +413,7 @@ export default function LiveAirspace() {
       });
       if (!replayStateRef.current.open) return;
       if (response.status !== "available" || !response.frames?.length) {
-        setReplay((r) => ({ ...r, loading: false, error: `${response.reason || "No data"} — no data for this timestamp` }));
+        setReplay((r) => ({ ...r, loading: false, error: response.reason || "No data for this timestamp" }));
         return;
       }
       if (reset) resetAircraft();

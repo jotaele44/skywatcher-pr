@@ -8,7 +8,13 @@ import pytest
 
 from adsb.heatmap import encode_heatmap
 from adsb.providers import ProviderError, available_providers, get_provider
-from adsb.providers.adsblol import AdsbLolProvider, bbox_query_circle, decode_trace, normalize_hex
+from adsb.providers.adsblol import (
+    AdsbLolProvider,
+    UpstreamNotFound,
+    bbox_query_circle,
+    decode_trace,
+    normalize_hex,
+)
 
 PR_BBOX = [-68.2, 17.8, -65.1, 18.7]
 NOW = datetime(2026, 11, 3, 16, 32, tzinfo=timezone.utc).timestamp()
@@ -155,6 +161,9 @@ def test_http_errors_raise_provider_error(tmp_path):
     provider, _ = _provider({"https://api.test/v2/point/": (500, {}, b"boom")}, tmp_path)
     with pytest.raises(ProviderError):
         provider.fetch_aircraft(PR_BBOX)
+    missing, _ = _provider({"https://site.test/": (404, {}, b"")}, tmp_path)
+    with pytest.raises(UpstreamNotFound):
+        missing.fetch_trace("a37f12")
 
 
 def test_normalize_hex_and_decode_trace_edge_cases():

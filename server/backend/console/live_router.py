@@ -14,6 +14,7 @@ stale states. Malformed requests are HTTP 422. Nothing here is persisted:
 
 from __future__ import annotations
 
+import logging
 import os
 import urllib.error
 import urllib.request
@@ -24,13 +25,32 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 
 from adsb import config as adsb_config
 from adsb.heatmap import HeatmapFormatError, chunk_index, decode_heatmap
-from adsb.providers.adsblol import ATTRIBUTION, LICENSE, AdsbLolProvider, normalize_hex
+from adsb.providers.adsblol import (
+    ATTRIBUTION,
+    LICENSE,
+    AdsbLolProvider,
+    UpstreamNotFound,
+    normalize_hex,
+)
 from adsb.providers.base import ProviderError
 
 from .query import QueryValidationError, parse_bbox
 from .time import UTCValidationError, parse_utc_datetime
 
 router = APIRouter(prefix="/api/console/live", tags=["console-live"])
+logger = logging.getLogger(__name__)
+
+# Clients get fixed, user-safe reasons; the exception detail (upstream URLs,
+# network errors) is logged server-side only.
+UPSTREAM_REASON = "adsb.lol could not be reached or returned an error; details are in the backend log."
+NOT_FOUND_REASONS = {
+    "adsblol.aircraft": "adsb.lol returned no data for this request.",
+    "adsblol.military": "adsb.lol returned no data for this request.",
+    "adsblol.trace": "adsb.lol has no trace for this aircraft on this day.",
+    "adsblol.replay": "adsb.lol has no replay data for this time.",
+    "adsblol.routes": "adsb.lol returned no route data.",
+}
+DECODE_REASON = "The adsb.lol replay chunk could not be decoded."
 
 OPENAIP_TILE_URL = os.getenv(
     "OPENAIP_TILE_URL", "https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png"
@@ -77,10 +97,17 @@ def _source(feed: str, url: str | None = None) -> dict[str, Any]:
 
 
 def _unavailable(feed: str, exc: Exception, **extra: Any) -> dict[str, Any]:
+    logger.warning("live feed %s unavailable: %s", feed, exc)
+    if isinstance(exc, UpstreamNotFound):
+        reason = NOT_FOUND_REASONS.get(feed, UPSTREAM_REASON)
+    elif isinstance(exc, HeatmapFormatError):
+        reason = DECODE_REASON
+    else:
+        reason = UPSTREAM_REASON
     return {
         "feed": feed,
         "status": "upstream_unavailable",
-        "reason": str(exc),
+        "reason": reason,
         "fetched_at_utc": _now_iso(),
         "source": _source(feed),
         **extra,
@@ -265,11 +292,13 @@ def live_routes(
     provider: LiveProvider,
 ) -> dict[str, Any]:
     planes = payload.get("planes")
-    if not isinstance(planes, list):
-        raise HTTPException(status_code=422, detail="planes must be a list")
+    if not isinstance(planes, list) or not all(isinstance(plane, dict) for plane in planes):
+        raise HTTPException(status_code=422, detail="planes must be a list of objects")
     try:
         routes = provider.fetch_routes(planes)
-    except (ProviderError, TypeError, ValueError) as exc:
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="planes need a callsign and numeric lat/lng") from exc
+    except ProviderError as exc:
         return _unavailable("adsblol.routes", exc, routes=[])
     return {
         "feed": "adsblol.routes",
@@ -303,7 +332,9 @@ def openaip_tile(z: int, x: int, y: int) -> Response:
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
             return Response(status_code=204)
-        raise HTTPException(status_code=502, detail=f"openAIP returned HTTP {exc.code}") from exc
+        logger.warning("openAIP tile %s/%s/%s failed: HTTP %s", z, x, y, exc.code)
+        raise HTTPException(status_code=502, detail="openAIP tile request failed") from exc
     except (urllib.error.URLError, OSError) as exc:
-        raise HTTPException(status_code=502, detail=f"openAIP unreachable: {exc}") from exc
+        logger.warning("openAIP tile %s/%s/%s unreachable: %s", z, x, y, exc)
+        raise HTTPException(status_code=502, detail="openAIP tile request failed") from exc
     return Response(content=body, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})

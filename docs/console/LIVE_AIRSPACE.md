@@ -78,8 +78,9 @@ ODbL 1.0, credited in the map attribution and the sidebar.
 
 When the view is wider than the 250 NM upstream radius, the status line says
 "zoom in for full coverage". Upstream failures come back with HTTP 200 and
-`status: "upstream_unavailable"` plus a reason, which the page shows; malformed
-requests are HTTP 422.
+`status: "upstream_unavailable"` plus a fixed, user-safe reason, which the page
+shows; the underlying error (URLs, network details) is only written to the
+backend log. Malformed requests are HTTP 422.
 
 The adsb.lol web map's own `re-api` endpoint is behind a bot-verification
 challenge and is not used.
