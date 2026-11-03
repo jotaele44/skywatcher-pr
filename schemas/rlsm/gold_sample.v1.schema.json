@@ -5,14 +5,35 @@
   "type": "object",
   "additionalProperties": false,
   "anyOf": [
-    {"required": ["screenshot_id"]},
-    {"required": ["screenshot_sha256"]},
-    {"required": ["filename"]}
+    {
+      "required": [
+        "screenshot_id"
+      ]
+    },
+    {
+      "required": [
+        "screenshot_sha256"
+      ]
+    },
+    {
+      "required": [
+        "filename"
+      ]
+    }
   ],
   "properties": {
-    "screenshot_id": {"type": "integer", "minimum": 1},
-    "screenshot_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
-    "filename": {"type": "string", "minLength": 1},
+    "screenshot_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "screenshot_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "filename": {
+      "type": "string",
+      "minLength": 1
+    },
     "frame_type": {
       "type": "string",
       "enum": [
@@ -27,26 +48,63 @@
       "type": "array",
       "items": {
         "oneOf": [
-          {"type": "string", "minLength": 1},
+          {
+            "type": "string",
+            "minLength": 1
+          },
           {
             "type": "object",
             "additionalProperties": false,
-            "anyOf": [{"required": ["text"]}, {"required": ["label"]}],
+            "anyOf": [
+              {
+                "required": [
+                  "text"
+                ]
+              },
+              {
+                "required": [
+                  "label"
+                ]
+              }
+            ],
             "properties": {
-              "text": {"type": "string", "minLength": 1},
-              "label": {"type": "string", "minLength": 1},
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
               "bbox": {
                 "type": "array",
                 "prefixItems": [
-                  {"type": "number"},
-                  {"type": "number"},
-                  {"type": "number", "exclusiveMinimum": 0},
-                  {"type": "number", "exclusiveMinimum": 0}
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
                 ],
                 "items": false
               },
-              "kind": {"type": "string"},
-              "linked_object": {"type": ["string", "null"]}
+              "kind": {
+                "type": "string"
+              },
+              "linked_object": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             }
           }
         ]
@@ -56,13 +114,50 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "registration": {"type": ["string", "null"]},
-        "callsign": {"type": ["string", "null"]},
-        "aircraft_type": {"type": ["string", "null"]},
-        "altitude_ft": {"type": ["integer", "null"]},
-        "speed_kt": {"type": ["integer", "null"]},
-        "heading_deg": {"type": ["integer", "null"], "minimum": 0, "maximum": 360},
-        "operator": {"type": ["string", "null"]}
+        "registration": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "callsign": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "aircraft_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "altitude_ft": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "speed_kt": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "heading_deg": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 360
+        },
+        "operator": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "track": {
@@ -71,16 +166,35 @@
       "properties": {
         "path_shape": {
           "type": "string",
-          "enum": ["linear", "curved", "loop", "multi_loop", "orbit", "stationary_or_unknown"]
+          "enum": [
+            "linear",
+            "curved",
+            "loop",
+            "multi_loop",
+            "orbit",
+            "stationary_or_unknown"
+          ]
         },
-        "visible": {"type": "boolean"},
+        "visible": {
+          "type": "boolean"
+        },
         "bbox": {
           "type": "array",
           "prefixItems": [
-            {"type": "number"},
-            {"type": "number"},
-            {"type": "number", "exclusiveMinimum": 0},
-            {"type": "number", "exclusiveMinimum": 0}
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
           ],
           "items": false
         }
@@ -91,24 +205,54 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["bbox"],
+        "required": [
+          "bbox"
+        ],
         "properties": {
-          "class": {"type": ["string", "null"]},
+          "class": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "bbox": {
             "type": "array",
             "prefixItems": [
-              {"type": "number"},
-              {"type": "number"},
-              {"type": "number", "exclusiveMinimum": 0},
-              {"type": "number", "exclusiveMinimum": 0}
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
             ],
             "items": false
           }
         }
       }
     },
-    "annotator": {"type": "string"},
-    "reviewed_by": {"type": "string"},
-    "notes": {"type": "string"}
+    "annotator": {
+      "type": "string"
+    },
+    "reviewed_by": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "review_state": {
+      "type": "string",
+      "enum": [
+        "unreviewed",
+        "reviewed"
+      ]
+    }
   }
 }
