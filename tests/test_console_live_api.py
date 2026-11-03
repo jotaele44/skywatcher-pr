@@ -206,3 +206,7 @@ def test_openaip_tile_requires_key_and_valid_coordinates(client_with, monkeypatc
 def test_replay_decoder_sanity_for_fake_chunk():
     _, data = FakeProvider().fetch_heatmap_chunk(datetime(2026, 11, 3, 9, 32, tzinfo=timezone.utc))
     assert len(decode_heatmap(data).slices) == 180
+
+
+def test_log_safe_keeps_log_entries_on_one_line():
+    assert live_router._log_safe(ValueError("a\r\nforged: entry\nb")) == "a  forged: entry b"

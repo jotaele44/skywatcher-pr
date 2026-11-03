@@ -96,8 +96,14 @@ def _source(feed: str, url: str | None = None) -> dict[str, Any]:
     }
 
 
+def _log_safe(value: object) -> str:
+    """Single-line text for logs, so upstream or request text cannot forge log lines."""
+
+    return str(value).replace("\r", " ").replace("\n", " ")
+
+
 def _unavailable(feed: str, exc: Exception, **extra: Any) -> dict[str, Any]:
-    logger.warning("live feed %s unavailable: %s", feed, exc)
+    logger.warning("live feed %s unavailable: %s", feed, _log_safe(exc))
     if isinstance(exc, UpstreamNotFound):
         reason = NOT_FOUND_REASONS.get(feed, UPSTREAM_REASON)
     elif isinstance(exc, HeatmapFormatError):
@@ -345,9 +351,9 @@ def openaip_tile(z: int, x: int, y: int) -> Response:
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
             return Response(status_code=204)
-        logger.warning("openAIP tile %s/%s/%s failed: HTTP %s", z, x, y, exc.code)
+        logger.warning("openAIP tile request failed: HTTP %s", exc.code)
         raise HTTPException(status_code=502, detail="openAIP tile request failed") from exc
     except (urllib.error.URLError, OSError) as exc:
-        logger.warning("openAIP tile %s/%s/%s unreachable: %s", z, x, y, exc)
+        logger.warning("openAIP tile request failed: %s", _log_safe(exc))
         raise HTTPException(status_code=502, detail="openAIP tile request failed") from exc
     return Response(content=body, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
