@@ -51,6 +51,23 @@ python scripts/skywatcher_query.py --deterministic "what recurring routes are ne
 See [docs/CRAFT_PROFILES_AND_QUERY.md](docs/CRAFT_PROFILES_AND_QUERY.md) for the data
 flow, confidence grading, and the `POST /api/query` endpoint.
 
+## Live airspace map (adsb.lol equivalent)
+
+The dashboard's **Live Airspace** page (`/live`) reproduces the adsb.lol web map:
+live aircraft, the U/H/T/replay and L/O/K/M/P/I/R/F controls, the full layer menu
+(Esri, OpenStreetMap, OpenFreeMap, NASA GIBS, FAA VFR/IFR charts, TFRs, Special Use
+Airspace, NEXRAD, NOAA infrared/radar, RainViewer, openAIP, DWD RADOLAN and the
+military airspace layers), the aircraft sidebar and half-hour replay. Aircraft
+data comes from adsb.lol (ODbL 1.0) through `/api/console/live/*`
+(`server/backend/console/live_router.py`, `adsb/providers/adsblol.py`,
+`adsb/heatmap.py`). Nothing on the page is persisted; to store positions run
+`python scripts/adsb_poll.py --provider adsblol`. The openAIP overlay needs
+`OPENAIP_API_KEY` on the backend.
+
+See [docs/console/LIVE_AIRSPACE.md](docs/console/LIVE_AIRSPACE.md) for the
+function-by-function map and every data source, and
+[ADR-0003](docs/adr/0003-live-public-feed-map.md) for the decision.
+
 ## FR24 ingest subsystem
 
 The migrated FlightRadar24 screenshot-processing pipeline lives in `fr24/`.

@@ -6,6 +6,7 @@
 - **Audited commit:** `4be54a0de5022a8fd18ecff25d938287b90080b8`
 - **Decision scope:** Diagnostic interactive airspace console and producer-side APIs
 - **Production UI owner:** `thehub-pr`
+- **Amended by:** [ADR-0003](0003-live-public-feed-map.md) — a separate, network-required `/live` route for the adsb.lol-equivalent public-feed map; `/console` stays the single offline-first console.
 
 ## Context
 
