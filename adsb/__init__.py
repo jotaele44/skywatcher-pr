@@ -1,5 +1,5 @@
 """
-ADS-B — automated aircraft-state-vector fetch (OpenSky Network).
+ADS-B — automated aircraft-state-vector fetch (OpenSky Network, adsb.lol).
 
 Replaces the manual, quota-limited FR24 browser-export step
 (``scripts/fr24_harvest.py``) with a scheduled poll against the OpenSky
@@ -8,7 +8,10 @@ feed can actually provide (position, altitude, velocity, callsign). It does
 not replace the FR24 screenshot/OCR corpus, which remains the source for
 historical reconstruction.
 
-Entry point: ``python scripts/adsb_poll.py``.
+Entry point: ``python scripts/adsb_poll.py [--provider opensky|adsblol]``.
+
+``providers/adsblol.py`` and ``heatmap.py`` also back the ``/live`` map's
+backend endpoints (live, military, trace, replay and route feeds).
 """
 
 from .models import StateVector

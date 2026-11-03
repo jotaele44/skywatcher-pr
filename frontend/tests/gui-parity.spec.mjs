@@ -258,3 +258,85 @@ test("FR24 capture edits report persistence failures and omit unsupported action
   await expect(page.getByText("Diagnostic state updated", { exact: true })).toHaveCount(0);
   expect(writeAttempts).toBe(1);
 });
+
+test("live airspace map exposes the adsb.lol-equivalent controls, layers, replay and aircraft list", async ({ page }) => {
+  const runtimeFailures = [];
+  page.on("pageerror", (error) => runtimeFailures.push(`page error: ${error.message}`));
+  page.on("response", (response) => {
+    if (response.status() >= 500) runtimeFailures.push(`${response.status()} ${response.url()}`);
+  });
+  // Upstream tile, glyph and GeoJSON hosts are not under test; the live feed
+  // endpoints are stubbed so the workflow does not depend on adsb.lol uptime.
+  await page.route(/^https:\/\//, (route) => route.fulfill({ status: 204 }));
+  const json = (route, body) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    headers: {
+      "access-control-allow-origin": route.request().headers().origin || "*",
+      "access-control-allow-credentials": "true",
+    },
+    body: JSON.stringify(body),
+  });
+  const source = { provider: "adsb.lol", license: "ODbL-1.0", attribution: "adsb.lol contributors (ODbL 1.0)", persisted: false };
+  await page.route(/\/api\/console\/live\/aircraft\?/, (route) => json(route, {
+    feed: "adsblol.aircraft", status: "available", reason: null, fetched_at_utc: "2026-11-03T16:32:00Z",
+    coverage: { mode: "point_radius", complete: true }, count: 2, source,
+    aircraft: [
+      { hex: "a37f12", flight: "AAL1512 ", t: "B738", r: "N123AA", alt_baro: 36000, gs: 430, track: 90, lat: 18.3, lon: -66.3, squawk: "3037" },
+      { hex: "ae04ef", flight: "PAT079 ", t: "B190", dbFlags: 1, alt_baro: 9000, gs: 250, track: 180, lat: 18.1, lon: -66.6, squawk: "2307" },
+    ],
+  }));
+  await page.route("**/api/console/live/trace/**", (route) => json(route, {
+    feed: "adsblol.trace", status: "available", hex: "a37f12", source,
+    points: [{ t: 1793723000, lat: 18.2, lon: -66.4, alt_baro: 30000 }, { t: 1793723060, lat: 18.3, lon: -66.3, alt_baro: 36000 }],
+  }));
+  await page.route("**/api/console/live/routes", (route) => json(route, {
+    feed: "adsblol.routes", status: "available", source, routes: [{ callsign: "AAL1512", route: "SJU - MIA", cities: "San Juan - Miami" }],
+  }));
+  await page.route(/\/api\/console\/live\/replay\?/, (route) => json(route, {
+    feed: "adsblol.replay", status: "available", clamped_to_latest: true, ts_utc: "2026-11-03T16:01:00Z", source,
+    fields: ["hex", "lat", "lon", "alt_baro", "gs", "source_type", "flight", "squawk"],
+    frames: [
+      { t: 1793721660, interval_s: 10, aircraft: [["a37f12", 18.30, -66.30, 36000, 430, "adsb_icao", "AAL1512", "3037"]] },
+      { t: 1793721670, interval_s: 10, aircraft: [["a37f12", 18.31, -66.29, 36000, 430, "adsb_icao", "AAL1512", "3037"]] },
+    ],
+  }));
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.locator('a[href="/live"]').first().click();
+  await expect(page).toHaveURL(/\/live\/?$/);
+
+  for (const name of [/Only show military/i, /\(H\)ome/, /All \(T\)racks/, /Repla\(Y\)/, /^Map layers$/,
+    /aircraft sidebar/, /^Fullscreen$/, /^Settings$/, /\(L\)abels/, /extensi\(O\)ns/, /trac\(K\) labels/,
+    /\(M\)ulti-select/, /\(P\)ersistence/, /\(I\)solate/, /\(R\)andom/, /\(F\)ollow selected/, /^Zoom in$/, /^Zoom out$/]) {
+    await expect(page.getByRole("button", { name }).first()).toBeVisible();
+  }
+
+  await page.getByRole("button", { name: /Expand aircraft sidebar/ }).click();
+  const list = page.getByRole("complementary", { name: "Aircraft list" });
+  await expect(list.getByText("Live aircraft in view: 2")).toBeVisible();
+  await list.getByText("AAL1512").first().click();
+  await expect(list.getByText("SJU - MIA (San Juan - Miami)")).toBeVisible();
+  await expect(list.getByText("2 points")).toBeVisible();
+
+  await page.getByRole("button", { name: /Collapse aircraft sidebar/ }).click();
+  await page.getByRole("button", { name: /^Map layers$/ }).click();
+  const layers = page.getByRole("dialog", { name: "Map layers" });
+  await expect(layers.getByRole("radio", { name: /ESRI\.com Satellite/ })).toBeChecked();
+  await layers.getByRole("radio", { name: /OpenStreetMap DE/ }).check();
+  await layers.getByRole("checkbox", { name: /NOAA Infrared Sat/ }).check();
+  await layers.getByRole("checkbox", { name: /NOAA Radar/ }).check();
+  await expect(layers.getByText("UK AWACS Orbits")).toBeVisible();
+  await page.getByRole("button", { name: "Close layer menu" }).click();
+
+  await page.getByRole("button", { name: /Repla\(Y\)/ }).click();
+  const replay = page.getByRole("region", { name: "Replay controls" });
+  await expect(replay).toBeVisible();
+  await expect(replay.getByText(/UTC: 16:01:\d\d/)).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /REPLAY/ })).toBeVisible();
+  await replay.getByRole("button", { name: "Pause replay" }).click();
+  await replay.getByRole("button", { name: /return to live/ }).click();
+  await expect(replay).toBeHidden();
+
+  expect(runtimeFailures, runtimeFailures.join("\n")).toEqual([]);
+});

@@ -514,6 +514,77 @@
           "frontend/tests/gui-parity.spec.mjs"
         ]
       }
+    },
+    {
+      "id": "live-airspace-map",
+      "classification": "user",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "adsb.lol-equivalent live map: live, military, trace, replay and route feeds from adsb.lol (ODbL-1.0) plus every basemap and overlay of the adsb.lol layer menu. See docs/console/LIVE_AIRSPACE.md.",
+      "backend": {
+        "files": [
+          "server/backend/console/live_router.py"
+        ],
+        "endpoints": [
+          "GET /status",
+          "GET /aircraft",
+          "GET /trace/{hex_id}",
+          "GET /replay",
+          "POST /routes",
+          "GET /tiles/openaip/{z}/{x}/{y}.png"
+        ],
+        "symbols": [
+          "server/backend/console/live_router.py:get_live_provider",
+          "server/backend/console/live_router.py:live_status",
+          "server/backend/console/live_router.py:live_aircraft",
+          "server/backend/console/live_router.py:live_trace",
+          "server/backend/console/live_router.py:live_replay",
+          "server/backend/console/live_router.py:live_routes",
+          "server/backend/console/live_router.py:openaip_tile"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/live"
+        ],
+        "e2e_routes": [
+          "/live"
+        ],
+        "components": [
+          "frontend/src/App.jsx",
+          "frontend/src/pages/LiveAirspace.jsx",
+          "frontend/src/api/liveClient.js",
+          "frontend/src/components/live/MapButtons.jsx",
+          "frontend/src/components/live/LayerMenu.jsx",
+          "frontend/src/components/live/ReplayBar.jsx",
+          "frontend/src/components/live/SettingsPanel.jsx",
+          "frontend/src/components/live/AircraftSidebar.jsx"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_console_live_api.py",
+          "tests/test_adsb_lol_provider.py",
+          "tests/test_adsb_heatmap.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "unit": [
+          "frontend/src/live/sourceCatalog.test.js",
+          "frontend/src/live/aircraftModel.test.js",
+          "frontend/src/live/replayModel.test.js",
+          "frontend/src/live/geoSettingsIcons.test.js",
+          "frontend/src/live/liveMapEngine.test.js",
+          "frontend/src/components/live/LiveControls.test.jsx"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      }
     }
   ],
   "exceptions": []

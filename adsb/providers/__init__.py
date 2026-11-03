@@ -2,24 +2,28 @@
 ADS-B providers — registry.
 
 ``get_provider(name)`` returns a provider instance. Names: ``opensky``
-(OpenSky Network, OAuth2 client credentials with anonymous fallback).
+(OpenSky Network, OAuth2 client credentials with anonymous fallback) and
+``adsblol`` (adsb.lol public API, keyless, ODbL-1.0 data).
 """
 
 from __future__ import annotations
 
+from .adsblol import AdsbLolProvider
 from .base import AdsbProvider, ProviderError
 from .opensky import OpenSkyProvider
 
 _PROVIDERS: dict[str, type[AdsbProvider]] = {
     "opensky": OpenSkyProvider,
     "opensky-network": OpenSkyProvider,
+    "adsblol": AdsbLolProvider,
+    "adsb.lol": AdsbLolProvider,
 }
 
 _INSTANCES: dict[str, AdsbProvider] = {}
 
 
 def available_providers() -> list[str]:
-    return ["opensky"]
+    return ["opensky", "adsblol"]
 
 
 def get_provider(name: str) -> AdsbProvider:
@@ -37,5 +41,6 @@ __all__ = [
     "ProviderError",
     "get_provider",
     "available_providers",
+    "AdsbLolProvider",
     "OpenSkyProvider",
 ]
