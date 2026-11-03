@@ -1,3 +1,4 @@
+import { federationOffline } from './offline/vite-offline.mjs';
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
@@ -9,7 +10,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  plugins: [react()],
+  plugins: [react(), federationOffline({ appId: 'skywatcher-pr' })],
   server: {
     proxy: {
       // The app calls a relative /api (see src/lib/app-params.js) because in

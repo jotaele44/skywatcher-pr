@@ -9,6 +9,7 @@ export default function Layout() {
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
       <TopStatusStrip />
+        <div data-offline-status-host style={{ padding: "2px 12px", flexShrink: 0 }} />
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop sidebar */}
         <div className="hidden md:block">

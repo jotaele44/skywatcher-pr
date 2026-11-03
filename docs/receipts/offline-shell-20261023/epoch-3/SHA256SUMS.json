@@ -1,0 +1,13 @@
+{
+  "browser-receipt.json": "d2cbf2fad244038babe2dea59b743075f07766fb05f8dcf94cf802674de6a3df",
+  "build-manifest.json": "3cbf79c9470f7fc746f280ab649ab6e216694ed3611c9f163279b2e2745ab4f0",
+  "candidate-receipt.json": "6e5076a90c9514a04ac4d1112cd4fe389f06dcc898f16b8c83fa306f74f88d1b",
+  "offline-1440.png": "9695f2de28d11a88def3d691a1851d4fb5fe75a3a1fec1fcad26b988d1509709",
+  "offline-393.png": "df7f8ec474680e814a2927a920a4352dbab3c9e3184ee1a6a16a1ac32939d828",
+  "offline-430.png": "f2837be9d5a64a04987be457929711877f852eeafc10506c41e844f95930a1f2",
+  "skywatcher-pr-offline-browser-closure.log": "4b1d91a5bae296a69aeb4cf6c4d524d3a57e9576ccc54931e1ef60592d8b2a8e",
+  "skywatcher-pr-offline-browser-closure2.log": "4b1d91a5bae296a69aeb4cf6c4d524d3a57e9576ccc54931e1ef60592d8b2a8e",
+  "skywatcher-pr-offline-build-closure.log": "9bc80c224c64f5268165d691ca022def5160822c50b90801342f37265f0a450c",
+  "skywatcher-pr-offline-build-closure2.log": "9bc80c224c64f5268165d691ca022def5160822c50b90801342f37265f0a450c",
+  "skywatcher-pr-offline-docs.log": "eb7949cfbaa2a974b7cc799c2a37b23674e7cf74f038086890b57b10f6d93d54"
+}
