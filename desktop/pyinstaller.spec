@@ -51,6 +51,18 @@ a = Analysis(
         "skywatcher.fr24.flight_corpus",
         "skywatcher.fr24.flight_coverage",
         "skywatcher.fr24.acquisition_receipts",
+        # Sky Target Finder (/api/space-track/sky/*), listed like the modules above;
+        # the router imports skywatcher.core.sky inside an ImportError guard.
+        "skywatcher.core.sky",
+        "skywatcher.core.sky.catalog",
+        "skywatcher.core.sky.chart",
+        "skywatcher.core.sky.ephemeris",
+        "skywatcher.core.sky.filters",
+        "skywatcher.core.sky.satellites",
+        "skywatcher.core.sky.service",
+        "astronomy",
+        "sgp4.api",
+        "sgp4.omm",
         # Shared desktop-wrapper runtime (thehub-pr/packages/prii_desktop),
         # imported by the desktop/ shims — bundle it into the frozen build.
         "prii_desktop",

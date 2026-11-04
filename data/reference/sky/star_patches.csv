@@ -1,0 +1,5 @@
+# Star-name patches applied by scripts/build_sky_catalog.py to d3-celestial 0.7.35 starnames.json.
+# HIP 20535 (Beemim, 43 Eri) carries the corrupt Bayer token "undefined3" upstream; IAU-CSN gives upsilon-3 Eridani.
+hip,field,value,reason
+20535,bayer,υ3,"upstream token 'undefined3'; IAU-CSN: Beemim = upsilon3 Eri"
+20535,desig,υ3,"upstream token 'undefined3'; IAU-CSN: Beemim = upsilon3 Eri"

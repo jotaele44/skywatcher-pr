@@ -514,6 +514,113 @@
           "frontend/tests/gui-parity.spec.mjs"
         ]
       }
+    },
+    {
+      "id": "space-track-sky-finder",
+      "classification": "analysis",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "DWARFLAB-style sky target finder inside the Space-Track tool: name search over the vendored star, Messier and Caldwell catalog plus Sun/Moon/planets and SGP4-propagated satellites from the frozen Space-Track materialization, live altitude and visibility windows for an editable observer, tonight's recommendations, and a horizon-oriented sky chart with FOV box and compass. Read-only; the browser never calls Space-Track.",
+      "backend": {
+        "files": [
+          "server/backend/spacetrack_router.py",
+          "src/skywatcher/core/sky/__init__.py",
+          "src/skywatcher/core/sky/catalog.py",
+          "src/skywatcher/core/sky/chart.py",
+          "src/skywatcher/core/sky/ephemeris.py",
+          "src/skywatcher/core/sky/filters.py",
+          "src/skywatcher/core/sky/satellites.py",
+          "src/skywatcher/core/sky/service.py"
+        ],
+        "endpoints": [
+          "GET /api/space-track/sky/targets",
+          "GET /api/space-track/sky/recommend",
+          "GET /api/space-track/sky/chart"
+        ],
+        "symbols": [
+          "server/backend/spacetrack_router.py:space_track_sky_targets",
+          "server/backend/spacetrack_router.py:space_track_sky_recommend",
+          "server/backend/spacetrack_router.py:space_track_sky_chart",
+          "src/skywatcher/core/sky/catalog.py:CatalogObject",
+          "src/skywatcher/core/sky/catalog.py:SearchMatch",
+          "src/skywatcher/core/sky/catalog.py:SkyCatalog",
+          "src/skywatcher/core/sky/catalog.py:load_catalog",
+          "src/skywatcher/core/sky/catalog.py:match_query",
+          "src/skywatcher/core/sky/catalog.py:normalize_text",
+          "src/skywatcher/core/sky/catalog.py:search_catalog",
+          "src/skywatcher/core/sky/catalog.py:search_sort_key",
+          "src/skywatcher/core/sky/catalog.py:unit_vector",
+          "src/skywatcher/core/sky/chart.py:build_chart_layers",
+          "src/skywatcher/core/sky/chart.py:horizontal_separation",
+          "src/skywatcher/core/sky/ephemeris.py:BodyPosition",
+          "src/skywatcher/core/sky/ephemeris.py:Observer",
+          "src/skywatcher/core/sky/ephemeris.py:SkyFrame",
+          "src/skywatcher/core/sky/ephemeris.py:Visibility",
+          "src/skywatcher/core/sky/ephemeris.py:dark_window",
+          "src/skywatcher/core/sky/ephemeris.py:solar_system_j2000",
+          "src/skywatcher/core/sky/ephemeris.py:solar_system_positions",
+          "src/skywatcher/core/sky/filters.py:filter_hint",
+          "src/skywatcher/core/sky/satellites.py:GPElementError",
+          "src/skywatcher/core/sky/satellites.py:SatellitePosition",
+          "src/skywatcher/core/sky/satellites.py:TrackedObject",
+          "src/skywatcher/core/sky/satellites.py:element_age_days",
+          "src/skywatcher/core/sky/satellites.py:gmst_radians",
+          "src/skywatcher/core/sky/satellites.py:satrec_from_gp_raw",
+          "src/skywatcher/core/sky/satellites.py:sun_direction",
+          "src/skywatcher/core/sky/satellites.py:topocentric",
+          "src/skywatcher/core/sky/satellites.py:tracked_objects",
+          "src/skywatcher/core/sky/service.py:SatelliteLayer",
+          "src/skywatcher/core/sky/service.py:body_target",
+          "src/skywatcher/core/sky/service.py:catalog_target",
+          "src/skywatcher/core/sky/service.py:chart_payload",
+          "src/skywatcher/core/sky/service.py:format_utc",
+          "src/skywatcher/core/sky/service.py:parse_at",
+          "src/skywatcher/core/sky/service.py:recommend_payload",
+          "src/skywatcher/core/sky/service.py:satellite_layer",
+          "src/skywatcher/core/sky/service.py:targets_payload"
+        ]
+      },
+      "analysis": {
+        "files": [
+          "scripts/build_sky_catalog.py"
+        ],
+        "symbols": [
+          "scripts/build_sky_catalog.py:main",
+          "scripts/build_sky_catalog.py:verify_outputs"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/space-track/sky"
+        ],
+        "e2e_routes": [
+          "/space-track/sky"
+        ],
+        "components": [
+          "frontend/src/pages/SkyTargetFinder.jsx",
+          "frontend/src/components/skywatcher/SkyChart.jsx",
+          "frontend/src/api/federationClient.js",
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_sky_endpoints.py",
+          "tests/test_sky_ephemeris.py",
+          "tests/test_sky_satellites.py",
+          "tests/test_sky_catalog.py",
+          "tests/test_sky_catalog_data.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      }
     }
   ],
   "exceptions": []

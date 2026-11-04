@@ -1,13 +1,13 @@
-"""Read-only API surface for frozen Space-Track evidence."""
+"""Read-only API surface for frozen Space-Track evidence and the Sky Target Finder."""
 
 from __future__ import annotations
 
 import os
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Query
 
 from skywatcher.core.spacetrack import (
     CONTROLLER_CONTRACTS,
@@ -17,14 +17,40 @@ from skywatcher.core.spacetrack import (
     certify_static_contracts,
 )
 
+try:  # astronomy-engine is a backend requirement; degrade to 503 rather than fail startup.
+    from skywatcher.core import sky as sky_service
+except ImportError:  # pragma: no cover - exercised only when astronomy-engine is missing
+    sky_service = None
+
 ROOT = Path(__file__).resolve().parents[2]
 router = APIRouter(tags=["space-track"])
+SkyKind = Literal["all", "star", "messier", "caldwell", "solar_system", "satellite"]
 
 
 def _store() -> SpaceTrackStore:
     configured = os.environ.get("SKYWATCHER_SPACE_TRACK_ROOT")
     root = Path(configured) if configured else ROOT / "data" / "spacetrack"
     return SpaceTrackStore(root)
+
+
+def _sky_catalog_dir() -> Path:
+    configured = os.environ.get("SKYWATCHER_SKY_CATALOG_DIR")
+    return Path(configured) if configured else ROOT / "data" / "reference" / "sky"
+
+
+def _sky_request(lat: float, lon: float, elev_m: float, at: str | None):
+    if sky_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail={"state": "DEPENDENCY_MISSING", "missing": ["astronomy-engine"]},
+        )
+    try:
+        moment = sky_service.parse_at(at)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422, detail="at must be an ISO-8601 timestamp, e.g. 2026-10-20T00:30:00Z"
+        ) from exc
+    return sky_service.Observer(lat, lon, elev_m), moment
 
 
 def _source_status(store: SpaceTrackStore) -> list[dict[str, Any]]:
@@ -112,3 +138,71 @@ def space_track_reentry() -> dict[str, Any]:
             "contradictions": [],
         }
     return {"state": "AVAILABLE", **value}
+
+
+# Observer defaults: San Juan, Puerto Rico (skywatcher.core.sky.DEFAULT_OBSERVER).
+_LAT = Query(18.4655, ge=-90.0, le=90.0)
+_LON = Query(-66.1057, ge=-180.0, le=180.0)
+_ELEV = Query(10.0, ge=-500.0, le=10000.0)
+_AT = Query(None, max_length=40)
+_KIND = Query("all")
+
+
+@router.get("/api/space-track/sky/targets")
+def space_track_sky_targets(
+    q: str = Query("", max_length=100),
+    kind: SkyKind = _KIND,
+    limit: int = Query(50, ge=1, le=200),
+    lat: float = _LAT,
+    lon: float = _LON,
+    elev_m: float = _ELEV,
+    at: str | None = _AT,
+) -> dict[str, Any]:
+    observer, moment = _sky_request(lat, lon, elev_m, at)
+    return sky_service.targets_payload(
+        catalog_dir=_sky_catalog_dir(),
+        store=_store(),
+        observer=observer,
+        at=moment,
+        q=q,
+        kind=kind,
+        limit=limit,
+    )
+
+
+@router.get("/api/space-track/sky/recommend")
+def space_track_sky_recommend(
+    lat: float = _LAT,
+    lon: float = _LON,
+    elev_m: float = _ELEV,
+    at: str | None = _AT,
+) -> dict[str, Any]:
+    observer, moment = _sky_request(lat, lon, elev_m, at)
+    return sky_service.recommend_payload(
+        catalog_dir=_sky_catalog_dir(), observer=observer, at=moment
+    )
+
+
+@router.get("/api/space-track/sky/chart")
+def space_track_sky_chart(
+    target: str = Query(..., min_length=1, max_length=80),
+    fov_deg: float = Query(6.0, ge=0.5, le=60.0),
+    radius_deg: float | None = Query(None, ge=1.0, le=90.0),
+    lat: float = _LAT,
+    lon: float = _LON,
+    elev_m: float = _ELEV,
+    at: str | None = _AT,
+) -> dict[str, Any]:
+    observer, moment = _sky_request(lat, lon, elev_m, at)
+    try:
+        return sky_service.chart_payload(
+            catalog_dir=_sky_catalog_dir(),
+            store=_store(),
+            observer=observer,
+            at=moment,
+            target_id=target,
+            fov_deg=fov_deg,
+            radius_deg=radius_deg,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
