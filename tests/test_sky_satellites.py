@@ -128,6 +128,7 @@ def test_tracked_objects_reports_every_skip_reason():
             {"norad_cat_id": "1", "gp_row": None},
             {"norad_cat_id": "2", "gp_row": {"raw": {**ISS_2014, "EPHEMERIS_TYPE": "2"}}},
             {"norad_cat_id": "3", "gp_row": {"raw": {"NORAD_CAT_ID": "3"}}},
+            {"norad_cat_id": "4", "gp_row": {"raw": {**ISS_2014, "EPOCH": "not-a-date"}}},
         ]
     }
     tracked, skipped = tracked_objects(materialization)
@@ -137,3 +138,5 @@ def test_tracked_objects_reports_every_skip_reason():
     assert reasons["1"] == "no current GP elements"
     assert reasons["2"] == "unsupported EPHEMERIS_TYPE 2"
     assert reasons["3"].startswith("GP row missing")
+    # Reasons reach API clients: a parser exception's own text must never leak into them.
+    assert reasons["4"] == "GP row rejected by sgp4: malformed element values"

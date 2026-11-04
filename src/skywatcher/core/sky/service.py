@@ -42,10 +42,9 @@ try:  # sgp4 is optional at import time: without it satellites report DEPENDENCY
 
     from .satellites import (
         MAX_ELEMENT_AGE_DAYS,
-        GPElementError,
         element_age_days,
+        propagate,
         sun_direction,
-        topocentric,
         tracked_objects,
     )
 
@@ -307,10 +306,9 @@ def satellite_layer(
                 {"norad_cat_id": obj.norad_cat_id, "reason": f"elements {age:.0f} days from epoch"}
             )
             continue
-        try:
-            position = topocentric(obj.satellite, frame, sun_unit)
-        except GPElementError as exc:
-            layer.skipped.append({"norad_cat_id": obj.norad_cat_id, "reason": str(exc)})
+        position, problem = propagate(obj.satellite, frame, sun_unit)
+        if position is None:
+            layer.skipped.append({"norad_cat_id": obj.norad_cat_id, "reason": problem or ""})
             continue
         layer.targets.append(_satellite_target(obj, position))
     return layer

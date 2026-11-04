@@ -205,4 +205,4 @@ def space_track_sky_chart(
             radius_deg=radius_deg,
         )
     except LookupError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=f"Unknown sky target: {target}") from exc

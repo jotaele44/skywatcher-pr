@@ -565,6 +565,7 @@
           "src/skywatcher/core/sky/satellites.py:TrackedObject",
           "src/skywatcher/core/sky/satellites.py:element_age_days",
           "src/skywatcher/core/sky/satellites.py:gmst_radians",
+          "src/skywatcher/core/sky/satellites.py:propagate",
           "src/skywatcher/core/sky/satellites.py:satrec_from_gp_raw",
           "src/skywatcher/core/sky/satellites.py:sun_direction",
           "src/skywatcher/core/sky/satellites.py:topocentric",

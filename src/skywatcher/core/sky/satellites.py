@@ -41,6 +41,7 @@ _J2000_JD = 2451545.0
 _J2000_UTC = datetime(2000, 1, 1, 12, tzinfo=timezone.utc)
 # SGP4 drifts by kilometres per day; elements older than this are not propagated.
 MAX_ELEMENT_AGE_DAYS = 30.0
+_MALFORMED_ROW = "GP row rejected by sgp4: malformed element values"
 
 
 class GPElementError(ValueError):
@@ -59,11 +60,16 @@ def _normalize_epoch(value: Any) -> str:
     return f"{head}.{fraction[:6]}"
 
 
-def satrec_from_gp_raw(raw: dict[str, Any]) -> Satrec:
-    """Build an SGP4 satellite record from a Space-Track GP (OMM JSON) row."""
+def _sgp4_reason(code: int) -> str:
+    return SGP4_ERRORS.get(code, f"sgp4 error {code}")
+
+
+# Skip reasons are served to API clients, so they are built from fixed text, field names
+# and sgp4's error-code table only, never from exception messages.
+def _build_satrec(raw: dict[str, Any]) -> tuple[Satrec | None, str | None]:
     missing = [key for key in _REQUIRED_FIELDS if raw.get(key) in (None, "")]
     if missing:
-        raise GPElementError(f"GP row missing {', '.join(missing)}")
+        return None, f"GP row missing {', '.join(missing)}"
     fields = {key: str(raw[key]) for key in _REQUIRED_FIELDS}
     fields["EPOCH"] = _normalize_epoch(raw["EPOCH"])
     # sgp4 2.27's OMM reader indexes these unconditionally; supply neutral defaults.
@@ -75,10 +81,18 @@ def satrec_from_gp_raw(raw: dict[str, Any]) -> Satrec:
     satellite = Satrec()
     try:
         omm.initialize(satellite, fields, WGS72)
-    except (KeyError, TypeError, ValueError) as exc:
-        raise GPElementError(f"GP row rejected by sgp4: {exc}") from exc
+    except (KeyError, TypeError, ValueError):
+        return None, _MALFORMED_ROW
     if satellite.error:
-        raise GPElementError(SGP4_ERRORS.get(satellite.error, f"sgp4 error {satellite.error}"))
+        return None, _sgp4_reason(satellite.error)
+    return satellite, None
+
+
+def satrec_from_gp_raw(raw: dict[str, Any]) -> Satrec:
+    """Build an SGP4 satellite record from a Space-Track GP (OMM JSON) row."""
+    satellite, problem = _build_satrec(raw)
+    if satellite is None:
+        raise GPElementError(problem or _MALFORMED_ROW)
     return satellite
 
 
@@ -131,12 +145,22 @@ def topocentric(
     satellite: Satrec, frame: SkyFrame, sun_unit: tuple[float, float, float] | None = None
 ) -> SatellitePosition:
     """Propagate to the frame time and return the observer-relative position."""
+    position, problem = propagate(satellite, frame, sun_unit)
+    if position is None:
+        raise GPElementError(problem or "sgp4 propagation failed")
+    return position
+
+
+def propagate(
+    satellite: Satrec, frame: SkyFrame, sun_unit: tuple[float, float, float] | None = None
+) -> tuple[SatellitePosition | None, str | None]:
+    """Like ``topocentric`` but returns (None, reason) instead of raising on an SGP4 error."""
     at = frame.at
     jd, fraction = jday(at.year, at.month, at.day, at.hour, at.minute,
                         at.second + at.microsecond * 1e-6)
     error, position, _velocity = satellite.sgp4(jd, fraction)
     if error != 0:
-        raise GPElementError(SGP4_ERRORS.get(error, f"sgp4 error {error}"))
+        return None, _sgp4_reason(error)
     x, y, z = position  # TEME, km
 
     theta = gmst_radians(jd, fraction)
@@ -165,7 +189,7 @@ def topocentric(
     sunlit = along > 0.0 or perpendicular > _EARTH_RADIUS_KM
 
     epoch_jd = satellite.jdsatepoch + satellite.jdsatepochF
-    return SatellitePosition(
+    position_now = SatellitePosition(
         alt_deg=airless + ae.RefractionAngle(ae.Refraction.Normal, airless),
         airless_alt_deg=airless,
         az_deg=az,
@@ -176,6 +200,7 @@ def topocentric(
         element_epoch=_J2000_UTC + timedelta(days=epoch_jd - _J2000_JD),
         element_age_days=(jd - satellite.jdsatepoch) + (fraction - satellite.jdsatepochF),
     )
+    return position_now, None
 
 
 def element_age_days(satellite: Satrec, at: datetime) -> float:
@@ -216,10 +241,9 @@ def tracked_objects(materialization: dict[str, Any]) -> tuple[list[TrackedObject
                 {"norad_cat_id": norad, "reason": f"unsupported EPHEMERIS_TYPE {ephemeris_type}"}
             )
             continue
-        try:
-            satellite = satrec_from_gp_raw(raw)
-        except GPElementError as exc:
-            skipped.append({"norad_cat_id": norad, "reason": str(exc)})
+        satellite, problem = _build_satrec(raw)
+        if satellite is None:
+            skipped.append({"norad_cat_id": norad, "reason": problem or _MALFORMED_ROW})
             continue
         satcat = item.get("satcat_row") or {}
         name = gp_row.get("object_name") or satcat.get("object_name") or raw.get("OBJECT_NAME")
