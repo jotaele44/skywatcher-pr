@@ -3,13 +3,14 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Map, Plane, IdCard, Camera, Route as RouteIcon,
   Building2, TowerControl, ClipboardCheck, Share2, GaugeCircle,
-  Crosshair, ScanSearch, ScanEye, Archive, Satellite,
+  Crosshair, ScanSearch, ScanEye, Archive, Satellite, Telescope,
 } from "lucide-react";
 import { PROGRAM } from "@/lib/skywatcher";
 import brandMark from "@/assets/icon-64.png?inline";
 
 const NAV = [
   { to: "/space-track", label: "Space-Track Control", icon: Satellite },
+  { to: "/space-track/sky", label: "Sky Target Finder", icon: Telescope },
   { to: "/", label: "Command Dashboard", icon: LayoutDashboard },
   { to: "/console", label: "Interactive Console", icon: Map },
   { to: "/observations", label: "Airspace Observations", icon: Plane },
@@ -27,8 +28,20 @@ const NAV = [
   { to: "/analysis", label: "Analysis Lenses", icon: ScanEye },
 ];
 
+// An entry is active when the path is the entry itself or lies below it on a segment
+// boundary; the longest such entry wins, so /space-track/sky highlights only its own
+// entry and not Space-Track Control.
+function matchesPath(to, pathname) {
+  if (to === "/") return pathname === "/";
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
+
 export default function Sidebar({ onNavigate }) {
   const { pathname } = useLocation();
+  const activeTo = NAV.reduce(
+    (best, item) => (matchesPath(item.to, pathname) && item.to.length > (best?.length ?? 0) ? item.to : best),
+    null,
+  );
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-[hsl(220_34%_6%)]">
       <div className="flex items-center gap-2.5 border-b border-border px-4 py-4">
@@ -41,13 +54,14 @@ export default function Sidebar({ onNavigate }) {
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-2 scrollbar-thin">
         {NAV.map((item) => {
-          const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+          const active = item.to === activeTo;
           const Icon = item.icon;
           return (
             <Link
               key={item.to}
               to={item.to}
               onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
                 active
                   ? "bg-primary/12 text-primary ring-1 ring-primary/25"

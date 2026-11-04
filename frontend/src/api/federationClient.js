@@ -221,6 +221,9 @@ const spaceTrack = {
   status: () => request('/space-track/status'),
   objects: () => request('/space-track/objects'),
   reentry: () => request('/space-track/reentry'),
+  skyTargets: (params = {}) => request(`/space-track/sky/targets${queryString(params)}`),
+  skyRecommend: (params = {}) => request(`/space-track/sky/recommend${queryString(params)}`),
+  skyChart: (params = {}) => request(`/space-track/sky/chart${queryString(params)}`),
 };
 
 const system = {

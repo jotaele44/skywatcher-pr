@@ -35,6 +35,28 @@
         ".federation/docs-sync.json",
         "governance/change_log.json"
       ]
+    },
+    {
+      "date": "2026-11-03",
+      "summary": "Added the Sky Target Finder to the Space-Track tool (/space-track/sky, GET /api/space-track/sky/targets|recommend|chart): name search over a vendored star/Messier/Caldwell catalog plus Sun, Moon, planets and SGP4-propagated satellites from the locally frozen Space-Track materialization, live altitude and visibility windows, tonight's recommendations, and a horizon-oriented sky chart with a field-of-view box and compass. New backend dependency edges: astronomy-engine 2.1.19 and sgp4 2.27 (both MIT) in server/backend/requirements.txt. New vendored data under data/reference/sky (CC BY-SA 4.0 data derived from d3-celestial, OpenNGC, Stellarium and Wikipedia; pinned by sha256 and rebuilt by scripts/build_sky_catalog.py). Read-only: no writes, no browser upstream calls.",
+      "files": [
+        "server/backend/spacetrack_router.py",
+        "server/backend/requirements.txt",
+        "src/skywatcher/core/sky/",
+        "scripts/build_sky_catalog.py",
+        "data/reference/sky/",
+        "desktop/pyinstaller.spec",
+        "frontend/src/pages/SkyTargetFinder.jsx",
+        "frontend/src/components/skywatcher/SkyChart.jsx",
+        "frontend/src/components/skywatcher/Sidebar.jsx",
+        "frontend/src/App.jsx",
+        "frontend/src/api/federationClient.js",
+        "frontend/src/lib/skyProjection.js",
+        "frontend/src/lib/skyFavorites.js",
+        ".federation/gui-capabilities.json",
+        "docs/SKY_TARGET_FINDER.md",
+        "governance/change_log.json"
+      ]
     }
   ]
 }

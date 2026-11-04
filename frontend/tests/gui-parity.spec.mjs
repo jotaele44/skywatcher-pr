@@ -205,6 +205,145 @@ test("Space-Track distinguishes unavailable counts from materialized zero and re
   await expect(objects.getByText("0", { exact: true })).toBeVisible();
 });
 
+test("Sky Target Finder searches, charts and copies coordinates like the telescope app", async ({ page }) => {
+  const headers = {
+    "access-control-allow-origin": "http://127.0.0.1:5173",
+    "access-control-allow-credentials": "true",
+  };
+  const observer = { lat_deg: 18.4655, lon_deg: -66.1057, elev_m: 10 };
+  const at = "2026-10-20T00:30:00Z";
+  const satellites = { state: "NOT_MATERIALIZED", object_count: null, propagated: 0, skipped_count: 0, skipped: [] };
+  const base = {
+    aliases: [],
+    constellation: "Cyg",
+    magnitude: 7,
+    size_arcmin: null,
+    above_horizon: true,
+    visibility: { state: "UP", rise_utc: "2026-10-19T17:00:00Z", set_utc: "2026-10-20T09:12:00Z", transit_utc: null, transit_alt_deg: null },
+    filter_hint: null,
+    satellite: null,
+  };
+  const veil = {
+    ...base,
+    id: "caldwell:C33",
+    kind: "caldwell",
+    designation: "C 33",
+    long_designation: "Caldwell 33",
+    name: "East Veil Nebula",
+    display: "C 33 (East Veil Nebula)",
+    object_type: "supernova_remnant",
+    ra_j2000_deg: 314.0795,
+    dec_j2000_deg: 31.7428,
+    alt_deg: 75.12,
+    az_deg: 250.31,
+    filter_hint: { label: "Duo-Band", basis: "heuristic" },
+    match: { field: "name", text: "East Veil Nebula" },
+  };
+  const marfak = {
+    ...base,
+    id: "star:hip:5542",
+    kind: "star",
+    designation: "Theta Cassiopeiae",
+    long_designation: "Theta Cassiopeiae",
+    name: "Marfak",
+    display: "Theta Cassiopeiae (Marfak)",
+    object_type: "star",
+    ra_j2000_deg: 17.7757,
+    dec_j2000_deg: 55.1499,
+    alt_deg: 38.31,
+    az_deg: 20.5,
+    match: { field: "alias", text: "Marfak-East" },
+  };
+  const m31 = {
+    ...base,
+    id: "messier:M31",
+    kind: "messier",
+    designation: "M 31",
+    long_designation: "Messier 31",
+    name: "Andromeda Galaxy",
+    display: "M 31 (Andromeda Galaxy)",
+    object_type: "galaxy",
+    ra_j2000_deg: 10.6751,
+    dec_j2000_deg: 41.2667,
+    alt_deg: 32.4,
+    az_deg: 60.1,
+    recommend: { best_alt_deg: 79.6, best_utc: "2026-10-20T04:10:00Z", score: 0.91 },
+  };
+  const json = (body) => ({ status: 200, contentType: "application/json", headers, body: JSON.stringify(body) });
+
+  await page.addInitScript(() => {
+    window.__copied = [];
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async (text) => { window.__copied.push(text); } },
+    });
+  });
+  await page.route(/\/api\/space-track\/sky\/recommend(\?|$)/, (route) =>
+    route.fulfill(json({
+      schema_version: "skywatcher.sky-recommend/v1",
+      observer,
+      at_utc: at,
+      dark_window: { start_utc: "2026-10-19T22:46:41Z", end_utc: "2026-10-20T09:32:04Z", sun_alt_deg: -12 },
+      targets: [m31],
+    })));
+  await page.route(/\/api\/space-track\/sky\/targets(\?|$)/, (route) => {
+    const q = new URL(route.request().url()).searchParams.get("q") || "";
+    route.fulfill(json({
+      schema_version: "skywatcher.sky-targets/v1",
+      observer,
+      at_utc: at,
+      query: q,
+      kind: "all",
+      count: q === "East" ? 2 : 0,
+      targets: q === "East" ? [veil, marfak] : [],
+      satellites,
+      catalog: { schema_version: "skywatcher.sky-catalog/v1", data_license: "CC-BY-SA-4.0" },
+    }));
+  });
+  await page.route(/\/api\/space-track\/sky\/chart(\?|$)/, (route) =>
+    route.fulfill(json({
+      schema_version: "skywatcher.sky-chart/v1",
+      observer,
+      at_utc: at,
+      fov_deg: 6,
+      radius_deg: 12,
+      limiting_magnitude: 7.5,
+      target: veil,
+      stars: [{ alt: 76.2, az: 252.4, mag: 2.48, id: "star:hip:102488", label: "Epsilon Cygni" }],
+      lines: [],
+      constellation_labels: [],
+      dso_markers: [],
+      solar_system: [],
+      satellites: [],
+    })));
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.getByRole("link", { name: "Sky Target Finder", exact: true }).click();
+  await expect(page).toHaveURL(/\/space-track\/sky\/?$/);
+  await expect(page.locator('a[href="/space-track/sky"]')).toHaveAttribute("aria-current", "page");
+  await expect(page.locator('a[href="/space-track"]')).not.toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("button", { name: "M 31 (Andromeda Galaxy)", exact: true })).toBeVisible();
+
+  await page.getByRole("searchbox", { name: "Search sky targets" }).fill("East");
+  await expect(page.getByRole("button", { name: "C 33 (East Veil Nebula)", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Theta Cassiopeiae (Marfak)", exact: true })).toBeVisible();
+  await expect(page.getByText("matches Marfak-East", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "C 33 (East Veil Nebula)", exact: true }).click();
+  const chart = page.getByRole("img", { name: "Sky chart centred on Caldwell 33" });
+  await expect(chart).toBeVisible();
+  await expect(chart.getByText("Caldwell 33", { exact: true })).toBeVisible();
+  await expect(chart.getByText("FOV 6.0°", { exact: true })).toBeVisible();
+  await expect(chart.getByText("Epsilon Cygni", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Copy target coordinates", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.__copied.length)).toBe(1);
+  const copied = await page.evaluate(() => window.__copied[0]);
+  expect(copied).toContain("C 33 (East Veil Nebula)");
+  expect(copied).toContain("RA (J2000): 20h 56m 19.1s  Dec (J2000): +31° 44′ 34″");
+  expect(copied).toContain("UTC: 2026-10-20T00:30:00Z");
+});
+
 test("FR24 capture edits report persistence failures and omit unsupported actions", async ({ page }) => {
   let writeAttempts = 0;
   await page.route("**/entities/FR24Captures**", async (route) => {
