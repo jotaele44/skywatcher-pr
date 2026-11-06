@@ -58,7 +58,7 @@ that count is the population this item can actually fit.
   writing its 12 extracted fields into RLSM `ocr_observations`-adjacent tables instead. The
   vision pass is cheap (~$20–25 for the full corpus at Haiku; `fr24_vision_ingest.py:8`) and is
   the best **second opinion** for frames where Tesseract OCR confidence <50 (the existing
-  review-queue threshold, `fr24/rlsm_extractors.py:448-449`) — run it on the low-confidence
+  review-queue threshold, `LOW_CONF_OCR_THRESHOLD` in `fr24/rlsm_extractors.py`) — run it on the low-confidence
   slice first, not the whole corpus.
 - Join `aircraft_registry` (FAA registry table, `data/rlsm/schema.sql`) and `manual_flight_log`
   ground truth into the extractors so every N-number resolves to owner/type and every

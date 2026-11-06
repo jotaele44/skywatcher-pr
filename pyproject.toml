@@ -112,7 +112,9 @@ src = [".", "src", "tests"]
 # (ADR v2.1 A0), including a copy of the OLD governance test. Those bytes must not
 # change — their SHA-256 values are asserted — so no linter or formatter may touch
 # them. pytest already skips it via testpaths = ["tests"].
-extend-exclude = ["Archive.zip", "gebco", "exports", "data", "docs/architecture/archive"]
+# federation/roads/pr_route_ref.py is likewise byte-pinned (SHA-256 in its pin JSON,
+# extracted verbatim from spiderweb-pr), so it is excluded for the same reason.
+extend-exclude = ["Archive.zip", "gebco", "exports", "data", "docs/architecture/archive", "federation/roads/pr_route_ref.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "W"]
