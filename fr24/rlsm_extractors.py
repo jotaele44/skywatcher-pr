@@ -30,6 +30,8 @@ import sqlite3
 import time
 from pathlib import Path
 
+from federation.roads.pr_route_ref import parse_route_ref
+
 REPO = Path(__file__).resolve().parents[1]
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 
@@ -260,8 +262,22 @@ def _classify_unknown(label: str) -> tuple:
                              "RIVER", "RIO", "SEA", "OCEAN", "CANO")):
         return "water", 0.40
     if any(t in up for t in ("HWY", "HIGHWAY", "PR-", "ROUTE", "EXPRESO")):
-        return "highway", 0.40
+        # A parsed route number (PR-52, Carr. 3R) is stronger evidence than the
+        # keyword alone. Parsing is pinned from spiderweb-pr (federation/roads/).
+        return "highway", (0.50 if parse_route_ref(label)["route_number"] else 0.40)
     return "unknown", 0.25
+
+
+def _route_fields(label: str) -> dict:
+    """Route-number fields for a highway label; empty when no number parses."""
+    ref = parse_route_ref(label)
+    if not ref["route_number"]:
+        return {}
+    return {
+        "route_ref": f"PR-{ref['route_number']}",
+        "route_number_band": ref["route_number_band"],
+        "is_ramal": ref["is_ramal"],
+    }
 
 
 def scan_words_for_pois(words: list, zone_weight: float = 1.0) -> list:
@@ -322,14 +338,17 @@ def scan_words_for_pois(words: list, zone_weight: float = 1.0) -> list:
             src = [words[o] for o in run_owners]
             wconf = sum(w.get("c", 0.0) for w in src) / max(1, len(src))
             ptype, base = _classify_unknown(raw)
-            out.append({
+            hit = {
                 "label": raw,
                 "entry": None,
                 "pin_type": ptype,
                 "confidence": round(max(0.05, base * zone_weight
                                         + max(-0.10, (wconf - 75.0) / 300.0)), 3),
                 "words": src,
-            })
+            }
+            if ptype == "highway":
+                hit.update(_route_fields(raw))
+            out.append(hit)
         i = j
 
     return out
