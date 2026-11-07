@@ -66,21 +66,19 @@ compatibility with the pre-existing `aircraft_intelligence.FlightMissionAnalyzer
 import path only, and must not be reintroduced into FPIM. Enforced by
 `tests/test_fpim_quarantine.py`.
 
-## Known technical debt
+## PITIRRE-C002 adjudication — 2026-10-04
 
-`AircraftIntelligence._deduce_profile()`'s fallback path (used when a
-callsign has no `KNOWN_OPERATORS` match) maps aircraft type to a guessed
-`primary_mission` via `AIRCRAFT_TYPE_MISSIONS`, with `confidence_level=0.60`.
-This is a secondary, lower-confidence mission inference distinct from the
-operator-provided `KNOWN_OPERATORS` ground truth, and — unlike
-`FlightMissionAnalyzer` — it sits inside the actively-used
-`lookup_aircraft()` path exercised by existing tests. Quarantining it would
-change existing behavior, which this reorg's requirement to preserve all
-existing functionality does not permit. It is preserved unchanged and
-flagged here as a follow-up decision (e.g. gating it behind a config flag,
-or migrating callers away from relying on `primary_mission` for
-`data_source="deduced"` profiles) rather than silently described as
-inference-free.
+The former aircraft-type-to-mission fallback in
+`AircraftIntelligence._deduce_profile()` is **SUPERSEDED**. Active FPIM may
+copy aircraft type and operator from source/database history, but it does not
+map aircraft type to `primary_mission`.
+
+`AIRCRAFT_TYPE_MISSIONS` remains importable only as a historical compatibility
+constant until the legacy shim is retired. It is not consulted by active FPIM.
+
+Mission labels may appear in an active profile only when the record is sourced
+from `KNOWN_OPERATORS` and the label is treated as source-declared metadata.
+That is lexical/source metadata, not a flight-purpose inference.
 
 ## Backward compatibility
 

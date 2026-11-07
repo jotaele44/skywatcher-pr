@@ -152,7 +152,7 @@ export default function Dashboard() {
               <thead>
                 <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-4 py-2 font-semibold">Callsign</th>
-                  <th className="px-4 py-2 font-semibold">Mission</th>
+                  <th className="px-4 py-2 font-semibold">Aircraft</th>
                   <th className="px-4 py-2 font-semibold">Nearest</th>
                   <th className="px-4 py-2 font-semibold">Conf</th>
                   <th className="px-4 py-2 font-semibold">Status</th>
@@ -164,7 +164,7 @@ export default function Dashboard() {
                   return (
                     <tr key={o.id} onClick={() => open.observation(o.observation_id)} className="cursor-pointer border-b border-border/50 transition hover:bg-secondary/50">
                       <td className="px-4 py-2.5"><span className="font-mono font-semibold text-foreground">{o.callsign}</span><div className="mt-0.5"><SyntheticDataBadge synthetic={o.synthetic_flag} /></div></td>
-                      <td className="px-4 py-2.5 text-muted-foreground">{o.mission_inference}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground">{o.aircraft_type || "—"}</td>
                       <td className="px-4 py-2.5 text-muted-foreground">{o.nearest_airport_name?.split(" ")[0]}</td>
                       <td className="px-4 py-2.5"><ConfidenceBadge score={o.confidence_score} showBar={false} /></td>
                       <td className="px-4 py-2.5"><StatusChip tone={rs.tone} label={rs.label} /></td>

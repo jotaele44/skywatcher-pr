@@ -97,7 +97,7 @@ def test_no_forbidden_cross_boundary_imports():
 
 def test_legacy_quarantine_not_imported_by_active_modules():
     violations = []
-    for bucket in ("core", "satim", "fpim", "corrim"):
+    for bucket in ("core", "domain", "satim", "fpim", "corrim"):
         for py_file in _files_for_bucket(bucket):
             for imported in _imported_names(py_file):
                 if _bucket_of(imported) == "legacy":
@@ -107,7 +107,7 @@ def test_legacy_quarantine_not_imported_by_active_modules():
 
 def test_only_corrim_may_combine_satim_and_fpim():
     violations = []
-    for bucket in ("core", "satim", "fpim"):
+    for bucket in ("core", "domain", "satim", "fpim"):
         for py_file in _files_for_bucket(bucket):
             imported_buckets = {_bucket_of(name) for name in _imported_names(py_file)}
             if {"satim", "fpim"} <= imported_buckets:

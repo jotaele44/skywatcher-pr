@@ -30,7 +30,7 @@ export default function AircraftProfileCard({ aircraft, onOpen }) {
           {aircraft.operator_category}
         </span>
         <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-          {aircraft.mission_category}
+          {aircraft.mission_category ? `Declared: ${aircraft.mission_category}` : "No declared mission"}
         </span>
         <SyntheticDataBadge synthetic={aircraft.synthetic_flag} />
       </div>

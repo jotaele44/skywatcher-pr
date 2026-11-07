@@ -7,8 +7,9 @@ skills without becoming byte/logical-identical evidence.
 
 The router is stdlib-first. It inventories/fingerprints what it can prove and
 fails closed for unsupported or unreadable material. It does not perform OCR,
-mission inference, georeferencing, or landing adjudication itself; those remain
-owned by downstream Skywatcher skills.
+mission inference, georeferencing, or landing adjudication itself. Mission/intent
+inference is prohibited by active ontology v2.1; georeferencing and landing
+candidate analysis remain separately owned downstream.
 """
 from __future__ import annotations
 
@@ -60,7 +61,7 @@ SKILL_REGISTRY: tuple[SkillSpec, ...] = (
     SkillSpec("CORRIM", ("spatial_truth", "infrastructure_alignment", "site_association"), "src/skywatcher/corrim"),
     SkillSpec("SATIM", ("visual_evidence", "spatial_truth", "calibration"), "src/skywatcher/satim"),
     SkillSpec("TIMELINE", ("temporal_reconstruction",), "pipeline/timeline", advisory=True),
-    SkillSpec("PATTERN", ("trajectory", "behavior", "mission_classification"), "pipeline/pattern", advisory=True),
+    SkillSpec("PATTERN", ("trajectory", "behavior"), "pipeline/pattern", advisory=True),
     SkillSpec("ALTITUDE_VALIDITY", ("altitude_validity",), "fr24/event_export.py"),
     SkillSpec("STOP_HOVER_LANDING", ("trajectory", "landing_takeoff"), "fr24/event_export.py"),
     SkillSpec("SOURCE_IDENTITY_BINDING", ("provenance", "source_identity"), "scripts/reconcile_fr24_media_identity.py"),
@@ -332,7 +333,6 @@ def _capabilities_for(manifest: EvidenceManifest) -> set[str]:
                 "altitude_validity",
                 "landing_takeoff",
                 "behavior",
-                "mission_classification",
                 "calibration",
             }
         )
@@ -376,6 +376,7 @@ def build_route_plan(manifest: EvidenceManifest) -> RoutePlan:
         "RENDERED_TRAIL_NOT_RAW_TRAJECTORY",
         "OWNER_OPERATOR_MISSION_SEPARATION",
         "CORRIDOR_ALIGNMENT_NOT_MISSION_IDENTITY",
+        "MISSION_INTENT_INFERENCE_PROHIBITED",
         "PRESERVE_RAW_NORMALIZED_CANONICAL_SEPARATELY",
         "FAIL_CLOSED_ON_NULL_TIE_DUPLICATE_OR_UNREADABLE_EVIDENCE",
     ]

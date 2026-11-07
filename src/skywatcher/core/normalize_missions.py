@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""RLSM mission, behavior, and blackout normalization helpers."""
+"""Source-label, behavior, and blackout normalization helpers.
+
+Mission vocabulary handling is lexical normalization of a mission label already
+present in source material. It is not permission to derive mission or intent
+from aircraft type, geometry, recurrence, proximity, callsign, or behavior.
+"""
 from __future__ import annotations
 
 import json
@@ -42,6 +47,8 @@ def normalize_mission(raw_text: str, config_dir: Path = Path("configs")) -> dict
         "resolution_status": "resolved" if canonical else "unresolved_default_unknown",
         "visibility": "V1" if canonical else "V0",
         "raw_text_preserved": True,
+        "source_label_only": True,
+        "inference_allowed": False,
     }
 
 

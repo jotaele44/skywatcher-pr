@@ -34,3 +34,45 @@ def test_find_cross_domain_overlaps_suppresses_operational_context():
     )
 
     assert overlaps == []
+
+
+def test_find_cross_domain_overlaps_skips_unknown_air_geometry():
+    overlaps = find_cross_domain_overlaps(
+        [{
+            "event_id": "air_missing",
+            "observed_at": "2026-01-01T12:00:00+00:00",
+            "lat": None,
+            "lon": None,
+            "geometry_status": "UNRESOLVED",
+            "tactical_public_tracking": False,
+        }],
+        [{
+            "record_id": "ctx_1",
+            "observed_at": "2026-01-01T12:00:00+00:00",
+            "lat": 0.0,
+            "lon": 0.0,
+            "operational_use_allowed": False,
+        }],
+    )
+    assert overlaps == []
+
+
+def test_find_cross_domain_overlaps_accepts_legitimate_zero_coordinates():
+    overlaps = find_cross_domain_overlaps(
+        [{
+            "event_id": "air_zero",
+            "observed_at": "2026-01-01T12:00:00+00:00",
+            "lat": 0.0,
+            "lon": 0.0,
+            "geometry_status": "LOCATED",
+            "tactical_public_tracking": False,
+        }],
+        [{
+            "record_id": "ctx_zero",
+            "observed_at": "2026-01-01T12:00:00+00:00",
+            "lat": 0.0,
+            "lon": 0.0,
+            "operational_use_allowed": False,
+        }],
+    )
+    assert len(overlaps) == 1

@@ -58,7 +58,7 @@ IDENTITY_NOTE = (
 
 # Bound to the governed threshold registry per ADR v2.1 A3, which authorizes threshold
 # binding on this file and nothing else - the same migration row's field renames,
-# identity-priority removal and mission-label scoping remain blocked. Values are
+# identity-priority removal remains separate; mission-label scoping is superseded by PITIRRE-C002. Values are
 # unchanged; what changes is that each now carries an owner, status and failure behavior,
 # and is recorded as CANDIDATE rather than reading as a settled weight.
 _WEIGHT_THRESHOLD_IDS = {
@@ -249,7 +249,6 @@ class ILAPAirspaceBridge:
                 "properties": {
                     "flight_id": fid,
                     "callsign": f.get("callsign", ""),
-                    "mission_type": f.get("mission_type", ""),
                     "corridor_alignment_score": corridor_score,
                     "identity_note": IDENTITY_NOTE,
                 },

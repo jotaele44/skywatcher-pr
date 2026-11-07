@@ -112,7 +112,7 @@ export default function CaptureDetailDrawer({ id, onClose, go }) {
       <Section title="Linked Observations" icon={Plane}>
         <div className="space-y-2">
           {observations.length ? observations.map((o) => (
-            <LinkChip key={o.id} onClick={() => go.observation(o.observation_id)} label={`${o.callsign} · ${o.mission_inference}`} sublabel={o.observation_id} />
+            <LinkChip key={o.id} onClick={() => go.observation(o.observation_id)} label={`${o.callsign}${o.aircraft_type ? ` · ${o.aircraft_type}` : ""}`} sublabel={o.observation_id} />
           )) : <p className="text-xs text-muted-foreground">No linked observations.</p>}
         </div>
       </Section>

@@ -67,7 +67,7 @@ export default function RouteDetailDrawer({ id, onClose, go }) {
 
       <Section title="Linked Observation" icon={Plane}>
         {obs ? (
-          <LinkChip onClick={() => go.observation(obs.observation_id)} label={`${obs.callsign} · ${obs.mission_inference}`} sublabel={obs.observation_id} />
+          <LinkChip onClick={() => go.observation(obs.observation_id)} label={`${obs.callsign}${obs.aircraft_type ? ` · ${obs.aircraft_type}` : ""}`} sublabel={obs.observation_id} />
         ) : <p className="text-xs text-muted-foreground">No linked observation.</p>}
       </Section>
     </SideDrawer>

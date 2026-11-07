@@ -75,7 +75,7 @@ export default function Aircraft() {
                   <th className="px-3 py-2 font-semibold">Callsign / Tail</th>
                   <th className="px-3 py-2 font-semibold">Type</th>
                   <th className="px-3 py-2 font-semibold">Operator Cat</th>
-                  <th className="px-3 py-2 font-semibold">Mission</th>
+                  <th className="px-3 py-2 font-semibold">Declared Mission</th>
                   <th className="px-3 py-2 font-semibold">Last Seen</th>
                   <th className="px-3 py-2 font-semibold">Obs</th>
                   <th className="px-3 py-2 font-semibold">Conf</th>
