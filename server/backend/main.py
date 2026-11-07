@@ -45,6 +45,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
+from server.backend.grid_v2_api import router as grid_v2_router
 from server.backend.spacetrack_router import router as spacetrack_router
 from skywatcher.fr24 import database as skywatcher_db
 from skywatcher.fr24.acquisition_receipts import (
@@ -100,6 +101,7 @@ app.add_middleware(
 )
 app.include_router(console_router)
 app.include_router(spacetrack_router)
+app.include_router(grid_v2_router)
 
 def _flight_corpus_v4_contract() -> dict[str, Any]:
     path = ROOT / "config" / "flight_corpus_v4.json"

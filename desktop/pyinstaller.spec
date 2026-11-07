@@ -34,11 +34,25 @@ for extra in ("exports", "reports"):
     if d.exists():
         datas.append((str(d), extra))
 
+# PR Grid V2 Cell_Profile API (server/backend/grid_v2_api.py): it resolves its pin
+# and repository identity relative to the bundle root and imports the shared
+# runtime from federation/spatial via sys.path, which PyInstaller cannot follow.
+datas += [
+    (str(REPO_ROOT / "federation.json"), "."),
+    (
+        str(REPO_ROOT / "federation" / "spatial" / "pr_grid_geographic_v2.pin.json"),
+        "federation/spatial",
+    ),
+]
+GRID_V2_SPATIAL = str(REPO_ROOT / "federation" / "spatial")
+
 a = Analysis(
     [str(REPO_ROOT / "desktop" / "launch.py")],
-    pathex=[str(REPO_ROOT), str(REPO_ROOT / "src")],
+    pathex=[str(REPO_ROOT), str(REPO_ROOT / "src"), GRID_V2_SPATIAL],
     datas=datas,
     hiddenimports=[
+        "server.backend.grid_v2_api",
+        "pr_grid_v2_runtime",
         "uvicorn.logging",
         "uvicorn.loops.auto",
         "uvicorn.protocols.http.auto",
