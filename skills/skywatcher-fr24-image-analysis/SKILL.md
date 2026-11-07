@@ -38,6 +38,37 @@ Modes:
 - Do not infer flight mission, target, surveillance, or intent from route geometry or proximity.
 - Runs are resumable and deterministic for the same inputs/configuration.
 
+## Cumulative implication handoff — activation-gated
+
+After Stage 1, Stage 2, and any permitted correlation are frozen, a certified
+knowledge-sidecar consumer may perform a **separate cumulative update**. This is
+not part of source extraction and is disabled unless the sidecar contract and
+current repository migration gates are active.
+
+When enabled:
+
+1. Preserve each screenshot/file/export as a source manifestation before event adjudication.
+2. Resolve source manifestation identity separately from canonical flight/event identity.
+3. Compare the newly adjudicated evidence against the prior frozen knowledge state.
+4. Emit typed implications only as `LOCAL`, `CORPUS`, `CONTROL`, `MODEL`,
+   `COVERAGE`, or `CONTRADICTION`, with supporting/counter/control evidence IDs.
+5. Emit an explicit knowledge delta or `NO_MATERIAL_CHANGE`; screenshot count is
+   never substituted for canonical event count.
+6. If source/event identity changes, recursively mark every dependent implication
+   stale before any current verbal rendering.
+7. Preserve contradictory evidence and near-duplicate candidates. Ties remain
+   unresolved; deterministic selection is not evidence.
+8. Do not promote recurrence, co-occurrence, geometry similarity, operator label,
+   source tier, or proximity into mission, intent, coordination, causation,
+   facility access, or subsurface relevance.
+
+A screenshot+track pair may improve support only after both manifestations are
+independently bound to the same event. It is not a new evidence tier and does not
+create an additional event.
+
+Until the knowledge-sidecar activation gates pass, record this downstream stage
+as `NOT_ENABLED`/not executed rather than fabricating a cumulative update.
+
 ## Inputs
 
 Required: one or more images, an image PDF, or a video.
