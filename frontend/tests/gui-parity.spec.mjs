@@ -397,3 +397,81 @@ test("FR24 capture edits report persistence failures and omit unsupported action
   await expect(page.getByText("Diagnostic state updated", { exact: true })).toHaveCount(0);
   expect(writeAttempts).toBe(1);
 });
+
+test("Sky Cameras lists public cameras, switches to links only, and queues contributions for review", async ({ page }) => {
+  const headers = {
+    "access-control-allow-origin": "http://127.0.0.1:5173",
+    "access-control-allow-credentials": "true",
+  };
+  const json = (body, status = 200) => ({ status, contentType: "application/json", headers, body: JSON.stringify(body) });
+  // Keep third-party players offline in CI; the iframe element is what we assert on.
+  await page.route(/youtube-nocookie\.com|player\.vimeo\.com/, (route) => route.abort());
+
+  let submitted = null;
+  const pending = {
+    id: "0123456789abcdef0123456789abcdef",
+    kind: "camera_link",
+    title: "Playa Jobos",
+    url: "https://example.org/jobos",
+    categories: ["beach"],
+    municipality: "Isabela",
+    license: "display-only",
+    contributor: null,
+    contact: null,
+    description: null,
+    status: "pending",
+    media_url: null,
+    file_name: null,
+  };
+  await page.route(/\/api\/sky-cameras\/submissions(\?|$)/, (route) => {
+    if (route.request().method() === "POST") {
+      submitted = route.request().postDataBuffer()?.toString("latin1") ?? "";
+      return route.fulfill(json({ id: pending.id, status: "pending", message: "Thanks! Your submission is in the review queue and will appear once a reviewer approves it." }, 201));
+    }
+    return route.fulfill(json({ status: "pending", count: 1, submissions: [pending] }));
+  });
+  let decision = null;
+  await page.route(/\/api\/sky-cameras\/submissions\/[0-9a-f]+\/decision$/, (route) => {
+    decision = route.request().postDataJSON();
+    return route.fulfill(json({ ...pending, status: decision.decision }));
+  });
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.getByRole("link", { name: "Sky Cameras", exact: true }).click();
+  await expect(page).toHaveURL(/\/sky-cameras\/?$/);
+  await expect(page.locator('a[href="/sky-cameras"]')).toHaveAttribute("aria-current", "page");
+
+  // Real catalog from the backend: an embeddable stream gets a player, a link-out camera does not.
+  const sonesta = page.getByRole("article", { name: "Isla Verde Beach — Royal Sonesta San Juan", exact: true });
+  await expect(sonesta.locator("iframe")).toHaveAttribute("src", /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
+  const condado = page.getByRole("article", { name: "Condado Lagoon", exact: true });
+  await expect(condado.locator("iframe")).toHaveCount(0);
+  await expect(condado.getByRole("link", { name: /Open live stream/ })).toHaveAttribute("href", /skylinewebcams\.com/);
+  await expect(page.getByRole("region", { name: "Coverage" })).toContainText("/78");
+
+  await page.getByRole("button", { name: "Players on" }).click();
+  await expect(page.locator("iframe")).toHaveCount(0);
+  await page.getByRole("button", { name: "Links only" }).click();
+
+  await page.getByRole("group", { name: "Category" }).getByRole("button", { name: "Lagoon" }).click();
+  await expect(condado).toBeVisible();
+  await expect(sonesta).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Contribute" }).click();
+  const form = page.getByRole("form", { name: "Contribute" });
+  await form.getByLabel("Title").fill("Playa Jobos");
+  await form.getByLabel(/Camera page link/).fill("https://example.org/jobos");
+  await form.getByLabel("Beach", { exact: true }).check();
+  await form.getByLabel(/already shown to the public/).check();
+  await form.getByLabel(/no identifiable people/).check();
+  await form.getByRole("button", { name: "Send for review" }).click();
+  await expect(form.getByRole("status")).toContainText("review queue");
+  expect(submitted).toContain("camera_link");
+  expect(submitted).toContain("https://example.org/jobos");
+
+  await page.getByRole("button", { name: "Review queue" }).click();
+  const queue = page.getByRole("region", { name: "Review queue" });
+  await expect(queue.getByText("Playa Jobos", { exact: true })).toBeVisible();
+  await queue.getByRole("button", { name: "Approve" }).click();
+  await expect.poll(() => decision?.decision).toBe("approved");
+});

@@ -226,6 +226,18 @@ const spaceTrack = {
   skyChart: (params = {}) => request(`/space-track/sky/chart${queryString(params)}`),
 };
 
+const skyCameras = {
+  list: (params = {}) => request(`/sky-cameras${queryString(params)}`),
+  coverage: () => request('/sky-cameras/coverage'),
+  // formData: a FormData built by the Contribute dialog (link or video file).
+  submit: (formData) => request('/sky-cameras/submissions', { method: 'POST', body: formData }),
+  submissions: (status = 'pending') => request(`/sky-cameras/submissions${queryString({ status })}`),
+  decide: (id, decision, note) => request(`/sky-cameras/submissions/${encode(id)}/decision`, {
+    method: 'POST',
+    body: { decision, note: note || undefined },
+  }),
+};
+
 const system = {
   publicSettings: () => request('/apps/public-settings').catch(() => ({
     id: appParams.appId,
@@ -245,6 +257,7 @@ export const federation = {
   system,
   flightCorpusV4,
   spaceTrack,
+  skyCameras,
   flightCorpusArchive,
   flightAcquisition,
   request,

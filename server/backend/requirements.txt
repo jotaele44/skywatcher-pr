@@ -3,3 +3,5 @@ uvicorn[standard]>=0.29.0
 # Sky Target Finder (skywatcher.core.sky): ephemeris and SGP4 satellite propagation.
 astronomy-engine==2.1.19
 sgp4==2.27
+# Sky Cameras submissions (multipart form + video upload parsing).
+python-multipart>=0.0.9
