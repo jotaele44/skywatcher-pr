@@ -45,6 +45,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
+from server.backend.cameras_router import require_reviewer
 from server.backend.cameras_router import router as cameras_router
 from server.backend.spacetrack_router import router as spacetrack_router
 from skywatcher.fr24 import database as skywatcher_db
@@ -357,6 +358,8 @@ def require_write_access(request: Request) -> None:
 
 
 _WRITE_GUARD = [Depends(require_write_access)]
+# Sky Cameras reviewer routes use this same guard (the router fails closed without it).
+app.dependency_overrides[require_reviewer] = require_write_access
 
 if not _WRITE_TOKEN:
     log.warning(

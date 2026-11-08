@@ -7,7 +7,6 @@ from fastapi.testclient import TestClient
 
 import server.backend.main as backend
 from server.backend import cameras_router
-from server.backend.main import app
 
 MP4 = b"\x00\x00\x00\x18ftypisom\x00\x00\x02\x00isomiso2" + b"\x00" * 64
 LINK = {
@@ -30,7 +29,7 @@ def client(tmp_path, monkeypatch):
     # TestClient's peer is "testclient", not a local address, so review uses the token path.
     monkeypatch.setattr(backend, "_WRITE_TOKEN", "test-token")
     cameras_router._rate_hits.clear()
-    return TestClient(app, headers={"Authorization": "Bearer test-token"})
+    return TestClient(backend.app, headers={"Authorization": "Bearer test-token"})
 
 
 def _submit(client, data=None, files=None):
@@ -153,7 +152,7 @@ def test_upload_needs_file_and_links_need_no_file(client):
 
 
 def test_reviewer_routes_require_write_token(client):
-    anonymous = TestClient(app)
+    anonymous = TestClient(backend.app)
     assert anonymous.get("/api/sky-cameras/submissions").status_code == 401
     assert anonymous.post("/api/sky-cameras/submissions/x/decision", json={"decision": "approved"}).status_code == 401
     # Public intake still works without the token.
@@ -172,3 +171,11 @@ def test_rate_limit(client, monkeypatch):
 def test_unknown_submission(client):
     assert client.post("/api/sky-cameras/submissions/nope/decision", json={"decision": "approved"}).status_code == 404
     assert client.get("/api/sky-cameras/media/../../etc").status_code == 404
+
+
+def test_reviewer_guard_fails_closed_without_the_app_override(client):
+    from fastapi import FastAPI
+
+    bare = FastAPI()
+    bare.include_router(cameras_router.router)
+    assert TestClient(bare).get("/api/sky-cameras/submissions").status_code == 503

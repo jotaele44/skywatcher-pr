@@ -82,11 +82,14 @@ def _municipios() -> tuple[str, ...]:
     return load_municipios(ROOT / "data" / "geo" / "pr_municipios_boundaries.json")
 
 
-def require_reviewer(request: Request) -> None:
-    """Reviewer routes use the backend's single write guard (imported lazily: main imports us)."""
-    from server.backend import main
+def require_reviewer() -> None:
+    """Placeholder for the reviewer guard; fails closed until the app wires it.
 
-    main.require_write_access(request)
+    server/backend/main.py binds this to its single write guard through
+    ``app.dependency_overrides`` so this module never imports main (no import cycle).
+    A router mounted without that override refuses every review request.
+    """
+    raise HTTPException(status_code=503, detail="Reviewer access is not configured")
 
 
 _REVIEWER_GUARD = [Depends(require_reviewer)]
