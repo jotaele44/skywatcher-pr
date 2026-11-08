@@ -405,7 +405,7 @@ test("Sky Cameras lists public cameras, switches to links only, and queues contr
   };
   const json = (body, status = 200) => ({ status, contentType: "application/json", headers, body: JSON.stringify(body) });
   // Keep third-party players offline in CI; the iframe element is what we assert on.
-  await page.route(/youtube-nocookie\.com|player\.vimeo\.com/, (route) => route.abort());
+  await page.route(/^https:\/\/(www\.youtube-nocookie\.com|player\.vimeo\.com)\//, (route) => route.abort());
 
   let submitted = null;
   const pending = {
@@ -446,7 +446,7 @@ test("Sky Cameras lists public cameras, switches to links only, and queues contr
   await expect(sonesta.locator("iframe")).toHaveAttribute("src", /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
   const condado = page.getByRole("article", { name: "Condado Lagoon", exact: true });
   await expect(condado.locator("iframe")).toHaveCount(0);
-  await expect(condado.getByRole("link", { name: /Open live stream/ })).toHaveAttribute("href", /skylinewebcams\.com/);
+  await expect(condado.getByRole("link", { name: /Open live stream/ })).toHaveAttribute("href", /^https:\/\/www\.skylinewebcams\.com\//);
   await expect(page.getByRole("region", { name: "Coverage" })).toContainText("/78");
 
   await page.getByRole("button", { name: "Players on" }).click();
