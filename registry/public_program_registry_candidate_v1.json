@@ -1,0 +1,28 @@
+{
+  "schema_version": "pr_public_program_candidate_contract_v1",
+  "public_program_namespace": "prp:",
+  "federation_module_id": "skywatcher-pr",
+  "role": "AIRSPACE_MISSION_EVIDENCE",
+  "domain_interest": "AIRSPACE_AND_AVIATION_MISSIONS",
+  "domain_record_owner_status": "UNRESOLVED_REVIEW_REQUIRED",
+  "source_authority": "OBSERVATIONS_ONLY",
+  "canonical_program_rows": 0,
+  "pr_nexus_promotion_enabled": false,
+  "production_consumer_enabled": false,
+  "public_program_record_identity": "CANDIDATE_NOT_IDENTITY",
+  "cross_domain_review_required": true,
+  "proximity_identity": "DENY",
+  "name_only_identity": "DENY",
+  "per_record_evidence_required": [
+    "immutable_source_manifestation_sha256",
+    "authoritative_identifier_or_binding",
+    "independent_pr_nexus",
+    "temporal_lineage",
+    "explicit_custodian"
+  ],
+  "no_auto_owner_transfer": true,
+  "control_plane_authority": "thehub-pr",
+  "special_guard": "flight tracks and aircraft proximity do not establish operation or program identity",
+  "predecessor_checkpoint_sha256": "9377734c2f580d67ef5d8c4cf7ab91da18094a4d654613e154e3319034cd3dcc",
+  "certification_state": "BLOCKED_SOURCE_AND_IDENTITY_UNIVERSE_OPEN"
+}
