@@ -25,6 +25,7 @@ import SpatialTruth from '@/pages/SpatialTruth';
 import FlightArchive from '@/pages/FlightArchive';
 import SpaceTrackControl from '@/pages/SpaceTrackControl';
 import SkyTargetFinder from '@/pages/SkyTargetFinder';
+import SkyCameras from '@/pages/SkyCameras';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -71,6 +72,7 @@ const AuthenticatedApp = () => {
             <Route path="/flight-archive" element={<FlightArchive />} />
             <Route path="/space-track" element={<SpaceTrackControl />} />
             <Route path="/space-track/sky" element={<SkyTargetFinder />} />
+            <Route path="/sky-cameras" element={<SkyCameras />} />
           </Route>
           {/* Auth routes render only when authentication is actually required.
               In diagnostic mode the backend implements no /auth/login,

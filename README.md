@@ -34,6 +34,7 @@ Skywatcher is the active owner of the FR24 pipeline migrated out of `spiderweb-p
 | `fr24/` | FR24 screenshot inventory, segmentation, route extraction, review queue, event export |
 | `src/skywatcher/fpim/craft_profile.py` | Per-craft profile builder (identity, home base, preferred LZs, schedule, recurring routes) |
 | `src/skywatcher/query/` | Grounded query layer over craft profiles (deterministic engine + optional LLM) |
+| `src/skywatcher/core/cameras/` | Sky Cameras: curated public PR live-camera catalog plus a moderated community contribution queue ([docs/SKY_CAMERAS.md](docs/SKY_CAMERAS.md)) |
 
 The core is designed to run with stdlib-first dependencies. Optional geospatial layers are isolated behind separate requirements.
 

@@ -622,6 +622,102 @@
           "frontend/tests/gui-parity.spec.mjs"
         ]
       }
+    },
+    {
+      "id": "sky-cameras",
+      "classification": "user",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Sky Cameras: a curated, evolving catalog of publicly available live cameras of Puerto Rico's sky, beaches, coast, mountains, rivers, lagoons and lakes, with coverage gaps shown per category and municipality. Players embed only where the owner publishes an allowlisted YouTube/Vimeo stream; everything else links out to the owner's page, and a Players/Links-only toggle switches every card to links. The public can suggest a camera or share their own video (link or a size-capped MP4/MOV/WebM upload); every submission waits in a moderation queue and is shown only after a reviewer approves it in the Review queue panel, which also takes approved entries down. The liveness checker and catalog promotion script are maintainer tools; the user path needs no terminal.",
+      "backend": {
+        "files": [
+          "server/backend/cameras_router.py",
+          "src/skywatcher/core/cameras/__init__.py",
+          "src/skywatcher/core/cameras/catalog.py",
+          "src/skywatcher/core/cameras/submissions.py",
+          "src/skywatcher/core/cameras/validation.py"
+        ],
+        "endpoints": [
+          "GET /api/sky-cameras",
+          "GET /api/sky-cameras/coverage",
+          "GET /api/sky-cameras/media/{submission_id}",
+          "POST /api/sky-cameras/submissions",
+          "GET /api/sky-cameras/submissions",
+          "GET /api/sky-cameras/submissions/{submission_id}/media",
+          "POST /api/sky-cameras/submissions/{submission_id}/decision"
+        ],
+        "symbols": [
+          "server/backend/cameras_router.py:Decision",
+          "server/backend/cameras_router.py:require_reviewer",
+          "server/backend/cameras_router.py:sky_cameras",
+          "server/backend/cameras_router.py:sky_cameras_coverage",
+          "server/backend/cameras_router.py:sky_cameras_decide",
+          "server/backend/cameras_router.py:sky_cameras_media",
+          "server/backend/cameras_router.py:sky_cameras_submission_media",
+          "server/backend/cameras_router.py:sky_cameras_submissions",
+          "server/backend/cameras_router.py:sky_cameras_submit",
+          "src/skywatcher/core/cameras/catalog.py:Camera",
+          "src/skywatcher/core/cameras/catalog.py:camera_from_dict",
+          "src/skywatcher/core/cameras/catalog.py:coverage_summary",
+          "src/skywatcher/core/cameras/catalog.py:filter_cameras",
+          "src/skywatcher/core/cameras/catalog.py:load_catalog",
+          "src/skywatcher/core/cameras/catalog.py:load_municipios",
+          "src/skywatcher/core/cameras/catalog.py:load_status",
+          "src/skywatcher/core/cameras/submissions.py:SubmissionInput",
+          "src/skywatcher/core/cameras/submissions.py:SubmissionStore",
+          "src/skywatcher/core/cameras/submissions.py:community_camera",
+          "src/skywatcher/core/cameras/submissions.py:submission_receipt",
+          "src/skywatcher/core/cameras/validation.py:SubmissionError",
+          "src/skywatcher/core/cameras/validation.py:VideoType",
+          "src/skywatcher/core/cameras/validation.py:embed_url",
+          "src/skywatcher/core/cameras/validation.py:normalize_text",
+          "src/skywatcher/core/cameras/validation.py:parse_embed",
+          "src/skywatcher/core/cameras/validation.py:sniff_video",
+          "src/skywatcher/core/cameras/validation.py:validate_categories",
+          "src/skywatcher/core/cameras/validation.py:validate_https_url"
+        ]
+      },
+      "analysis": {
+        "files": [
+          "scripts/check_sky_cameras.py",
+          "scripts/promote_sky_camera.py"
+        ],
+        "symbols": [
+          "scripts/check_sky_cameras.py:check_camera",
+          "scripts/check_sky_cameras.py:main",
+          "scripts/promote_sky_camera.py:main"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/sky-cameras"
+        ],
+        "e2e_routes": [
+          "/sky-cameras"
+        ],
+        "components": [
+          "frontend/src/pages/SkyCameras.jsx",
+          "frontend/src/components/skywatcher/CameraCard.jsx",
+          "frontend/src/api/federationClient.js",
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_sky_cameras_catalog.py",
+          "tests/test_sky_cameras_endpoints.py",
+          "tests/test_sky_cameras_scripts.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      }
     }
   ],
   "exceptions": []
