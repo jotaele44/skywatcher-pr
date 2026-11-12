@@ -1,0 +1,88 @@
+{
+  "schema": "faei.screenshot_fixture.v1",
+  "status": "AUDIT_ONLY",
+  "source_class": "USER_UPLOADED_FR24_SCREENSHOTS",
+  "aircraft_claim_status": "SCREENSHOT_ASSERTION_ONLY",
+  "observed_identifiers": {
+    "registration": "N852VB",
+    "callsign": "BATMAN47",
+    "serial": "VB-200147",
+    "mode_s": "ABB0A3",
+    "displayed_origin": "BQN",
+    "manufacturer_and_model_external_confirmation": "OPEN_IN_THIS_FIXTURE"
+  },
+  "files": [
+    {
+      "name": "IMG_6652(1).jpeg",
+      "sha256": "3e44bc7579d0564a773de513cf2fd138b357ccf7aae1a5a25c31ae74ea0f0832",
+      "bytes": 403994,
+      "view": "2026-10-24T00:51:00-04:00",
+      "type": "flight_map"
+    },
+    {
+      "name": "IMG_6378(1).jpeg",
+      "sha256": "1d7384f16ed1b86a38187f511cee56a9b622fbda8a9a031b153cce259d2fef5a",
+      "bytes": 227781,
+      "view": null,
+      "type": "flight_history",
+      "listed_dates": [
+        "2026-10-11",
+        "2026-10-15",
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18",
+        "2026-10-22"
+      ]
+    },
+    {
+      "name": "IMG_6372.jpeg",
+      "sha256": "01e527c336f65af06cc7eba2dfba4b3073ca7e25f9878c4724bc94a5be5aef36",
+      "bytes": 371377,
+      "view": "2026-10-17T09:03:00-04:00",
+      "type": "flight_map"
+    },
+    {
+      "name": "IMG_6371.jpeg",
+      "sha256": "dc566fd89c355d3fb6eb5eb76e279269d225236abf3f9514dc46b0b570ddec4b",
+      "bytes": 388377,
+      "view": "2026-10-18T11:23:00-04:00",
+      "type": "flight_map"
+    },
+    {
+      "name": "IMG_6370.jpeg",
+      "sha256": "908f397a83af359b756dc15486de90b38132bf5ace5b7358961c77c4677ed7f9",
+      "bytes": 405873,
+      "view": "2026-10-22T04:50:00-04:00",
+      "type": "flight_map"
+    }
+  ],
+  "denominators": {
+    "uploaded_screenshots": 5,
+    "dated_calendar_entries_visible": 7,
+    "distinct_flight_sessions": "UNKNOWN",
+    "raw_telemetry_points": "UNKNOWN",
+    "aircraft_contract_direct_assignments": 0
+  },
+  "observation_only": {
+    "region": "West Puerto Rico offshore/Mona Passage",
+    "displayed_altitude_ft_on_oct24": 4675,
+    "displayed_groundspeed_mph_on_oct24": 14
+  },
+  "must_not_certify": [
+    "rendered_map_track_is_raw_trajectory",
+    "seven_dates_implies_seven_flights",
+    "registered_owner_is_current_operator",
+    "same_contract_region_proves_airframe_assignment",
+    "maritime_track_is_uap_mission",
+    "low_speed_implies_hover_or_landing"
+  ],
+  "required_followups": [
+    "original_track_export_and_source_manifest",
+    "dated_authoritative_aircraft_registry_snapshot",
+    "contract_award_and_amendment_original_bytes",
+    "specific_airframe_assignment_evidence",
+    "independent_flight_session_reconciliation",
+    "cross_federation_exact_head_review"
+  ],
+  "certification": "WITHHELD"
+}
