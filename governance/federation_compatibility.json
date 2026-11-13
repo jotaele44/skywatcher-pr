@@ -15,6 +15,14 @@
   ],
   "spatial_generation": "federation-spatial-index/1",
   "spatial_note": "Compatible with federation spatial binding v0.2. While Spiderweb's transform is PROVISIONAL, this repository forbids exact Cell_ID ground claims and preserves full content-addressed uncertainty Cell_Set membership; identity remains CANDIDATE_NOT_IDENTITY.",
+  "drift_reconciliation": {
+    "cause": "source_monitors emitter (thehub-pr ADR 0013): federation.json hub_callable_commands.setup prii-export-utils pin",
+    "cause_change": "the setup command installs prii-export-utils from thehub-pr 0f62e4bdde10b5ac82787a329d6f15481ab9c7f0 (0.2.0, which adds the source_monitors helpers) instead of f2b81769924689b4d959554928810b1d7b7ef3d6 (0.1.0), matching the pyproject.toml/uv.lock pin, because scripts/federation_export.py now emits the source_monitors stream",
+    "reviewed_at": "2026-11-13",
+    "reviewed_head": "7a3e30b1c25a7d54558dd77c377a34b46fb92c52",
+    "finding": "COMPATIBLE",
+    "rationale": "dependency pin only; prii-maintenance pin, export_canonical, validate_export, canonical_outputs and generation federation-spatial-index/1 unchanged; federation ids still come from scripts/prii_export_utils.py, whose fid/norm/sha256 are unchanged; the package adds the optional source_monitors stream that federation_export_manifest 1.1.0 (still @1) allows, its rows validate against thehub-pr federation_source_monitor 1.0.0 and hub validate-package returns VALID for the test and production exports; all six attested contracts remain valid"
+  },
   "spatial_binding_v0_2": {
     "authority_commit": "bb8463c8d8cf4b54486674ee9b665ce3d2502e8b",
     "certification_state": "PROVISIONAL",

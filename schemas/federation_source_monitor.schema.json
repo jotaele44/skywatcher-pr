@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "federation_source_monitor.schema.json",
+  "title": "Federation Source Monitor",
+  "description": "One source a producer monitors, with when it last succeeded and how that time is known (ADR 0013). Federation-canonical; producers conform to this shape. last_success_at is never inferred from file modification times or git dates: it is either recorded by a producer fetch run (RUN_RECEIPT), taken from timestamps in the producer's own outputs (OUTPUT_DERIVED), or null (NOT_RECORDED).",
+  "type": "object",
+  "required": [
+    "monitor_id",
+    "source_ref",
+    "name",
+    "declared_status",
+    "cadence",
+    "last_success_basis",
+    "lineage",
+    "synthetic",
+    "created_at",
+    "extracted_at"
+  ],
+  "properties": {
+    "monitor_id": {
+      "type": "string",
+      "pattern": "^mon_[a-f0-9]{32}$",
+      "description": "Deterministic: fid('mon', producer program_id, source_ref)."
+    },
+    "source_ref": {"type": "string", "minLength": 1, "description": "The source's id in the producer's own registry."},
+    "name": {"type": "string", "minLength": 1},
+    "producer_family": {"type": ["string", "null"], "description": "The producer's own family label, verbatim; no shared taxonomy is implied."},
+    "evidence_tier": {"type": ["string", "null"], "enum": ["T1", "T2", "T3", "T4", null]},
+    "declared_status": {
+      "type": "string",
+      "enum": ["active", "partial", "not_active", "manual", "inactive", "unknown"],
+      "description": "What the producer's registry declares about the source; not a health check."
+    },
+    "cadence": {
+      "type": "string",
+      "enum": ["realtime", "hourly", "daily", "weekly", "monthly", "quarterly", "yearly", "event", "static", "manual", "unknown"]
+    },
+    "cadence_window_seconds": {"type": ["integer", "null"], "minimum": 1},
+    "last_success_basis": {
+      "type": "string",
+      "enum": ["RUN_RECEIPT", "OUTPUT_DERIVED", "NOT_RECORDED"]
+    },
+    "last_success_at": {"type": ["string", "null"], "format": "date-time"},
+    "last_attempt_at": {"type": ["string", "null"], "format": "date-time"},
+    "last_attempt_status": {"type": ["string", "null"], "enum": ["success", "failure", "partial", null]},
+    "source_url": {"type": ["string", "null"]},
+    "registry_path": {"type": ["string", "null"], "description": "The registry file the row was built from, relative to the producer repository."},
+    "lineage": {"$ref": "#/definitions/lineage"},
+    "synthetic": {"type": "boolean"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "extracted_at": {"type": "string", "format": "date-time"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"last_success_basis": {"const": "NOT_RECORDED"}}, "required": ["last_success_basis"]},
+      "then": {"properties": {"last_success_at": {"type": "null"}}}
+    },
+    {
+      "if": {"properties": {"last_success_basis": {"enum": ["RUN_RECEIPT", "OUTPUT_DERIVED"]}}, "required": ["last_success_basis"]},
+      "then": {"required": ["last_success_at"], "properties": {"last_success_at": {"type": "string"}}}
+    }
+  ],
+  "definitions": {
+    "lineage": {
+      "type": "object",
+      "required": ["producer_script", "producer_phase", "source_inputs"],
+      "properties": {
+        "producer_script": {"type": "string"},
+        "producer_phase": {"type": "string"},
+        "source_inputs": {"type": "array", "items": {"type": "string"}},
+        "extraction_method": {"type": "string"}
+      }
+    }
+  }
+}
