@@ -82,7 +82,7 @@ package = false
 
 [tool.uv.sources]
 prii-maintenance = { git = "https://github.com/jotaele44/thehub-pr.git", rev = "f2b81769924689b4d959554928810b1d7b7ef3d6", subdirectory = "packages/prii_maintenance" }
-prii-export-utils = { git = "https://github.com/jotaele44/thehub-pr.git", rev = "f2b81769924689b4d959554928810b1d7b7ef3d6", subdirectory = "packages/prii_export_utils" }
+prii-export-utils = { git = "https://github.com/jotaele44/thehub-pr.git", rev = "0f62e4bdde10b5ac82787a329d6f15481ab9c7f0", subdirectory = "packages/prii_export_utils" }
 opensky-api = { git = "https://github.com/openskynetwork/opensky-api.git", rev = "16e3803d2495d0029bebc3c85b2a235eeb122742", subdirectory = "python" }
 
 [tool.pytest.ini_options]
