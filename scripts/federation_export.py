@@ -558,8 +558,10 @@ def _rel(rid, sid, src_ent, tgt_ent, rtype, confidence, synthetic, created, now)
 SOURCE_REGISTRY = "registry/source_registry.yaml"
 SOURCE_RUN_STATE = "data/source_run_state.json"
 # Registry `mode` -> cadence: the skywatcher-pr entries of the hub reader's
-# _NAMED_CADENCE. Any other mode is "unknown" there and here (today:
-# periodic_context).
+# _NAMED_CADENCE. A mode in neither table is "unknown" there and here (today:
+# periodic_context). That table also maps other producers' words (daily, weekly,
+# ad_hoc, ...), which this map leaves out, so tests/test_federation_source_monitors.py
+# fails on any registry mode not pinned here: map a new one as the hub reader does.
 REGISTRY_MODE_CADENCE = {
     "delayed_or_rate_limited": "realtime",
     "batch_file": "event",
