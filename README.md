@@ -20,6 +20,11 @@
 | Active vector | `SKYWATCHER_AIRSPACE_AIRCRAFT_INTELLIGENCE` |
 | Production status | `NON_PRODUCTION_DIAGNOSTIC` |
 
+`federation.json` is the authority for this table and for live readiness
+(`federation_readiness_gate`, currently `ready_for_hub_live_execution: false`). The
+development contract at the end of this README describes where the work is heading; it
+does not change the declared role or status.
+
 Skywatcher is the active owner of the FR24 pipeline migrated out of `spiderweb-pr`. Spiderweb may retain spatial bridge/reference material, but FR24 ingestion and active airspace observation export belong here.
 
 ## Engine
