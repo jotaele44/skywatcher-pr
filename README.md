@@ -133,6 +133,17 @@ python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_p
 
 Production-mode validation rejects synthetic rows. Current live-execution blockers should remain explicit until non-synthetic observations are loaded and exported.
 
+`scripts/federation_export.py` projects an airspace package onto thehub-pr's
+canonical streams: `exports/federation/{sources,entities,relationships,observations,alerts,source_monitors}.jsonl`
+(each written when it has rows) plus a `manifest.json` that validates against the
+vendored `schemas/federation_export_manifest.schema.json`.
+`source_monitors.jsonl` (thehub-pr ADR 0013) has one row per source in
+`registry/source_registry.yaml`, with when it last succeeded and how that is known:
+the newest `retrieved_at` among the exported package's non-synthetic FR24 screenshot
+sources (`fr24_exports`), or a run receipt in a committed `data/source_run_state.json`
+when one exists, whichever is more recent. Every other source is reported as not
+recorded (`tests/test_federation_source_monitors.py`).
+
 ## Optional GEBCO terrain layer
 
 ```bash
