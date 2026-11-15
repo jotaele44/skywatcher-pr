@@ -23,6 +23,66 @@
         "requirements-desktop.txt",
         "governance/change_log.json"
       ]
+    },
+    {
+      "date": "2026-10-15",
+      "summary": "Re-pinned PRII_TEMPLATE_REF to thehub-pr 4258c3c, which hardens the shared docs-sync checker (thehub-pr#359): a pull request can no longer exempt itself through exempt_authors, manifest hygiene is judged on the head manifest so retiring a coupling or renaming a coupled doc no longer fails, a glob that matches nothing now fails when the change adds it, and a :symbol or :line locator is dropped from Markdown link targets. CONTRIBUTING.md now states what the gate enforces. The manifest comment now says a coupling fires on its on events. The shared eslint config also picked up one optional glob (src/zip-design, thehub-pr#358); that directory holds no JavaScript here, so lint coverage is unchanged. Tooling and documentation change only: no contract, schema or dependency edge changed.",
+      "files": [
+        ".github/workflows/template-drift.yml",
+        "tools/check_docs_sync.py",
+        "CONTRIBUTING.md",
+        "frontend/eslint.config.js",
+        ".federation/docs-sync.json",
+        "governance/change_log.json"
+      ]
+    },
+    {
+      "date": "2026-11-03",
+      "summary": "Added the Sky Target Finder to the Space-Track tool (/space-track/sky, GET /api/space-track/sky/targets|recommend|chart): name search over a vendored star/Messier/Caldwell catalog plus Sun, Moon, planets and SGP4-propagated satellites from the locally frozen Space-Track materialization, live altitude and visibility windows, tonight's recommendations, and a horizon-oriented sky chart with a field-of-view box and compass. New backend dependency edges: astronomy-engine 2.1.19 and sgp4 2.27 (both MIT) in server/backend/requirements.txt. New vendored data under data/reference/sky (CC BY-SA 4.0 data derived from d3-celestial, OpenNGC, Stellarium and Wikipedia; pinned by sha256 and rebuilt by scripts/build_sky_catalog.py). Read-only: no writes, no browser upstream calls.",
+      "files": [
+        "server/backend/spacetrack_router.py",
+        "server/backend/requirements.txt",
+        "src/skywatcher/core/sky/",
+        "scripts/build_sky_catalog.py",
+        "data/reference/sky/",
+        "desktop/pyinstaller.spec",
+        "frontend/src/pages/SkyTargetFinder.jsx",
+        "frontend/src/components/skywatcher/SkyChart.jsx",
+        "frontend/src/components/skywatcher/Sidebar.jsx",
+        "frontend/src/App.jsx",
+        "frontend/src/api/federationClient.js",
+        "frontend/src/lib/skyProjection.js",
+        "frontend/src/lib/skyFavorites.js",
+        ".federation/gui-capabilities.json",
+        "docs/SKY_TARGET_FINDER.md",
+        "governance/change_log.json"
+      ]
+    },
+    {
+      "date": "2026-11-08",
+      "summary": "Added Sky Cameras (/sky-cameras, GET /api/sky-cameras, /coverage, /media/{id}; POST /api/sky-cameras/submissions; reviewer GET/POST /api/sky-cameras/submissions[/{id}/decision|/media] behind the existing write guard). It has a curated catalog of 10 verified public live cameras of Puerto Rico's sky, beaches, coast, mountains and lagoons (data/reference/sky_cameras, schemas/sky_camera.schema.json), with per-category and per-municipality coverage gaps shown. Players embed only for owner-published YouTube/Vimeo streams on an allowlist. Everything else links out, and a Players/Links-only toggle is provided. The public can suggest a camera or share their own video (a link, or an MP4/MOV/WebM upload capped at 100 MB and checked by magic bytes, with a per-IP rate limit). Each submission waits in a moderation queue under the gitignored data/sky_cameras/ and is shown only after a reviewer approves it, and approved entries can be taken down. New maintainer scripts: scripts/check_sky_cameras.py (liveness) and scripts/promote_sky_camera.py. New explicit backend dependency edge: python-multipart in server/backend/requirements.txt (already resolved transitively in uv.lock). Desktop bundle now ships data/geo.",
+      "files": [
+        "server/backend/cameras_router.py",
+        "server/backend/main.py",
+        "server/backend/requirements.txt",
+        "src/skywatcher/core/cameras/",
+        "scripts/check_sky_cameras.py",
+        "scripts/promote_sky_camera.py",
+        "data/reference/sky_cameras/",
+        "schemas/sky_camera.schema.json",
+        "desktop/pyinstaller.spec",
+        ".gitignore",
+        "frontend/src/pages/SkyCameras.jsx",
+        "frontend/src/components/skywatcher/CameraCard.jsx",
+        "frontend/src/components/skywatcher/Sidebar.jsx",
+        "frontend/src/App.jsx",
+        "frontend/src/api/federationClient.js",
+        "frontend/tests/gui-parity.spec.mjs",
+        ".federation/gui-capabilities.json",
+        "docs/SKY_CAMERAS.md",
+        "README.md",
+        "governance/change_log.json"
+      ]
     }
   ]
 }
