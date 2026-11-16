@@ -10,6 +10,11 @@ Maps the airspace_observation model onto the Hub's canonical contract:
   * observation -> municipality -> `relationships` row (located_in)
   * each declared airspace anomaly (optional alerts.json)
                             -> one canonical `alerts` row (alrt_<32hex>)
+  * each source in registry/source_registry.yaml
+                            -> one `source_monitors` row (mon_<32hex>, thehub-pr
+                               ADR 0013): when the source last succeeded, from a
+                               run receipt or the package's `retrieved_at`, else
+                               NOT_RECORDED
 
 The `observations` and `alerts` streams give the Hub's correlate_observations /
 correlate_alerts stages first-class Skywatcher rows to consume (joined to sibling
@@ -17,9 +22,10 @@ producers by location.municipality), rather than only the flattened entity view.
 
 Reads `observations.csv` + `sources.json` (+ optional airfields/hangar_zones/
 endpoint_events/alerts json) from an airspace package dir and writes
-`exports/federation/{sources,entities,relationships,observations,alerts}.jsonl`
-+ a Hub-conformant `manifest.json`. Deterministic `src_/ent_/rel_/obs_/alrt_`
-ids (sha256). Stdlib + prii_export_utils only.
+`exports/federation/{sources,entities,relationships,observations,alerts,source_monitors}.jsonl`
++ a Hub-conformant `manifest.json`. Deterministic `src_/ent_/rel_/obs_/alrt_/mon_`
+ids (sha256). Stdlib + prii_export_utils, plus the repo's own stdlib YAML-subset
+loader (src/skywatcher/core/normalize_locations.py) for the source registry.
 """
 from __future__ import annotations
 
@@ -27,15 +33,25 @@ import argparse
 import csv
 import hashlib
 import json
+import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from prii_export_utils import SourceRunState, resolve_last_success, source_monitor_row
 from prii_export_utils import fid as _fid
 from prii_export_utils import norm as _norm
 from prii_export_utils import sha256 as _sha256
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+# Appended, not prepended: scripts/ stays first so prii_export_utils still resolves
+# to scripts/prii_export_utils.py when this file runs as a script.
+if str(REPO_ROOT / "src") not in sys.path:
+    sys.path.append(str(REPO_ROOT / "src"))
+
+from skywatcher.core.normalize_locations import load_simple_yaml  # noqa: E402
+
 PRODUCER = "skywatcher-pr"
 CONTRACT_VERSION = "1.0.0"
 PRODUCER_SCRIPT = "scripts/federation_export.py"
@@ -47,13 +63,15 @@ STREAM_SCHEMA = {
     "relationships": "federation_relationship.schema.json",
     "observations": "federation_observation.schema.json",
     "alerts": "federation_alert.schema.json",
+    "source_monitors": "federation_source_monitor.schema.json",
 }
 
 # Canonical write order — matches the Hub's stream enum. Sources/entities/
 # relationships were the original three; observations and alerts extend the
 # producer's federation reach so the Hub's correlate_observations /
-# correlate_alerts stages have Skywatcher rows to consume.
-STREAM_ORDER = ("sources", "entities", "relationships", "observations", "alerts")
+# correlate_alerts stages have Skywatcher rows to consume; source_monitors
+# (optional since export manifest 1.1.0) reports the monitored sources.
+STREAM_ORDER = ("sources", "entities", "relationships", "observations", "alerts", "source_monitors")
 
 # Canonical alert lifecycle / gap vocab (mirrors federation_alert.schema.json).
 ALERT_STATUS = {"draft", "validated", "active", "closed", "rejected"}
@@ -524,6 +542,142 @@ def _rel(rid, sid, src_ent, tgt_ent, rtype, confidence, synthetic, created, now)
     }
 
 
+# ── source_monitors (thehub-pr ADR 0013) ─────────────────────────────────────
+# One row per source in registry/source_registry.yaml. Before this stream existed,
+# thehub-pr's Source Monitor read that registry from this checkout itself
+# (thehub-pr src/hub/source_monitor.py, _parse_skywatcher). Name, family, tier,
+# cadence, window and declared status below reproduce that reader's normalisation,
+# so no source's labels change when the Hub switches to reading this stream.
+#
+# When a source last succeeded comes from a run receipt in the committed
+# data/source_run_state.json (written by prii_export_utils.record_run; RUN_RECEIPT)
+# or from the newest `retrieved_at` among the exported package's non-synthetic
+# sources.json entries whose source_type is mapped below (OUTPUT_DERIVED); the more
+# recent wins (prii_export_utils.resolve_last_success). Every other source is
+# NOT_RECORDED with a null time: nothing here infers a time from file or git dates.
+SOURCE_REGISTRY = "registry/source_registry.yaml"
+SOURCE_RUN_STATE = "data/source_run_state.json"
+# Registry `mode` -> cadence: the skywatcher-pr entries of the hub reader's
+# _NAMED_CADENCE. A mode in neither table is "unknown" there and here (today:
+# periodic_context). That table also maps other producers' words (daily, weekly,
+# ad_hoc, ...), which this map leaves out, so tests/test_federation_source_monitors.py
+# fails on any registry mode not pinned here: map a new one as the hub reader does.
+REGISTRY_MODE_CADENCE = {
+    "delayed_or_rate_limited": "realtime",
+    "batch_file": "event",
+    "historical_baseline": "static",
+}
+# Nominal window per cadence (the hub reader's CADENCE_WINDOW_SECONDS); event,
+# static, manual and unknown have none, since nothing says when the next update is due.
+CADENCE_WINDOW_SECONDS = {
+    "realtime": 3600, "hourly": 3600, "daily": 86400, "weekly": 7 * 86400,
+    "monthly": 31 * 86400, "quarterly": 92 * 86400, "yearly": 366 * 86400,
+}
+# Package sources.json `source_type` -> registry id. Pinned here: every
+# `screenshot` source is written by scripts/build_producer_package.py from the FR24
+# screenshot pipeline, the registry's fr24_exports. tests/test_federation_source_monitors.py
+# fails on a committed package source whose type is not mapped.
+RETRIEVAL_SOURCE_TYPES = {"screenshot": "fr24_exports"}
+_EVIDENCE_TIER = re.compile(r"^T[1-4]$")
+
+
+def _text(value: Any) -> str | None:
+    if value is None:
+        return None
+    return str(value).strip() or None
+
+
+def _evidence_tier(raw: Any) -> str | None:
+    """T1..T4 as the hub reader's normalize_tier reads it; anything else is None."""
+    if raw is None:
+        return None
+    value = str(raw).strip().upper()
+    return value if _EVIDENCE_TIER.match(value) else None
+
+
+def _utc_timestamp(raw: Any) -> datetime | None:
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    # A naive time is read as UTC, as scripts/build_producer_package.py reads one.
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _latest_retrievals(sources: list[dict[str, Any]]) -> dict[str, str]:
+    """Newest `retrieved_at` per registry id among the package's non-synthetic sources.
+
+    A source whose type is not in RETRIEVAL_SOURCE_TYPES, or whose `retrieved_at`
+    does not parse, contributes nothing.
+    """
+    latest: dict[str, datetime] = {}
+    for source in sources:
+        if str(source.get("provenance_status") or "").startswith("synthetic"):
+            continue
+        source_ref = RETRIEVAL_SOURCE_TYPES.get(str(source.get("source_type")))
+        at = _utc_timestamp(source.get("retrieved_at"))
+        if source_ref is None or at is None:
+            continue
+        if source_ref not in latest or at > latest[source_ref]:
+            latest[source_ref] = at
+    return {
+        ref: at.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        for ref, at in latest.items()
+    }
+
+
+def build_source_monitors(
+    sources: list[dict[str, Any]],
+    now: str,
+    *,
+    registry_path: Path | None = None,
+    state_path: Path | None = None,
+) -> list[dict[str, Any]]:
+    """The ``source_monitors`` stream: one row per registered source, sorted by id.
+
+    ``sources`` is the exported package's sources.json. A registry entry without
+    an id, or an id listed twice, raises ValueError.
+    """
+    registry = load_simple_yaml(registry_path or REPO_ROOT / SOURCE_REGISTRY)
+    if not isinstance(registry, dict):
+        raise ValueError(f"{SOURCE_REGISTRY}: expected a mapping of domain -> source list")
+    state = SourceRunState.load(state_path or REPO_ROOT / SOURCE_RUN_STATE)
+    derived = _latest_retrievals(sources)
+    lineage = {
+        "producer_script": PRODUCER_SCRIPT,
+        "producer_phase": "SOURCE_MONITOR",
+        "source_inputs": [SOURCE_REGISTRY, "sources.json", SOURCE_RUN_STATE],
+        "extraction_method": "registry_projection",
+    }
+    rows: dict[str, dict[str, Any]] = {}
+    for domain, entries in registry.items():
+        if not isinstance(entries, list):
+            continue  # not a domain's source list; the hub reader skips these too
+        for entry in entries:
+            source_ref = _text(entry.get("id")) if isinstance(entry, dict) else None
+            if source_ref is None:
+                raise ValueError(f"{SOURCE_REGISTRY}: {domain}: entry without 'id'")
+            if source_ref in rows:
+                raise ValueError(f"{SOURCE_REGISTRY}: duplicate source id {source_ref!r}")
+            cadence = REGISTRY_MODE_CADENCE.get(str(entry.get("mode") or "").strip().lower(), "unknown")
+            receipt = state.get(source_ref) or {}
+            at, basis = resolve_last_success(receipt, derived.get(source_ref))
+            rows[source_ref] = source_monitor_row(
+                producer=PRODUCER, source_ref=source_ref,
+                name=_text(entry.get("use")) or source_ref,
+                producer_family=_text(domain), evidence_tier=_evidence_tier(entry.get("tier")),
+                declared_status="unknown", cadence=cadence,
+                cadence_window_seconds=CADENCE_WINDOW_SECONDS.get(cadence),
+                last_success_at=at, last_success_basis=basis,
+                last_attempt_at=receipt.get("last_attempt_at"),
+                last_attempt_status=receipt.get("last_attempt_status"),
+                registry_path=SOURCE_REGISTRY, lineage=lineage, created_at=now, extracted_at=now,
+            )
+    return [rows[k] for k in sorted(rows)]
+
+
 def write_package(streams: dict[str, list[dict[str, Any]]], out_dir: Path, mode: str, now: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     files = []
@@ -574,6 +728,7 @@ def main() -> int:
     alerts = _load_optional_json(pkg, "alerts.json")
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     streams = build_streams(observations, sources, now, airfields, hangar_zones, endpoint_events, alerts)
+    streams["source_monitors"] = build_source_monitors(sources, now)
 
     if args.mode == "production":
         # Check 1: Reject synthetic rows
