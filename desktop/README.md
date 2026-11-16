@@ -16,6 +16,33 @@ Use the always-available gear button in the app to reopen **Setup & Diagnostics*
 It can choose the workspace, run local checks, or repair generated configuration.
 Repair is idempotent and does not delete user data.
 
+## The Launch Pad
+
+`desktop/config.py` declares a **Launch Pad**: a screen the shared desktop
+runtime shows after setup and before Skywatcher starts. On it you choose:
+
+- **Guest or Operator.** Guest is read-only: you can browse and query
+  everything, and the app refuses archiving snapshots, editing records and
+  sky-camera submissions or decisions. Operator allows all of those from this
+  computer. Operator can be protected with a passphrase.
+- **Open on**: any page from the sidebar.
+- **Launch options**: the sky-camera intake rate limit and upload size
+  (Operator only), and an optional Anthropic API key for natural-language
+  answers in the console. The key is used for that session and never saved;
+  with it, questions and matching profile data leave this computer.
+
+It also reports readiness: the airport reference set, how many flight-corpus
+snapshots are archived, and how many camera submissions are waiting for review.
+Use the **Launch Pad** button beside the gear to come back and change the mode
+or options; the app restarts on the page.
+
+Guest mode keeps a shared desktop tidy. It does not stop someone who can already
+run programs under your account.
+
+The Launch Pad appears once `requirements-desktop.txt` pins a `prii-desktop`
+that includes it (0.3.0 or later). With an older runtime the declaration is
+ignored and the app opens directly, as before.
+
 Map tiles still require a network connection; local data, tables, and charts
 continue to work when those tiles are unavailable.
 
