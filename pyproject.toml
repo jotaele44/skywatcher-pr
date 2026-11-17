@@ -53,7 +53,7 @@ dev = [
 # installed out of band, e.g. `apt-get install tesseract-ocr` or `brew install tesseract`.
 fr24 = [
     "pytesseract>=0.3.13,<0.4",  # Tesseract OCR bindings (fr24 OCR modules)
-    "opencv-python>=4.8,<5",     # UI segmentation / route + track vectorization
+    "opencv-python>=5.0.0.93,<6",     # UI segmentation / route + track vectorization
     "numpy>=1.24",               # affine coordinate fitting / vectorization
     "pyarrow>=14.0",             # columnar export (Parquet)
 ]
