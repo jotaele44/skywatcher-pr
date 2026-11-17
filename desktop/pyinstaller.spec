@@ -81,6 +81,7 @@ a = Analysis(
         "prii_desktop.appserver",
         "prii_desktop.config",
         "prii_desktop.setup_center",
+        "prii_desktop.launchpad",
     ],
     noarchive=False,
 )
