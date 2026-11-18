@@ -17,6 +17,7 @@ import EmptyState from "@/components/skywatcher/EmptyState";
 import LoadingState from "@/components/skywatcher/LoadingState";
 import { Toolbar, SearchInput, FilterSelect } from "@/components/skywatcher/Toolbar";
 import { REVIEW_STATUS } from "@/lib/skywatcher";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 const REVIEW_OPTS = [
   { value: "all", label: "All review states" },
@@ -175,7 +176,7 @@ export default function Observations() {
         {filtered.length === 0 ? (
           <EmptyState icon={Plane} title="No matching observations" message="Adjust filters or search to surface diagnostic observations." />
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
+          <div {...scrollRegion("Observations table")} className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
