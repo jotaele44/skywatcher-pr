@@ -8,6 +8,7 @@ import StatusChip from "@/components/skywatcher/StatusChip";
 import ConfidenceBadge from "@/components/skywatcher/ConfidenceBadge";
 import EmptyState from "@/components/skywatcher/EmptyState";
 import LoadingState from "@/components/skywatcher/LoadingState";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 // Static calibration summary produced by the backend
 // (`scripts/satim_score_labels.py --frontend-out`). The view is intentionally
@@ -177,7 +178,7 @@ export default function Calibration() {
         </div>
 
         {candidates.length > 0 && (
-          <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
+          <div {...scrollRegion("Calibration candidates")} className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -212,7 +213,7 @@ export default function Calibration() {
       </Panel>
 
       <Panel title="Marker Legend" icon={BookMarked} bodyClassName="space-y-0">
-        <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
+        <div {...scrollRegion("Marker legend")} className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -238,7 +239,7 @@ export default function Calibration() {
         {labels.length === 0 ? (
           <EmptyState icon={ScanSearch} title="No marked features" />
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
+          <div {...scrollRegion("Marked features")} className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">

@@ -1,6 +1,7 @@
 import React from "react";
 import { Satellite, MapPin, Network, CheckCircle2, XCircle, FlaskConical } from "lucide-react";
 import { PROGRAM } from "@/lib/skywatcher";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 const TONE = {
   ready: "text-[hsl(142_70%_58%)]",
@@ -33,7 +34,7 @@ function Cell({ icon: Icon, label, value, tone = "default" }) {
 
 export default function TopStatusStrip() {
   return (
-    <div className="z-30 flex items-center gap-x-5 gap-y-1 overflow-x-auto border-b border-border bg-[hsl(220_34%_6%)] px-4 py-2 scrollbar-thin">
+    <div {...scrollRegion("System status")} className="z-30 flex items-center gap-x-5 gap-y-1 overflow-x-auto border-b border-border bg-[hsl(220_34%_6%)] px-4 py-2 scrollbar-thin">
       {CELLS.map((c, i) => (
         <React.Fragment key={i}>
           {i > 0 && <span className="text-border">|</span>}

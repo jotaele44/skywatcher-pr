@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { X } from "lucide-react";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 export default function SideDrawer({ open, onClose, title, subtitle, badges, children, footer }) {
   useEffect(() => {
@@ -26,7 +27,7 @@ export default function SideDrawer({ open, onClose, title, subtitle, badges, chi
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto scrollbar-thin px-5 py-4">{children}</div>
+        <div {...scrollRegion()} className="flex-1 overflow-y-auto scrollbar-thin px-5 py-4">{children}</div>
         {footer && <div className="border-t border-border px-5 py-3">{footer}</div>}
       </div>
     </div>
