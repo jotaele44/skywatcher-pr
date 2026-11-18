@@ -107,14 +107,15 @@ function TargetRow({ target, selected, favorite, onSelect, onToggleFavorite, onC
       {/* The button holds only the target's name, so its accessible name is
           exactly what is shown (speech control: "click Jupiter"). The detail
           line sits beside it as its description; the button's ::after covers
-          the whole block, so the click area is unchanged. */}
+          the whole block, so the click area is unchanged. min-h-6 keeps the
+          button's own box at 24px, the minimum target size. */}
       <div className="relative min-w-0 flex-1">
         <button
           onClick={() => onSelect(target)}
           type="button"
           aria-describedby={descriptionId}
           aria-current={selected ? "true" : undefined}
-          className="block w-full truncate text-left text-sm font-semibold text-foreground after:absolute after:inset-0 after:content-['']"
+          className="block min-h-6 w-full truncate text-left text-sm font-semibold text-foreground after:absolute after:inset-0 after:content-['']"
         >
           {target.display}
         </button>
