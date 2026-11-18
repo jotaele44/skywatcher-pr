@@ -10,6 +10,7 @@ import {
 import PageHeader from "@/components/skywatcher/PageHeader";
 import Panel from "@/components/skywatcher/Panel";
 import { federation } from "@/api/federationClient";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 const STATE_TONE = {
   PASS: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
@@ -126,7 +127,7 @@ export default function SpaceTrackControl() {
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Panel title="Certification gates" icon={ShieldCheck} bodyClassName="p-0">
-          <div className="max-h-[420px] overflow-auto">
+          <div {...scrollRegion("Certification gates")} className="max-h-[420px] overflow-auto">
             <table className="w-full text-left text-xs">
               <thead className="sticky top-0 bg-background">
                 <tr className="border-b border-border text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -180,7 +181,7 @@ export default function SpaceTrackControl() {
       </div>
 
       <Panel title="Source contracts" icon={Satellite} bodyClassName="p-0">
-        <div className="overflow-x-auto">
+        <div {...scrollRegion("Source contracts")} className="overflow-x-auto">
           <table className="w-full min-w-[960px] text-left text-xs">
             <thead>
               <tr className="border-b border-border text-[10px] uppercase tracking-wide text-muted-foreground">

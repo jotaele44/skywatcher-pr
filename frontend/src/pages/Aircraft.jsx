@@ -12,6 +12,7 @@ import SyntheticDataBadge from "@/components/skywatcher/SyntheticDataBadge";
 import EmptyState from "@/components/skywatcher/EmptyState";
 import LoadingState from "@/components/skywatcher/LoadingState";
 import { Toolbar, SearchInput, FilterSelect } from "@/components/skywatcher/Toolbar";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 export default function Aircraft() {
   const d = useSkywatcher();
@@ -68,7 +69,7 @@ export default function Aircraft() {
             {filtered.map((a) => <AircraftProfileCard key={a.id} aircraft={a} onOpen={() => open.aircraft(a.aircraft_id)} />)}
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
+          <div {...scrollRegion("Aircraft table")} className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
