@@ -1,0 +1,16 @@
+{
+  "_comment": "Error-count ceilings for type checkers that are not yet clean. Read by scripts/check_error_ceiling.py. A ceiling may only go down: when you fix errors, lower the number to the new count in the same change. Never raise one to make a build pass; fix the new error instead.",
+  "schema_version": "prii_quality_ceilings_v1",
+  "ceilings": {
+    "mypy": {
+      "max_errors": 40,
+      "pattern": ": error:",
+      "measured": "2026-11-21, mypy 2.4.1, scope [tool.mypy].files in pyproject.toml"
+    },
+    "tsc": {
+      "max_errors": 465,
+      "pattern": "error TS[0-9]+:",
+      "measured": "2026-11-21, TypeScript 5.9.3, frontend/jsconfig.json"
+    }
+  }
+}

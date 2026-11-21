@@ -739,6 +739,26 @@
           "tests/test_gui_parity.py"
         ]
       }
+    },
+    {
+      "id": "type-check-error-ceiling",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "CI quality gate: fails a build when mypy or tsc reports more errors than the committed ceiling in configs/quality_ceilings.json. It is developer tooling run by ci.yml, not an operator workflow, and produces no analysis output for the GUI.",
+      "analysis": {
+        "files": [
+          "scripts/check_error_ceiling.py"
+        ],
+        "symbols": [
+          "scripts/check_error_ceiling.py:main"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_check_error_ceiling.py"
+        ]
+      }
     }
   ],
   "exceptions": []

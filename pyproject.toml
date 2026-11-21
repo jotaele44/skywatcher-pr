@@ -143,10 +143,12 @@ ignore = [
 
 # ── mypy ─────────────────────────────────────────────────────────────────────
 # Gradually-typed baseline, matching spiderweb-pr and moneysweep-pr. Scoped to
-# the src/skywatcher package, which is the structured part of the tree (13
-# findings today; src/skywatcher/satim/artifacts is already clean). The flat
+# the src/skywatcher package, which is the structured part of the tree (40
+# findings on 2026-11-21; src/skywatcher/satim/artifacts is already clean). The flat
 # root modules and fr24/ are not in scope yet. follow_imports = "silent" keeps
-# errors in not-yet-typed dependencies from being reported. Non-gating in CI.
+# errors in not-yet-typed dependencies from being reported. Gated in CI by an
+# error-count ceiling (configs/quality_ceilings.json, scripts/check_error_ceiling.py):
+# the count may fall but not rise.
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
@@ -161,10 +163,11 @@ source = ["src/skywatcher", "fr24", "imagery", "pipeline"]
 omit = ["tests/*", "*/__init__.py"]
 
 [tool.coverage.report]
-# Ratchet, not a target: 59% measured when this landed, floor set at
-# 55% so normal variation across the CI Python matrix does not cause false
-# failures. Raise it as coverage improves; never lower it to make a build pass.
-fail_under = 55
+# Ratchet, not a target. First set at 55% against 59% measured; raised to 66%
+# on 2026-11-21 against 69.2% measured (Python 3.13, 1855 passed). The margin
+# absorbs normal variation across the CI Python matrix. Raise it as coverage
+# improves; never lower it to make a build pass.
+fail_under = 66
 exclude_lines = [
     "pragma: no cover",
     "if __name__ == .__main__.:",
