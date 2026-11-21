@@ -130,6 +130,13 @@ errors **before and after** (identical — these changes add none), `pytest` unc
 
 ## Backlog, ranked
 
+> **Status 2026-11-21:** items 1 and 4 are addressed by ratchet rather than by a
+> clean run. `mypy` (40 errors) and `tsc` (465 errors, up from the 229 recorded
+> below) now gate CI through error-count ceilings in `configs/quality_ceilings.json`,
+> checked by `scripts/check_error_ceiling.py`. The coverage floor was raised from
+> 55% to 66% against 69.2% measured. Item 2 was fixed earlier. The scores in this
+> document are the 2026-07-26 audit and have not been re-scored.
+
 | # | Item | Effort | Why it matters |
 |---|---|---|---|
 | 1 | Promote the `mypy` CI step from report-only to gating (see item 4 for the separate `npm run typecheck` gap) | **M** | `ruff` is already configured and gated (`ci.yml`'s `lint` job, currently clean). The remaining Python-side gap is that the `mypy` step is `continue-on-error: true`, so type regressions don't block merges yet. |

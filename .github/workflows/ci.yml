@@ -129,6 +129,10 @@ jobs:
         run: npm run test:console
       - name: Lint
         run: npm run lint
+      # Gating by ratchet: fails when tsc reports more errors than the ceiling in
+      # configs/quality_ceilings.json. Lower the ceiling when you fix errors.
+      - name: Typecheck (error ceiling)
+        run: python3 ../scripts/check_error_ceiling.py tsc -- npx tsc -p ./jsconfig.json
       - name: Tests
         run: npm run test
       - name: Build
@@ -158,9 +162,12 @@ jobs:
         run: |
           command -v uv >/dev/null 2>&1 || python -m pip install -q uv
           uv sync --extra dev
-          uv pip install ruff mypy
+          # mypy is pinned so the error count the ceiling measures cannot move
+          # with a new mypy release.
+          uv pip install ruff mypy==2.4.1
       - name: Ruff
         run: uv run ruff check .
-      - name: Mypy (report-only)
-        continue-on-error: true
-        run: uv run python -m mypy
+      # Gating by ratchet: fails when mypy reports more errors than the ceiling in
+      # configs/quality_ceilings.json. Lower the ceiling when you fix errors.
+      - name: Mypy (error ceiling)
+        run: python3 scripts/check_error_ceiling.py mypy -- uv run python -m mypy
