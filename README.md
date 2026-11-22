@@ -20,6 +20,11 @@
 | Active vector | `SKYWATCHER_AIRSPACE_AIRCRAFT_INTELLIGENCE` |
 | Production status | `NON_PRODUCTION_DIAGNOSTIC` |
 
+`federation.json` is the authority for this table and for live readiness
+(`federation_readiness_gate`, currently `ready_for_hub_live_execution: false`). The
+development contract at the end of this README describes where the work is heading; it
+does not change the declared role or status.
+
 Skywatcher is the active owner of the FR24 pipeline migrated out of `spiderweb-pr`. Spiderweb may retain spatial bridge/reference material, but FR24 ingestion and active airspace observation export belong here.
 
 ## Engine
@@ -34,6 +39,7 @@ Skywatcher is the active owner of the FR24 pipeline migrated out of `spiderweb-p
 | `fr24/` | FR24 screenshot inventory, segmentation, route extraction, review queue, event export |
 | `src/skywatcher/fpim/craft_profile.py` | Per-craft profile builder (identity, home base, preferred LZs, schedule, recurring routes) |
 | `src/skywatcher/query/` | Grounded query layer over craft profiles (deterministic engine + optional LLM) |
+| `src/skywatcher/core/cameras/` | Sky Cameras: curated public PR live-camera catalog plus a moderated community contribution queue ([docs/SKY_CAMERAS.md](docs/SKY_CAMERAS.md)) |
 
 The core is designed to run with stdlib-first dependencies. Optional geospatial layers are isolated behind separate requirements.
 
@@ -131,6 +137,17 @@ python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_p
 ```
 
 Production-mode validation rejects synthetic rows. Current live-execution blockers should remain explicit until non-synthetic observations are loaded and exported.
+
+`scripts/federation_export.py` projects an airspace package onto thehub-pr's
+canonical streams: `exports/federation/{sources,entities,relationships,observations,alerts,source_monitors}.jsonl`
+(each written when it has rows) plus a `manifest.json` that validates against the
+vendored `schemas/federation_export_manifest.schema.json`.
+`source_monitors.jsonl` (thehub-pr ADR 0013) has one row per source in
+`registry/source_registry.yaml`, with when it last succeeded and how that is known:
+the newest `retrieved_at` among the exported package's non-synthetic FR24 screenshot
+sources (`fr24_exports`), or a run receipt in a committed `data/source_run_state.json`
+when one exists, whichever is more recent. Every other source is reported as not
+recorded (`tests/test_federation_source_monitors.py`).
 
 ## Optional GEBCO terrain layer
 
