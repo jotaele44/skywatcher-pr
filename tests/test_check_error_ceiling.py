@@ -54,9 +54,37 @@ def test_unknown_name_and_bad_usage(ceilings):
     assert gate.main(["demo"]) == 2
 
 
+@pytest.fixture()
+def strict_ceilings(tmp_path, monkeypatch):
+    path = tmp_path / "quality_ceilings.json"
+    path.write_text(
+        json.dumps(
+            {
+                "ceilings": {
+                    "demo": {"max_errors": 2, "pattern": ": error:", "ok_exit_codes": [0, 1]}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(gate, "CEILINGS", path)
+    return path
+
+
+def test_allowed_nonzero_exit_with_errors_passes(strict_ceilings):
+    assert gate.main(["demo", "--", *_emit(2, code=1)]) == 0
+
+
+def test_blocking_exit_under_ceiling_fails(strict_ceilings, capsys):
+    # mypy exits 2 when "errors prevented further checking": the count is incomplete.
+    assert gate.main(["demo", "--", *_emit(1, code=2)]) == 1
+    assert "exited 2" in capsys.readouterr().out
+
+
 def test_committed_ceilings_are_well_formed():
     data = json.loads(gate.CEILINGS.read_text(encoding="utf-8"))
     assert set(data["ceilings"]) >= {"mypy", "tsc"}
     for entry in data["ceilings"].values():
         assert isinstance(entry["max_errors"], int) and entry["max_errors"] >= 0
         assert entry["pattern"]
+        assert 0 in entry["ok_exit_codes"]
