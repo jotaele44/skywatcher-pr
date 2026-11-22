@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { FileUp, Plane, RotateCcw } from "lucide-react";
 import { FLIGHT_INGEST_STATUS, parseFlightFiles } from "@/lib/skywatcher";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 const MAX_FILES = 12;
 const ACCEPT = ".csv,.kml,.html,.htm,text/csv,text/html,application/vnd.google-earth.kml+xml";
@@ -169,7 +170,7 @@ export default function SpatialFlightRenderer({
               <Summary label="Points" value={summary.points} />
             </div>
 
-            <div className="max-h-72 space-y-2 overflow-auto pr-1">
+            <div {...scrollRegion("Flight results")} className="max-h-72 space-y-2 overflow-auto pr-1">
               {results.map((result, index) => (
                 <article key={`${result.source}:${index}`} className="rounded-md border border-border bg-muted/20 p-2.5">
                   <div className="flex flex-wrap items-start justify-between gap-2">
