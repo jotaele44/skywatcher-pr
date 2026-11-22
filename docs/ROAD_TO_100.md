@@ -43,7 +43,7 @@ The former ~73% figure combined code present on main with data-blocked and candi
 
 1. Execute the complete local screenshot corpus with zero false binding and bounded uncertainty.
 2. Preserve deterministic replay and provenance boundaries through operator receipts.
-3. Finish replacing the obsolete `places.geojson` dependency: the tracked gazetteer is in place, but `scripts/rlsm_spatial_map.py` and `scripts/rlsm_diacritic_repoi.py` still read the old file.
+3. Done in code (2026-11-22): nothing reads the obsolete `places.geojson` any more. Municipality positions come from the tracked GNIS gazetteer through `fr24/rlsm_anchors.py:municipality_centroids()`, which fails closed when the gazetteer has no municipio rows. Still open: operator-supplied geo-anchor inputs for anchor seeding.
 4. Supply real FR24 captures and run a production-mode export with synthetic rejection enabled.
 5. Done: #173 was closed unmerged. Do not apply its patch files wholesale.
 6. Certify standalone packaging for the merged isolated-clone runtime.

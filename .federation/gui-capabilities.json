@@ -739,6 +739,26 @@
           "tests/test_gui_parity.py"
         ]
       }
+    },
+    {
+      "id": "rlsm-municipality-reference",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Reference-data helper: returns Puerto Rico's 78 municipality positions from the tracked GNIS gazetteer for the RLSM report scripts, replacing the obsolete data/places.geojson input, and fails closed when the gazetteer has no municipio rows. It has no route, control or operator workflow of its own.",
+      "backend": {
+        "files": [
+          "fr24/rlsm_anchors.py"
+        ],
+        "symbols": [
+          "fr24/rlsm_anchors.py:municipality_centroids"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_rlsm_municipality_centroids.py"
+        ]
+      }
     }
   ],
   "exceptions": []
