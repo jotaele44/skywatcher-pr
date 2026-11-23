@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:gui-parity": "playwright test -c gui-parity.playwright.config.mjs",
+    "test:desktop-launchpad": "playwright test -c desktop-launchpad.playwright.config.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc -p ./jsconfig.json",
     "test:console": "node --test src/console/tests/*.test.mjs"
@@ -74,6 +75,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
     "@eslint/js": "^9.19.0",
     "@playwright/test": "1.65.0",
     "@tailwindcss/postcss": "^4.3.3",
