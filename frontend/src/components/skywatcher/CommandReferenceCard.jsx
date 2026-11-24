@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Terminal, Copy, Check } from "lucide-react";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 export default function CommandReferenceCard({ command, note }) {
   const [copied, setCopied] = useState(false);
@@ -12,7 +13,7 @@ export default function CommandReferenceCard({ command, note }) {
     <div className="rounded-lg border border-border bg-[hsl(220_30%_4%)] p-3">
       <div className="flex items-center gap-2">
         <Terminal className="h-3.5 w-3.5 shrink-0 text-primary" />
-        <code className="flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs text-foreground/90 scrollbar-thin">
+        <code {...scrollRegion("Command")} className="flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs text-foreground/90 scrollbar-thin">
           {command}
         </code>
         <button

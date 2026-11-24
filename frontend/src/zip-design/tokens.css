@@ -1,0 +1,116 @@
+/* ZIP tokens isolated from the existing semantic contract. Fonts use bundled/system families. */
+:root {
+  /* Overlay layers */
+  --zip-z-overlay: 400;
+
+  --zip-z-spotlight: 1000; /* Tutorial spotlights/guided help */
+
+  /* System layers */
+  --zip-z-critical: 2000; /* Critical system notifications */
+
+  /* spacing */
+  --zip-spacing-1: 0.25rem;
+  --zip-spacing-2: 0.5rem;
+  --zip-spacing-3: 0.75rem;
+  --zip-spacing-4: 1rem;
+  --zip-spacing-6: 1.5rem;
+  --zip-spacing-8: 2rem;
+  --zip-spacing-12: 3rem;
+  --zip-spacing-16: 4rem;
+  --zip-spacing-20: 5rem;
+}
+
+:root {
+  --zip-background: #f3f6f8;
+  --zip-foreground: #10202b;
+  --zip-surface: #e8eef2;
+  --zip-surface-foreground: #10202b;
+  --zip-sidebar: #e3eaef;
+  --zip-sidebar-foreground: #172b37;
+  --zip-card: #fbfcfd;
+  --zip-card-foreground: #10202b;
+  --zip-popup: #ffffff;
+  --zip-popup-foreground: #10202b;
+  --zip-primary: #007e94;
+  --zip-primary-foreground: #f7fdff;
+  --zip-secondary: #dce7ec;
+  --zip-secondary-foreground: #17313d;
+  --zip-accent: #007e94;
+  --zip-accent-foreground: #f7fdff;
+  --zip-muted: #e6ecef;
+  --zip-muted-foreground: #5d6f79;
+  --zip-success: #15805c;
+  --zip-success-foreground: #f4fff9;
+  --zip-error: #bd3f4f;
+  --zip-error-foreground: #fff7f8;
+  --zip-warning: #9b6410;
+  --zip-warning-foreground: #fffaf0;
+  --zip-info: #246f9a;
+  --zip-info-foreground: #f6fbff;
+  --zip-info-hover: #1d6188;
+  --zip-info-active: #174f70;
+  --zip-border: #c9d5db;
+  --zip-font-family-base: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  --zip-font-family-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  --zip-font-family-monospace: 'SFMono-Regular', Menlo, Monaco, Consolas, ui-monospace, monospace;
+  --zip-font-family-cursive: cursive;
+  --zip-shadow: 0 1px 2px rgb(16 32 43 / 0.06), 0 8px 24px rgb(16 32 43 / 0.04);
+  --zip-shadow-md: 0 2px 4px rgb(16 32 43 / 0.08), 0 14px 32px rgb(16 32 43 / 0.08);
+  --zip-shadow-lg: 0 6px 16px rgb(16 32 43 / 0.10), 0 24px 60px rgb(16 32 43 / 0.10);
+  --zip-shadow-focus: 0 0 0 3px rgb(0 126 148 / 0.25);
+  --zip-radius-sm: 0.375rem;
+  --zip-radius: 0.625rem;
+  --zip-radius-md: 0.8rem;
+  --zip-radius-lg: 1rem;
+  --zip-radius-full: 999px;
+  --zip-animation-duration-fast: 120ms;
+  --zip-animation-duration-normal: 200ms;
+  --zip-animation-duration-slow: 360ms;
+  --zip-chart-color-1: #007e94;
+  --zip-chart-color-2: #246f9a;
+  --zip-chart-color-3: #15805c;
+  --zip-chart-color-4: #9b6410;
+  --zip-chart-color-5: #bd3f4f;
+}
+
+:root.dark, :root[data-theme="dark"] {
+  --zip-background: #071017;
+  --zip-foreground: #e7f0f4;
+  --zip-surface: #0b1720;
+  --zip-surface-foreground: #e7f0f4;
+  --zip-sidebar: #09141c;
+  --zip-sidebar-foreground: #dce8ed;
+  --zip-card: #0e1b24;
+  --zip-card-foreground: #edf5f7;
+  --zip-popup: #111f29;
+  --zip-popup-foreground: #edf5f7;
+  --zip-primary: #48c4d4;
+  --zip-primary-foreground: #041115;
+  --zip-secondary: #132631;
+  --zip-secondary-foreground: #d9e8ed;
+  --zip-accent: #48c4d4;
+  --zip-accent-foreground: #041115;
+  --zip-muted: #14232c;
+  --zip-muted-foreground: #90a4ae;
+  --zip-success: #4dcc9d;
+  --zip-success-foreground: #04140f;
+  --zip-error: #ff7a88;
+  --zip-error-foreground: #1d0509;
+  --zip-warning: #e8b45b;
+  --zip-warning-foreground: #1c1103;
+  --zip-info: #63b8ea;
+  --zip-info-foreground: #04131d;
+  --zip-info-hover: #7dc5ee;
+  --zip-info-active: #98d1f2;
+  --zip-border: #243844;
+  --zip-shadow: 0 1px 2px rgb(0 0 0 / 0.28), 0 12px 28px rgb(0 0 0 / 0.18);
+  --zip-shadow-md: 0 3px 8px rgb(0 0 0 / 0.34), 0 16px 36px rgb(0 0 0 / 0.22);
+  --zip-shadow-lg: 0 8px 20px rgb(0 0 0 / 0.40), 0 28px 64px rgb(0 0 0 / 0.28);
+  --zip-shadow-focus: 0 0 0 3px rgb(72 196 212 / 0.28);
+  --zip-chart-color-1: #48c4d4;
+  --zip-chart-color-2: #63b8ea;
+  --zip-chart-color-3: #4dcc9d;
+  --zip-chart-color-4: #e8b45b;
+  --zip-chart-color-5: #ff7a88;
+}
+:root { --zip-font-family-base: "Inter Variable", Inter, system-ui, sans-serif; --zip-font-family-display: Georgia, serif; --zip-font-family-heading: "Inter Variable", Inter, system-ui, sans-serif; --zip-font-family-monospace: "JetBrains Mono", monospace; }

@@ -47,6 +47,36 @@ def _table_exists(conn: sqlite3.Connection, name: str) -> bool:
         return False
 
 
+MUNICIPIO_SUFFIX = " Municipio"
+
+
+def municipality_centroids() -> dict[str, tuple[float, float]]:
+    """Puerto Rico's 78 municipalities -> (lat, lon), from the tracked GNIS gazetteer.
+
+    Built from GNIS ``Civil`` features named ``<name> Municipio``, keyed by the
+    display name without the suffix (``"Bayamón"``). This replaces the ignored
+    TIGER ``data/places.geojson`` file that the RLSM report scripts used to
+    read. Raises ``RuntimeError`` when the gazetteer holds no municipio rows,
+    so a missing reference layer fails closed instead of producing an empty map.
+    """
+    centroids: dict[str, tuple[float, float]] = {}
+    for entry in load_gazetteer().entries.values():
+        canonical = str(entry.get("canonical") or "")
+        if entry.get("feature_class") != "Civil" or not canonical.endswith(MUNICIPIO_SUFFIX):
+            continue
+        lat, lon = entry.get("lat"), entry.get("lon")
+        if lat is None or lon is None:
+            continue
+        name = canonical[: -len(MUNICIPIO_SUFFIX)].strip()
+        if name:
+            centroids[name] = (float(lat), float(lon))
+    if not centroids:
+        raise RuntimeError(
+            "GNIS gazetteer has no municipio rows; check data/reference/Gazetteer_PR_GNIS.gpkg"
+        )
+    return centroids
+
+
 def build_geo_lookup(conn: sqlite3.Connection,
                      places_geojson: Path | None = None) -> dict[str, tuple[float, float]]:
     """Name -> (lat, lon) vocabulary from tracked GNIS + named geo_anchors.

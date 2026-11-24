@@ -38,20 +38,52 @@
       "frontend/src/App.jsx"
     ],
     "navigation_files": [
-      "frontend/src/components/skywatcher/Sidebar.jsx"
+      "frontend/src/components/skywatcher/Sidebar.jsx",
+      "frontend/src/components/skywatcher/Layout.jsx"
     ],
     "implicit_routes": [],
     "exclude": [
-      "**/tests/**",
-      "**/*.test.*",
       "**/*.spec.*",
+      "**/*.test.*",
       "**/components/ui/**",
+      "**/tests/**",
       "scripts/check_gui_parity.py",
+      "scripts/import_fr24_icon_reference_library.py",
       "scripts/validate_flight_corpus_v4_import.py",
-      "src/skywatcher/flight_corpus_v4.py"
+      "src/skywatcher/flight_corpus_v4.py",
+      "tools/check_docs_sync.py"
     ]
   },
   "capabilities": [
+    {
+      "id": "pr-grid-v2-runtime-contract",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Fail-closed federation contract utility for validating PR_GRID_GEOGRAPHIC_V2 consumer pins, stamping immutable grid identity, and generating canonical grid deep links. It is an internal runtime/governance primitive, not a standalone operator workflow; user-facing grid identity is surfaced through consuming Cell_Profile/API responses rather than a separate validator GUI.",
+      "analysis": {
+        "files": [
+          "federation/spatial/pr_grid_v2_runtime.py"
+        ],
+        "symbols": [
+          "federation/spatial/pr_grid_v2_runtime.py:GridV2Pin",
+          "federation/spatial/pr_grid_v2_runtime.py:GridV2PinError",
+          "federation/spatial/pr_grid_v2_runtime.py:attach_grid_identity",
+          "federation/spatial/pr_grid_v2_runtime.py:build_grid_deep_link",
+          "federation/spatial/pr_grid_v2_runtime.py:grid_identity",
+          "federation/spatial/pr_grid_v2_runtime.py:load_pin",
+          "federation/spatial/pr_grid_v2_runtime.py:validate_cell_id",
+          "federation/spatial/pr_grid_v2_runtime.py:validate_level",
+          "federation/spatial/pr_grid_v2_runtime.py:validate_pin_payload",
+          "federation/spatial/pr_grid_v2_runtime.py:validate_pin_set"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_pr_grid_v2_runtime.py"
+        ]
+      }
+    },
     {
       "id": "airspace-intelligence-console",
       "classification": "analysis",
@@ -59,7 +91,12 @@
       "requires_terminal": false,
       "backend": {
         "files": [
-          "server/backend/main.py"
+          "server/backend/main.py",
+          "server/backend/console/fr24_control_plane.py",
+          "scripts/load_fr24_control_plane.py",
+          "src/skywatcher/fr24/flight_corpus.py",
+          "src/skywatcher/fr24/flight_coverage.py",
+          "src/skywatcher/fr24/acquisition_receipts.py"
         ],
         "endpoints": [
           "GET /api/apps/public-settings",
@@ -83,7 +120,13 @@
           "GET /api/flight-corpus/v4/deep-interface",
           "GET /api/flight-corpus/v4/route-family-recurrence",
           "GET /api/flight-corpus/v4/airport-edge-recurrence",
-          "GET /api/flight-corpus/v4/family-provenance"
+          "GET /api/flight-corpus/v4/family-provenance",
+          "GET /api/flight-corpus/archive/snapshots",
+          "GET /api/flight-corpus/archive/snapshots/{snapshot_id}",
+          "POST /api/flight-corpus/archive/snapshots",
+          "GET /api/flight-corpus/archive/snapshots/{snapshot_id}/coverage",
+          "GET /api/flight-acquisition/p1/status",
+          "GET /api/flight-corpus/v4/family-split-summary"
         ],
         "symbols": [
           "server/backend/main.py:geo_observations",
@@ -100,7 +143,29 @@
           "server/backend/main.py:flight_corpus_v4_deep_interface",
           "server/backend/main.py:flight_corpus_v4_route_family_recurrence",
           "server/backend/main.py:flight_corpus_v4_airport_edge_recurrence",
-          "server/backend/main.py:flight_corpus_v4_family_provenance"
+          "server/backend/main.py:flight_corpus_v4_family_provenance",
+          "server/backend/console/fr24_control_plane.py:BridgeSummary",
+          "server/backend/console/fr24_control_plane.py:ingest_fr24_control_plane",
+          "scripts/load_fr24_control_plane.py:main",
+          "server/backend/main.py:flight_corpus_archive_snapshots",
+          "server/backend/main.py:flight_corpus_archive_snapshot",
+          "server/backend/main.py:flight_corpus_archive_persist",
+          "src/skywatcher/fr24/flight_corpus.py:CorpusPersistenceError",
+          "src/skywatcher/fr24/flight_corpus.py:PersistResult",
+          "src/skywatcher/fr24/flight_corpus.py:persist_corpus_snapshot",
+          "src/skywatcher/fr24/flight_corpus.py:read_corpus_snapshot",
+          "server/backend/main.py:flight_corpus_archive_coverage",
+          "src/skywatcher/fr24/flight_coverage.py:build_coverage_ledger",
+          "server/backend/main.py:flight_acquisition_p1_status",
+          "src/skywatcher/fr24/acquisition_receipts.py:AcquisitionReceiptError",
+          "src/skywatcher/fr24/acquisition_receipts.py:load_manifest",
+          "src/skywatcher/fr24/acquisition_receipts.py:validate_manifest",
+          "src/skywatcher/fr24/acquisition_receipts.py:next_discovery_target",
+          "src/skywatcher/fr24/acquisition_receipts.py:record_discovery",
+          "src/skywatcher/fr24/acquisition_receipts.py:record_blocked_auth",
+          "src/skywatcher/fr24/acquisition_receipts.py:export_harvest_carryover",
+          "src/skywatcher/fr24/acquisition_receipts.py:status_summary",
+          "server/backend/main.py:flight_corpus_v4_family_split_summary"
         ]
       },
       "frontend": {
@@ -117,7 +182,8 @@
           "/readiness",
           "/calibration",
           "/console",
-          "/spatial-truth"
+          "/spatial-truth",
+          "/flight-archive"
         ],
         "e2e_routes": [
           "/",
@@ -132,13 +198,19 @@
           "/readiness",
           "/calibration",
           "/console",
-          "/spatial-truth"
+          "/spatial-truth",
+          "/flight-archive"
         ],
         "components": [
           "frontend/src/api/federationClient.js",
           "frontend/src/lib/AuthContext.jsx",
           "frontend/src/lib/observation-density.js",
           "frontend/src/lib/SkywatcherData.jsx",
+          "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx",
+          "frontend/src/components/skywatcher/drawers/ObservationDetailDrawer.jsx",
+          "frontend/src/components/skywatcher/drawers/RouteDetailDrawer.jsx",
+          "frontend/src/components/skywatcher/drawers/ReviewDetailDrawer.jsx",
+          "frontend/src/components/ui/toast.jsx",
           "frontend/src/pages/Dashboard.jsx",
           "frontend/src/pages/Observations.jsx",
           "frontend/src/pages/Aircraft.jsx",
@@ -154,10 +226,15 @@
           "frontend/src/pages/SpatialTruth.jsx",
           "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx",
           "frontend/src/components/skywatcher/SpatialToolsPanel.jsx",
-          "frontend/src/components/skywatcher/TrackTimeScrubber.jsx"
+          "frontend/src/components/skywatcher/TrackTimeScrubber.jsx",
+          "frontend/src/components/skywatcher/SpatialFlightRenderer.jsx",
+          "frontend/src/components/ProgramTimeline.jsx",
+          "frontend/src/lib/flightIngestion.js",
+          "frontend/src/pages/FlightArchive.jsx"
         ],
         "discoverability": [
-          "frontend/src/components/skywatcher/Sidebar.jsx"
+          "frontend/src/components/skywatcher/Sidebar.jsx",
+          "frontend/src/components/skywatcher/Layout.jsx"
         ]
       },
       "tests": {
@@ -166,18 +243,50 @@
           "tests/test_manual_review_queue.py",
           "tests/test_fr24_dashboard_data.py",
           "tests/test_satim_calibration.py",
-          "tests/test_geo_municipios_routes.py"
+          "tests/test_geo_municipios_routes.py",
+          "tests/test_fr24_control_plane_bridge.py",
+          "tests/test_flight_corpus_archive_api.py",
+          "tests/test_flight_corpus_persistence.py",
+          "tests/test_flight_corpus_migration.py",
+          "tests/test_flight_coverage.py",
+          "tests/test_acquisition_receipts.py",
+          "tests/test_acquisition_status_api.py"
         ],
         "contract": [
           "tests/test_gui_parity.py"
         ],
         "unit": [
           "frontend/src/lib/app-params.test.js",
+          "frontend/src/lib/SkywatcherData.test.jsx",
+          "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.test.jsx",
+          "frontend/src/components/skywatcher/drawers/DiagnosticWriteFailure.test.jsx",
+          "frontend/src/pages/Observations.test.jsx",
           "frontend/src/components/skywatcher/PuertoRicoMapShell.test.jsx",
-          "frontend/src/components/skywatcher/SpatialToolsPanel.test.jsx"
+          "frontend/src/components/skywatcher/SpatialToolsPanel.test.jsx",
+          "frontend/src/components/skywatcher/SpatialFlightRenderer.test.jsx",
+          "frontend/src/lib/flightIngestion.test.js",
+          "frontend/src/lib/masterFlightLog.test.js"
         ],
         "e2e": [
-          "frontend/tests/gui-parity.spec.mjs"
+          "frontend/tests/gui-parity.spec.mjs",
+          "frontend/tests/zip-design.spec.mjs"
+        ]
+      }
+    },
+    {
+      "id": "airspace-export-integrity",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Package validation is a release-integrity gate, not a separate interactive GUI workflow.",
+      "analysis": {
+        "symbols": [
+          "scripts/validate_airspace_export.py:load_csv_observations"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_validate_airspace_export.py"
         ]
       }
     },
@@ -199,6 +308,582 @@
       "tests": {
         "backend": [
           "tests/test_server_smoke.py"
+        ]
+      }
+    },
+    {
+      "id": "fr24-poi-icon-registry",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Shared screenshot taxonomy/provenance infrastructure consumed by RLSM icon review; it is not a separate end-user workflow. The one-time local reference-library importer is a bootstrap utility and is excluded from GUI capability discovery.",
+      "backend": {
+        "files": [
+          "src/skywatcher/registry/fr24_poi_icons.py"
+        ],
+        "symbols": [
+          "src/skywatcher/registry/fr24_poi_icons.py:allowed_icon_class_ids",
+          "src/skywatcher/registry/fr24_poi_icons.py:archive_member_manifest",
+          "src/skywatcher/registry/fr24_poi_icons.py:load_registry",
+          "src/skywatcher/registry/fr24_poi_icons.py:resolve_icon_class",
+          "src/skywatcher/registry/fr24_poi_icons.py:validate_registry",
+          "src/skywatcher/registry/fr24_poi_icons.py:validate_registry_file",
+          "src/skywatcher/registry/fr24_poi_icons.py:verify_source_archive"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_fr24_poi_icon_registry.py",
+          "tests/test_rlsm_operator_regressions.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
+    },
+    {
+      "id": "pitirre-domain-foundation",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Core domain-registry and lossless observation-envelope contracts. They support migration, validation, and downstream correlation but do not constitute a standalone user workflow or GUI surface.",
+      "backend": {
+        "files": [
+          "src/skywatcher/core/domain_registry.py",
+          "src/skywatcher/core/pitirre_observation.py"
+        ],
+        "symbols": [
+          "src/skywatcher/core/domain_registry.py:DomainPath",
+          "src/skywatcher/core/domain_registry.py:DomainRegistryError",
+          "src/skywatcher/core/domain_registry.py:road_domain_path",
+          "src/skywatcher/core/domain_registry.py:validate_domain_path",
+          "src/skywatcher/core/pitirre_observation.py:ObservationAdapterError",
+          "src/skywatcher/core/pitirre_observation.py:PitirreObservation",
+          "src/skywatcher/core/pitirre_observation.py:adapt_airspace_observation",
+          "src/skywatcher/core/pitirre_observation.py:adapt_maritime_baseline"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_pitirre_domain_registry.py",
+          "tests/test_pitirre_observation.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ]
+      }
+    },
+    {
+      "id": "space-track-control-plane",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Read-only acquisition, provenance, schema, rate-limit, normalization, and immutable-storage infrastructure. It exposes no standalone human workflow; future Space-Track dashboard/status capabilities must be separately GUI-mapped when API endpoints are added. Decay-role normalization preserves UNRESOLVED for unrecognized precedence; it does not infer historical assertions from missing evidence.",
+      "backend": {
+        "files": [
+          "src/skywatcher/core/spacetrack/__init__.py",
+          "src/skywatcher/core/spacetrack/adapters.py",
+          "src/skywatcher/core/spacetrack/certification.py",
+          "src/skywatcher/core/spacetrack/collector.py",
+          "src/skywatcher/core/spacetrack/contradictions.py",
+          "src/skywatcher/core/spacetrack/contracts.py",
+          "src/skywatcher/core/spacetrack/control_plane.py",
+          "src/skywatcher/core/spacetrack/materialize.py",
+          "src/skywatcher/core/spacetrack/models.py",
+          "src/skywatcher/core/spacetrack/query.py",
+          "src/skywatcher/core/spacetrack/reentry.py",
+          "src/skywatcher/core/spacetrack/storage.py",
+          "src/skywatcher/core/spacetrack/transport.py",
+          "src/skywatcher/core/spacetrack/pitirre_adapter.py"
+        ],
+        "symbols": [
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_satcat",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_gp",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_decay",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_tip",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_cdm",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_publicfile",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_catalog_change",
+          "src/skywatcher/core/spacetrack/adapters.py:normalize_rows",
+          "src/skywatcher/core/spacetrack/certification.py:certify_static_contracts",
+          "src/skywatcher/core/spacetrack/certification.py:certify_local_runtime",
+          "src/skywatcher/core/spacetrack/collector.py:CollectionResult",
+          "src/skywatcher/core/spacetrack/collector.py:DownloadResult",
+          "src/skywatcher/core/spacetrack/collector.py:SpaceTrackCollector",
+          "src/skywatcher/core/spacetrack/contradictions.py:ContradictionRegister",
+          "src/skywatcher/core/spacetrack/contracts.py:ControllerContract",
+          "src/skywatcher/core/spacetrack/contracts.py:SourceContract",
+          "src/skywatcher/core/spacetrack/contracts.py:get_source_contract",
+          "src/skywatcher/core/spacetrack/control_plane.py:logical_json_sha256",
+          "src/skywatcher/core/spacetrack/control_plane.py:raw_sha256",
+          "src/skywatcher/core/spacetrack/control_plane.py:classify_decay_stage",
+          "src/skywatcher/core/spacetrack/control_plane.py:source_arithmetic",
+          "src/skywatcher/core/spacetrack/control_plane.py:archive_snapshot",
+          "src/skywatcher/core/spacetrack/control_plane.py:classify_archive_equivalence",
+          "src/skywatcher/core/spacetrack/control_plane.py:schema_snapshot",
+          "src/skywatcher/core/spacetrack/control_plane.py:RateGate",
+          "src/skywatcher/core/spacetrack/control_plane.py:SpaceTrackControlPlane",
+          "src/skywatcher/core/spacetrack/control_plane.py:distinct_ids",
+          "src/skywatcher/core/spacetrack/control_plane.py:set_comparison",
+          "src/skywatcher/core/spacetrack/materialize.py:resolve_identity_bindings",
+          "src/skywatcher/core/spacetrack/materialize.py:materialize_space_objects",
+          "src/skywatcher/core/spacetrack/materialize.py:materialize_stored_space_objects",
+          "src/skywatcher/core/spacetrack/models.py:CertificationState",
+          "src/skywatcher/core/spacetrack/models.py:CapabilityState",
+          "src/skywatcher/core/spacetrack/models.py:DistributionClass",
+          "src/skywatcher/core/spacetrack/models.py:Watermark",
+          "src/skywatcher/core/spacetrack/models.py:Manifestation",
+          "src/skywatcher/core/spacetrack/models.py:SourceArithmetic",
+          "src/skywatcher/core/spacetrack/models.py:ArchiveMember",
+          "src/skywatcher/core/spacetrack/models.py:ArchiveSnapshot",
+          "src/skywatcher/core/spacetrack/models.py:SchemaSnapshot",
+          "src/skywatcher/core/spacetrack/models.py:CapabilityObservation",
+          "src/skywatcher/core/spacetrack/models.py:NormalizedBatch",
+          "src/skywatcher/core/spacetrack/models.py:ContradictionRecord",
+          "src/skywatcher/core/spacetrack/models.py:IdentityBinding",
+          "src/skywatcher/core/spacetrack/models.py:SpaceObjectView",
+          "src/skywatcher/core/spacetrack/models.py:MaterializationResult",
+          "src/skywatcher/core/spacetrack/models.py:TemporalAssertion",
+          "src/skywatcher/core/spacetrack/models.py:ReentryEventView",
+          "src/skywatcher/core/spacetrack/models.py:GateResult",
+          "src/skywatcher/core/spacetrack/models.py:SpaceTrackCertificationReport",
+          "src/skywatcher/core/spacetrack/query.py:SpaceTrackQuery",
+          "src/skywatcher/core/spacetrack/query.py:build_incremental_query",
+          "src/skywatcher/core/spacetrack/query.py:build_curated_favorites_query",
+          "src/skywatcher/core/spacetrack/query.py:build_publicfile_download_url",
+          "src/skywatcher/core/spacetrack/reentry.py:build_reentry_assertions",
+          "src/skywatcher/core/spacetrack/reentry.py:materialize_reentry_events",
+          "src/skywatcher/core/spacetrack/reentry.py:materialize_stored_reentry_events",
+          "src/skywatcher/core/spacetrack/storage.py:SpaceTrackStore",
+          "src/skywatcher/core/spacetrack/transport.py:TransportResponse",
+          "src/skywatcher/core/spacetrack/transport.py:ReadOnlyTransport",
+          "src/skywatcher/core/spacetrack/transport.py:UrlLibReadOnlyTransport",
+          "src/skywatcher/core/spacetrack/pitirre_adapter.py:adapt_gp_batch_row"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_spacetrack_control_plane.py",
+          "tests/test_spacetrack_pitirre_adapter.py"
+        ]
+      }
+    },
+    {
+      "id": "space-track-source-control",
+      "classification": "analysis",
+      "status": "active",
+      "requires_terminal": false,
+      "backend": {
+        "files": [
+          "server/backend/spacetrack_router.py"
+        ],
+        "endpoints": [
+          "GET /api/space-track/status",
+          "GET /api/space-track/objects",
+          "GET /api/space-track/reentry"
+        ],
+        "symbols": [
+          "server/backend/spacetrack_router.py:space_track_status",
+          "server/backend/spacetrack_router.py:space_track_objects",
+          "server/backend/spacetrack_router.py:space_track_reentry"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/space-track"
+        ],
+        "e2e_routes": [
+          "/space-track"
+        ],
+        "components": [
+          "frontend/src/pages/SpaceTrackControl.jsx",
+          "frontend/src/api/federationClient.js"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_spacetrack_endpoints.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      }
+    },
+    {
+      "id": "space-track-sky-finder",
+      "classification": "analysis",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "DWARFLAB-style sky target finder inside the Space-Track tool: name search over the vendored star, Messier and Caldwell catalog plus Sun/Moon/planets and SGP4-propagated satellites from the frozen Space-Track materialization, live altitude and visibility windows for an editable observer, tonight's recommendations, and a horizon-oriented sky chart with FOV box and compass. Read-only; the browser never calls Space-Track.",
+      "backend": {
+        "files": [
+          "server/backend/spacetrack_router.py",
+          "src/skywatcher/core/sky/__init__.py",
+          "src/skywatcher/core/sky/catalog.py",
+          "src/skywatcher/core/sky/chart.py",
+          "src/skywatcher/core/sky/ephemeris.py",
+          "src/skywatcher/core/sky/filters.py",
+          "src/skywatcher/core/sky/satellites.py",
+          "src/skywatcher/core/sky/service.py"
+        ],
+        "endpoints": [
+          "GET /api/space-track/sky/targets",
+          "GET /api/space-track/sky/recommend",
+          "GET /api/space-track/sky/chart"
+        ],
+        "symbols": [
+          "server/backend/spacetrack_router.py:space_track_sky_targets",
+          "server/backend/spacetrack_router.py:space_track_sky_recommend",
+          "server/backend/spacetrack_router.py:space_track_sky_chart",
+          "src/skywatcher/core/sky/catalog.py:CatalogObject",
+          "src/skywatcher/core/sky/catalog.py:SearchMatch",
+          "src/skywatcher/core/sky/catalog.py:SkyCatalog",
+          "src/skywatcher/core/sky/catalog.py:load_catalog",
+          "src/skywatcher/core/sky/catalog.py:match_query",
+          "src/skywatcher/core/sky/catalog.py:normalize_text",
+          "src/skywatcher/core/sky/catalog.py:search_catalog",
+          "src/skywatcher/core/sky/catalog.py:search_sort_key",
+          "src/skywatcher/core/sky/catalog.py:unit_vector",
+          "src/skywatcher/core/sky/chart.py:build_chart_layers",
+          "src/skywatcher/core/sky/chart.py:horizontal_separation",
+          "src/skywatcher/core/sky/ephemeris.py:BodyPosition",
+          "src/skywatcher/core/sky/ephemeris.py:Observer",
+          "src/skywatcher/core/sky/ephemeris.py:SkyFrame",
+          "src/skywatcher/core/sky/ephemeris.py:Visibility",
+          "src/skywatcher/core/sky/ephemeris.py:dark_window",
+          "src/skywatcher/core/sky/ephemeris.py:solar_system_j2000",
+          "src/skywatcher/core/sky/ephemeris.py:solar_system_positions",
+          "src/skywatcher/core/sky/filters.py:filter_hint",
+          "src/skywatcher/core/sky/satellites.py:GPElementError",
+          "src/skywatcher/core/sky/satellites.py:SatellitePosition",
+          "src/skywatcher/core/sky/satellites.py:TrackedObject",
+          "src/skywatcher/core/sky/satellites.py:element_age_days",
+          "src/skywatcher/core/sky/satellites.py:gmst_radians",
+          "src/skywatcher/core/sky/satellites.py:propagate",
+          "src/skywatcher/core/sky/satellites.py:satrec_from_gp_raw",
+          "src/skywatcher/core/sky/satellites.py:sun_direction",
+          "src/skywatcher/core/sky/satellites.py:topocentric",
+          "src/skywatcher/core/sky/satellites.py:tracked_objects",
+          "src/skywatcher/core/sky/service.py:SatelliteLayer",
+          "src/skywatcher/core/sky/service.py:body_target",
+          "src/skywatcher/core/sky/service.py:catalog_target",
+          "src/skywatcher/core/sky/service.py:chart_payload",
+          "src/skywatcher/core/sky/service.py:format_utc",
+          "src/skywatcher/core/sky/service.py:parse_at",
+          "src/skywatcher/core/sky/service.py:recommend_payload",
+          "src/skywatcher/core/sky/service.py:satellite_layer",
+          "src/skywatcher/core/sky/service.py:targets_payload"
+        ]
+      },
+      "analysis": {
+        "files": [
+          "scripts/build_sky_catalog.py"
+        ],
+        "symbols": [
+          "scripts/build_sky_catalog.py:main",
+          "scripts/build_sky_catalog.py:verify_outputs"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/space-track/sky"
+        ],
+        "e2e_routes": [
+          "/space-track/sky"
+        ],
+        "components": [
+          "frontend/src/pages/SkyTargetFinder.jsx",
+          "frontend/src/components/skywatcher/SkyChart.jsx",
+          "frontend/src/api/federationClient.js",
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_sky_endpoints.py",
+          "tests/test_sky_ephemeris.py",
+          "tests/test_sky_satellites.py",
+          "tests/test_sky_catalog.py",
+          "tests/test_sky_catalog_data.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      }
+    },
+    {
+      "id": "sky-cameras",
+      "classification": "user",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Sky Cameras: a curated, evolving catalog of publicly available live cameras of Puerto Rico's sky, beaches, coast, mountains, rivers, lagoons and lakes, with coverage gaps shown per category and municipality. Players embed only where the owner publishes an allowlisted YouTube/Vimeo stream; everything else links out to the owner's page, and a Players/Links-only toggle switches every card to links. The public can suggest a camera or share their own video (link or a size-capped MP4/MOV/WebM upload); every submission waits in a moderation queue and is shown only after a reviewer approves it in the Review queue panel, which also takes approved entries down. The liveness checker and catalog promotion script are maintainer tools; the user path needs no terminal.",
+      "backend": {
+        "files": [
+          "server/backend/cameras_router.py",
+          "src/skywatcher/core/cameras/__init__.py",
+          "src/skywatcher/core/cameras/catalog.py",
+          "src/skywatcher/core/cameras/submissions.py",
+          "src/skywatcher/core/cameras/validation.py"
+        ],
+        "endpoints": [
+          "GET /api/sky-cameras",
+          "GET /api/sky-cameras/coverage",
+          "GET /api/sky-cameras/media/{submission_id}",
+          "POST /api/sky-cameras/submissions",
+          "GET /api/sky-cameras/submissions",
+          "GET /api/sky-cameras/submissions/{submission_id}/media",
+          "POST /api/sky-cameras/submissions/{submission_id}/decision"
+        ],
+        "symbols": [
+          "server/backend/cameras_router.py:Decision",
+          "server/backend/cameras_router.py:require_reviewer",
+          "server/backend/cameras_router.py:sky_cameras",
+          "server/backend/cameras_router.py:sky_cameras_coverage",
+          "server/backend/cameras_router.py:sky_cameras_decide",
+          "server/backend/cameras_router.py:sky_cameras_media",
+          "server/backend/cameras_router.py:sky_cameras_submission_media",
+          "server/backend/cameras_router.py:sky_cameras_submissions",
+          "server/backend/cameras_router.py:sky_cameras_submit",
+          "src/skywatcher/core/cameras/catalog.py:Camera",
+          "src/skywatcher/core/cameras/catalog.py:camera_from_dict",
+          "src/skywatcher/core/cameras/catalog.py:coverage_summary",
+          "src/skywatcher/core/cameras/catalog.py:filter_cameras",
+          "src/skywatcher/core/cameras/catalog.py:load_catalog",
+          "src/skywatcher/core/cameras/catalog.py:load_municipios",
+          "src/skywatcher/core/cameras/catalog.py:load_status",
+          "src/skywatcher/core/cameras/submissions.py:SubmissionInput",
+          "src/skywatcher/core/cameras/submissions.py:SubmissionStore",
+          "src/skywatcher/core/cameras/submissions.py:community_camera",
+          "src/skywatcher/core/cameras/submissions.py:submission_receipt",
+          "src/skywatcher/core/cameras/validation.py:SubmissionError",
+          "src/skywatcher/core/cameras/validation.py:VideoType",
+          "src/skywatcher/core/cameras/validation.py:embed_url",
+          "src/skywatcher/core/cameras/validation.py:normalize_text",
+          "src/skywatcher/core/cameras/validation.py:parse_embed",
+          "src/skywatcher/core/cameras/validation.py:sniff_video",
+          "src/skywatcher/core/cameras/validation.py:validate_categories",
+          "src/skywatcher/core/cameras/validation.py:validate_https_url"
+        ]
+      },
+      "analysis": {
+        "files": [
+          "scripts/check_sky_cameras.py",
+          "scripts/promote_sky_camera.py"
+        ],
+        "symbols": [
+          "scripts/check_sky_cameras.py:check_camera",
+          "scripts/check_sky_cameras.py:main",
+          "scripts/promote_sky_camera.py:main"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/sky-cameras"
+        ],
+        "e2e_routes": [
+          "/sky-cameras"
+        ],
+        "components": [
+          "frontend/src/pages/SkyCameras.jsx",
+          "frontend/src/components/skywatcher/CameraCard.jsx",
+          "frontend/src/api/federationClient.js",
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_sky_cameras_catalog.py",
+          "tests/test_sky_cameras_endpoints.py",
+          "tests/test_sky_cameras_scripts.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
+        ]
+      }
+    },
+    {
+      "id": "federation-source-monitors-export",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Builds this producer's source_monitors federation export stream (thehub-pr ADR 0013): one row per source in registry/source_registry.yaml, with when it last succeeded taken from a committed run receipt or the exported package's retrieved_at times, or reported as not recorded. It exposes no route, endpoint, control or operator workflow of its own; thehub-pr's Source Monitor renders the stream.",
+      "analysis": {
+        "files": [
+          "scripts/federation_export.py"
+        ],
+        "symbols": [
+          "scripts/federation_export.py:build_source_monitors"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_federation_source_monitors.py",
+          "tests/test_gui_parity.py"
+        ]
+      }
+    },
+    {
+      "id": "rlsm-municipality-reference",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Reference-data helper: returns Puerto Rico's 78 municipality positions from the tracked GNIS gazetteer for the RLSM report scripts, replacing the obsolete data/places.geojson input, and fails closed when the gazetteer has no municipio rows. It has no route, control or operator workflow of its own.",
+      "backend": {
+        "files": [
+          "fr24/rlsm_anchors.py"
+        ],
+        "symbols": [
+          "fr24/rlsm_anchors.py:municipality_centroids"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_rlsm_municipality_centroids.py"
+        ]
+      }
+    },
+    {
+      "id": "desktop-launch-pad",
+      "classification": "operator",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Pre-launch screen of the desktop app, drawn by the shared prii-desktop runtime from the LAUNCHPAD declaration in desktop/config.py. The user chooses Guest (read-only; the runtime's Guest guard refuses every write except the declared read-only POSTs /api/query and /api/entities/*/filter) or Operator, the page the app opens on (the routes below), and Operator-only launch options that become environment variables before the backend starts. Reached on every desktop start, and from the runtime's in-app Launch Pad button.",
+      "backend": {
+        "files": [
+          "desktop/config.py"
+        ],
+        "symbols": [
+          "desktop/config.py:LAUNCHPAD",
+          "desktop/config.py:_launchpad_status"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/",
+          "/console",
+          "/observations",
+          "/aircraft",
+          "/fr24",
+          "/routes",
+          "/infrastructure",
+          "/airports",
+          "/review",
+          "/export",
+          "/readiness",
+          "/calibration",
+          "/analysis",
+          "/spatial-truth",
+          "/flight-archive",
+          "/space-track",
+          "/space-track/sky",
+          "/sky-cameras"
+        ],
+        "e2e_routes": [
+          "/console",
+          "/sky-cameras"
+        ],
+        "components": [
+          "desktop/config.py"
+        ],
+        "discoverability": [
+          "desktop/config.py"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_desktop_launchpad.py"
+        ],
+        "e2e": [
+          "frontend/tests/desktop-launchpad.spec.mjs"
+        ]
+      }
+    },
+    {
+      "id": "live-airspace-map",
+      "classification": "user",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "adsb.lol-equivalent live map: live, military, trace, replay and route feeds from adsb.lol (ODbL-1.0) plus every basemap and overlay of the adsb.lol layer menu. See docs/console/LIVE_AIRSPACE.md.",
+      "backend": {
+        "files": [
+          "server/backend/console/live_router.py"
+        ],
+        "endpoints": [
+          "GET /status",
+          "GET /aircraft",
+          "GET /trace/{hex_id}",
+          "GET /replay",
+          "POST /routes",
+          "GET /tiles/openaip/{z}/{x}/{y}.png"
+        ],
+        "symbols": [
+          "server/backend/console/live_router.py:get_live_provider",
+          "server/backend/console/live_router.py:live_status",
+          "server/backend/console/live_router.py:live_aircraft",
+          "server/backend/console/live_router.py:live_trace",
+          "server/backend/console/live_router.py:live_replay",
+          "server/backend/console/live_router.py:live_routes",
+          "server/backend/console/live_router.py:openaip_tile"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/live"
+        ],
+        "e2e_routes": [
+          "/live"
+        ],
+        "components": [
+          "frontend/src/App.jsx",
+          "frontend/src/pages/LiveAirspace.jsx",
+          "frontend/src/api/liveClient.js",
+          "frontend/src/components/live/MapButtons.jsx",
+          "frontend/src/components/live/LayerMenu.jsx",
+          "frontend/src/components/live/ReplayBar.jsx",
+          "frontend/src/components/live/SettingsPanel.jsx",
+          "frontend/src/components/live/AircraftSidebar.jsx"
+        ],
+        "discoverability": [
+          "frontend/src/components/skywatcher/Sidebar.jsx"
+        ]
+      },
+      "tests": {
+        "backend": [
+          "tests/test_console_live_api.py",
+          "tests/test_adsb_lol_provider.py",
+          "tests/test_adsb_heatmap.py"
+        ],
+        "contract": [
+          "tests/test_gui_parity.py"
+        ],
+        "unit": [
+          "frontend/src/live/sourceCatalog.test.js",
+          "frontend/src/live/aircraftModel.test.js",
+          "frontend/src/live/replayModel.test.js",
+          "frontend/src/live/geoSettingsIcons.test.js",
+          "frontend/src/live/liveMapEngine.test.js",
+          "frontend/src/components/live/LiveControls.test.jsx"
+        ],
+        "e2e": [
+          "frontend/tests/gui-parity.spec.mjs"
         ]
       }
     }

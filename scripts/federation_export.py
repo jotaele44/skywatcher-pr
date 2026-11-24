@@ -10,6 +10,11 @@ Maps the airspace_observation model onto the Hub's canonical contract:
   * observation -> municipality -> `relationships` row (located_in)
   * each declared airspace anomaly (optional alerts.json)
                             -> one canonical `alerts` row (alrt_<32hex>)
+  * each source in registry/source_registry.yaml
+                            -> one `source_monitors` row (mon_<32hex>, thehub-pr
+                               ADR 0013): when the source last succeeded, from a
+                               run receipt or the package's `retrieved_at`, else
+                               NOT_RECORDED
 
 The `observations` and `alerts` streams give the Hub's correlate_observations /
 correlate_alerts stages first-class Skywatcher rows to consume (joined to sibling
@@ -17,9 +22,10 @@ producers by location.municipality), rather than only the flattened entity view.
 
 Reads `observations.csv` + `sources.json` (+ optional airfields/hangar_zones/
 endpoint_events/alerts json) from an airspace package dir and writes
-`exports/federation/{sources,entities,relationships,observations,alerts}.jsonl`
-+ a Hub-conformant `manifest.json`. Deterministic `src_/ent_/rel_/obs_/alrt_`
-ids (sha256). Stdlib + prii_export_utils only.
+`exports/federation/{sources,entities,relationships,observations,alerts,source_monitors}.jsonl`
++ a Hub-conformant `manifest.json`. Deterministic `src_/ent_/rel_/obs_/alrt_/mon_`
+ids (sha256). Stdlib + prii_export_utils, plus the repo's own stdlib YAML-subset
+loader (src/skywatcher/core/normalize_locations.py) for the source registry.
 """
 from __future__ import annotations
 
@@ -27,15 +33,25 @@ import argparse
 import csv
 import hashlib
 import json
+import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from prii_export_utils import SourceRunState, resolve_last_success, source_monitor_row
 from prii_export_utils import fid as _fid
 from prii_export_utils import norm as _norm
 from prii_export_utils import sha256 as _sha256
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+# Appended, not prepended: scripts/ stays first so prii_export_utils still resolves
+# to scripts/prii_export_utils.py when this file runs as a script.
+if str(REPO_ROOT / "src") not in sys.path:
+    sys.path.append(str(REPO_ROOT / "src"))
+
+from skywatcher.core.normalize_locations import load_simple_yaml  # noqa: E402
+
 PRODUCER = "skywatcher-pr"
 CONTRACT_VERSION = "1.0.0"
 PRODUCER_SCRIPT = "scripts/federation_export.py"
@@ -47,13 +63,15 @@ STREAM_SCHEMA = {
     "relationships": "federation_relationship.schema.json",
     "observations": "federation_observation.schema.json",
     "alerts": "federation_alert.schema.json",
+    "source_monitors": "federation_source_monitor.schema.json",
 }
 
 # Canonical write order — matches the Hub's stream enum. Sources/entities/
 # relationships were the original three; observations and alerts extend the
 # producer's federation reach so the Hub's correlate_observations /
-# correlate_alerts stages have Skywatcher rows to consume.
-STREAM_ORDER = ("sources", "entities", "relationships", "observations", "alerts")
+# correlate_alerts stages have Skywatcher rows to consume; source_monitors
+# (optional since export manifest 1.1.0) reports the monitored sources.
+STREAM_ORDER = ("sources", "entities", "relationships", "observations", "alerts", "source_monitors")
 
 # Canonical alert lifecycle / gap vocab (mirrors federation_alert.schema.json).
 ALERT_STATUS = {"draft", "validated", "active", "closed", "rejected"}
@@ -88,6 +106,45 @@ def _num(v: Any) -> float | None:
         return float(v)
     except (TypeError, ValueError):
         return None
+
+
+# Additive FEDERATION_EPISTEMIC_STATE_CONTRACT_V1 declarations (thehub-pr,
+# candidate; vendored at schemas/federation_epistemic_state.v1.schema.json).
+# Only states the observation's own source/geometry/temporal fields support are
+# declared; anything else is omitted so the Hub fails closed.
+EVIDENCE_STATE_CONTRACT = "federation-evidence-state-v1"
+_CLASS_BY_SOURCE_TYPE = {
+    "adsb": "MEASURED", "radar": "MEASURED",
+    # Provider-rendered ADS-B contact captured from a screenshot: the contact is a
+    # measurement; its position is georeferenced from the image (see geometry).
+    "screenshot": "MEASURED",
+    "official": "CURATED", "field_note": "CURATED", "secondary": "CURATED",
+}
+_TEMPORAL_BY_STATUS = {"exact": "EXACT_TIMESTAMP", "approximate": "APPROXIMATE"}
+
+
+def _evidence_state(**fields: Any) -> dict[str, Any]:
+    declared = {k: v for k, v in fields.items() if v is not None}
+    return {"contract": EVIDENCE_STATE_CONTRACT, "data_stage": "CANONICAL", **declared}
+
+
+def _obs_evidence_state(obs: dict[str, Any], has_point: bool) -> dict[str, Any]:
+    source_type = obs.get("source_type")
+    klass = _CLASS_BY_SOURCE_TYPE.get(source_type)
+    precision = method = None
+    status = obs.get("geometry_status")
+    if has_point and status == "located" and source_type in ("adsb", "radar"):
+        precision, method = "OBSERVED_POINT", "EXACT"
+    elif has_point and (status == "approximate" or (status == "located" and source_type == "screenshot")):
+        # Screenshot icon georeferencing / approximate placement: an interpreted point.
+        precision, method = "INTERPRETED_POINT", "INFERRED"
+    return _evidence_state(
+        epistemic_class=klass,
+        observation_state="OBSERVED_PRESENT" if klass else None,
+        temporal_precision=_TEMPORAL_BY_STATUS.get(obs.get("temporal_status")),
+        geometry_precision=precision,
+        coordinate_method=method,
+    )
 
 
 def _obs_attributes(obs: dict[str, Any]) -> dict[str, Any]:
@@ -169,6 +226,7 @@ def build_streams(
             "source_ref": s.get("sha256") or raw_sid,
             "confidence": 1.0,
             "lineage": _lineage("SOURCE_REGISTRY", inputs),
+            "evidence_state": _evidence_state(epistemic_class="CURATED"),
             "synthetic": synthetic,
             "created_at": s.get("retrieved_at") or now,
             "extracted_at": now,
@@ -184,6 +242,7 @@ def build_streams(
             "jurisdiction": "PR",
             "confidence": 1.0,
             "lineage": _lineage("SOURCE_ENTITY", inputs),
+            "evidence_state": _evidence_state(epistemic_class="CURATED"),
             "synthetic": synthetic,
             "created_at": s.get("retrieved_at") or now,
             "extracted_at": now,
@@ -254,6 +313,9 @@ def build_streams(
         }
         if obs_loc is not None:
             observation_rows[canon_obs_id]["location"] = obs_loc
+        obs_state = _obs_evidence_state(obs, has_point=obs_loc is not None)
+        entities[ent_id]["evidence_state"] = obs_state
+        observation_rows[canon_obs_id]["evidence_state"] = dict(obs_state)
 
         # detected_by (observation -> source entity)
         tgt = src_entity_id.get(raw_sid) or _fid("ent", "source", raw_sid)
@@ -269,6 +331,7 @@ def build_streams(
                 "normalized_name": _norm(muni), "entity_type": "municipality",
                 "jurisdiction": "PR", "confidence": 0.95,
                 "lineage": _lineage("MUNICIPALITY_ENTITY", inputs),
+                "evidence_state": _evidence_state(epistemic_class="CURATED"),
                 "synthetic": synthetic, "created_at": when, "extracted_at": now,
             })
             rid = _fid("rel", ent_id, "located_in", muni_id)
@@ -284,6 +347,7 @@ def build_streams(
             "source_ref": "skywatcher-pr",
             "confidence": 0.95,
             "lineage": _lineage("AIRFIELD_REGISTRY", ["airfields.json"]),
+            "evidence_state": _evidence_state(epistemic_class="CURATED"),
             "synthetic": False,
             "created_at": now,
             "extracted_at": now,
@@ -300,6 +364,8 @@ def build_streams(
                 "jurisdiction": "PR",
                 "confidence": float(af.get("confidence", 0.9)),
                 "lineage": _lineage("AIRFIELD_ENTITY", ["airfields.json"]),
+                # A registry point stands in for the whole landing area.
+                "evidence_state": _evidence_state(epistemic_class="CURATED"),
                 "synthetic": False,
                 "facility_id": fid,
                 "facility_type": af.get("facility_type", "unknown_landing_area"),
@@ -312,6 +378,7 @@ def build_streams(
                 if af.get("municipio"):
                     loc["municipio"] = af["municipio"]
                 entities[ent_id]["location"] = loc
+                entities[ent_id]["evidence_state"]["geometry_precision"] = "REPRESENTATIVE_POINT"
             except (KeyError, TypeError, ValueError):
                 pass
 
@@ -325,6 +392,7 @@ def build_streams(
             "source_ref": "skywatcher-pr",
             "confidence": 0.85,
             "lineage": _lineage("HANGAR_REGISTRY", ["hangar_zones.json"]),
+            "evidence_state": _evidence_state(epistemic_class="CURATED"),
             "synthetic": False,
             "created_at": now,
             "extracted_at": now,
@@ -341,6 +409,7 @@ def build_streams(
                 "jurisdiction": "PR",
                 "confidence": float(hz.get("confidence", 0.7)),
                 "lineage": _lineage("HANGAR_ZONE_ENTITY", ["hangar_zones.json"]),
+                "evidence_state": _evidence_state(epistemic_class="CURATED"),
                 "synthetic": False,
                 "zone_id": zid,
                 "facility_id": hz.get("facility_id", ""),
@@ -352,6 +421,7 @@ def build_streams(
             try:
                 lat_f, lon_f = float(hz["lat"]), float(hz["lon"])
                 entities[ent_id]["location"] = {"lat": round(lat_f, 6), "lon": round(lon_f, 6)}
+                entities[ent_id]["evidence_state"]["geometry_precision"] = "REPRESENTATIVE_POINT"
             except (KeyError, TypeError, ValueError):
                 pass
 
@@ -373,6 +443,8 @@ def build_streams(
                 "jurisdiction": "PR",
                 "confidence": confidence,
                 "lineage": _lineage("ENDPOINT_EVENT_ENTITY", ["endpoint_events.json"]),
+                # Endpoint events are computed facility/zone matches.
+                "evidence_state": _evidence_state(epistemic_class="COMPUTED"),
                 "synthetic": _bool(ee.get("synthetic", False)),
                 "endpoint_event_id": evt_id,
                 "observation_id": ee.get("observation_id", ""),
@@ -420,6 +492,8 @@ def build_streams(
             "confidence": confidence,
             "attributes": _alert_attributes(al),
             "lineage": _lineage("ALERT_STREAM", ["alerts.json"]),
+            # Producer-declared anomaly alerts are analytic outputs, not measurements.
+            "evidence_state": _evidence_state(epistemic_class="COMPUTED"),
             "synthetic": synthetic,
             "created_at": when,
             "extracted_at": now,
@@ -463,8 +537,145 @@ def _rel(rid, sid, src_ent, tgt_ent, rtype, confidence, synthetic, created, now)
         "source_entity_id": src_ent, "target_entity_id": tgt_ent,
         "relationship_type": rtype, "evidence_source_id": sid,
         "confidence": confidence, "lineage": _lineage("RELATIONSHIP", ["observations.csv"]),
+        "evidence_state": _evidence_state(epistemic_class="CURATED"),
         "synthetic": synthetic, "created_at": created, "extracted_at": now,
     }
+
+
+# ── source_monitors (thehub-pr ADR 0013) ─────────────────────────────────────
+# One row per source in registry/source_registry.yaml. Before this stream existed,
+# thehub-pr's Source Monitor read that registry from this checkout itself
+# (thehub-pr src/hub/source_monitor.py, _parse_skywatcher). Name, family, tier,
+# cadence, window and declared status below reproduce that reader's normalisation,
+# so no source's labels change when the Hub switches to reading this stream.
+#
+# When a source last succeeded comes from a run receipt in the committed
+# data/source_run_state.json (written by prii_export_utils.record_run; RUN_RECEIPT)
+# or from the newest `retrieved_at` among the exported package's non-synthetic
+# sources.json entries whose source_type is mapped below (OUTPUT_DERIVED); the more
+# recent wins (prii_export_utils.resolve_last_success). Every other source is
+# NOT_RECORDED with a null time: nothing here infers a time from file or git dates.
+SOURCE_REGISTRY = "registry/source_registry.yaml"
+SOURCE_RUN_STATE = "data/source_run_state.json"
+# Registry `mode` -> cadence: the skywatcher-pr entries of the hub reader's
+# _NAMED_CADENCE. A mode in neither table is "unknown" there and here (today:
+# periodic_context). That table also maps other producers' words (daily, weekly,
+# ad_hoc, ...), which this map leaves out, so tests/test_federation_source_monitors.py
+# fails on any registry mode not pinned here: map a new one as the hub reader does.
+REGISTRY_MODE_CADENCE = {
+    "delayed_or_rate_limited": "realtime",
+    "batch_file": "event",
+    "historical_baseline": "static",
+}
+# Nominal window per cadence (the hub reader's CADENCE_WINDOW_SECONDS); event,
+# static, manual and unknown have none, since nothing says when the next update is due.
+CADENCE_WINDOW_SECONDS = {
+    "realtime": 3600, "hourly": 3600, "daily": 86400, "weekly": 7 * 86400,
+    "monthly": 31 * 86400, "quarterly": 92 * 86400, "yearly": 366 * 86400,
+}
+# Package sources.json `source_type` -> registry id. Pinned here: every
+# `screenshot` source is written by scripts/build_producer_package.py from the FR24
+# screenshot pipeline, the registry's fr24_exports. tests/test_federation_source_monitors.py
+# fails on a committed package source whose type is not mapped.
+RETRIEVAL_SOURCE_TYPES = {"screenshot": "fr24_exports"}
+_EVIDENCE_TIER = re.compile(r"^T[1-4]$")
+
+
+def _text(value: Any) -> str | None:
+    if value is None:
+        return None
+    return str(value).strip() or None
+
+
+def _evidence_tier(raw: Any) -> str | None:
+    """T1..T4 as the hub reader's normalize_tier reads it; anything else is None."""
+    if raw is None:
+        return None
+    value = str(raw).strip().upper()
+    return value if _EVIDENCE_TIER.match(value) else None
+
+
+def _utc_timestamp(raw: Any) -> datetime | None:
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    # A naive time is read as UTC, as scripts/build_producer_package.py reads one.
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _latest_retrievals(sources: list[dict[str, Any]]) -> dict[str, str]:
+    """Newest `retrieved_at` per registry id among the package's non-synthetic sources.
+
+    A source whose type is not in RETRIEVAL_SOURCE_TYPES, or whose `retrieved_at`
+    does not parse, contributes nothing.
+    """
+    latest: dict[str, datetime] = {}
+    for source in sources:
+        if str(source.get("provenance_status") or "").startswith("synthetic"):
+            continue
+        source_ref = RETRIEVAL_SOURCE_TYPES.get(str(source.get("source_type")))
+        at = _utc_timestamp(source.get("retrieved_at"))
+        if source_ref is None or at is None:
+            continue
+        if source_ref not in latest or at > latest[source_ref]:
+            latest[source_ref] = at
+    return {
+        ref: at.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        for ref, at in latest.items()
+    }
+
+
+def build_source_monitors(
+    sources: list[dict[str, Any]],
+    now: str,
+    *,
+    registry_path: Path | None = None,
+    state_path: Path | None = None,
+) -> list[dict[str, Any]]:
+    """The ``source_monitors`` stream: one row per registered source, sorted by id.
+
+    ``sources`` is the exported package's sources.json. A registry entry without
+    an id, or an id listed twice, raises ValueError.
+    """
+    registry = load_simple_yaml(registry_path or REPO_ROOT / SOURCE_REGISTRY)
+    if not isinstance(registry, dict):
+        raise ValueError(f"{SOURCE_REGISTRY}: expected a mapping of domain -> source list")
+    state = SourceRunState.load(state_path or REPO_ROOT / SOURCE_RUN_STATE)
+    derived = _latest_retrievals(sources)
+    lineage = {
+        "producer_script": PRODUCER_SCRIPT,
+        "producer_phase": "SOURCE_MONITOR",
+        "source_inputs": [SOURCE_REGISTRY, "sources.json", SOURCE_RUN_STATE],
+        "extraction_method": "registry_projection",
+    }
+    rows: dict[str, dict[str, Any]] = {}
+    for domain, entries in registry.items():
+        if not isinstance(entries, list):
+            continue  # not a domain's source list; the hub reader skips these too
+        for entry in entries:
+            source_ref = _text(entry.get("id")) if isinstance(entry, dict) else None
+            if source_ref is None:
+                raise ValueError(f"{SOURCE_REGISTRY}: {domain}: entry without 'id'")
+            if source_ref in rows:
+                raise ValueError(f"{SOURCE_REGISTRY}: duplicate source id {source_ref!r}")
+            cadence = REGISTRY_MODE_CADENCE.get(str(entry.get("mode") or "").strip().lower(), "unknown")
+            receipt = state.get(source_ref) or {}
+            at, basis = resolve_last_success(receipt, derived.get(source_ref))
+            rows[source_ref] = source_monitor_row(
+                producer=PRODUCER, source_ref=source_ref,
+                name=_text(entry.get("use")) or source_ref,
+                producer_family=_text(domain), evidence_tier=_evidence_tier(entry.get("tier")),
+                declared_status="unknown", cadence=cadence,
+                cadence_window_seconds=CADENCE_WINDOW_SECONDS.get(cadence),
+                last_success_at=at, last_success_basis=basis,
+                last_attempt_at=receipt.get("last_attempt_at"),
+                last_attempt_status=receipt.get("last_attempt_status"),
+                registry_path=SOURCE_REGISTRY, lineage=lineage, created_at=now, extracted_at=now,
+            )
+    return [rows[k] for k in sorted(rows)]
 
 
 def write_package(streams: dict[str, list[dict[str, Any]]], out_dir: Path, mode: str, now: str) -> Path:
@@ -517,6 +728,7 @@ def main() -> int:
     alerts = _load_optional_json(pkg, "alerts.json")
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     streams = build_streams(observations, sources, now, airfields, hangar_zones, endpoint_events, alerts)
+    streams["source_monitors"] = build_source_monitors(sources, now)
 
     if args.mode == "production":
         # Check 1: Reject synthetic rows
