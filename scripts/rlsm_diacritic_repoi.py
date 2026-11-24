@@ -5,7 +5,7 @@ OCR Pass 1: Diacritic-aware POI re-extraction.
 Two things to fix:
 
   (a) The spatial map join failed for BAYAMÓN / AÑASCO / etc. because
-      places.geojson stores names WITH diacritics (BAYAMÓN) while
+      the municipality gazetteer stores names WITH diacritics (BAYAMÓN) while
       labeled_pins stores ASCII (BAYAMON). Both should normalize the same way.
 
   (b) The POI extractor missed entries where Tesseract garbled the
@@ -27,14 +27,28 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import sys
 import time
 import unicodedata
 from collections import Counter
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))
+
+from fr24.rlsm_anchors import municipality_centroids  # noqa: E402
+
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 OUTS = REPO / "outputs"
+
+
+def _municipality_names_by_ascii() -> dict[str, str]:
+    """ASCII-uppercase municipality name -> uppercase name with diacritics."""
+    out: dict[str, str] = {}
+    for display in municipality_centroids():
+        name = display.upper().strip()
+        out[strip_diacritics(name)] = name
+    return out
 
 
 def strip_diacritics(s: str) -> str:
@@ -135,13 +149,9 @@ def main():
 
     conn.commit()
 
-    # Re-run spatial-aware coverage with ASCII canonicalization on places.geojson
-    gj = json.load((REPO / "data" / "places.geojson").open())
-    pr_munis_ascii_to_orig = {}
-    for f in gj.get("features", []):
-        name = (f.get("properties", {}).get("NAME") or "").upper().strip()
-        if name:
-            pr_munis_ascii_to_orig[strip_diacritics(name)] = name
+    # Re-run spatial-aware coverage with ASCII canonicalization on the 78
+    # GNIS municipalities.
+    pr_munis_ascii_to_orig = _municipality_names_by_ascii()
 
     visited_ascii = {
         strip_diacritics(r[0]).upper()

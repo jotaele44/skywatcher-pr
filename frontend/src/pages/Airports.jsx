@@ -11,6 +11,7 @@ import PuertoRicoMapShell from "@/components/skywatcher/PuertoRicoMapShell";
 import EmptyState from "@/components/skywatcher/EmptyState";
 import LoadingState from "@/components/skywatcher/LoadingState";
 import { Toolbar, SearchInput } from "@/components/skywatcher/Toolbar";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 export default function Airports() {
   const d = useSkywatcher();
@@ -41,7 +42,7 @@ export default function Airports() {
         {filtered.length === 0 ? (
           <EmptyState icon={TowerControl} title="No airports" />
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
+          <div {...scrollRegion("Airports table")} className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">

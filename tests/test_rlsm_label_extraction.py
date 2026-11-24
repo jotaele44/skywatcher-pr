@@ -621,3 +621,30 @@ def test_orientation_breakdown_separates_the_two_layouts(conn):
         assert entry["screenshots"] == 1
         assert entry["pins"] == 1
         assert entry["pins_located"] == 1
+
+
+# ── Tier-2 highway labels: route parsing pinned from spiderweb-pr ─────────────
+
+from fr24.rlsm_extractors import _classify_unknown  # noqa: E402
+
+
+def test_parsed_route_number_raises_highway_confidence():
+    assert _classify_unknown("PR-52") == ("highway", 0.50)
+    assert _classify_unknown("HWY") == ("highway", 0.40)
+    assert _classify_unknown("Laguna Grande")[0] == "water"
+
+
+def test_highway_pin_carries_route_fields():
+    hits = [h for h in scan_words_for_pois([_word("PR-52", 10, 10, conf=90.0)]) if h["pin_type"] == "highway"]
+    assert len(hits) == 1
+    assert (hits[0]["route_ref"], hits[0]["route_number_band"], hits[0]["is_ramal"]) == ("PR-52", "primary_band", False)
+
+
+def test_ramal_highway_pin():
+    hits = [h for h in scan_words_for_pois([_word("PR-3R", 10, 10, conf=90.0)]) if h["pin_type"] == "highway"]
+    assert hits and hits[0]["route_ref"] == "PR-3R" and hits[0]["is_ramal"] is True
+
+
+def test_non_highway_pins_get_no_route_fields():
+    for h in scan_words_for_pois([_word("Zzyzx", 10, 10), _word("Quorble", 60, 10)]):
+        assert "route_ref" not in h

@@ -12,7 +12,7 @@ not fail the poll itself; see ``persist_batch``'s return value instead.
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +30,10 @@ from .models import StateVector  # noqa: E402
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _retention_cutoff_iso(days: int) -> str:
+    return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def persist_batch(
@@ -62,17 +66,17 @@ def persist_batch(
         )
         batch_id = cur.lastrowid
 
-        for s in states:
-            conn.execute(
-                """
-                INSERT INTO adsb_state_vectors (
-                    provider, icao24, callsign, origin_country,
-                    time_position, last_contact, longitude, latitude,
-                    baro_altitude_m, on_ground, velocity_mps, true_track_deg,
-                    vertical_rate_mps, geo_altitude_m, squawk,
-                    position_source, batch_id, polled_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
+        conn.executemany(
+            """
+            INSERT INTO adsb_state_vectors (
+                provider, icao24, callsign, origin_country,
+                time_position, last_contact, longitude, latitude,
+                baro_altitude_m, on_ground, velocity_mps, true_track_deg,
+                vertical_rate_mps, geo_altitude_m, squawk,
+                position_source, batch_id, polled_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
                 (
                     s.provider,
                     s.icao24,
@@ -92,14 +96,27 @@ def persist_batch(
                     s.position_source,
                     batch_id,
                     now,
-                ),
-            )
+                )
+                for s in states
+            ],
+        )
 
         conn.execute(
             "UPDATE ingestion_batches SET status='completed', ended_at=?, "
             "n_processed=? WHERE batch_id=?",
             (_utc_now_iso(), len(states), batch_id),
         )
+
+        # Prune rows past the retention window. Runs every batch (including
+        # empty ones) so a quiet poll still keeps the table bounded once the
+        # CI cache in .github/workflows/adsb-poll.yml carries this DB across
+        # runs instead of discarding it each cycle.
+        if config.RETENTION_DAYS > 0:
+            conn.execute(
+                "DELETE FROM adsb_state_vectors WHERE polled_at < ?",
+                (_retention_cutoff_iso(config.RETENTION_DAYS),),
+            )
+
         conn.commit()
         return {"persisted": True, "n_written": len(states), "batch_id": batch_id, "errors": []}
     except Exception as exc:  # noqa: BLE001 - persistence must never raise

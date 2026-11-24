@@ -5,6 +5,7 @@ import { useDrawers } from "@/components/skywatcher/drawers/DrawerHub";
 import PageHeader from "@/components/skywatcher/PageHeader";
 import DiagnosticNoticeBanner from "@/components/skywatcher/DiagnosticNoticeBanner";
 import Panel from "@/components/skywatcher/Panel";
+import EvidenceTable from "@/components/skywatcher/EvidenceTable";
 import StatusChip from "@/components/skywatcher/StatusChip";
 import ConfidenceBadge from "@/components/skywatcher/ConfidenceBadge";
 import SyntheticDataBadge from "@/components/skywatcher/SyntheticDataBadge";
@@ -14,6 +15,7 @@ import LoadingState from "@/components/skywatcher/LoadingState";
 import { Toolbar, SearchInput, FilterSelect } from "@/components/skywatcher/Toolbar";
 import { REVIEW_STATUS } from "@/lib/skywatcher";
 import { federation } from "@/api/federationClient";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 const REVIEW_OPTS = [
   { value: "all", label: "All review states" },
@@ -134,7 +136,7 @@ export default function Routes() {
                 {showProvenance ? "Hide provenance" : "Inspect provenance"}
               </button>
               {showProvenance && (
-                <div className="mt-3 max-h-64 overflow-auto rounded border border-border">
+                <div {...scrollRegion("Route provenance")} className="mt-3 max-h-64 overflow-auto rounded border border-border">
                   <table className="w-full text-left text-[10px]">
                     <thead><tr className="bg-secondary/40"><th className="p-2">Member</th><th className="p-2">Bytes</th><th className="p-2">SHA-256</th></tr></thead>
                     <tbody>{(deepCorpus.members || []).map((member) => <tr key={member.path} className="border-t border-border/50"><td className="p-2 font-mono">{member.path}</td><td className="p-2 font-mono">{member.size_bytes}</td><td className="p-2 font-mono">{member.sha256}</td></tr>)}</tbody>
@@ -153,46 +155,67 @@ export default function Routes() {
 
       {recurrence && (
         <Panel title="V4 Temporal Route-Family Recurrence">
-          <div className="flex flex-wrap gap-3">
-            <input value={recurrenceMonth} onChange={(e) => setRecurrenceMonth(e.target.value)} placeholder="Month (YYYY-MM)" className="rounded border border-border bg-background px-3 py-2 text-xs" />
-            <input value={recurrenceFamily} onChange={(e) => setRecurrenceFamily(e.target.value)} placeholder="Family ID" className="rounded border border-border bg-background px-3 py-2 text-xs" />
-            <span className="self-center text-xs text-muted-foreground">{recurrence.row_count} rows · {recurrence.availability}</span>
-          </div>
-          <div className="mt-3 overflow-x-auto rounded border border-border">
-            <table className="w-full text-xs">
-              <thead><tr className="bg-secondary/40 text-left"><th className="p-2">Month</th><th className="p-2">Family</th><th className="p-2">Tracks</th></tr></thead>
-              <tbody>{(recurrence.rows || []).map((row, index) => <tr key={row.utc_month + "-" + row.consensus_family_id + "-" + index} className="border-t border-border/50"><td className="p-2 font-mono">{row.utc_month}</td><td className="p-2 font-mono">{row.consensus_family_id}</td><td className="p-2 font-mono">{row.tracks}</td></tr>)}</tbody>
-            </table>
-          </div>
-          <p className="mt-2 text-[10px] text-muted-foreground">Source member SHA-256: {recurrence.member?.sha256 || "UNKNOWN"}. These are DERIVED recurrence counts, not RAW observations and not mission classifications.</p>
+          <EvidenceTable
+            label="Temporal route-family recurrence"
+            columns={[
+              { key: "month", header: "Month", render: (row) => row.utc_month },
+              { key: "family", header: "Family", render: (row) => row.consensus_family_id },
+              { key: "tracks", header: "Tracks", render: (row) => row.tracks },
+            ]}
+            rows={recurrence.rows}
+            rowKey={(row, index) => row.utc_month + "-" + row.consensus_family_id + "-" + index}
+            footnote={<>Source member SHA-256: {recurrence.member?.sha256 || "UNKNOWN"}. These are DERIVED recurrence counts, not RAW observations and not mission classifications.</>}
+          >
+            <div className="flex flex-wrap gap-3">
+              <input value={recurrenceMonth} onChange={(e) => setRecurrenceMonth(e.target.value)} placeholder="Month (YYYY-MM)" className="rounded border border-border bg-background px-3 py-2 text-xs" />
+              <input value={recurrenceFamily} onChange={(e) => setRecurrenceFamily(e.target.value)} placeholder="Family ID" className="rounded border border-border bg-background px-3 py-2 text-xs" />
+              <span className="self-center text-xs text-muted-foreground">{recurrence.row_count} rows · {recurrence.availability}</span>
+            </div>
+          </EvidenceTable>
         </Panel>
       )}
 
             {airportRecurrence && (
         <Panel title="V4 Airport-Edge Recurrence">
-          <div className="flex flex-wrap gap-3">
-            <input value={airportMonth} onChange={(e) => setAirportMonth(e.target.value)} placeholder="Month (YYYY-MM)" className="rounded border border-border bg-background px-3 py-2 text-xs" />
-            <input value={departure} onChange={(e) => setDeparture(e.target.value)} placeholder="Departure code" className="rounded border border-border bg-background px-3 py-2 text-xs" />
-            <input value={arrival} onChange={(e) => setArrival(e.target.value)} placeholder="Arrival code" className="rounded border border-border bg-background px-3 py-2 text-xs" />
-            <span className="self-center text-xs text-muted-foreground">{airportRecurrence.row_count} rows · {airportRecurrence.availability}</span>
-          </div>
-          <div className="mt-3 max-h-72 overflow-auto rounded border border-border">
-            <table className="w-full text-xs">
-              <thead><tr className="bg-secondary/40 text-left"><th className="p-2">Month</th><th className="p-2">Departure</th><th className="p-2">Arrival</th><th className="p-2">Manifestations</th></tr></thead>
-              <tbody>{(airportRecurrence.rows || []).map((row, index) => <tr key={row.utc_month + "-" + row.departure + "-" + row.arrival + "-" + index} className="border-t border-border/50"><td className="p-2 font-mono">{row.utc_month}</td><td className="p-2 font-mono">{row.departure || "UNKNOWN"}</td><td className="p-2 font-mono">{row.arrival || "UNKNOWN"}</td><td className="p-2 font-mono">{row.manifestations}</td></tr>)}</tbody>
-            </table>
-          </div>
-          <p className="mt-2 text-[10px] text-muted-foreground">Blank departure/arrival values render as UNKNOWN; they do not establish that no airport existed. Source member SHA-256: {airportRecurrence.member?.sha256 || "UNKNOWN"}.</p>
+          <EvidenceTable
+            label="Airport-edge recurrence"
+            scrollClassName="max-h-72 overflow-auto"
+            columns={[
+              { key: "month", header: "Month", render: (row) => row.utc_month },
+              { key: "departure", header: "Departure", render: (row) => row.departure || "UNKNOWN" },
+              { key: "arrival", header: "Arrival", render: (row) => row.arrival || "UNKNOWN" },
+              { key: "manifestations", header: "Manifestations", render: (row) => row.manifestations },
+            ]}
+            rows={airportRecurrence.rows}
+            rowKey={(row, index) => row.utc_month + "-" + row.departure + "-" + row.arrival + "-" + index}
+            footnote={<>Blank departure/arrival values render as UNKNOWN; they do not establish that no airport existed. Source member SHA-256: {airportRecurrence.member?.sha256 || "UNKNOWN"}.</>}
+          >
+            <div className="flex flex-wrap gap-3">
+              <input value={airportMonth} onChange={(e) => setAirportMonth(e.target.value)} placeholder="Month (YYYY-MM)" className="rounded border border-border bg-background px-3 py-2 text-xs" />
+              <input value={departure} onChange={(e) => setDeparture(e.target.value)} placeholder="Departure code" className="rounded border border-border bg-background px-3 py-2 text-xs" />
+              <input value={arrival} onChange={(e) => setArrival(e.target.value)} placeholder="Arrival code" className="rounded border border-border bg-background px-3 py-2 text-xs" />
+              <span className="self-center text-xs text-muted-foreground">{airportRecurrence.row_count} rows · {airportRecurrence.availability}</span>
+            </div>
+          </EvidenceTable>
         </Panel>
       )}
 
             {familyProvenance && (
         <Panel title="V4 Route-Family Methodology Provenance">
-          <p className="text-xs"><strong>{familyProvenance.state}</strong> · {familyProvenance.methodology}</p>
-          <div className="mt-3 overflow-x-auto rounded border border-border">
-            <table className="w-full text-xs"><thead><tr className="bg-secondary/40 text-left"><th className="p-2">V3 family</th><th className="p-2">V3 tracks</th><th className="p-2">V4 subfamilies</th><th className="p-2">Largest V4</th></tr></thead><tbody>{familyProvenance.superseded_families.map((row) => <tr key={row.v3_family} className="border-t border-border/50"><td className="p-2 font-mono">{row.v3_family}</td><td className="p-2">{row.v3_tracks}</td><td className="p-2">{row.v4_subfamilies}</td><td className="p-2">{row.largest_v4_subfamily}</td></tr>)}</tbody></table>
-          </div>
-          <p className="mt-2 text-[10px] text-muted-foreground">Split source SHA-256: {familyProvenance.split_member?.sha256 || "UNKNOWN"}. V3 density families remain historical discovery outputs; V4 conservative subfamilies do not establish route identity, mission, operator, or purpose.</p>
+          <EvidenceTable
+            label="Route-family methodology provenance"
+            columns={[
+              { key: "v3_family", header: "V3 family", render: (row) => row.v3_family },
+              { key: "v3_tracks", header: "V3 tracks", cellClassName: "p-2", render: (row) => row.v3_tracks },
+              { key: "v4_subfamilies", header: "V4 subfamilies", cellClassName: "p-2", render: (row) => row.v4_subfamilies },
+              { key: "largest_v4", header: "Largest V4", cellClassName: "p-2", render: (row) => row.largest_v4_subfamily },
+            ]}
+            rows={familyProvenance.superseded_families || []}
+            rowKey={(row) => row.v3_family}
+            footnote={<>Split source SHA-256: {familyProvenance.split_member?.sha256 || "UNKNOWN"}. V3 density families remain historical discovery outputs; V4 conservative subfamilies do not establish route identity, mission, operator, or purpose.</>}
+          >
+            <p className="text-xs"><strong>{familyProvenance.state}</strong> · {familyProvenance.methodology}</p>
+          </EvidenceTable>
         </Panel>
       )}
 
@@ -223,7 +246,7 @@ export default function Routes() {
         {filtered.length === 0 ? (
           <EmptyState icon={RouteIcon} title="No route segments" />
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
+          <div {...scrollRegion("Route segments")} className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">

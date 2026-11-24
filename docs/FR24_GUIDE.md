@@ -15,6 +15,11 @@ with a table of contents grouped by stage (T12-98).
 - [FR24_SIDECAR_OCR_PIPELINE.md](FR24_SIDECAR_OCR_PIPELINE.md) — sidecar OCR pipeline
 - [FR24_REGISTRATION_RECOVERY.md](FR24_REGISTRATION_RECOVERY.md) — tail-number recovery
 - [FAA_REGISTRY_PIPELINE.md](FAA_REGISTRY_PIPELINE.md) — FAA N-number registry join
+- Place-label extraction (`fr24/rlsm_extractors.py`): an unmatched highway label such as `PR-52`
+  or `PR-3R` gets `route_ref`, `route_number_band` and `is_ramal`, and confidence 0.50 instead of
+  0.40 when a route number parses. Parsing is pinned from spiderweb-pr
+  (`federation/roads/pr_route_ref.pin.json`). The fields are in the scan output only; the
+  `labeled_pins` table does not store them yet.
 
 ## 3. Region fusion & batch running
 - [FR24_REGION_FUSION_BATCH_RUNNER.md](FR24_REGION_FUSION_BATCH_RUNNER.md)
