@@ -20,6 +20,11 @@
 | Active vector | `SKYWATCHER_AIRSPACE_AIRCRAFT_INTELLIGENCE` |
 | Production status | `NON_PRODUCTION_DIAGNOSTIC` |
 
+`federation.json` is the authority for this table and for live readiness
+(`federation_readiness_gate`, currently `ready_for_hub_live_execution: false`). The
+development contract at the end of this README describes where the work is heading; it
+does not change the declared role or status.
+
 Skywatcher is the active owner of the FR24 pipeline migrated out of `spiderweb-pr`. Spiderweb may retain spatial bridge/reference material, but FR24 ingestion and active airspace observation export belong here.
 
 ## Engine
@@ -51,6 +56,23 @@ python scripts/skywatcher_query.py --deterministic "what recurring routes are ne
 
 See [docs/CRAFT_PROFILES_AND_QUERY.md](docs/CRAFT_PROFILES_AND_QUERY.md) for the data
 flow, confidence grading, and the `POST /api/query` endpoint.
+
+## Live airspace map (adsb.lol equivalent)
+
+The dashboard's **Live Airspace** page (`/live`) reproduces the adsb.lol web map:
+live aircraft, the U/H/T/replay and L/O/K/M/P/I/R/F controls, the full layer menu
+(Esri, OpenStreetMap, OpenFreeMap, NASA GIBS, FAA VFR/IFR charts, TFRs, Special Use
+Airspace, NEXRAD, NOAA infrared/radar, RainViewer, openAIP, DWD RADOLAN and the
+military airspace layers), the aircraft sidebar and half-hour replay. Aircraft
+data comes from adsb.lol (ODbL 1.0) through `/api/console/live/*`
+(`server/backend/console/live_router.py`, `adsb/providers/adsblol.py`,
+`adsb/heatmap.py`). Nothing on the page is persisted; to store positions run
+`python scripts/adsb_poll.py --provider adsblol`. The openAIP overlay needs
+`OPENAIP_API_KEY` on the backend.
+
+See [docs/console/LIVE_AIRSPACE.md](docs/console/LIVE_AIRSPACE.md) for the
+function-by-function map and every data source, and
+[ADR-0003](docs/adr/0003-live-public-feed-map.md) for the decision.
 
 ## FR24 ingest subsystem
 

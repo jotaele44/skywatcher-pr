@@ -9,7 +9,8 @@ Phase A: Spatial / geographic. Produces:
   - outputs/intel_pois_by_municipality.csv  per-municipality aircraft footprint
   - outputs/intel_coverage_gaps.csv      PR municipalities NEVER observed (gaps)
 
-Uses lat/lon from data/places.geojson (TIGER 2025) + configs/georef_anchors.csv.
+Uses municipality lat/lon from the tracked GNIS gazetteer
+(data/reference/Gazetteer_PR_GNIS.gpkg) + configs/georef_anchors.csv.
 
 CLI:
     python3 scripts/rlsm_spatial_map.py
@@ -20,9 +21,15 @@ import argparse
 import csv
 import json
 import sqlite3
+import sys
 import unicodedata
 from collections import Counter, defaultdict
 from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))
+
+from fr24.rlsm_anchors import municipality_centroids  # noqa: E402
 
 
 def _ascii_up(s: str) -> str:
@@ -32,7 +39,6 @@ def _ascii_up(s: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFKD", s)
                    if not unicodedata.combining(c)).upper().strip()
 
-REPO = Path(__file__).resolve().parents[1]
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
 OUTS = REPO / "outputs"
 
@@ -62,30 +68,19 @@ def color_for(operator: str, palette_idx: list[int]) -> str:
     return FALLBACK_PALETTE[idx]
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.parse_args()
+def _load_poi_geo() -> dict[str, tuple[float, float, str]]:
+    """POI name -> (lat, lon, type) from GNIS municipalities + georef anchors.
 
-    conn = sqlite3.connect(DB)
-
-    # Load POI lat/lon from places.geojson + georef_anchors
-    poi_geo = {}
-    # Map both diacritic-stripped AND original uppercase form to (lat, lon, type, display_name)
-    gj = json.load((REPO / "data" / "places.geojson").open())
-    for f in gj.get("features", []):
-        props = f.get("properties", {})
-        name = (props.get("NAME") or "").upper().strip()
+    Both the uppercase and the diacritic-stripped uppercase form of each
+    municipality name map to the same record, so BAYAMON joins BAYAMÓN.
+    """
+    poi_geo: dict[str, tuple[float, float, str]] = {}
+    for display, (lat, lon) in municipality_centroids().items():
+        name = display.upper().strip()
+        poi_geo[name] = (lat, lon, "municipality")
         ascii_name = _ascii_up(name)
-        try:
-            lat = float(props.get("INTPTLAT") or 0)
-            lon = float(props.get("INTPTLON") or 0)
-        except (TypeError, ValueError):
-            lat = lon = 0
-        if name and lat and lon:
-            poi_geo[name] = (lat, lon, "municipality")
-            # Also store ASCII version pointing to same record (for join robustness)
-            if ascii_name and ascii_name != name:
-                poi_geo[ascii_name] = (lat, lon, "municipality")
+        if ascii_name and ascii_name != name:
+            poi_geo[ascii_name] = (lat, lon, "municipality")
     anchors_csv = REPO / "configs" / "georef_anchors.csv"
     if anchors_csv.exists():
         for r in csv.DictReader(anchors_csv.open()):
@@ -98,6 +93,16 @@ def main():
                         poi_geo.setdefault(k, (lat, lon, "airport_or_anchor"))
                 except (KeyError, TypeError, ValueError):
                     pass
+    return poi_geo
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.parse_args()
+
+    conn = sqlite3.connect(DB)
+
+    poi_geo = _load_poi_geo()
 
     # Per-POI sightings and top operator (key by ASCII-uppercase for diacritic tolerance)
     poi_data = defaultdict(lambda: {"sightings": 0, "aircraft": Counter(),

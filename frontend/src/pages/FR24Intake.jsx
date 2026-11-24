@@ -11,6 +11,7 @@ import EmptyState from "@/components/skywatcher/EmptyState";
 import LoadingState from "@/components/skywatcher/LoadingState";
 import { Toolbar, SearchInput, FilterSelect } from "@/components/skywatcher/Toolbar";
 import { INGEST_STATUS } from "@/lib/skywatcher";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 const INGEST_OPTS = [
   { value: "all", label: "All ingest states" },
@@ -56,7 +57,7 @@ export default function FR24Intake() {
         {filtered.length === 0 ? (
           <EmptyState icon={Camera} title="No captures in queue" />
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
+          <div {...scrollRegion("Capture queue")} className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">

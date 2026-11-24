@@ -15,7 +15,7 @@ jobs:
   drift:
     runs-on: ubuntu-latest
     env:
-      PRII_TEMPLATE_REF: 0f62e4bdde10b5ac82787a329d6f15481ab9c7f0
+      PRII_TEMPLATE_REF: c8442057dfa2e747fb5d40821d66bb8edea635a0
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Fetch pinned canonical templates outside workspace
