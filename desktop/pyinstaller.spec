@@ -26,6 +26,10 @@ CONSOLE = os.environ.get("PRII_CONSOLE") == "1"
 datas = [
     (str(REPO_ROOT / "frontend" / "dist"), "frontend/dist"),
     (str(REPO_ROOT / "data" / "reference"), "data/reference"),
+    (str(REPO_ROOT / "data" / "flight_acquisition"), "data/flight_acquisition"),
+    # Municipality boundaries: /api/geo/municipios.geojson and the Sky Cameras
+    # coverage/validation (78 names) both read this file.
+    (str(REPO_ROOT / "data" / "geo"), "data/geo"),
     (str(BRANDING / "icon-256.png"), "assets/branding"),
 ]
 for extra in ("exports", "reports"):
@@ -35,7 +39,7 @@ for extra in ("exports", "reports"):
 
 a = Analysis(
     [str(REPO_ROOT / "desktop" / "launch.py")],
-    pathex=[str(REPO_ROOT)],
+    pathex=[str(REPO_ROOT), str(REPO_ROOT / "src")],
     datas=datas,
     hiddenimports=[
         "uvicorn.logging",
@@ -45,6 +49,31 @@ a = Analysis(
         "uvicorn.lifespan.on",
         "desktop.app_server",
         "server.backend.main",
+        "skywatcher.fr24.database",
+        "skywatcher.fr24.database_migrations",
+        "skywatcher.fr24.flight_corpus",
+        "skywatcher.fr24.flight_coverage",
+        "skywatcher.fr24.acquisition_receipts",
+        # Sky Target Finder (/api/space-track/sky/*), listed like the modules above;
+        # the router imports skywatcher.core.sky inside an ImportError guard.
+        "skywatcher.core.sky",
+        "skywatcher.core.sky.catalog",
+        "skywatcher.core.sky.chart",
+        "skywatcher.core.sky.ephemeris",
+        "skywatcher.core.sky.filters",
+        "skywatcher.core.sky.satellites",
+        "skywatcher.core.sky.service",
+        # Sky Cameras (/api/sky-cameras/*); python-multipart parses its uploads.
+        "server.backend.cameras_router",
+        "skywatcher.core.cameras",
+        "skywatcher.core.cameras.catalog",
+        "skywatcher.core.cameras.submissions",
+        "skywatcher.core.cameras.validation",
+        "multipart",
+        "python_multipart",
+        "astronomy",
+        "sgp4.api",
+        "sgp4.omm",
         # Shared desktop-wrapper runtime (thehub-pr/packages/prii_desktop),
         # imported by the desktop/ shims — bundle it into the frozen build.
         "prii_desktop",
@@ -52,6 +81,7 @@ a = Analysis(
         "prii_desktop.appserver",
         "prii_desktop.config",
         "prii_desktop.setup_center",
+        "prii_desktop.launchpad",
     ],
     noarchive=False,
 )

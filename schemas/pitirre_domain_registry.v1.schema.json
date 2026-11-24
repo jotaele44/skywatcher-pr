@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pitirre-pr.local/schemas/pitirre_domain_registry.v1.schema.json",
+  "title": "PITIRRE Domain Registry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "registry_version",
+    "status",
+    "top_level_domains",
+    "domains",
+    "binding_rules"
+  ],
+  "properties": {
+    "registry_version": {
+      "const": "pitirre-domain-registry-v0.1"
+    },
+    "status": {
+      "enum": ["CANDIDATE_BINDING", "ACTIVE", "SUPERSEDED"]
+    },
+    "top_level_domains": {
+      "type": "array",
+      "prefixItems": [
+        {"const": "AIR"},
+        {"const": "LAND"},
+        {"const": "WATER"},
+        {"const": "SPACE"}
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "domains": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["AIR", "LAND", "WATER", "SPACE"],
+      "properties": {
+        "AIR": {"$ref": "#/$defs/domain"},
+        "LAND": {
+          "allOf": [
+            {"$ref": "#/$defs/domain"},
+            {
+              "type": "object",
+              "required": ["transport_network_types"],
+              "properties": {
+                "transport_network_types": {
+                  "type": "array",
+                  "contains": {"const": "ROAD"},
+                  "minContains": 1,
+                  "uniqueItems": true
+                }
+              }
+            }
+          ]
+        },
+        "WATER": {"$ref": "#/$defs/domain"},
+        "SPACE": {"$ref": "#/$defs/domain"}
+      }
+    },
+    "binding_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "road_domain_state",
+        "road_is_top_level",
+        "domain_registry_is_extensible",
+        "historical_skywatcher_provenance_must_not_be_rewritten",
+        "co_location_does_not_imply_relationship",
+        "relationship_does_not_imply_causation",
+        "proximity_does_not_imply_road_access",
+        "road_adjacency_does_not_imply_connectivity"
+      ],
+      "properties": {
+        "road_domain_state": {"const": "LAND.TRANSPORT.ROAD"},
+        "road_is_top_level": {"const": false},
+        "domain_registry_is_extensible": {"const": true},
+        "historical_skywatcher_provenance_must_not_be_rewritten": {"const": true},
+        "co_location_does_not_imply_relationship": {"const": true},
+        "relationship_does_not_imply_causation": {"const": true},
+        "proximity_does_not_imply_road_access": {"const": true},
+        "road_adjacency_does_not_imply_connectivity": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "domain": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["description", "subdomains"],
+      "properties": {
+        "description": {"type": "string", "minLength": 1},
+        "lineage": {"type": "string", "minLength": 1},
+        "subdomains": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

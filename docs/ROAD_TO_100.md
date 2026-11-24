@@ -3,7 +3,12 @@
 **Audit date:** 2026-08-04  
 **Scoring model:** code completeness 20%; main-branch availability 15%; CI enforcement 15%; data materialization 15%; operator verification 15%; GUI completeness 10%; federation readiness 10%.
 
-## Current normalized score: 65.05 / 100
+> **State review 2026-11-13.** The score and table below are the 2026-08-04 audit and are
+> superseded: `main` has moved, and they have not been re-scored. Current item states are in
+> `docs/unfinished_implementation_ledger.v1.json`; the current audit and priority order are in
+> `docs/AUDIT_AND_OPTIMIZATION_STRATEGY_2026-11-13.md`.
+
+## Normalized score on 2026-08-04: 65.05 / 100
 
 | Dimension | Weight | Score | Weighted |
 |---|---:|---:|---:|
@@ -30,19 +35,20 @@ The former ~73% figure combined code present on main with data-blocked and candi
 - PR #171 is merged current-main aircraft spatial truth; full operator-corpus execution remains pending.
 - PR #170 is merged current-main deterministic multisensor replay.
 - PR #172 is merged current-main isolated-clone runtime.
-- PR #176 is SG0 governance only and activates no runtime, schema or threshold.
-- PR #173 is rescued unapplied patch material and obsolete local dependency state, not implementation authority.
+- PR #176 (SG0 governance) was closed unmerged on 2026-09-03; SG1–SG4 stay blocked until the maintainer re-ballots SG0 or retires the track.
+- PR #173 (rescued patch material) was closed unmerged on 2026-09-03 and is no longer pending.
 - Real FR24 captures, production export, geo anchors, terrain/imagery layers and operator receipts remain incomplete.
 
 ## Priority exit sequence
 
 1. Execute the complete local screenshot corpus with zero false binding and bounded uncertainty.
 2. Preserve deterministic replay and provenance boundaries through operator receipts.
-3. Replace the obsolete `places.geojson` dependency with tracked gazetteer and geo-anchor inputs.
+3. Done in code (2026-11-22): nothing reads the obsolete `places.geojson` any more. Municipality positions come from the tracked GNIS gazetteer through `fr24/rlsm_anchors.py:municipality_centroids()`, which fails closed when the gazetteer has no municipio rows. Still open: operator-supplied geo-anchor inputs for anchor seeding.
 4. Supply real FR24 captures and run a production-mode export with synthetic rejection enabled.
-5. Dispose of #173 by path-level adjudication; do not apply patch files wholesale.
+5. Done: #173 was closed unmerged. Do not apply its patch files wholesale.
 6. Certify standalone packaging for the merged isolated-clone runtime.
 7. Keep SG1–SG4 blocked until SG0 is certified and each later phase has an independent implementation ballot.
+8. Re-vendor the federation entity and alert schemas, and land FAA Registry Certification v1 (#240), the ILAP corpora (#282) and the detector stack (#279).
 
 ## Machine-readable authority
 
