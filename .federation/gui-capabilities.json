@@ -759,6 +759,62 @@
           "tests/test_rlsm_municipality_centroids.py"
         ]
       }
+    },
+    {
+      "id": "desktop-launch-pad",
+      "classification": "operator",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Pre-launch screen of the desktop app, drawn by the shared prii-desktop runtime from the LAUNCHPAD declaration in desktop/config.py. The user chooses Guest (read-only; the runtime's Guest guard refuses every write except the declared read-only POSTs /api/query and /api/entities/*/filter) or Operator, the page the app opens on (the routes below), and Operator-only launch options that become environment variables before the backend starts. Reached on every desktop start, and from the runtime's in-app Launch Pad button.",
+      "backend": {
+        "files": [
+          "desktop/config.py"
+        ],
+        "symbols": [
+          "desktop/config.py:LAUNCHPAD",
+          "desktop/config.py:_launchpad_status"
+        ]
+      },
+      "frontend": {
+        "routes": [
+          "/",
+          "/console",
+          "/observations",
+          "/aircraft",
+          "/fr24",
+          "/routes",
+          "/infrastructure",
+          "/airports",
+          "/review",
+          "/export",
+          "/readiness",
+          "/calibration",
+          "/analysis",
+          "/spatial-truth",
+          "/flight-archive",
+          "/space-track",
+          "/space-track/sky",
+          "/sky-cameras"
+        ],
+        "e2e_routes": [
+          "/console",
+          "/sky-cameras"
+        ],
+        "components": [
+          "desktop/config.py"
+        ],
+        "discoverability": [
+          "desktop/config.py"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_desktop_launchpad.py"
+        ],
+        "e2e": [
+          "frontend/tests/desktop-launchpad.spec.mjs"
+        ]
+      }
     }
   ],
   "exceptions": []
