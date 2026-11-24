@@ -20,6 +20,11 @@
 | Active vector | `SKYWATCHER_AIRSPACE_AIRCRAFT_INTELLIGENCE` |
 | Production status | `NON_PRODUCTION_DIAGNOSTIC` |
 
+`federation.json` is the authority for this table and for live readiness
+(`federation_readiness_gate`, currently `ready_for_hub_live_execution: false`). The
+development contract at the end of this README describes where the work is heading; it
+does not change the declared role or status.
+
 Skywatcher is the active owner of the FR24 pipeline migrated out of `spiderweb-pr`. Spiderweb may retain spatial bridge/reference material, but FR24 ingestion and active airspace observation export belong here.
 
 ## Engine
@@ -34,6 +39,7 @@ Skywatcher is the active owner of the FR24 pipeline migrated out of `spiderweb-p
 | `fr24/` | FR24 screenshot inventory, segmentation, route extraction, review queue, event export |
 | `src/skywatcher/fpim/craft_profile.py` | Per-craft profile builder (identity, home base, preferred LZs, schedule, recurring routes) |
 | `src/skywatcher/query/` | Grounded query layer over craft profiles (deterministic engine + optional LLM) |
+| `src/skywatcher/core/cameras/` | Sky Cameras: curated public PR live-camera catalog plus a moderated community contribution queue ([docs/SKY_CAMERAS.md](docs/SKY_CAMERAS.md)) |
 
 The core is designed to run with stdlib-first dependencies. Optional geospatial layers are isolated behind separate requirements.
 
@@ -50,6 +56,23 @@ python scripts/skywatcher_query.py --deterministic "what recurring routes are ne
 
 See [docs/CRAFT_PROFILES_AND_QUERY.md](docs/CRAFT_PROFILES_AND_QUERY.md) for the data
 flow, confidence grading, and the `POST /api/query` endpoint.
+
+## Live airspace map (adsb.lol equivalent)
+
+The dashboard's **Live Airspace** page (`/live`) reproduces the adsb.lol web map:
+live aircraft, the U/H/T/replay and L/O/K/M/P/I/R/F controls, the full layer menu
+(Esri, OpenStreetMap, OpenFreeMap, NASA GIBS, FAA VFR/IFR charts, TFRs, Special Use
+Airspace, NEXRAD, NOAA infrared/radar, RainViewer, openAIP, DWD RADOLAN and the
+military airspace layers), the aircraft sidebar and half-hour replay. Aircraft
+data comes from adsb.lol (ODbL 1.0) through `/api/console/live/*`
+(`server/backend/console/live_router.py`, `adsb/providers/adsblol.py`,
+`adsb/heatmap.py`). Nothing on the page is persisted; to store positions run
+`python scripts/adsb_poll.py --provider adsblol`. The openAIP overlay needs
+`OPENAIP_API_KEY` on the backend.
+
+See [docs/console/LIVE_AIRSPACE.md](docs/console/LIVE_AIRSPACE.md) for the
+function-by-function map and every data source, and
+[ADR-0003](docs/adr/0003-live-public-feed-map.md) for the decision.
 
 ## FR24 ingest subsystem
 
@@ -132,6 +155,17 @@ python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_p
 
 Production-mode validation rejects synthetic rows. Current live-execution blockers should remain explicit until non-synthetic observations are loaded and exported.
 
+`scripts/federation_export.py` projects an airspace package onto thehub-pr's
+canonical streams: `exports/federation/{sources,entities,relationships,observations,alerts,source_monitors}.jsonl`
+(each written when it has rows) plus a `manifest.json` that validates against the
+vendored `schemas/federation_export_manifest.schema.json`.
+`source_monitors.jsonl` (thehub-pr ADR 0013) has one row per source in
+`registry/source_registry.yaml`, with when it last succeeded and how that is known:
+the newest `retrieved_at` among the exported package's non-synthetic FR24 screenshot
+sources (`fr24_exports`), or a run receipt in a committed `data/source_run_state.json`
+when one exists, whichever is more recent. Every other source is reported as not
+recorded (`tests/test_federation_source_monitors.py`).
+
 ## Optional GEBCO terrain layer
 
 ```bash
@@ -166,3 +200,13 @@ uv run python scripts/validate_airspace_export.py exports/examples/synthetic_air
 - Engine extracted from the Spiderweb airspace implementation branch.
 - FR24 ingest migrated from `spiderweb-pr` into `fr24/`.
 - Export contract salvaged from the retired airspace tooling path.
+
+<!-- PROJECT-OPERATING-CONTRACT:START -->
+## Current development and certification contract
+
+Skywatcher is the federation SKY-DOMAIN ANALYSIS plane: aviation, aircraft identity/history, orbital objects, astronomy, reentry/meteor/solar/lunar context, observational media, and historical SKY PLAYBACK. The Master Flight Log remains the flight-history authority; derived features link to it rather than duplicating flights.
+
+**Identity rules:** registration is not airframe identity. Preserve temporal registration, ownership/operator/configuration relationships and full candidate sets; never merge from name/registration/proximity alone. Orbital/object identity must retain authoritative IDs and source epochs. Source manifestations, trajectory points, observation media, telescope/adapter outputs, and external ephemerides require provenance and explicit freshness/version context.
+
+**Current vector:** close SAC and orbital/source-family gates, full Space-Track integration, aircraft identity/history, observational-media adapters including DWARF3-class inputs, Spiderweb terrain/horizon consumption, and current desktop+iPhone/native evidence. Certification is bounded to frozen source/data/runtime manifestations; code/test success does not prove live-source or physical-device certification.
+<!-- PROJECT-OPERATING-CONTRACT:END -->

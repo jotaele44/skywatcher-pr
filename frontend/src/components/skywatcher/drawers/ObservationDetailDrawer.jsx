@@ -10,6 +10,7 @@ import RouteSegmentPanel from "../RouteSegmentPanel";
 import InfrastructureLinkPanel from "../InfrastructureLinkPanel";
 import { useSkywatcher, useResolvers } from "@/lib/SkywatcherData";
 import { REVIEW_STATUS } from "@/lib/skywatcher";
+import { toast } from "@/components/ui/use-toast";
 
 export default function ObservationDetailDrawer({ id, onClose, go }) {
   const d = useSkywatcher();
@@ -22,6 +23,18 @@ export default function ObservationDetailDrawer({ id, onClose, go }) {
   const routes = r.routesForObservation(obs.observation_id);
   const links = r.linksForObservation(obs.observation_id);
   const rs = REVIEW_STATUS[obs.review_status] || REVIEW_STATUS.new;
+  const updateReviewStatus = async (status) => {
+    try {
+      await d.updateRecord("observations", obs.id, { review_status: status });
+      toast({ title: "Diagnostic state updated", description: `Review status set to ${status}.` });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Review status was not updated",
+        description: String(error?.message ?? error),
+      });
+    }
+  };
 
   return (
     <SideDrawer
@@ -39,7 +52,7 @@ export default function ObservationDetailDrawer({ id, onClose, go }) {
       }
     >
       <Section title="Review State" icon={Gauge}>
-        <ReviewActions current={obs.review_status} onChange={(s) => d.updateRecord("observations", obs.id, { review_status: s })} />
+        <ReviewActions current={obs.review_status} onChange={updateReviewStatus} />
         <p className="mt-2 text-[11px] text-muted-foreground">
           Prototype review action updates diagnostic state only. Spatial relationships are candidate associations and require review.
         </p>

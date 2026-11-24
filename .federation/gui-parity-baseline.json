@@ -5100,10 +5100,10 @@
       "signal": "GUI_NOT_BACKEND_WIRED"
     },
     {
-      "detail": "button#b06ecd327bfa",
-      "id": "gui_control:frontend/src/components/skywatcher/Layout.jsx:button#b06ecd327bfa",
+      "detail": "button#d1a223462e45",
+      "id": "gui_control:frontend/src/components/skywatcher/Layout.jsx:button#d1a223462e45",
       "kind": "gui_control",
-      "line": 30,
+      "line": 31,
       "path": "frontend/src/components/skywatcher/Layout.jsx",
       "signal": "GUI_NOT_BACKEND_WIRED"
     },

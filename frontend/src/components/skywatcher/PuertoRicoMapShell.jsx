@@ -131,6 +131,7 @@ export default function PuertoRicoMapShell({
   const [densityRequest, setDensityRequest] = useState(0);
 
   useEffect(() => {
+    let disposed = false;
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: OSM_STYLE,
@@ -140,7 +141,8 @@ export default function PuertoRicoMapShell({
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
-    map.on("style.load", async () => {
+    map.once("style.load", async () => {
+      if (disposed) return;
       const { observations: obs, airports: apt, assets: ast, routes: rte } = propsRef.current;
 
       map.addSource("routes", { type: "geojson", data: toLineCollection(rte) });
@@ -154,6 +156,7 @@ export default function PuertoRicoMapShell({
         fetchGeojson("/geo/corridors.geojson"),
         fetchGeojson("/geo/observations/heatmap.geojson"),
       ]);
+      if (disposed) return;
 
       map.addSource("zones", { type: "geojson", data: zones });
       map.addLayer({
@@ -260,7 +263,12 @@ export default function PuertoRicoMapShell({
       }
     });
 
-    return () => { readyRef.current = false; map.remove(); };
+    return () => {
+      disposed = true;
+      readyRef.current = false;
+      if (mapRef.current === map) mapRef.current = null;
+      map.remove();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

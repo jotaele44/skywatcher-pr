@@ -1,0 +1,12 @@
+{
+  "schema_version": "pr_route_ref_consumer_pin/1.0",
+  "consumer": "skywatcher-pr",
+  "authority_repository": "jotaele44/spiderweb-pr",
+  "authority_commit": "c24b38d9fda8e5ad292f0e770330d81a19de806e",
+  "authority_path": "spiderweb_pr_road_name_gazetteer_ingest/pipeline/road_gazetteer_ingest.py",
+  "authority_doc": "spiderweb_pr_road_name_gazetteer_ingest/docs/ROAD_NUMBERING_LOGIC.md",
+  "extracted_symbols": ["ROUTE_PATTERNS", "strip_diacritics", "route_number_from_text", "ROUTE_NUMBER_BANDS", "RAMAL_SUFFIX", "route_number_band", "split_route_number", "km_marker_from_text", "parse_route_ref"],
+  "module_path": "federation/roads/pr_route_ref.py",
+  "module_sha256": "7b522925a0a1b2b1b35d3a89370af6b194f3a1694ede830bfb3cde3972b4e153",
+  "compatibility_policy": "FAIL_CLOSED"
+}

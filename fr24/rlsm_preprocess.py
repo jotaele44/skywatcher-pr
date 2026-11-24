@@ -138,7 +138,7 @@ def ensure_observation_columns(conn) -> list[str]:
     """
     have = {r[1] for r in conn.execute("PRAGMA table_info(ocr_observations)")}
     added = []
-    for col, decl in (("preprocess", "TEXT"), ("preprocess_scale", "REAL")):
+    for col, decl in (("preprocess", "TEXT"), ("preprocess_scale", "REAL"), ("word_boxes_version", "TEXT")):
         if col not in have:
             conn.execute(f"ALTER TABLE ocr_observations ADD COLUMN {col} {decl}")
             added.append(col)
