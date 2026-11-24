@@ -10,6 +10,7 @@ import { DrawerHubProvider } from '@/components/skywatcher/drawers/DrawerHub';
 import Layout from '@/components/skywatcher/Layout';
 import Dashboard from '@/pages/Dashboard';
 import Console from '@/pages/Console';
+import LiveAirspace from '@/pages/LiveAirspace';
 import Observations from '@/pages/Observations';
 import Aircraft from '@/pages/Aircraft';
 import FR24Intake from '@/pages/FR24Intake';
@@ -57,6 +58,7 @@ const AuthenticatedApp = () => {
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/console" element={<Console />} />
+            <Route path="/live" element={<LiveAirspace />} />
             <Route path="/observations" element={<Observations />} />
             <Route path="/aircraft" element={<Aircraft />} />
             <Route path="/fr24" element={<FR24Intake />} />

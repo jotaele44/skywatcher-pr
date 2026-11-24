@@ -1,12 +1,17 @@
 import React, { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import Sidebar from "./Sidebar";
 import TopStatusStrip from "./TopStatusStrip";
 import { scrollRegion } from "@/lib/scrollRegion";
 
+// Routes that render an edge-to-edge map instead of a padded page.
+const FULL_BLEED_ROUTES = new Set(["/live"]);
+
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { pathname } = useLocation();
+  const fullBleed = FULL_BLEED_ROUTES.has(pathname);
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
       <TopStatusStrip />
@@ -39,11 +44,17 @@ export default function Layout() {
             </button>
             <span className="text-sm font-semibold">Skywatcher-PR</span>
           </div>
-          <main {...scrollRegion()} className="flex-1 overflow-y-auto scrollbar-thin">
-            <div className="mx-auto max-w-[1400px] space-y-5 p-4 md:p-6">
+          {fullBleed ? (
+            <main className="relative flex-1 overflow-hidden">
               <Outlet />
-            </div>
-          </main>
+            </main>
+          ) : (
+            <main {...scrollRegion()} className="flex-1 overflow-y-auto scrollbar-thin">
+              <div className="mx-auto max-w-[1400px] space-y-5 p-4 md:p-6">
+                <Outlet />
+              </div>
+            </main>
+          )}
         </div>
       </div>
     </div>
