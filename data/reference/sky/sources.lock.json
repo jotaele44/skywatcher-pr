@@ -1,0 +1,142 @@
+{
+  "schema_version": "skywatcher.sky-catalog-sources/v1",
+  "generated_outputs": [
+    "sky_catalog.v1.json",
+    "sky_stars_deep.v1.json"
+  ],
+  "inputs": [
+    {
+      "id": "d3-stars-6",
+      "file": "d3_stars.6.json",
+      "url": "https://cdn.jsdelivr.net/npm/d3-celestial@0.7.35/data/stars.6.json",
+      "sha256": "0297b8fa3adfbce1dc26566f61c4abcc1df4f29c6a28729ca06b56d1c6d25602",
+      "bytes": 656721,
+      "license": "BSD-3-Clause",
+      "role": "build",
+      "purpose": "Stars to mag 6 (base layer)"
+    },
+    {
+      "id": "d3-stars-8",
+      "file": "d3_stars.8.json",
+      "url": "https://cdn.jsdelivr.net/npm/d3-celestial@0.7.35/data/stars.8.json",
+      "sha256": "e3ec6cde89bae0dde064d91c1edb9ec53c3c40d5c12fdf5d30f9a4de5dbc2143",
+      "bytes": 5385740,
+      "license": "BSD-3-Clause",
+      "role": "build",
+      "purpose": "Stars to mag 8 (deep layer source, mag 6-7.5 kept)"
+    },
+    {
+      "id": "d3-starnames",
+      "file": "d3_starnames.json",
+      "url": "https://cdn.jsdelivr.net/npm/d3-celestial@0.7.35/data/starnames.json",
+      "sha256": "044a73db97f45c51e194db64e2555dc295be57897bf9da90bc3781dcd17ba216",
+      "bytes": 675483,
+      "license": "BSD-3-Clause",
+      "role": "build",
+      "purpose": "Proper names, Bayer and Flamsteed designations"
+    },
+    {
+      "id": "d3-constellations",
+      "file": "d3_constellations.json",
+      "url": "https://cdn.jsdelivr.net/npm/d3-celestial@0.7.35/data/constellations.json",
+      "sha256": "11e14f1ee19b71bff5ca8af3f6e6a20596c4609dd86d43c9a796054fce88030c",
+      "bytes": 50580,
+      "license": "BSD-3-Clause",
+      "role": "build",
+      "purpose": "Constellation names, genitives, label positions"
+    },
+    {
+      "id": "d3-constellation-lines",
+      "file": "d3_constellations.lines.json",
+      "url": "https://cdn.jsdelivr.net/npm/d3-celestial@0.7.35/data/constellations.lines.json",
+      "sha256": "294f66bef5d5cf50b1e17f16d2efa1d97a15131612c68dd935adef6e7373e13c",
+      "bytes": 27136,
+      "license": "BSD-3-Clause",
+      "role": "build",
+      "purpose": "Constellation stick figures"
+    },
+    {
+      "id": "d3-messier",
+      "file": "d3_messier.json",
+      "url": "https://cdn.jsdelivr.net/npm/d3-celestial@0.7.35/data/messier.json",
+      "sha256": "b576a9ef2ff1e3e81af49779c76ceecdf1e2f88b7bd7d21736fa9d590c9cb2b4",
+      "bytes": 21568,
+      "license": "BSD-3-Clause",
+      "role": "build",
+      "purpose": "Messier positions, magnitudes, sizes"
+    },
+    {
+      "id": "d3-dsos-14",
+      "file": "d3_dsos.14.json",
+      "url": "https://cdn.jsdelivr.net/npm/d3-celestial@0.7.35/data/dsos.14.json",
+      "sha256": "112bdce7c81591a589d406bba5f196a4df5ccb1a670f735c096f5153c64678db",
+      "bytes": 3037103,
+      "license": "BSD-3-Clause",
+      "role": "verify",
+      "purpose": "Independent Caldwell position check"
+    },
+    {
+      "id": "d3-license",
+      "file": "d3_LICENSE",
+      "url": "https://cdn.jsdelivr.net/npm/d3-celestial@0.7.35/LICENSE",
+      "sha256": "95e8d6c281db702112e3f990c9c2958a4b412e2cfc09d419ec33f1227aa8dce4",
+      "bytes": 1491,
+      "license": "BSD-3-Clause",
+      "role": "license",
+      "purpose": "d3-celestial licence text",
+      "copy_to": "LICENSE.d3-celestial"
+    },
+    {
+      "id": "openngc-ngc",
+      "file": "openngc_NGC.csv",
+      "url": "https://raw.githubusercontent.com/mattiaverga/OpenNGC/v20260501/database_files/NGC.csv",
+      "sha256": "840fe0c9ee1332e551b2e722a0e92726cd7b157914a3d2177602832aadd3aa9e",
+      "bytes": 3876288,
+      "license": "CC-BY-SA-4.0",
+      "role": "build",
+      "purpose": "Caldwell crosswalk authority and positions; Messier constellations"
+    },
+    {
+      "id": "openngc-addendum",
+      "file": "openngc_addendum.csv",
+      "url": "https://raw.githubusercontent.com/mattiaverga/OpenNGC/v20260501/database_files/addendum.csv",
+      "sha256": "1d8f0914e643ada325a5a94d88d8fefad6a4937a2f77cc34f21483af22b11983",
+      "bytes": 17484,
+      "license": "CC-BY-SA-4.0",
+      "role": "build",
+      "purpose": "Non-NGC Caldwell objects (C9, C14, C41, C99) and M40/M45"
+    },
+    {
+      "id": "stellarium-modern",
+      "file": "stellarium_modern_index.json",
+      "url": "https://raw.githubusercontent.com/Stellarium/stellarium/v26.3/skycultures/modern/index.json",
+      "sha256": "1f2f5ffd6c9e25a7d0dcfdbf1f756e2db03dd3b8ed4ec016a2839b09f6b0fe1e",
+      "bytes": 205767,
+      "license": "CC-BY-SA-4.0",
+      "role": "build",
+      "purpose": "Star-name aliases (e.g. Marfak-East)"
+    },
+    {
+      "id": "cc-by-sa-4.0",
+      "file": "ccbysa40_legalcode.txt",
+      "url": "https://creativecommons.org/licenses/by-sa/4.0/legalcode.txt",
+      "sha256": "28a9529c7d0bb4dc51f4bf5c116a3d16ef247a052f7591466768ddf563fd1cf5",
+      "bytes": 20138,
+      "license": "CC-BY-SA-4.0",
+      "role": "license",
+      "purpose": "Licence text for the derived catalog data",
+      "copy_to": "CC-BY-SA-4.0.txt"
+    },
+    {
+      "id": "wikipedia-caldwell",
+      "file": "wiki_caldwell_1375235933.txt",
+      "url": "https://en.wikipedia.org/w/index.php?title=Caldwell_catalogue&oldid=1375235933&action=raw",
+      "sha256": "69c20108724ed2e907a372a77fd1c8e1b7540c77d16942014876b0e2067ae535",
+      "bytes": 34581,
+      "license": "CC-BY-SA-4.0",
+      "role": "authoring",
+      "purpose": "Caldwell designations and common names frozen into caldwell_crosswalk.csv; never fetched by the build",
+      "fetch": false
+    }
+  ]
+}

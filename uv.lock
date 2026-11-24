@@ -1826,8 +1826,8 @@ wheels = [
 
 [[package]]
 name = "prii-export-utils"
-version = "0.1.0"
-source = { git = "https://github.com/jotaele44/thehub-pr.git?subdirectory=packages%2Fprii_export_utils&rev=f2b81769924689b4d959554928810b1d7b7ef3d6#f2b81769924689b4d959554928810b1d7b7ef3d6" }
+version = "0.2.0"
+source = { git = "https://github.com/jotaele44/thehub-pr.git?subdirectory=packages%2Fprii_export_utils&rev=0f62e4bdde10b5ac82787a329d6f15481ab9c7f0#0f62e4bdde10b5ac82787a329d6f15481ab9c7f0" }
 
 [[package]]
 name = "prii-maintenance"
@@ -2935,7 +2935,7 @@ requires-dist = [
     { name = "opensky-api", marker = "extra == 'adsb'", git = "https://github.com/openskynetwork/opensky-api.git?subdirectory=python&rev=16e3803d2495d0029bebc3c85b2a235eeb122742" },
     { name = "pillow", specifier = ">=10.0" },
     { name = "pillow-heif", marker = "sys_platform != 'win32'", specifier = ">=1.5.0" },
-    { name = "prii-export-utils", git = "https://github.com/jotaele44/thehub-pr.git?subdirectory=packages%2Fprii_export_utils&rev=f2b81769924689b4d959554928810b1d7b7ef3d6" },
+    { name = "prii-export-utils", git = "https://github.com/jotaele44/thehub-pr.git?subdirectory=packages%2Fprii_export_utils&rev=0f62e4bdde10b5ac82787a329d6f15481ab9c7f0" },
     { name = "prii-maintenance", git = "https://github.com/jotaele44/thehub-pr.git?subdirectory=packages%2Fprii_maintenance&rev=f2b81769924689b4d959554928810b1d7b7ef3d6" },
     { name = "pyarrow", marker = "extra == 'fr24'", specifier = ">=14.0" },
     { name = "pymupdf", specifier = ">=1.28.2" },

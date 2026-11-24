@@ -118,3 +118,6 @@ data/local_reference/fr24_icon_library/
 
 # adsb.lol replay chunks and other upstream caches (regenerable)
 data/cache/
+
+# Sky Cameras runtime: moderation queue, uploaded clips, liveness status (docs/SKY_CAMERAS.md).
+data/sky_cameras/
