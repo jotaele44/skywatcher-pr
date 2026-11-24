@@ -7,7 +7,9 @@ import MetricCard from "@/components/skywatcher/MetricCard";
 import PageHeader from "@/components/skywatcher/PageHeader";
 import Panel from "@/components/skywatcher/Panel";
 import PuertoRicoMapShell from "@/components/skywatcher/PuertoRicoMapShell";
+import SpatialFlightRenderer from "@/components/skywatcher/SpatialFlightRenderer";
 import StatusChip from "@/components/skywatcher/StatusChip";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 const markerTone = (status) => {
   if (status === "selected") return "ready";
@@ -31,6 +33,7 @@ const fixed = (value, digits = 1) =>
 
 export default function SpatialTruth() {
   const data = useSkywatcher();
+  const [localFlightRoutes, setLocalFlightRoutes] = React.useState([]);
   if (data.loading) return <LoadingState />;
 
   const observations = data.spatialObservations;
@@ -108,14 +111,19 @@ export default function SpatialTruth() {
         </p>
       </Panel>
 
+      <SpatialFlightRenderer onRoutes={setLocalFlightRoutes} />
+
       <PuertoRicoMapShell
         observations={mapObservations}
         airports={data.airports}
+        routes={localFlightRoutes}
         height={290}
         title={
-          observations.length > mapObservations.length
-            ? "Bounded-error RLSM aircraft positions (latest 1,000)"
-            : "Bounded-error RLSM aircraft positions"
+          localFlightRoutes.length
+            ? `Local flight layers · ${localFlightRoutes.length} rendered segments`
+            : observations.length > mapObservations.length
+              ? "Bounded-error RLSM aircraft positions (latest 1,000)"
+              : "Bounded-error RLSM aircraft positions"
         }
         diagnostic={false}
       />
@@ -128,7 +136,7 @@ export default function SpatialTruth() {
             message="Run the aircraft_markers and georeference stages against the local RLSM corpus."
           />
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div {...scrollRegion("Bounded aircraft positions")} className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -184,7 +192,7 @@ export default function SpatialTruth() {
             message="Every aircraft screenshot receives a terminal marker and georeference status when the stages run."
           />
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div {...scrollRegion("Spatial frame accounting")} className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -246,7 +254,7 @@ export default function SpatialTruth() {
             message="Rungs are learned only from accepted multi-anchor affine fits."
           />
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div {...scrollRegion("Corroborated zoom rungs")} className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">

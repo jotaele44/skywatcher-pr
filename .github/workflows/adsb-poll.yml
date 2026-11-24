@@ -27,11 +27,37 @@ jobs:
         run: |
           command -v uv >/dev/null 2>&1 || python -m pip install -q uv
           uv sync --extra adsb
+      # Each run is a fresh checkout, so without a restore step the poller
+      # would write into an empty DB every 15 minutes and the accumulated
+      # history would only ever exist inside that run's own throwaway
+      # artifact — the backend/frontend never see it (server/backend/main.py
+      # advertises zero tracks whenever data/skywatcher.db is absent). The
+      # cache key is unique per run with a prefix restore-key, so restore
+      # always pulls the most recent prior run's DB and save always writes a
+      # new entry; ADSB_RETENTION_DAYS in adsb/config.py bounds how large
+      # that DB (and this cache) can grow.
+      # actions/cache is referenced by tag, not a pinned SHA, because
+      # resolving the SHA required a lookup outside this session's GitHub
+      # access scope; repin it the same way the other steps below are
+      # pinned when that's next in reach.
+      - name: Restore polled database
+        uses: actions/cache/restore@v4
+        with:
+          path: data/skywatcher.db
+          key: adsb-db-${{ github.run_id }}
+          restore-keys: |
+            adsb-db-
       - name: Poll OpenSky and persist state vectors
         env:
           OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
           OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
         run: uv run python scripts/adsb_poll.py
+      - name: Save polled database
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/skywatcher.db
+          key: adsb-db-${{ github.run_id }}
       - name: Upload polled database
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

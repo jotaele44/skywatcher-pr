@@ -55,7 +55,7 @@ fr24 = [
     "pytesseract>=0.3.13,<0.4",  # Tesseract OCR bindings (fr24 OCR modules)
     "opencv-python>=4.8,<5",     # UI segmentation / route + track vectorization
     "numpy>=1.24",               # affine coordinate fitting / vectorization
-    "pyarrow>=14.0",             # columnar export (Parquet)
+    "pyarrow>=25.0.1",             # columnar export (Parquet)
 ]
 # Optional GEBCO bathymetry/terrain layer (gebco/). Heavy geospatial stack;
 # not required for the core airspace engine or the federation export contract.
@@ -82,7 +82,7 @@ package = false
 
 [tool.uv.sources]
 prii-maintenance = { git = "https://github.com/jotaele44/thehub-pr.git", rev = "f2b81769924689b4d959554928810b1d7b7ef3d6", subdirectory = "packages/prii_maintenance" }
-prii-export-utils = { git = "https://github.com/jotaele44/thehub-pr.git", rev = "f2b81769924689b4d959554928810b1d7b7ef3d6", subdirectory = "packages/prii_export_utils" }
+prii-export-utils = { git = "https://github.com/jotaele44/thehub-pr.git", rev = "0f62e4bdde10b5ac82787a329d6f15481ab9c7f0", subdirectory = "packages/prii_export_utils" }
 opensky-api = { git = "https://github.com/openskynetwork/opensky-api.git", rev = "16e3803d2495d0029bebc3c85b2a235eeb122742", subdirectory = "python" }
 
 [tool.pytest.ini_options]
@@ -112,7 +112,9 @@ src = [".", "src", "tests"]
 # (ADR v2.1 A0), including a copy of the OLD governance test. Those bytes must not
 # change — their SHA-256 values are asserted — so no linter or formatter may touch
 # them. pytest already skips it via testpaths = ["tests"].
-extend-exclude = ["Archive.zip", "gebco", "exports", "data", "docs/architecture/archive"]
+# federation/roads/pr_route_ref.py is likewise byte-pinned (SHA-256 in its pin JSON,
+# extracted verbatim from spiderweb-pr), so it is excluded for the same reason.
+extend-exclude = ["Archive.zip", "gebco", "exports", "data", "docs/architecture/archive", "federation/roads/pr_route_ref.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "W"]
