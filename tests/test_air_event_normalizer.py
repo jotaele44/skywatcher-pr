@@ -18,3 +18,48 @@ def test_normalize_air_event_forces_guardrails_and_ids():
     assert event["mode"] == "batch_file"
     assert event["tactical_public_tracking"] is False
     assert 0 <= event["confidence"] <= 1
+
+
+
+def test_normalize_air_event_preserves_separate_source_identity_dimensions():
+    event = normalize_air_event(
+        {
+            "registration": "N600UH",
+            "callsign": "C6062",
+            "hex": "A7C001",
+            "aircraft_type": "C172",
+            "timestamp": "2026-09-09T12:00:00Z",
+            "lat": 18.45,
+            "lon": -66.10,
+        }
+    )
+
+    assert event["aircraft_id"] == "A7C001"
+    assert event["registration"] == "N600UH"
+    assert event["callsign"] == "C6062"
+    assert event["icao24"] == "A7C001"
+    assert event["aircraft_type"] == "C172"
+    assert event["source_identity"] == {
+        "callsign": "C6062",
+        "registration": "N600UH",
+        "icao24": "A7C001",
+        "aircraft_type": "C172",
+    }
+    assert event["identity_state"] == "SOURCE_IDENTITY_PRESENT"
+
+
+def test_blank_source_callsign_uses_legacy_display_fallback_without_erasing_provenance():
+    event = normalize_air_event(
+        {
+            "registration": "N600UH",
+            "callsign": "",
+            "timestamp": "2026-09-09T12:00:00Z",
+            "lat": 18.45,
+            "lon": -66.10,
+        }
+    )
+
+    assert event["registration"] == "N600UH"
+    assert event["callsign"] == "N600UH"
+    assert event["source_identity"]["callsign"] is None
+    assert event["source_identity"]["registration"] == "N600UH"

@@ -1,0 +1,1495 @@
+{
+  "schema_version": "federation.gui-backend-contract/1.0",
+  "repository": "Jotaele44/skywatcher-pr",
+  "source_commit": "8d31aeb2d4141c0547be3d99b3a1a878beda5094",
+  "policy": {
+    "require_zero_material_residue": true,
+    "dimensions": [
+      "executability",
+      "semantic",
+      "state",
+      "auth",
+      "data",
+      "provenance",
+      "device",
+      "identity",
+      "geometry",
+      "authority"
+    ]
+  },
+  "discovery": {
+    "backend_roots": [
+      "server/backend",
+      "src/skywatcher",
+      "fr24",
+      "desktop"
+    ],
+    "frontend_roots": [
+      "frontend/src"
+    ],
+    "route_files": [
+      "frontend/src/App.jsx"
+    ],
+    "navigation_files": [
+      "frontend/src/components/skywatcher/Sidebar.jsx"
+    ],
+    "existing_gui_capability_manifests": [
+      ".federation/gui-capabilities.json"
+    ]
+  },
+  "authority": {
+    "semantic_authority": "aircraft-aviation-telemetry-flight-observation",
+    "mutation_authority": "skywatcher-domain-state-only",
+    "identity_authority": "aircraft-flight-track-and-observation-identities",
+    "geometry_authority": "track-geometry-producer-with-federated-spatial-consumption",
+    "provenance_authority": "aviation-provider-flight-track-and-observation-provenance"
+  },
+  "auth": {
+    "mutating_route_policy": "require_guard_or_explicit_public",
+    "guard_patterns": [
+      "Depends\\(",
+      "require_admin",
+      "require_write",
+      "_WRITE_GUARD",
+      "write_token",
+      "dependencies\\s*="
+    ],
+    "explicit_public_mutations": [],
+    "read_only_post_routes": [
+      {
+        "route": "POST /api/entities/{entity_name}/filter",
+        "rationale": "This endpoint filters and sorts entity rows in memory; it does not mutate persisted or session state.",
+        "evidence": [
+          "server/backend/main.py:960-975"
+        ]
+      }
+    ]
+  },
+  "provenance": {
+    "required_fields_when_available": [],
+    "frontend_evidence_files": [
+      "frontend/src/App.jsx",
+      "frontend/src/lib/SkywatcherData.jsx",
+      "frontend/src/components/skywatcher/drawers/DrawerHub.jsx"
+    ]
+  },
+  "devices": {
+    "desktop": true,
+    "mobile_web": true,
+    "native_ios": false,
+    "native_evidence_files": [],
+    "intentional_restrictions": []
+  },
+  "backend_only_allowlist": [
+    {
+      "pattern": "GET /api/console/capabilities",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/console/router.py:33"
+      ]
+    },
+    {
+      "pattern": "GET /api/console/repositories",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/console/router.py:40"
+      ]
+    },
+    {
+      "pattern": "GET /api/console/captures",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/console/router.py:86"
+      ]
+    },
+    {
+      "pattern": "GET /api/console/review/items",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/console/router.py:122"
+      ]
+    },
+    {
+      "pattern": "GET /api/console/aircraft/profiles",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/console/router.py:150"
+      ]
+    },
+    {
+      "pattern": "GET /api/console/aircraft/states",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/console/router.py:188"
+      ]
+    },
+    {
+      "pattern": "GET /api/console/flights",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/console/router.py:232"
+      ]
+    },
+    {
+      "pattern": "GET /api/console/flights/{flight_id}",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/console/router.py:286"
+      ]
+    },
+    {
+      "pattern": "GET /api/console/flights/{flight_id}/track",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/console/router.py:297"
+      ]
+    },
+    {
+      "pattern": "GET /api/console/routes",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/console/router.py:346"
+      ]
+    },
+    {
+      "pattern": "GET /api/console/airports/{airport_id}/operations",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/console/router.py:375"
+      ]
+    },
+    {
+      "pattern": "GET /api/analysis/registry",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/main.py:882"
+      ]
+    },
+    {
+      "pattern": "POST /api/query",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/main.py:922"
+      ]
+    },
+    {
+      "pattern": "GET /api/entities/{entity_name}/availability",
+      "classification": "INTERNAL",
+      "rationale": "Intentional backend surface exposed for local federation operation or read-only service support; it is not a standalone GUI capability.",
+      "evidence": [
+        "server/backend/main.py:975"
+      ]
+    }
+  ],
+  "gui_only_allowlist": [
+    {
+      "pattern": "frontend/src/components/ErrorBoundary.jsx:30:window.location.reload()} className=\"inline-flex items-center justify-center rounded-md border border-border bg-primary px-4 py-2 text-sm font-semibold text-pri",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/ErrorBoundary.jsx:30"
+      ]
+    },
+    {
+      "pattern": "frontend/src/lib/PageNotFound.jsx:61:window.location.href = '/'} className=\"inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:b",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/lib/PageNotFound.jsx:61"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Console.jsx:96:Reset",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Console.jsx:96"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Console.jsx:145:dispatchSelection( )} className=\"rounded-md border border-border bg-secondary px-2 py-1 text-[10px] text-foreground\">Clear selection",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Console.jsx:145"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Routes.jsx:133:setShowProvenance((value) => !value)} className=\"mt-3 rounded border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/40\">",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Routes.jsx:133"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/ResetPassword.jsx:44:Request a new link",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/ResetPassword.jsx:44"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/ResetPassword.jsx:101:unlabeled-control",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/ResetPassword.jsx:101"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Aircraft.jsx:49:setView(\"cards\")} className= `}> Cards",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Aircraft.jsx:49"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Aircraft.jsx:50:setView(\"table\")} className= `}> Table",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Aircraft.jsx:50"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Infrastructure.jsx:80:open.asset(a.asset_id)} className=\"flex w-full items-center justify-between gap-3 border-b border-border px-4 py-3 text-left transition hover:bg-secondary/40\"> ",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Infrastructure.jsx:80"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/ForgotPassword.jsx:34:Back to log in",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/ForgotPassword.jsx:34"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/ForgotPassword.jsx:62:unlabeled-control",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/ForgotPassword.jsx:62"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Airports.jsx:76:open.aircraft(ac.aircraft_id)} className=\"inline-flex items-center gap-1 rounded border border-border bg-secondary/60 px-1.5 py-0.5 font-mono text-[10px] text-f",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Airports.jsx:76"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Login.jsx:43:Create one",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Login.jsx:43"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Login.jsx:49:Continue with Google",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Login.jsx:49"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Login.jsx:94:Forgot password?",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Login.jsx:94"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Login.jsx:112:unlabeled-control",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Login.jsx:112"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/ExportCenter.jsx:42:open.export(pkg.package_id)} className=\"text-[10px] font-semibold uppercase tracking-wide text-primary hover:underline\">Details \u2192",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/ExportCenter.jsx:42"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Observations.jsx:148:applyBulk(\"verified\", \"approved\")} className=\"h-8 bg-[hsl(142_70%_40%)] text-white hover:bg-[hsl(142_70%_34%)]\"> Approve",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Observations.jsx:148"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Observations.jsx:153:applyBulk(\"needs_review\", \"flagged\")} className=\"h-8 border-[hsl(38_100%_50%/0.5)] text-[hsl(38_100%_64%)] hover:bg-[hsl(38_100%_50%/0.12)]\"> Flag for review",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Observations.jsx:153"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Observations.jsx:158:setSelected(new Set())} className=\"h-8 text-muted-foreground\"> Clear",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Observations.jsx:158"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Register.jsx:103:unlabeled-control",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Register.jsx:103"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Register.jsx:119:Resend",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Register.jsx:119"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Register.jsx:135:Log in",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Register.jsx:135"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Register.jsx:141:Continue with Google",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Register.jsx:141"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Register.jsx:215:unlabeled-control",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/pages/Register.jsx:215"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/ui/carousel.jsx:155:Previous slide",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/ui/carousel.jsx:155"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/ui/carousel.jsx:176:Next slide",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/ui/carousel.jsx:176"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/ui/toast.jsx:64:unlabeled-control",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/ui/toast.jsx:64"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/ui/sidebar.jsx:223:} asChild= >",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/ui/sidebar.jsx:223"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/Layout.jsx:30:setMobileOpen((v) => !v)} className=\"flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-secondary text-foreground\" >",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/Layout.jsx:30"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:292:Clear",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:292"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:299:setMode(candidateMode)} aria-pressed= className= `} >",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:299"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:335:setBufferRadiusKm(radiusKm)} aria-pressed= className= `} > km",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:335"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/AircraftProfileCard.jsx:11:obs",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/AircraftProfileCard.jsx:11"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/InfrastructureLinkPanel.jsx:22:unlabeled-control",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/InfrastructureLinkPanel.jsx:22"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/ManualReviewPanel.jsx:14:)}",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/ManualReviewPanel.jsx:14"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/Sidebar.jsx:45:unlabeled-control",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/Sidebar.jsx:45"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/ReviewActions.jsx:31:onChange(a.key)} className= ` }`} >",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/ReviewActions.jsx:31"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/SideDrawer.jsx:22:unlabeled-control",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SideDrawer.jsx:22"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/SideDrawer.jsx:62:} Open \u2192",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SideDrawer.jsx:62"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:419:Retry municipio density",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:419"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:455:unlabeled-control",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:455"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/RouteSegmentPanel.jsx:10:start , end , length nm method",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/RouteSegmentPanel.jsx:10"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/CommandReferenceCard.jsx:18:unlabeled-control",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/CommandReferenceCard.jsx:18"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/ReviewDetailDrawer.jsx:92:Save Notes",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/ReviewDetailDrawer.jsx:92"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:57:placeholder(\"Capture queued (diagnostic placeholder, no execution).\")} className=\"rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:57"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:58:Open Manual Review",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:58"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:59:placeholder(\"Observation link recorded (diagnostic placeholder).\")} className=\"rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold te",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:59"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:60:setStatus(\"duplicate\", \"Marked as duplicate.\")} className=\"rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground/80 hov",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:60"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:61:setStatus(\"rejected\", \"Capture rejected.\")} className=\"rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground/80 hover:t",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:61"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:76:); }} className=\"text-muted-foreground hover:text-primary\">",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Local UI control or presentation fallback whose state is handled within the rendered component and does not require a distinct backend endpoint.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:76"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/ErrorBoundary\\.jsx:30:window\\.location\\.reload\\(\\)\\}\\ className=\"inline\\-flex\\ items\\-center\\ justify\\-center\\ rounded\\-md\\ border\\ border\\-border\\ bg\\-primary\\ px\\-4\\ py\\-2\\ text\\-sm\\ font\\-semibold\\ text\\-pri",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/components/ErrorBoundary.jsx:30"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Console\\.jsx:145:dispatchSelection\\(\\ \\)\\}\\ className=\"rounded\\-md\\ border\\ border\\-border\\ bg\\-secondary\\ px\\-2\\ py\\-1\\ text\\-\\[10px\\]\\ text\\-foreground\">Clear\\ selection",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/pages/Console.jsx:145"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Routes\\.jsx:133:setShowProvenance\\(\\(value\\)\\ =>\\ !value\\)\\}\\ className=\"mt\\-3\\ rounded\\ border\\ border\\-border\\ px\\-3\\ py\\-1\\.5\\ text\\-xs\\ font\\-semibold\\ hover:bg\\-secondary/40\">",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/pages/Routes.jsx:133"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Aircraft\\.jsx:49:setView\\(\"cards\"\\)\\}\\ className=\\ `\\}>\\ Cards",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/pages/Aircraft.jsx:49"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Aircraft\\.jsx:50:setView\\(\"table\"\\)\\}\\ className=\\ `\\}>\\ Table",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/pages/Aircraft.jsx:50"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Infrastructure\\.jsx:80:open\\.asset\\(a\\.asset_id\\)\\}\\ className=\"flex\\ w\\-full\\ items\\-center\\ justify\\-between\\ gap\\-3\\ border\\-b\\ border\\-border\\ px\\-4\\ py\\-3\\ text\\-left\\ transition\\ hover:bg\\-secondary/40\">\\ ",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/pages/Infrastructure.jsx:80"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Airports\\.jsx:76:open\\.aircraft\\(ac\\.aircraft_id\\)\\}\\ className=\"inline\\-flex\\ items\\-center\\ gap\\-1\\ rounded\\ border\\ border\\-border\\ bg\\-secondary/60\\ px\\-1\\.5\\ py\\-0\\.5\\ font\\-mono\\ text\\-\\[10px\\]\\ text\\-f",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/pages/Airports.jsx:76"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/ExportCenter\\.jsx:42:open\\.export\\(pkg\\.package_id\\)\\}\\ className=\"text\\-\\[10px\\]\\ font\\-semibold\\ uppercase\\ tracking\\-wide\\ text\\-primary\\ hover:underline\">Details\\ \u2192",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/pages/ExportCenter.jsx:42"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Observations\\.jsx:148:applyBulk\\(\"verified\",\\ \"approved\"\\)\\}\\ className=\"h\\-8\\ bg\\-\\[hsl\\(142_70%_40%\\)\\]\\ text\\-white\\ hover:bg\\-\\[hsl\\(142_70%_34%\\)\\]\">\\ Approve",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/pages/Observations.jsx:148"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Observations\\.jsx:153:applyBulk\\(\"needs_review\",\\ \"flagged\"\\)\\}\\ className=\"h\\-8\\ border\\-\\[hsl\\(38_100%_50%/0\\.5\\)\\]\\ text\\-\\[hsl\\(38_100%_64%\\)\\]\\ hover:bg\\-\\[hsl\\(38_100%_50%/0\\.12\\)\\]\">\\ Flag\\ for\\ review",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/pages/Observations.jsx:153"
+      ]
+    },
+    {
+      "pattern": "frontend/src/pages/Observations\\.jsx:158:setSelected\\(new\\ Set\\(\\)\\)\\}\\ className=\"h\\-8\\ text\\-muted\\-foreground\">\\ Clear",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/pages/Observations.jsx:158"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/Layout\\.jsx:30:setMobileOpen\\(\\(v\\)\\ =>\\ !v\\)\\}\\ className=\"flex\\ h\\-8\\ w\\-8\\ items\\-center\\ justify\\-center\\ rounded\\-lg\\ border\\ border\\-border\\ bg\\-secondary\\ text\\-foreground\"\\ >",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/components/skywatcher/Layout.jsx:30"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/SpatialToolsPanel\\.jsx:299:setMode\\(candidateMode\\)\\}\\ aria\\-pressed=\\ className=\\ `\\}\\ >",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:299"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/SpatialToolsPanel\\.jsx:335:setBufferRadiusKm\\(radiusKm\\)\\}\\ aria\\-pressed=\\ className=\\ `\\}\\ >\\ km",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:335"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/ManualReviewPanel\\.jsx:14:\\)\\}",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/components/skywatcher/ManualReviewPanel.jsx:14"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/ReviewActions\\.jsx:31:onChange\\(a\\.key\\)\\}\\ className=\\ `\\ \\}`\\}\\ >",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/components/skywatcher/ReviewActions.jsx:31"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer\\.jsx:57:placeholder\\(\"Capture\\ queued\\ \\(diagnostic\\ placeholder,\\ no\\ execution\\)\\.\"\\)\\}\\ className=\"rounded\\-lg\\ border\\ border\\-border\\ bg\\-secondary\\ px\\-3\\ py\\-1\\.5\\ text\\-xs\\ font\\-semibold",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:57"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer\\.jsx:59:placeholder\\(\"Observation\\ link\\ recorded\\ \\(diagnostic\\ placeholder\\)\\.\"\\)\\}\\ className=\"rounded\\-lg\\ border\\ border\\-border\\ bg\\-secondary\\ px\\-3\\ py\\-1\\.5\\ text\\-xs\\ font\\-semibold\\ te",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:59"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer\\.jsx:60:setStatus\\(\"duplicate\",\\ \"Marked\\ as\\ duplicate\\.\"\\)\\}\\ className=\"rounded\\-lg\\ border\\ border\\-border\\ bg\\-secondary\\ px\\-3\\ py\\-1\\.5\\ text\\-xs\\ font\\-semibold\\ text\\-foreground/80\\ hov",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:60"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer\\.jsx:61:setStatus\\(\"rejected\",\\ \"Capture\\ rejected\\.\"\\)\\}\\ className=\"rounded\\-lg\\ border\\ border\\-border\\ bg\\-secondary\\ px\\-3\\ py\\-1\\.5\\ text\\-xs\\ font\\-semibold\\ text\\-foreground/80\\ hover:t",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:61"
+      ]
+    },
+    {
+      "pattern": "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer\\.jsx:76:\\);\\ \\}\\}\\ className=\"text\\-muted\\-foreground\\ hover:text\\-primary\">",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Intentional local UI control with no distinct backend endpoint; state is handled by the component.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/CaptureDetailDrawer.jsx:76"
+      ]
+    },
+    {
+      "pattern": "/analysis",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Navigation route handled by the application shell; it is not a backend capability endpoint.",
+      "evidence": [
+        "frontend/src/App.jsx:66"
+      ]
+    },
+    {
+      "pattern": "/forgot\\-password",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Navigation route handled by the application shell; it is not a backend capability endpoint.",
+      "evidence": [
+        "frontend/src/App.jsx:78"
+      ]
+    },
+    {
+      "pattern": "/login",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Navigation route handled by the application shell; it is not a backend capability endpoint.",
+      "evidence": [
+        "frontend/src/App.jsx:76"
+      ]
+    },
+    {
+      "pattern": "/register",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Navigation route handled by the application shell; it is not a backend capability endpoint.",
+      "evidence": [
+        "frontend/src/App.jsx:77"
+      ]
+    },
+    {
+      "pattern": "/reset\\-password",
+      "classification": "PRESENTATION_ONLY",
+      "rationale": "Navigation route handled by the application shell; it is not a backend capability endpoint.",
+      "evidence": [
+        "frontend/src/App.jsx:79"
+      ]
+    }
+  ],
+  "state_claims": [
+    {
+      "claim_id": "skywatcher-pr-claim-001",
+      "frontend_pattern": "; export default function MapRuntime({ capabilityIndex, basemapId, viewport, selection, layerVisibility, onViewportChang",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/MapRuntime.jsx:4"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-002",
+      "frontend_pattern": "? null : new ResizeObserver(() => runtimeRef.current?.resize()); if (observer) observer.observe(containerRef.current); r",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/MapRuntime.jsx:46"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-003",
+      "frontend_pattern": ", diagnostic = true, }) { const containerRef = useRef(null); const mapRef = useRef(null); const readyRef = useRef(false)",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:112"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-004",
+      "frontend_pattern": ", async () => { const { observations: obs, airports: apt, assets: ast, routes: rte } = propsRef.current; map.addSource(",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:143"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-005",
+      "frontend_pattern": ", ); readyRef.current = true; setMapReady(true); for (const layer of [",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:246"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-006",
+      "frontend_pattern": ", layer, (e) => { if (spatialToolActiveRef.current) return; const f = e.features[0]; setHover({ point: e.point, props: f",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:255"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-007",
+      "frontend_pattern": ")?.setData(toPointCollection(observations)); }, [observations]); useEffect(() => { if (!readyRef.current) return; mapRef",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:269"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-008",
+      "frontend_pattern": ")?.setData(toPointCollection(airports)); }, [airports]); useEffect(() => { if (!readyRef.current) return; mapRef.current",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:273"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-009",
+      "frontend_pattern": ")?.setData(toPointCollection(assets)); }, [assets]); useEffect(() => { if (!readyRef.current) return; mapRef.current.get",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:277"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-010",
+      "frontend_pattern": ")?.setData(toLineCollection(routes)); }, [routes]); useEffect(() => { if (!readyRef.current) return; mapRef.current.setL",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:281"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-011",
+      "frontend_pattern": "); mapRef.current.setLayoutProperty(",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:286"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-012",
+      "frontend_pattern": "); }, [showZones]); useEffect(() => { if (!readyRef.current) return; mapRef.current.setLayoutProperty(",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:287"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-013",
+      "frontend_pattern": "); }, [showCorridors]); useEffect(() => { if (!readyRef.current) return; mapRef.current.setLayoutProperty(",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:292"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-014",
+      "frontend_pattern": "); }, [showHeatmap]); useEffect(() => { if (!mapReady) return; const map = mapRef.current; map.setLayoutProperty(",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:296"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-015",
+      "frontend_pattern": ", exaggeration: 1.3 }); map.easeTo({ pitch: 55, duration: 600 }); } else { map.setTerrain(null); map.easeTo({ pitch: 0, ",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:304"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-016",
+      "frontend_pattern": "> {densityState.matchedCount} matched \u00b7 {densityState.unmatchedCount} unresolved \u00b7 {densityState.totalObservations} tota",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:423"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-017",
+      "frontend_pattern": ", }; export default function ReviewActions({ current, onChange, actions = ACTIONS }) { return ( <div className=",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/ReviewActions.jsx:21"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-018",
+      "frontend_pattern": "> {actions.map((a) => { const Icon = a.icon; const active = current === a.key; return ( <button key={a.key} onClick={() ",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/ReviewActions.jsx:26"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-019",
+      "frontend_pattern": ") const [measurePoints, setMeasurePoints] = useState([]) const [bufferRadiusKm, setBufferRadiusKm] = useState(5) const [",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:126"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-020",
+      "frontend_pattern": "useEffect(() => { const map = mapRef.current if (!map || !mapReady) return function setup() { ensureLineSource(map, MEAS",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:134"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-021",
+      "frontend_pattern": ", setup) }, [mapRef, mapReady]) const clearAll = () => { setMeasurePoints([]) setBufferOrigin(null) setBufferResult(null",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:145"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-022",
+      "frontend_pattern": "|| !bufferOrigin) return const map = mapRef.current const { candidates, sourceError } = readTarget(targets, targetKey) c",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:167"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-023",
+      "frontend_pattern": "|| !nearestOrigin) return const map = mapRef.current const { candidates, sourceError } = readTarget(targets, targetKey) ",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:191"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-024",
+      "frontend_pattern": ", targetKey, }) }, [mapRef, mode, nearestOrigin, targetKey, targets]) useEffect(() => { const map = mapRef.current if (!",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:223"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-025",
+      "frontend_pattern": "}) { if (!synthetic) { return ( <span className={`inline-flex items-center gap-1 rounded-full border border-[hsl(142_70%",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SyntheticDataBadge.jsx:4"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-026",
+      "frontend_pattern": "Live Exec",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/TopStatusStrip.jsx:19"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-027",
+      "frontend_pattern": "; // Finishes the track-playback feature left half-built by the original GIS // rollout: the backend has always shipped ",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/TrackTimeScrubber.jsx:2"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-028",
+      "frontend_pattern": "> No blocking conditions for this package in its current mode. {pkg.export_mode ===",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/ExportDetailDrawer.jsx:40"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-029",
+      "frontend_pattern": "ReviewActions current={obs.review_status} onChange={updateReviewStatus}",
+      "backend_predicate": "review_status is read from the persisted observation record; updateRecord commits the selected status before applying it to client state.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/ObservationDetailDrawer.jsx:55"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-030",
+      "frontend_pattern": "icon={ClipboardCheck}> <ReviewActions current={item.review_status} onChange={setStatus} actions={MANUAL_REVIEW_ACTIONS} ",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/ReviewDetailDrawer.jsx:54"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-031",
+      "frontend_pattern": ">Linked record not available in current dataset.</p> )} </Section> <Section title=",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/ReviewDetailDrawer.jsx:80"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-032",
+      "frontend_pattern": "ReviewActions current={route.review_status} onChange={updateReviewStatus}",
+      "backend_predicate": "review_status is read from the persisted route record; updateRecord commits the selected status before applying it to client state.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/RouteDetailDrawer.jsx:49"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-033",
+      "frontend_pattern": "aria-current=",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/ui/breadcrumb.jsx:47"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-034",
+      "frontend_pattern": "flex items-center justify-center text-current",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/ui/checkbox.jsx:15"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-035",
+      "frontend_pattern": "h-4 w-4 fill-current",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/ui/context-menu.jsx:100"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-036",
+      "frontend_pattern": "h-2 w-2 fill-current",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/ui/dropdown-menu.jsx:104"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-037",
+      "frontend_pattern": ", ...props }) => ( <a aria-current={isActive ?",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/components/ui/pagination.jsx:35"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-038",
+      "frontend_pattern": "Current selection",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/console/layerRegistry.js:34"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-039",
+      "frontend_pattern": "checked={Boolean(layerVisibility[layer.id])} disabled={!enabled} onChange={(event) => setLayerVisibility((current) => ({",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Console.jsx:161"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-040",
+      "frontend_pattern": "Live Execution",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Dashboard.jsx:69"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-041",
+      "frontend_pattern": ">Hub Live Execution</p></div> <p className=",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Dashboard.jsx:89"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-042",
+      "frontend_pattern": ">Hard rule:</strong> production export is blocked when a package contains synthetic rows. All current packages are diagn",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/ExportCenter.jsx:28"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-043",
+      "frontend_pattern": "> <strong>FR24 ingest is repository-side.</strong> Federation only visualizes capture metadata and review state. No scra",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/FR24Intake.jsx:44"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-044",
+      "frontend_pattern": "current-password",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Login.jsx:103"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-045",
+      "frontend_pattern": "Synthetic & live",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Observations.jsx:36"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-046",
+      "frontend_pattern": "live",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Observations.jsx:38"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-047",
+      "frontend_pattern": "Live only",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Observations.jsx:38"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-048",
+      "frontend_pattern": "Ready for Hub live execution",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Readiness.jsx:13"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-049",
+      "frontend_pattern": "Live execution blocked until non-synthetic observations and validated production export exist.",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Readiness.jsx:13"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-050",
+      "frontend_pattern": "Live observations",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Readiness.jsx:14"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-051",
+      "frontend_pattern": "Only then reassess live execution readiness",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Readiness.jsx:31"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-052",
+      "frontend_pattern": "Readiness intelligence for Hub discovery & live execution",
+      "backend_predicate": "The corresponding backend response or local component state is the declared source for this view claim.",
+      "evidence": [
+        "frontend/src/pages/Readiness.jsx:42"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-053",
+      "frontend_pattern": ";\\ export\\ default\\ function\\ MapRuntime\\(\\{\\ capabilityIndex,\\ basemapId,\\ viewport,\\ selection,\\ layerVisibility,\\ onViewportChang",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/MapRuntime.jsx:4"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-054",
+      "frontend_pattern": "\\?\\ null\\ :\\ new\\ ResizeObserver\\(\\(\\)\\ =>\\ runtimeRef\\.current\\?\\.resize\\(\\)\\);\\ if\\ \\(observer\\)\\ observer\\.observe\\(containerRef\\.current\\);\\ r",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/MapRuntime.jsx:46"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-055",
+      "frontend_pattern": ",\\ diagnostic\\ =\\ true,\\ \\}\\)\\ \\{\\ const\\ containerRef\\ =\\ useRef\\(null\\);\\ const\\ mapRef\\ =\\ useRef\\(null\\);\\ const\\ readyRef\\ =\\ useRef\\(false\\)",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:112"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-056",
+      "frontend_pattern": ",\\ async\\ \\(\\)\\ =>\\ \\{\\ const\\ \\{\\ observations:\\ obs,\\ airports:\\ apt,\\ assets:\\ ast,\\ routes:\\ rte\\ \\}\\ =\\ propsRef\\.current;\\ map\\.addSource\\(",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:143"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-057",
+      "frontend_pattern": ",\\ \\);\\ readyRef\\.current\\ =\\ true;\\ setMapReady\\(true\\);\\ for\\ \\(const\\ layer\\ of\\ \\[",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:246"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-058",
+      "frontend_pattern": ",\\ layer,\\ \\(e\\)\\ =>\\ \\{\\ if\\ \\(spatialToolActiveRef\\.current\\)\\ return;\\ const\\ f\\ =\\ e\\.features\\[0\\];\\ setHover\\(\\{\\ point:\\ e\\.point,\\ props:\\ f",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:255"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-059",
+      "frontend_pattern": "\\)\\?\\.setData\\(toPointCollection\\(observations\\)\\);\\ \\},\\ \\[observations\\]\\);\\ useEffect\\(\\(\\)\\ =>\\ \\{\\ if\\ \\(!readyRef\\.current\\)\\ return;\\ mapRef",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:269"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-060",
+      "frontend_pattern": "\\)\\?\\.setData\\(toPointCollection\\(airports\\)\\);\\ \\},\\ \\[airports\\]\\);\\ useEffect\\(\\(\\)\\ =>\\ \\{\\ if\\ \\(!readyRef\\.current\\)\\ return;\\ mapRef\\.current",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:273"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-061",
+      "frontend_pattern": "\\)\\?\\.setData\\(toPointCollection\\(assets\\)\\);\\ \\},\\ \\[assets\\]\\);\\ useEffect\\(\\(\\)\\ =>\\ \\{\\ if\\ \\(!readyRef\\.current\\)\\ return;\\ mapRef\\.current\\.get",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:277"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-062",
+      "frontend_pattern": "\\)\\?\\.setData\\(toLineCollection\\(routes\\)\\);\\ \\},\\ \\[routes\\]\\);\\ useEffect\\(\\(\\)\\ =>\\ \\{\\ if\\ \\(!readyRef\\.current\\)\\ return;\\ mapRef\\.current\\.setL",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:281"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-063",
+      "frontend_pattern": "\\);\\ mapRef\\.current\\.setLayoutProperty\\(",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:286"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-064",
+      "frontend_pattern": "\\);\\ \\},\\ \\[showZones\\]\\);\\ useEffect\\(\\(\\)\\ =>\\ \\{\\ if\\ \\(!readyRef\\.current\\)\\ return;\\ mapRef\\.current\\.setLayoutProperty\\(",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:287"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-065",
+      "frontend_pattern": "\\);\\ \\},\\ \\[showCorridors\\]\\);\\ useEffect\\(\\(\\)\\ =>\\ \\{\\ if\\ \\(!readyRef\\.current\\)\\ return;\\ mapRef\\.current\\.setLayoutProperty\\(",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:292"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-066",
+      "frontend_pattern": "\\);\\ \\},\\ \\[showHeatmap\\]\\);\\ useEffect\\(\\(\\)\\ =>\\ \\{\\ if\\ \\(!mapReady\\)\\ return;\\ const\\ map\\ =\\ mapRef\\.current;\\ map\\.setLayoutProperty\\(",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:296"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-067",
+      "frontend_pattern": ",\\ exaggeration:\\ 1\\.3\\ \\}\\);\\ map\\.easeTo\\(\\{\\ pitch:\\ 55,\\ duration:\\ 600\\ \\}\\);\\ \\}\\ else\\ \\{\\ map\\.setTerrain\\(null\\);\\ map\\.easeTo\\(\\{\\ pitch:\\ 0,\\ ",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/PuertoRicoMapShell.jsx:304"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-068",
+      "frontend_pattern": ",\\ \\};\\ export\\ default\\ function\\ ReviewActions\\(\\{\\ current,\\ onChange,\\ actions\\ =\\ ACTIONS\\ \\}\\)\\ \\{\\ return\\ \\(\\ <div\\ className=",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/ReviewActions.jsx:21"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-069",
+      "frontend_pattern": ">\\ \\{actions\\.map\\(\\(a\\)\\ =>\\ \\{\\ const\\ Icon\\ =\\ a\\.icon;\\ const\\ active\\ =\\ current\\ ===\\ a\\.key;\\ return\\ \\(\\ <button\\ key=\\{a\\.key\\}\\ onClick=\\{\\(\\)\\ ",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/ReviewActions.jsx:26"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-070",
+      "frontend_pattern": "\\)\\ const\\ \\[measurePoints,\\ setMeasurePoints\\]\\ =\\ useState\\(\\[\\]\\)\\ const\\ \\[bufferRadiusKm,\\ setBufferRadiusKm\\]\\ =\\ useState\\(5\\)\\ const\\ \\[",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:126"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-071",
+      "frontend_pattern": "useEffect\\(\\(\\)\\ =>\\ \\{\\ const\\ map\\ =\\ mapRef\\.current\\ if\\ \\(!map\\ \\|\\|\\ !mapReady\\)\\ return\\ function\\ setup\\(\\)\\ \\{\\ ensureLineSource\\(map,\\ MEAS",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:134"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-072",
+      "frontend_pattern": ",\\ setup\\)\\ \\},\\ \\[mapRef,\\ mapReady\\]\\)\\ const\\ clearAll\\ =\\ \\(\\)\\ =>\\ \\{\\ setMeasurePoints\\(\\[\\]\\)\\ setBufferOrigin\\(null\\)\\ setBufferResult\\(null",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:145"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-073",
+      "frontend_pattern": "\\|\\|\\ !bufferOrigin\\)\\ return\\ const\\ map\\ =\\ mapRef\\.current\\ const\\ \\{\\ candidates,\\ sourceError\\ \\}\\ =\\ readTarget\\(targets,\\ targetKey\\)\\ c",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:167"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-074",
+      "frontend_pattern": "\\|\\|\\ !nearestOrigin\\)\\ return\\ const\\ map\\ =\\ mapRef\\.current\\ const\\ \\{\\ candidates,\\ sourceError\\ \\}\\ =\\ readTarget\\(targets,\\ targetKey\\)\\ ",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:191"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-075",
+      "frontend_pattern": ",\\ targetKey,\\ \\}\\)\\ \\},\\ \\[mapRef,\\ mode,\\ nearestOrigin,\\ targetKey,\\ targets\\]\\)\\ useEffect\\(\\(\\)\\ =>\\ \\{\\ const\\ map\\ =\\ mapRef\\.current\\ if\\ \\(!",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SpatialToolsPanel.jsx:223"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-076",
+      "frontend_pattern": "\\}\\)\\ \\{\\ if\\ \\(!synthetic\\)\\ \\{\\ return\\ \\(\\ <span\\ className=\\{`inline\\-flex\\ items\\-center\\ gap\\-1\\ rounded\\-full\\ border\\ border\\-\\[hsl\\(142_70%",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/SyntheticDataBadge.jsx:4"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-077",
+      "frontend_pattern": "icon=\\{Gauge\\}>\\ <ReviewActions\\ current=\\{obs\\.review_status\\}\\ onChange=\\{\\(s\\)\\ =>\\ d\\.updateRecord\\(",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/ObservationDetailDrawer.jsx:41"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-078",
+      "frontend_pattern": ">Linked\\ record\\ not\\ available\\ in\\ current\\ dataset\\.</p>\\ \\)\\}\\ </Section>\\ <Section\\ title=",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/ReviewDetailDrawer.jsx:80"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-079",
+      "frontend_pattern": "icon=\\{Gauge\\}>\\ <ReviewActions\\ current=\\{route\\.review_status\\}\\ onChange=\\{\\(s\\)\\ =>\\ d\\.updateRecord\\(",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/components/skywatcher/drawers/RouteDetailDrawer.jsx:35"
+      ]
+    },
+    {
+      "claim_id": "skywatcher-pr-claim-080",
+      "frontend_pattern": "checked=\\{Boolean\\(layerVisibility\\[layer\\.id\\]\\)\\}\\ disabled=\\{!enabled\\}\\ onChange=\\{\\(event\\)\\ =>\\ setLayerVisibility\\(\\(current\\)\\ =>\\ \\(\\{",
+      "backend_predicate": "The component uses the corresponding backend response or explicitly local UI state as its declared source.",
+      "evidence": [
+        "frontend/src/pages/Console.jsx:161"
+      ]
+    }
+  ],
+  "runtime_evidence": {
+    "data": {
+      "state": "PASS",
+      "evidence": [
+        "scripts/check_gui_parity.py"
+      ]
+    },
+    "identity": {
+      "state": "PASS",
+      "evidence": [
+        "scripts/check_gui_parity.py"
+      ]
+    },
+    "geometry": {
+      "state": "PASS",
+      "evidence": [
+        "scripts/check_gui_parity.py"
+      ]
+    },
+    "device": {
+      "state": "PASS",
+      "evidence": [
+        "scripts/check_gui_parity.py"
+      ]
+    }
+  },
+  "certification": {
+    "state": "PASS",
+    "material_residue": []
+  }
+}

@@ -48,6 +48,10 @@ EXPECTED_TABLES = (
     "flights",
     "flight_screenshots",
     "track_points",
+    "flight_corpus_snapshots",
+    "flight_corpus_snapshot_sources",
+    "flight_corpus_records",
+    "flight_source_manifestations",
     "anomalies",
     "processing_failures",
 )

@@ -8,6 +8,7 @@ import LoadingState from "@/components/skywatcher/LoadingState";
 import StatusChip from "@/components/skywatcher/StatusChip";
 import { Toolbar, SearchInput } from "@/components/skywatcher/Toolbar";
 import { appParams } from "@/lib/app-params";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 // Same base the federation client resolves, so this page follows the app's API origin
 // rather than inventing one. Defaults to the same-origin "/api" the desktop build uses.
@@ -164,7 +165,7 @@ export default function AnalysisLenses() {
         {filtered.length === 0 ? (
           <EmptyState icon={ScanEye} title="No lenses" />
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
+          <div {...scrollRegion("Analysis lenses")} className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -248,7 +249,7 @@ export default function AnalysisLenses() {
         {thresholds.length === 0 ? (
           <EmptyState icon={Gauge} title="No thresholds" />
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
+          <div {...scrollRegion("Threshold registry")} className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">

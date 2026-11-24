@@ -1,7 +1,7 @@
 ---
 name: poi-facility-class-profiler
 description: "Claude-compatible skill to derive a name-free facility class prior from footprint geometry for the poi domain. Activates only on explicit matching tasks; preserves provenance, separates facts from inference, validates outputs, and fails closed on missing prerequisites."
-version: 1.0.0
+version: 1.1.0
 compatibility: claude
 provenance_tier: SPEC_AUTHORED
 ---
@@ -34,6 +34,7 @@ This is Engine A of the two-engine attribution design. Its output is advisory. I
 - Producing or influencing a promotion state.
 - Treating the absence of a basemap label as evidence of anything.
 - Silent fallback to synthetic or stale imagery when current imagery was required.
+- Treating FR24/UI map-icon classes, labels, or screenshot glyphs as footprint geometry or as inputs that can raise the facility-class prior.
 
 ## Activation Conditions
 
@@ -81,6 +82,7 @@ Do not activate when the request is actually about identity, when imagery captur
 - Prefer measured holdout accuracy over asserted confidence in every statement.
 - Class disagreement across imagery epochs is preserved as two records, never averaged.
 - Stop before any output that names an entity.
+- If FR24/UI icon context is supplied, preserve it as separate contextual evidence only; never place it in the geometry feature vector or use it to increase the class prior.
 
 ## Validation Rules
 
@@ -101,6 +103,7 @@ Do not activate when the request is actually about identity, when imagery captur
 | Contradictions | Inconsistent feature/class pairs surfaced |
 | Determinism | Stable ordering and normalized measurements |
 | Output | Machine-readable result and human-readable receipt agree |
+| Icon-channel independence | FR24/UI icon context is absent from the geometry feature vector and cannot raise the prior |
 
 ## Failure Modes
 
@@ -146,6 +149,7 @@ Expected completion state: every footprint carries a class or `UNCLASSIFIED`, a 
 - Recovery tier: `SPEC_AUTHORED`
 - Source: POI Operator Attribution Module Spec v1.0.0
 - Note: New package. `SPEC_AUTHORED` must be registered in family policy before merge.
+- v1.1 hardening: FR24 screenshot-icon evidence is explicitly segregated from the name-free geometry classifier so the two evidence channels cannot silently reinforce each other.
 
 ## Future Extension Hooks
 

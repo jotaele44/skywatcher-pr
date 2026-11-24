@@ -10,6 +10,11 @@ from typing import Any
 from fr24 import rlsm_icons as adjacent
 from fr24 import rlsm_standalone_icons as standalone_schema
 from fr24 import rlsm_standalone_icons_certified as standalone
+from skywatcher.registry.fr24_poi_icons import (
+    allowed_icon_class_ids,
+    load_registry,
+    validate_registry,
+)
 
 REPO = Path(__file__).resolve().parents[1]
 DB = REPO / "data" / "rlsm" / "rlsm_screenshot_analysis.sqlite"
@@ -35,6 +40,20 @@ def _hue_gap(a: float | None, b: float | None) -> float:
 
 
 def _cluster(conn: sqlite3.Connection, naming_file: Path) -> dict[str, Any]:
+    registry = load_registry()
+    registry_check = validate_registry(registry)
+    if registry_check["status"] != "pass":
+        raise ValueError(
+            "FR24 POI icon registry failed validation: "
+            + "; ".join(registry_check["failures"])
+        )
+    review_contract = {
+        "registry_id": registry["registry_id"],
+        "registry_schema_version": registry["schema_version"],
+        "classification_contract": "operator_review_required",
+        "allowed_icon_class_ids": allowed_icon_class_ids(registry),
+        "source_icon_type_count": len(registry["source_icon_types"]),
+    }
     rows = conn.execute(
         """SELECT ahash, COUNT(*) AS n, AVG(hue_deg), AVG(saturation)
            FROM icon_observations
@@ -44,7 +63,7 @@ def _cluster(conn: sqlite3.Connection, naming_file: Path) -> dict[str, Any]:
     if not rows:
         naming_file.parent.mkdir(parents=True, exist_ok=True)
         naming_file.write_text(
-            json.dumps({"clusters": [], "icons_total": 0}, indent=2) + "\n",
+            json.dumps({**review_contract, "clusters": [], "icons_total": 0}, indent=2) + "\n",
             encoding="utf-8",
         )
         return {"distinct_hashes": 0, "clusters": 0, "icons_total": 0}
@@ -110,7 +129,11 @@ def _cluster(conn: sqlite3.Connection, naming_file: Path) -> dict[str, Any]:
         for row in summary
     ]
     payload = {
-        "_comment": "Generated review file. Name clusters before applying classes.",
+        **review_contract,
+        "_comment": (
+            "Generated review file. Assign only a declared icon class; "
+            "classification remains review evidence, not physical-site identity."
+        ),
         "hamming_threshold": HAMMING_THRESHOLD,
         "hue_split_deg": HUE_SPLIT_DEG,
         "icons_total": sum(item["count"] for item in clusters),

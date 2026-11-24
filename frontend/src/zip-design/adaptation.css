@@ -1,0 +1,57 @@
+/* Shared interaction safeguards for the archive-derived surfaces. */
+.zip-surface { background: var(--zip-background); color: var(--zip-foreground); }
+.zip-surface :is(a,button,input,select):focus-visible { outline: 2px solid var(--zip-primary); outline-offset: 3px; }
+.zip-surface { min-width: 0; }
+.zip-surface main { min-width: 0; }
+@media (prefers-reduced-motion: reduce) { .zip-surface *, .zip-surface *::before, .zip-surface *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: 0s !important; } }
+
+.zip-mobile-menu { display: none; }
+.zip-surface > div:first-child > div { width: 100%; }
+@media (max-width: 800px) {
+ .zip-mobile-menu { display: block; background: var(--zip-sidebar); color: var(--zip-sidebar-foreground); padding: 8px 12px; }
+ .zip-mobile-menu summary { min-height: 44px; cursor: pointer; padding: 10px; }
+ .zip-mobile-menu aside { width: 100%; }
+}
+
+/* Explicit conversion from ZIP full colors to the existing HSL-channel contract. */
+:root {
+ --background: 204.000 26.316% 96.275%;
+ --foreground: 204.444 45.763% 11.569%;
+ --card: 210.000 33.333% 98.824%;
+ --card-foreground: 204.444 45.763% 11.569%;
+ --primary: 188.919 100.000% 29.020%;
+ --primary-foreground: 195.000 100.000% 98.431%;
+ --secondary: 198.750 29.630% 89.412%;
+ --secondary-foreground: 198.947 45.238% 16.471%;
+ --muted: 200.000 21.951% 91.961%;
+ --muted-foreground: 201.429 13.084% 41.961%;
+ --accent: 188.919 100.000% 29.020%;
+ --accent-foreground: 195.000 100.000% 98.431%;
+ --border: 200.000 20.000% 82.353%;
+ --popover: 0.000 0.000% 100.000%;
+ --popover-foreground: 204.444 45.763% 11.569%;
+ --input: 200.000 20.000% 82.353%;
+ --ring: 188.919 100.000% 29.020%;
+}
+:root.dark, :root[data-theme="dark"] {
+ --background: 206.250 53.333% 5.882%;
+ --foreground: 198.462 37.143% 93.137%;
+ --card: 204.545 44.000% 9.804%;
+ --card-foreground: 192.000 38.462% 94.902%;
+ --primary: 186.857 61.947% 55.686%;
+ --primary-foreground: 194.118 68.000% 4.902%;
+ --secondary: 202.000 44.118% 13.333%;
+ --secondary-foreground: 195.000 35.714% 89.020%;
+ --muted: 202.500 37.500% 12.549%;
+ --muted-foreground: 200.000 15.625% 62.353%;
+ --accent: 186.857 61.947% 55.686%;
+ --accent-foreground: 194.118 68.000% 4.902%;
+ --border: 202.500 30.769% 20.392%;
+ --popover: 205.000 41.379% 11.373%;
+ --popover-foreground: 192.000 38.462% 94.902%;
+ --input: 202.500 30.769% 20.392%;
+ --ring: 186.857 61.947% 55.686%;
+}
+
+.zip-surface main { overflow-wrap: anywhere; }
+.zip-surface main > * { min-width: 0; max-width: 100%; }

@@ -195,7 +195,7 @@ def test_query_api_uses_configured_profiles_and_offline_fallback(
     monkeypatch.setattr(backend, "CRAFT_PROFILE_DIR", profile_dir)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
-    with TestClient(backend.app) as client:
+    with TestClient(backend.app, client=("127.0.0.1", 50000)) as client:
         missing = client.post("/api/query", json={})
         answer = client.post(
             "/api/query",
@@ -206,3 +206,23 @@ def test_query_api_uses_configured_profiles_and_offline_fallback(
     assert answer.status_code == 200
     assert answer.json()["craft"] == "N123AB"
     assert "Insufficient evidence" in answer.json()["text"]
+
+
+def test_query_api_rejects_public_write_client() -> None:
+    pytest.importorskip("httpx")
+    from starlette.testclient import TestClient
+
+    with TestClient(backend.app, client=("203.0.113.10", 50000)) as client:
+        response = client.post("/api/query", json={"prompt": "schedule for N123AB"})
+
+    assert response.status_code == 403
+
+
+def test_write_guard_accepts_only_explicit_local_network_ranges() -> None:
+    assert backend._is_local_network("172.17.0.1")
+    assert backend._is_local_network("192.168.1.20")
+    assert backend._is_local_network("fd00::1")
+    assert backend._is_local_network("fe80::1")
+    assert not backend._is_local_network("203.0.113.10")
+    assert not backend._is_local_network("192.0.2.10")
+    assert not backend._is_local_network("2001:db8::1")

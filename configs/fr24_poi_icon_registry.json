@@ -1,0 +1,1653 @@
+{
+  "schema_version": "fr24_poi_icon_registry/1.0",
+  "registry_id": "FR24_POI_ICON_REGISTRY_V1",
+  "status": "REFERENCE_SEED",
+  "scope": "FR24 screenshot map-icon source taxonomy and controlled canonical feature-type mapping. Source icon class is contextual evidence only; it does not establish physical-site identity or aircraft purpose.",
+  "parent_registry": {
+    "path": "configs/poi_registry.yaml",
+    "expected_version": "rlsm_poi_registry_v0_1",
+    "relationship": "SPECIALIZED_SCREENSHOT_REFERENCE_LAYER_NOT_REPLACEMENT"
+  },
+  "source_archive": {
+    "display_name": "Icon Library.zip",
+    "sha256": "23c83e63cf88162bcd088b43cc3c7a99a80ef2613aa2f53f308f2e38b514fbef",
+    "retrieval_utc": "2026-10-01T03:22:16Z",
+    "source": "user_supplied_conversation_attachment",
+    "source_artwork_redistribution_status": "UNVERIFIED",
+    "repository_pixel_policy": "DO_NOT_COMMIT_SOURCE_OR_DERIVED_THIRD_PARTY_ARTWORK_UNTIL_REDISTRIBUTION_RIGHTS_ARE_VERIFIED",
+    "full_non_directory_member_count": 68,
+    "semantic_member_count": 34,
+    "metadata_member_count": 34,
+    "poi_source_member_count": 31,
+    "operator_logo_source_member_count": 3,
+    "source_icon_type_count": 33,
+    "full_member_manifest_sha256": "ec214ddf91198608b9b3676a9d063c81e91bdadf2983e949a63796224cec4565",
+    "semantic_member_manifest_sha256": "9b661b9a1844948151ac51049ba05bc16cbc792e99906d9c13ca0990da698d1d",
+    "payload_multiset_sha256": "8eb03b98d05944dd3ba8f3f2aeb48d46fa27c4c9623b04e6f3b29f33c22e7b84"
+  },
+  "rules": {
+    "preserve_raw_member_path": true,
+    "raw_normalized_canonical_are_separate": true,
+    "source_taxonomy_is_not_canonical_identity": true,
+    "icon_similarity_is_discovery_only": true,
+    "icon_match_does_not_prove_poi_identity": true,
+    "poi_proximity_does_not_prove_aircraft_purpose": true,
+    "composite_source_crop_may_emit_multiple_source_types": true,
+    "unresolved_or_tied_match_requires_review": true,
+    "road_and_avenue_markers_are_not_poi_identity": true,
+    "operator_logo_match_is_candidate_not_identity": true,
+    "unknown_is_not_absence": true
+  },
+  "allowed_feature_kinds": [
+    "POI",
+    "AREA_OR_POI",
+    "TRANSPORT_FEATURE",
+    "UNKNOWN"
+  ],
+  "allowed_classification_states": [
+    "SOURCE_CLASS",
+    "DISPLAY_ONLY",
+    "UNKNOWN"
+  ],
+  "canonical_feature_types": [
+    {
+      "canonical_type_id": "AIRPORT",
+      "display_name": {
+        "en": "Airport",
+        "es": "Aeropuerto"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "AUTO_SERVICE",
+      "display_name": {
+        "en": "Auto service",
+        "es": "Servicio automotriz"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "AVENUE_ROUTE_MARKER",
+      "display_name": {
+        "en": "Avenue route marker",
+        "es": "Marcador de avenida"
+      },
+      "feature_kind": "TRANSPORT_FEATURE",
+      "poi_eligible": false
+    },
+    {
+      "canonical_type_id": "BARBER_SHOP",
+      "display_name": {
+        "en": "Barber shop",
+        "es": "Barbería"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "BEAUTY_SALON",
+      "display_name": {
+        "en": "Beauty salon",
+        "es": "Salón de belleza"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "ECOLOGICAL_PARK",
+      "display_name": {
+        "en": "Ecological park",
+        "es": "Parque ecológico"
+      },
+      "feature_kind": "AREA_OR_POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "EDUCATIONAL_INSTITUTION",
+      "display_name": {
+        "en": "Educational institution",
+        "es": "Institución educativa"
+      },
+      "feature_kind": "AREA_OR_POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "FINANCIAL_SERVICE",
+      "display_name": {
+        "en": "Financial service",
+        "es": "Servicio financiero"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "FIRE_STATION",
+      "display_name": {
+        "en": "Fire station",
+        "es": "Estación de bomberos"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "FOOD_DINING",
+      "display_name": {
+        "en": "Food / dining",
+        "es": "Comida / restaurante"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "FOOD_TRUCK",
+      "display_name": {
+        "en": "Food truck",
+        "es": "Camión de comida"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "HARDWARE_STORE",
+      "display_name": {
+        "en": "Hardware store",
+        "es": "Ferretería"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "ICE_CREAM",
+      "display_name": {
+        "en": "Ice cream",
+        "es": "Heladería / mantecado"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "INDUSTRIAL_FACILITY",
+      "display_name": {
+        "en": "Industrial facility",
+        "es": "Instalación industrial"
+      },
+      "feature_kind": "AREA_OR_POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "MILITARY_FACILITY",
+      "display_name": {
+        "en": "Military facility",
+        "es": "Instalación militar"
+      },
+      "feature_kind": "AREA_OR_POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "OUTDOOR_RECREATION",
+      "display_name": {
+        "en": "Outdoor recreation",
+        "es": "Recreación al aire libre"
+      },
+      "feature_kind": "AREA_OR_POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "PARK",
+      "display_name": {
+        "en": "Park",
+        "es": "Parque"
+      },
+      "feature_kind": "AREA_OR_POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "PARKING",
+      "display_name": {
+        "en": "Parking",
+        "es": "Estacionamiento"
+      },
+      "feature_kind": "AREA_OR_POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "PHARMACY",
+      "display_name": {
+        "en": "Pharmacy",
+        "es": "Farmacia"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "RELIGIOUS_SITE",
+      "display_name": {
+        "en": "Religious site",
+        "es": "Sitio religioso"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "RESTROOMS",
+      "display_name": {
+        "en": "Restrooms",
+        "es": "Baños"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "ROAD_ROUTE_MARKER",
+      "display_name": {
+        "en": "Road route marker",
+        "es": "Marcador de carretera"
+      },
+      "feature_kind": "TRANSPORT_FEATURE",
+      "poi_eligible": false
+    },
+    {
+      "canonical_type_id": "SHOOTING_RANGE",
+      "display_name": {
+        "en": "Shooting range",
+        "es": "Polígono de tiro"
+      },
+      "feature_kind": "AREA_OR_POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "SHOPPING_MALL",
+      "display_name": {
+        "en": "Shopping mall",
+        "es": "Centro comercial"
+      },
+      "feature_kind": "AREA_OR_POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "TRAIN_STATION",
+      "display_name": {
+        "en": "Train station",
+        "es": "Estación de tren"
+      },
+      "feature_kind": "POI",
+      "poi_eligible": true
+    },
+    {
+      "canonical_type_id": "UNKNOWN_MAP_MARKER",
+      "display_name": {
+        "en": "Unknown map marker",
+        "es": "Marcador de mapa desconocido"
+      },
+      "feature_kind": "UNKNOWN",
+      "poi_eligible": false
+    }
+  ],
+  "source_icon_types": [
+    {
+      "source_type_id": "FR24_SHOPPING_MALL",
+      "canonical_type_id": "SHOPPING_MALL",
+      "display_name": {
+        "en": "Shopping mall",
+        "es": "Centro comercial"
+      },
+      "raw_source_label": "mall",
+      "normalized_aliases": [
+        "mall"
+      ],
+      "manifestation_id": "FR24SRC_9047588A6FDBC0D7",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Single visible basemap icon crop."
+    },
+    {
+      "source_type_id": "FR24_HARDWARE_STORE",
+      "canonical_type_id": "HARDWARE_STORE",
+      "display_name": {
+        "en": "Hardware store",
+        "es": "Ferretería"
+      },
+      "raw_source_label": "ferreteri╠üa",
+      "normalized_aliases": [
+        "ferretería",
+        "ferreteria"
+      ],
+      "manifestation_id": "FR24SRC_C335FE5A5A8AD9D2",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Raw filename preserves mojibake; normalized label is not identity proof."
+    },
+    {
+      "source_type_id": "FR24_FIRE_STATION",
+      "canonical_type_id": "FIRE_STATION",
+      "display_name": {
+        "en": "Fire station",
+        "es": "Estación de bomberos"
+      },
+      "raw_source_label": "estacio╠ün de bomberos",
+      "normalized_aliases": [
+        "estación de bomberos",
+        "estacion de bomberos"
+      ],
+      "manifestation_id": "FR24SRC_1BD444B527F64243",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Raw filename preserves mojibake."
+    },
+    {
+      "source_type_id": "FR24_BEAUTY_SALON",
+      "canonical_type_id": "BEAUTY_SALON",
+      "display_name": {
+        "en": "Beauty salon",
+        "es": "Salón de belleza"
+      },
+      "raw_source_label": "beauty_salon",
+      "normalized_aliases": [
+        "beauty salon"
+      ],
+      "manifestation_id": "FR24SRC_553845527E1A3E6D",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Source label supplied in filename."
+    },
+    {
+      "source_type_id": "FR24_MILITARY_FACILITY",
+      "canonical_type_id": "MILITARY_FACILITY",
+      "display_name": {
+        "en": "Military facility icon",
+        "es": "Icono de instalación militar"
+      },
+      "raw_source_label": "national guard",
+      "normalized_aliases": [
+        "national guard",
+        "military"
+      ],
+      "manifestation_id": "FR24SRC_AEE0E880CBBB9721",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "The icon alone does not establish National Guard identity; adjacent text/independent evidence is required."
+    },
+    {
+      "source_type_id": "FR24_BANK",
+      "canonical_type_id": "FINANCIAL_SERVICE",
+      "display_name": {
+        "en": "Bank",
+        "es": "Banco"
+      },
+      "raw_source_label": "banco",
+      "normalized_aliases": [
+        "banco",
+        "bank"
+      ],
+      "manifestation_id": "FR24SRC_B814F851E48CE8AC",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Specific source icon maps to broader canonical financial-service class."
+    },
+    {
+      "source_type_id": "FR24_EDUCATIONAL_INSTITUTION",
+      "canonical_type_id": "EDUCATIONAL_INSTITUTION",
+      "display_name": {
+        "en": "Educational institution",
+        "es": "Institución educativa"
+      },
+      "raw_source_label": "educational_institution",
+      "normalized_aliases": [
+        "educational institution"
+      ],
+      "manifestation_id": "FR24SRC_9F8FF5592ADB3B84",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Source label supplied in filename."
+    },
+    {
+      "source_type_id": "FR24_PARKING",
+      "canonical_type_id": "PARKING",
+      "display_name": {
+        "en": "Parking",
+        "es": "Estacionamiento"
+      },
+      "raw_source_label": "parking & ban╠âos",
+      "normalized_aliases": [
+        "parking",
+        "estacionamiento"
+      ],
+      "manifestation_id": "FR24SRC_3458F16869B13155",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Composite source crop: parking glyph is one of two visible markers."
+    },
+    {
+      "source_type_id": "FR24_RESTROOMS",
+      "canonical_type_id": "RESTROOMS",
+      "display_name": {
+        "en": "Restrooms",
+        "es": "Baños"
+      },
+      "raw_source_label": "parking & ban╠âos",
+      "normalized_aliases": [
+        "baños",
+        "banos",
+        "restrooms"
+      ],
+      "manifestation_id": "FR24SRC_3458F16869B13155",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Composite source crop: restroom glyph is one of two visible markers."
+    },
+    {
+      "source_type_id": "FR24_PRIVATE_SCHOOL",
+      "canonical_type_id": "EDUCATIONAL_INSTITUTION",
+      "display_name": {
+        "en": "Private school",
+        "es": "Escuela privada"
+      },
+      "raw_source_label": "private_school",
+      "normalized_aliases": [
+        "private school",
+        "escuela privada"
+      ],
+      "manifestation_id": "FR24SRC_37717498CE204E3F",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Private-school source subtype; canonical class remains educational institution."
+    },
+    {
+      "source_type_id": "FR24_UNKNOWN_QUESTION",
+      "canonical_type_id": "UNKNOWN_MAP_MARKER",
+      "display_name": {
+        "en": "Unknown / question marker",
+        "es": "Marcador desconocido / interrogación"
+      },
+      "raw_source_label": "?",
+      "normalized_aliases": [
+        "?"
+      ],
+      "manifestation_id": "FR24SRC_EF934A8E7AC6951C",
+      "classification_state": "UNKNOWN",
+      "notes": "No semantic identity assigned from filename or appearance."
+    },
+    {
+      "source_type_id": "FR24_RELIGIOUS_SITE",
+      "canonical_type_id": "RELIGIOUS_SITE",
+      "display_name": {
+        "en": "Church / religious site",
+        "es": "Iglesia / sitio religioso"
+      },
+      "raw_source_label": "church",
+      "normalized_aliases": [
+        "church",
+        "iglesia"
+      ],
+      "manifestation_id": "FR24SRC_206CFF82C1BC9511",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Canonical class avoids assuming denomination."
+    },
+    {
+      "source_type_id": "FR24_CREDIT_FINANCE",
+      "canonical_type_id": "FINANCIAL_SERVICE",
+      "display_name": {
+        "en": "Credit / finance",
+        "es": "Crédito / finanzas"
+      },
+      "raw_source_label": "credit_finance",
+      "normalized_aliases": [
+        "credit finance",
+        "finance"
+      ],
+      "manifestation_id": "FR24SRC_BB2E6CF836DA04A4",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Specific source icon maps to broader canonical financial-service class."
+    },
+    {
+      "source_type_id": "FR24_ROAD_ROUTE_MARKER",
+      "canonical_type_id": "ROAD_ROUTE_MARKER",
+      "display_name": {
+        "en": "Road route marker",
+        "es": "Marcador de carretera"
+      },
+      "raw_source_label": "carretera",
+      "normalized_aliases": [
+        "carretera",
+        "road"
+      ],
+      "manifestation_id": "FR24SRC_C522359DD8753B28",
+      "classification_state": "DISPLAY_ONLY",
+      "notes": "Display/transport feature; not a POI identity."
+    },
+    {
+      "source_type_id": "FR24_PIZZA",
+      "canonical_type_id": "FOOD_DINING",
+      "display_name": {
+        "en": "Pizza",
+        "es": "Pizza"
+      },
+      "raw_source_label": "pizza & barberi╠üa",
+      "normalized_aliases": [
+        "pizza"
+      ],
+      "manifestation_id": "FR24SRC_30C1541323CEF7DA",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Composite source crop: pizza glyph is one of two visible markers."
+    },
+    {
+      "source_type_id": "FR24_BARBER_SHOP",
+      "canonical_type_id": "BARBER_SHOP",
+      "display_name": {
+        "en": "Barber shop",
+        "es": "Barbería"
+      },
+      "raw_source_label": "pizza & barberi╠üa",
+      "normalized_aliases": [
+        "barbería",
+        "barberia",
+        "barber shop"
+      ],
+      "manifestation_id": "FR24SRC_30C1541323CEF7DA",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Composite source crop: barber glyph is one of two visible markers."
+    },
+    {
+      "source_type_id": "FR24_TACOS",
+      "canonical_type_id": "FOOD_DINING",
+      "display_name": {
+        "en": "Tacos",
+        "es": "Tacos"
+      },
+      "raw_source_label": "tacos",
+      "normalized_aliases": [
+        "tacos"
+      ],
+      "manifestation_id": "FR24SRC_90071A03E051152E",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Food subtype retained at source-taxonomy layer."
+    },
+    {
+      "source_type_id": "FR24_RESTAURANT",
+      "canonical_type_id": "FOOD_DINING",
+      "display_name": {
+        "en": "Food / restaurant",
+        "es": "Comida / restaurante"
+      },
+      "raw_source_label": "food",
+      "normalized_aliases": [
+        "food",
+        "restaurant",
+        "comida"
+      ],
+      "manifestation_id": "FR24SRC_27BB7A68114B0E91",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Broad dining source class."
+    },
+    {
+      "source_type_id": "FR24_PARK",
+      "canonical_type_id": "PARK",
+      "display_name": {
+        "en": "Park",
+        "es": "Parque"
+      },
+      "raw_source_label": "parque (grande)",
+      "normalized_aliases": [
+        "parque",
+        "park"
+      ],
+      "manifestation_id": "FR24SRC_8D8E552D12A50B5B",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Source crop indicates a large park marker; size qualifier is not canonical identity."
+    },
+    {
+      "source_type_id": "FR24_AVENUE_ROUTE_MARKER",
+      "canonical_type_id": "AVENUE_ROUTE_MARKER",
+      "display_name": {
+        "en": "Avenue route marker",
+        "es": "Marcador de avenida"
+      },
+      "raw_source_label": "avenida",
+      "normalized_aliases": [
+        "avenida",
+        "avenue"
+      ],
+      "manifestation_id": "FR24SRC_08876813BB77B41A",
+      "classification_state": "DISPLAY_ONLY",
+      "notes": "Display/transport feature; not a POI identity."
+    },
+    {
+      "source_type_id": "FR24_INDUSTRIAL_FACILITY",
+      "canonical_type_id": "INDUSTRIAL_FACILITY",
+      "display_name": {
+        "en": "Industrial facility",
+        "es": "Instalación industrial"
+      },
+      "raw_source_label": "Industrial",
+      "normalized_aliases": [
+        "industrial"
+      ],
+      "manifestation_id": "FR24SRC_7E3BC2B04726CA2B",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Broad industrial class; point/polygon identity requires independent evidence."
+    },
+    {
+      "source_type_id": "FR24_UNKNOWN_RANDOM",
+      "canonical_type_id": "UNKNOWN_MAP_MARKER",
+      "display_name": {
+        "en": "Unknown / random marker",
+        "es": "Marcador desconocido"
+      },
+      "raw_source_label": "random",
+      "normalized_aliases": [
+        "random",
+        "unknown"
+      ],
+      "manifestation_id": "FR24SRC_61C42AAA68557FED",
+      "classification_state": "UNKNOWN",
+      "notes": "Filename provides no semantic class; remains unknown."
+    },
+    {
+      "source_type_id": "FR24_AIRPORT",
+      "canonical_type_id": "AIRPORT",
+      "display_name": {
+        "en": "Airport",
+        "es": "Aeropuerto"
+      },
+      "raw_source_label": "airport",
+      "normalized_aliases": [
+        "airport",
+        "aeropuerto"
+      ],
+      "manifestation_id": "FR24SRC_F46D30E0027078C0",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Source icon class; airport identity still requires label/geometry/ID evidence."
+    },
+    {
+      "source_type_id": "FR24_SHOOTING_RANGE",
+      "canonical_type_id": "SHOOTING_RANGE",
+      "display_name": {
+        "en": "Shooting range",
+        "es": "Polígono de tiro"
+      },
+      "raw_source_label": "poli╠ügono de tiro : shooting range",
+      "normalized_aliases": [
+        "shooting range",
+        "polígono de tiro",
+        "poligono de tiro"
+      ],
+      "manifestation_id": "FR24SRC_4B3FFA2ACEE67CDE",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Raw filename preserves mojibake and bilingual source text."
+    },
+    {
+      "source_type_id": "FR24_AUTO_SERVICE_MECHANIC_TIRE",
+      "canonical_type_id": "AUTO_SERVICE",
+      "display_name": {
+        "en": "Mechanic / tire service",
+        "es": "Mecánico / gomera"
+      },
+      "raw_source_label": "meca╠ünico,gomera",
+      "normalized_aliases": [
+        "mecánico",
+        "mecanico",
+        "gomera",
+        "tire"
+      ],
+      "manifestation_id": "FR24SRC_D1F67BC631950F23",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Composite semantic label describes a broad auto-service class, not two independently visible glyphs."
+    },
+    {
+      "source_type_id": "FR24_FAST_FOOD",
+      "canonical_type_id": "FOOD_DINING",
+      "display_name": {
+        "en": "Fast food",
+        "es": "Comida rápida"
+      },
+      "raw_source_label": "fast food",
+      "normalized_aliases": [
+        "fast food",
+        "comida rápida",
+        "comida rapida"
+      ],
+      "manifestation_id": "FR24SRC_0F333D7AE36F8900",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Food subtype retained at source-taxonomy layer."
+    },
+    {
+      "source_type_id": "FR24_ICE_CREAM",
+      "canonical_type_id": "ICE_CREAM",
+      "display_name": {
+        "en": "Ice cream",
+        "es": "Mantecado / heladería"
+      },
+      "raw_source_label": "mantecado",
+      "normalized_aliases": [
+        "mantecado",
+        "ice cream",
+        "heladería",
+        "heladeria"
+      ],
+      "manifestation_id": "FR24SRC_CE8BCF6C4153DBDD",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Puerto Rico source wording retained as alias."
+    },
+    {
+      "source_type_id": "FR24_PHARMACY",
+      "canonical_type_id": "PHARMACY",
+      "display_name": {
+        "en": "Pharmacy",
+        "es": "Farmacia"
+      },
+      "raw_source_label": "pharmacy",
+      "normalized_aliases": [
+        "pharmacy",
+        "farmacia"
+      ],
+      "manifestation_id": "FR24SRC_98318B8355D2860A",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Source label supplied in filename."
+    },
+    {
+      "source_type_id": "FR24_OUTDOOR_RECREATION",
+      "canonical_type_id": "OUTDOOR_RECREATION",
+      "display_name": {
+        "en": "Outdoor adventure / recreation",
+        "es": "Aventura / recreación al aire libre"
+      },
+      "raw_source_label": "outdoor_adventure",
+      "normalized_aliases": [
+        "outdoor adventure",
+        "recreation"
+      ],
+      "manifestation_id": "FR24SRC_267DE24C368F1449",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Broad recreation class."
+    },
+    {
+      "source_type_id": "FR24_ECOLOGICAL_PARK",
+      "canonical_type_id": "ECOLOGICAL_PARK",
+      "display_name": {
+        "en": "Ecological park",
+        "es": "Parque ecológico"
+      },
+      "raw_source_label": "ecological_park",
+      "normalized_aliases": [
+        "ecological park",
+        "parque ecológico",
+        "parque ecologico"
+      ],
+      "manifestation_id": "FR24SRC_CF2CF55601F794BA",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Broad park subtype retained."
+    },
+    {
+      "source_type_id": "FR24_TRAIN_STATION",
+      "canonical_type_id": "TRAIN_STATION",
+      "display_name": {
+        "en": "Train station",
+        "es": "Estación de tren"
+      },
+      "raw_source_label": "estacio╠ün de tren",
+      "normalized_aliases": [
+        "train station",
+        "estación de tren",
+        "estacion de tren"
+      ],
+      "manifestation_id": "FR24SRC_0968DD758D6D8F21",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Raw filename preserves mojibake."
+    },
+    {
+      "source_type_id": "FR24_FOOD_TRUCK",
+      "canonical_type_id": "FOOD_TRUCK",
+      "display_name": {
+        "en": "Food truck",
+        "es": "Camión de comida"
+      },
+      "raw_source_label": "food_truck",
+      "normalized_aliases": [
+        "food truck",
+        "camión de comida",
+        "camion de comida"
+      ],
+      "manifestation_id": "FR24SRC_ABB19A84ABAA9008",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Mobile vendor class."
+    },
+    {
+      "source_type_id": "FR24_AUTO_SHOP",
+      "canonical_type_id": "AUTO_SERVICE",
+      "display_name": {
+        "en": "Auto shop",
+        "es": "Taller / tienda automotriz"
+      },
+      "raw_source_label": "auto_shop",
+      "normalized_aliases": [
+        "auto shop",
+        "taller"
+      ],
+      "manifestation_id": "FR24SRC_5300A5B872934871",
+      "classification_state": "SOURCE_CLASS",
+      "notes": "Specific source icon maps to broader auto-service class."
+    }
+  ],
+  "reserved_non_poi_icon_classes": [
+    {
+      "icon_class_id": "FR24_HELIPORT",
+      "display_name": {
+        "en": "Heliport",
+        "es": "Helipuerto"
+      },
+      "asset_backed": false,
+      "legacy_aliases": [
+        "heliport"
+      ]
+    },
+    {
+      "icon_class_id": "FR24_AIRCRAFT_MARKER",
+      "display_name": {
+        "en": "Aircraft marker",
+        "es": "Marcador de aeronave"
+      },
+      "asset_backed": false,
+      "legacy_aliases": [
+        "aircraft"
+      ]
+    },
+    {
+      "icon_class_id": "FR24_NAVAID",
+      "display_name": {
+        "en": "Navaid",
+        "es": "Ayuda de navegación"
+      },
+      "asset_backed": false,
+      "legacy_aliases": [
+        "navaid"
+      ]
+    },
+    {
+      "icon_class_id": "FR24_CITY_DOT",
+      "display_name": {
+        "en": "City dot",
+        "es": "Punto de ciudad"
+      },
+      "asset_backed": false,
+      "legacy_aliases": [
+        "city_dot"
+      ]
+    },
+    {
+      "icon_class_id": "FR24_SEAPORT",
+      "display_name": {
+        "en": "Seaport",
+        "es": "Puerto marítimo"
+      },
+      "asset_backed": false,
+      "legacy_aliases": [
+        "seaport"
+      ]
+    },
+    {
+      "icon_class_id": "FR24_UI_CHROME",
+      "display_name": {
+        "en": "UI chrome",
+        "es": "Interfaz de usuario"
+      },
+      "asset_backed": false,
+      "legacy_aliases": [
+        "ui_chrome"
+      ]
+    },
+    {
+      "icon_class_id": "FR24_NOISE",
+      "display_name": {
+        "en": "Noise / non-icon",
+        "es": "Ruido / no icono"
+      },
+      "asset_backed": false,
+      "legacy_aliases": [
+        "noise"
+      ]
+    }
+  ],
+  "source_manifestations": [
+    {
+      "manifestation_id": "FR24SRC_DFCBD6AA5D88BAA8",
+      "entity_kind": "OPERATOR_LOGO_SOURCE",
+      "raw_member_path": "Icon Library/aircraft_logo/af-icon.heic",
+      "uncompressed_size": 78183,
+      "sha256": "dfcbd6aa5d88baa820a25743f224c41971fb6ef73f2bb8ecee4a3d0c4eca8012",
+      "source_type_ids": [],
+      "display_hint": "AIR_FORCE_BADGE_CANDIDATE",
+      "description": "Air Force-style badge / aircraft source crop",
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_F3B46F11E7EF360E",
+      "entity_kind": "OPERATOR_LOGO_SOURCE",
+      "raw_member_path": "Icon Library/aircraft_logo/bakeraviation-icon.heic",
+      "uncompressed_size": 272482,
+      "sha256": "f3b46f11e7ef360e5e4ec6de55cfceab846feb34be48b8332d150e0f2d3be662",
+      "source_type_ids": [],
+      "display_hint": "BAKER_AVIATION_BADGE_CANDIDATE",
+      "description": "Baker Aviation-branded source crop",
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_55B2D0FA2514933C",
+      "entity_kind": "OPERATOR_LOGO_SOURCE",
+      "raw_member_path": "Icon Library/aircraft_logo/cg-icon.heic",
+      "uncompressed_size": 509104,
+      "sha256": "55b2d0fa2514933c91facbc6bcb5c36b6e494e205e6decf64e6b4e8d9499287d",
+      "source_type_ids": [],
+      "display_hint": "COAST_GUARD_BADGE_CANDIDATE",
+      "description": "Coast Guard-style badge / aircraft source crop",
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_9047588A6FDBC0D7",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/mall.heic",
+      "uncompressed_size": 38026,
+      "sha256": "9047588a6fdbc0d7eafb581601e337c96dd5a1a8a04a21aa0bbc62ae2aeae904",
+      "source_type_ids": [
+        "FR24_SHOPPING_MALL"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_C335FE5A5A8AD9D2",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/ferreteri╠üa.heic",
+      "uncompressed_size": 38355,
+      "sha256": "c335fe5a5a8ad9d2b9ac1b0909c4b5806db95b6338c8b79af5515043381ebf77",
+      "source_type_ids": [
+        "FR24_HARDWARE_STORE"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_1BD444B527F64243",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/estacio╠ün de bomberos.heic",
+      "uncompressed_size": 40340,
+      "sha256": "1bd444b527f642431da4d79d9d099f155bd5e42b015d9ea8b30c5bb2d968fe7a",
+      "source_type_ids": [
+        "FR24_FIRE_STATION"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_553845527E1A3E6D",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/beauty_salon.png",
+      "uncompressed_size": 45625,
+      "sha256": "553845527e1a3e6d9174492d577812237001222f86672b0a5336dc9b9d340a0b",
+      "source_type_ids": [
+        "FR24_BEAUTY_SALON"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_AEE0E880CBBB9721",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/national guard.heic",
+      "uncompressed_size": 47093,
+      "sha256": "aee0e880cbbb97210834a380ac452518ae435598561e57f6c8f4dc909501af85",
+      "source_type_ids": [
+        "FR24_MILITARY_FACILITY"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_B814F851E48CE8AC",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/banco.heic",
+      "uncompressed_size": 43515,
+      "sha256": "b814f851e48ce8acc2f62ab55024b1340735e20afe2552e9f498284f37d807e3",
+      "source_type_ids": [
+        "FR24_BANK"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_9F8FF5592ADB3B84",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/educational_institution.png",
+      "uncompressed_size": 38829,
+      "sha256": "9f8ff5592adb3b846aa601905b4ab421d50181fe4c5231248e9c005f10782bfa",
+      "source_type_ids": [
+        "FR24_EDUCATIONAL_INSTITUTION"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_3458F16869B13155",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/parking & ban╠âos.heic",
+      "uncompressed_size": 41133,
+      "sha256": "3458f16869b131557e9861703bcf9d5cae9d003d9da47053868cf2ec0554a5d7",
+      "source_type_ids": [
+        "FR24_PARKING",
+        "FR24_RESTROOMS"
+      ],
+      "composite_source_crop": true,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_37717498CE204E3F",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/private_school.png",
+      "uncompressed_size": 45392,
+      "sha256": "37717498ce204e3fef32e54a0cb0d46d9dffcc8a37b95e05e28b79d6f84249ac",
+      "source_type_ids": [
+        "FR24_PRIVATE_SCHOOL"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_EF934A8E7AC6951C",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/?.heic",
+      "uncompressed_size": 34085,
+      "sha256": "ef934a8e7ac6951c39f0612f1645b4c228b806c9a7ff148455767cf136ba128d",
+      "source_type_ids": [
+        "FR24_UNKNOWN_QUESTION"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_206CFF82C1BC9511",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/church.png",
+      "uncompressed_size": 43035,
+      "sha256": "206cff82c1bc9511ee7011ffbfefe6a2e5047dc07348d4651db257e5e61c7cf7",
+      "source_type_ids": [
+        "FR24_RELIGIOUS_SITE"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_BB2E6CF836DA04A4",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/credit_finance.png",
+      "uncompressed_size": 39612,
+      "sha256": "bb2e6cf836da04a456589e7286430b2d00cb0d436cd54815d5be5f0d5fc4dba9",
+      "source_type_ids": [
+        "FR24_CREDIT_FINANCE"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_C522359DD8753B28",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/carretera.heic",
+      "uncompressed_size": 32500,
+      "sha256": "c522359dd8753b28f53f11e987d487bca3c9b66e494b859e3ad09e4513dc10fd",
+      "source_type_ids": [
+        "FR24_ROAD_ROUTE_MARKER"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_30C1541323CEF7DA",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/pizza & barberi╠üa.heic",
+      "uncompressed_size": 37951,
+      "sha256": "30c1541323cef7da7c3a22af5fe4fadd6d241ea234ec5caba9b572ea66e2110f",
+      "source_type_ids": [
+        "FR24_PIZZA",
+        "FR24_BARBER_SHOP"
+      ],
+      "composite_source_crop": true,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_90071A03E051152E",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/tacos.heic",
+      "uncompressed_size": 70923,
+      "sha256": "90071a03e051152e8d4b240dd42e51e6eec684be82939b330532bb77fa613207",
+      "source_type_ids": [
+        "FR24_TACOS"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_27BB7A68114B0E91",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/food.heic",
+      "uncompressed_size": 41724,
+      "sha256": "27bb7a68114b0e91c18d6c24356702b29f7f146b502b289be2a160b534dc1ec5",
+      "source_type_ids": [
+        "FR24_RESTAURANT"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_8D8E552D12A50B5B",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/parque (grande).heic",
+      "uncompressed_size": 586569,
+      "sha256": "8d8e552d12a50b5b241500015dbb977e6e30969ab4b1c617b180961eef784451",
+      "source_type_ids": [
+        "FR24_PARK"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_08876813BB77B41A",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/avenida.heic",
+      "uncompressed_size": 32182,
+      "sha256": "08876813bb77b41a1e34f85cfbef5fae4f40cfeb9a51cd9a893307c73341c1b0",
+      "source_type_ids": [
+        "FR24_AVENUE_ROUTE_MARKER"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_7E3BC2B04726CA2B",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/Industrial.heic",
+      "uncompressed_size": 76755,
+      "sha256": "7e3bc2b04726ca2b8cd6cbe180b3bd3b593a84946c657b4cfe3c2ff4d322aae3",
+      "source_type_ids": [
+        "FR24_INDUSTRIAL_FACILITY"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_61C42AAA68557FED",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/random.png",
+      "uncompressed_size": 40086,
+      "sha256": "61c42aaa68557fedf8750a10f7fae19ae0913cfe794b86d35b9c4a5b7b0a78db",
+      "source_type_ids": [
+        "FR24_UNKNOWN_RANDOM"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_F46D30E0027078C0",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/airport.png",
+      "uncompressed_size": 41941,
+      "sha256": "f46d30e0027078c063fbeab9b9f36c8c6b6863a1019b8087dea2d2f6f2d02ccf",
+      "source_type_ids": [
+        "FR24_AIRPORT"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_4B3FFA2ACEE67CDE",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/poli╠ügono de tiro : shooting range.heic",
+      "uncompressed_size": 146658,
+      "sha256": "4b3ffa2acee67cde8fff006ca0a4e06825bec1d3d4a8a871d8e38776edb4a9e2",
+      "source_type_ids": [
+        "FR24_SHOOTING_RANGE"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_D1F67BC631950F23",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/meca╠ünico,gomera.heic",
+      "uncompressed_size": 44485,
+      "sha256": "d1f67bc631950f23b0112a17b4635bf394917b8eb4b2f88ca31e5207fd7bd55e",
+      "source_type_ids": [
+        "FR24_AUTO_SERVICE_MECHANIC_TIRE"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_0F333D7AE36F8900",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/fast food.heic",
+      "uncompressed_size": 36700,
+      "sha256": "0f333d7ae36f8900b116478f8ee25beb660a4826053de6843917768babc55cd9",
+      "source_type_ids": [
+        "FR24_FAST_FOOD"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_CE8BCF6C4153DBDD",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/mantecado.heic",
+      "uncompressed_size": 36632,
+      "sha256": "ce8bcf6c4153dbdd12a9dd6478e7c243a85ac4f4261f762e27e883e546bd2c5d",
+      "source_type_ids": [
+        "FR24_ICE_CREAM"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_98318B8355D2860A",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/pharmacy.png",
+      "uncompressed_size": 44040,
+      "sha256": "98318b8355d2860a2bcdb6debb51fe5578dcc0ccd1a4ce32462fcdba5eabf055",
+      "source_type_ids": [
+        "FR24_PHARMACY"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_267DE24C368F1449",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/outdoor_adventure.png",
+      "uncompressed_size": 45564,
+      "sha256": "267de24c368f1449b749fb645a08ba49df975f68ef5d94c448b31a57406ef1ed",
+      "source_type_ids": [
+        "FR24_OUTDOOR_RECREATION"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_CF2CF55601F794BA",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/ecological_park.png",
+      "uncompressed_size": 49053,
+      "sha256": "cf2cf55601f794ba4e6eb7f1e79f1251062984dca30753f55bc30836ccc6d03c",
+      "source_type_ids": [
+        "FR24_ECOLOGICAL_PARK"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_0968DD758D6D8F21",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/estacio╠ün de tren.heic",
+      "uncompressed_size": 34201,
+      "sha256": "0968dd758d6d8f21505425ee281eea24d3b827309be8126898ed0fa36301e69c",
+      "source_type_ids": [
+        "FR24_TRAIN_STATION"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_ABB19A84ABAA9008",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/food_truck.png",
+      "uncompressed_size": 41849,
+      "sha256": "abb19a84abaa9008fe530ca2a65a5ba13648c2838bf9fbd2257fc021f8a9a53d",
+      "source_type_ids": [
+        "FR24_FOOD_TRUCK"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    },
+    {
+      "manifestation_id": "FR24SRC_5300A5B872934871",
+      "entity_kind": "POI_ICON_SOURCE",
+      "raw_member_path": "Icon Library/poi_types/auto_shop.png",
+      "uncompressed_size": 34497,
+      "sha256": "5300a5b8729348717025985d8f24a5ceba46b9362bb2b2d7c579956b3a8fdb2b",
+      "source_type_ids": [
+        "FR24_AUTO_SHOP"
+      ],
+      "composite_source_crop": false,
+      "identity_status": "CANDIDATE_NOT_IDENTITY"
+    }
+  ],
+  "archive_members": [
+    {
+      "path": "__MACOSX/Icon Library/aircraft_logo/._af-icon.heic",
+      "uncompressed_size": 263,
+      "sha256": "ee3baa4df268cd2ae786496601b9eb4e3dabfdd5fccce4f78092b5d4fe33268e"
+    },
+    {
+      "path": "__MACOSX/Icon Library/aircraft_logo/._bakeraviation-icon.heic",
+      "uncompressed_size": 263,
+      "sha256": "58201e0eea838ba5883c1cf78d458aa9b7f44f27a12dad2a5cf47483d18a127b"
+    },
+    {
+      "path": "__MACOSX/Icon Library/aircraft_logo/._cg-icon.heic",
+      "uncompressed_size": 263,
+      "sha256": "64909b3cdf9840d2708226794e93a99680b8e90a3f617b41885037ab69cdc6d7"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._?.heic",
+      "uncompressed_size": 263,
+      "sha256": "00d85bc69c3aa49decc119e5259ee7d0334ec4606363957e8088849faf4ab3ab"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._airport.png",
+      "uncompressed_size": 207,
+      "sha256": "ed8ee0fbf5175f31cd74e270cd27910673a9a6716580709ab3cbd80e9ffc0a81"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._auto_shop.png",
+      "uncompressed_size": 263,
+      "sha256": "a52a04e48ad4e98116157f94a12ca49d0cf8e4b0155e230037172d0849f8ee3a"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._avenida.heic",
+      "uncompressed_size": 263,
+      "sha256": "48ee5ab38c3982741cccff871bcdbf786b6349930b754e3215891f2d9f5735fa"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._banco.heic",
+      "uncompressed_size": 263,
+      "sha256": "cb4e4a740537fe5cef3d444b59b1b25d6eb8d711cb1f632bfba60468aeb66941"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._beauty_salon.png",
+      "uncompressed_size": 207,
+      "sha256": "ed8ee0fbf5175f31cd74e270cd27910673a9a6716580709ab3cbd80e9ffc0a81"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._carretera.heic",
+      "uncompressed_size": 263,
+      "sha256": "691360a8c51963aea4e72e0211e1b63481f71182721c6821966d27bcd33a3930"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._church.png",
+      "uncompressed_size": 207,
+      "sha256": "ed8ee0fbf5175f31cd74e270cd27910673a9a6716580709ab3cbd80e9ffc0a81"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._credit_finance.png",
+      "uncompressed_size": 207,
+      "sha256": "ed8ee0fbf5175f31cd74e270cd27910673a9a6716580709ab3cbd80e9ffc0a81"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._ecological_park.png",
+      "uncompressed_size": 207,
+      "sha256": "ed8ee0fbf5175f31cd74e270cd27910673a9a6716580709ab3cbd80e9ffc0a81"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._educational_institution.png",
+      "uncompressed_size": 207,
+      "sha256": "ed8ee0fbf5175f31cd74e270cd27910673a9a6716580709ab3cbd80e9ffc0a81"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._estacio╠ün de bomberos.heic",
+      "uncompressed_size": 263,
+      "sha256": "a3c375efd5ef3a0ef69d5b61018118a8d0ac66c1c352f44f0ec6ffc698fcb4b5"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._estacio╠ün de tren.heic",
+      "uncompressed_size": 263,
+      "sha256": "7dccaf582b8c513a98af7271d019476d98b12efe31db22b0eff73c0a65ee15c3"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._fast food.heic",
+      "uncompressed_size": 263,
+      "sha256": "1e8b6f7d5eb1f5d3ec9226f953814fde875327b52dc175aa4b2f3de6c0ba7c84"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._ferreteri╠üa.heic",
+      "uncompressed_size": 263,
+      "sha256": "bdcb72ddb2a388e8345a8cd9b486062644b6c9cffc08a28e28ace75e6b49e63e"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._food_truck.png",
+      "uncompressed_size": 207,
+      "sha256": "ed8ee0fbf5175f31cd74e270cd27910673a9a6716580709ab3cbd80e9ffc0a81"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._food.heic",
+      "uncompressed_size": 263,
+      "sha256": "0bca4343c265a02320bef7c5f187bf0f2f18e91235245db27b4d8b6dc21d5aa0"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._Industrial.heic",
+      "uncompressed_size": 263,
+      "sha256": "95a7556efee9204797ff67d48063ad71bedecc4287aec3c92d5db97f51f724ad"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._mall.heic",
+      "uncompressed_size": 263,
+      "sha256": "3fb82168e90199c3cffa2a22ecc93dc4f304247a19ffb18b711cc8ca64dde8f0"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._mantecado.heic",
+      "uncompressed_size": 263,
+      "sha256": "e51898b20625c688245999f57c1eb6033b17f3878cf8761e5624e94c525a4a44"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._meca╠ünico,gomera.heic",
+      "uncompressed_size": 263,
+      "sha256": "8b37aaea541ccc97a23e946caf7778e1c5edbd6a1495b2b8ad6071680d44f6f1"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._national guard.heic",
+      "uncompressed_size": 263,
+      "sha256": "73c16dbc3a4da151c958bd94e7300942ea77cf5085c94dc8f4ff22ef9ed56720"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._outdoor_adventure.png",
+      "uncompressed_size": 207,
+      "sha256": "ed8ee0fbf5175f31cd74e270cd27910673a9a6716580709ab3cbd80e9ffc0a81"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._parking & ban╠âos.heic",
+      "uncompressed_size": 263,
+      "sha256": "50c6f845fabd76b586752b6c6af367294e4766fc56159774a6eb5243a9bc472b"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._parque (grande).heic",
+      "uncompressed_size": 263,
+      "sha256": "116e7ba98e3a0321bfc2150c2d923a0f28b44289502026ac213910fe386fcee3"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._pharmacy.png",
+      "uncompressed_size": 207,
+      "sha256": "ed8ee0fbf5175f31cd74e270cd27910673a9a6716580709ab3cbd80e9ffc0a81"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._pizza & barberi╠üa.heic",
+      "uncompressed_size": 263,
+      "sha256": "fc737ba2238fd7d1ca063b28b470f797144ef5d7e7eab117f399afccf46844ff"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._poli╠ügono de tiro : shooting range.heic",
+      "uncompressed_size": 263,
+      "sha256": "8ee68d53878ff646ad29ac21d7e4ab4729e6455345a6f07796c87142a7150a77"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._private_school.png",
+      "uncompressed_size": 207,
+      "sha256": "ed8ee0fbf5175f31cd74e270cd27910673a9a6716580709ab3cbd80e9ffc0a81"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._random.png",
+      "uncompressed_size": 207,
+      "sha256": "ed8ee0fbf5175f31cd74e270cd27910673a9a6716580709ab3cbd80e9ffc0a81"
+    },
+    {
+      "path": "__MACOSX/Icon Library/poi_types/._tacos.heic",
+      "uncompressed_size": 263,
+      "sha256": "4fcb44eb3b84baffff8ea08bb777fea276d78acb75e2448cf1047709a3a57d8e"
+    },
+    {
+      "path": "Icon Library/aircraft_logo/af-icon.heic",
+      "uncompressed_size": 78183,
+      "sha256": "dfcbd6aa5d88baa820a25743f224c41971fb6ef73f2bb8ecee4a3d0c4eca8012"
+    },
+    {
+      "path": "Icon Library/aircraft_logo/bakeraviation-icon.heic",
+      "uncompressed_size": 272482,
+      "sha256": "f3b46f11e7ef360e5e4ec6de55cfceab846feb34be48b8332d150e0f2d3be662"
+    },
+    {
+      "path": "Icon Library/aircraft_logo/cg-icon.heic",
+      "uncompressed_size": 509104,
+      "sha256": "55b2d0fa2514933c91facbc6bcb5c36b6e494e205e6decf64e6b4e8d9499287d"
+    },
+    {
+      "path": "Icon Library/poi_types/?.heic",
+      "uncompressed_size": 34085,
+      "sha256": "ef934a8e7ac6951c39f0612f1645b4c228b806c9a7ff148455767cf136ba128d"
+    },
+    {
+      "path": "Icon Library/poi_types/airport.png",
+      "uncompressed_size": 41941,
+      "sha256": "f46d30e0027078c063fbeab9b9f36c8c6b6863a1019b8087dea2d2f6f2d02ccf"
+    },
+    {
+      "path": "Icon Library/poi_types/auto_shop.png",
+      "uncompressed_size": 34497,
+      "sha256": "5300a5b8729348717025985d8f24a5ceba46b9362bb2b2d7c579956b3a8fdb2b"
+    },
+    {
+      "path": "Icon Library/poi_types/avenida.heic",
+      "uncompressed_size": 32182,
+      "sha256": "08876813bb77b41a1e34f85cfbef5fae4f40cfeb9a51cd9a893307c73341c1b0"
+    },
+    {
+      "path": "Icon Library/poi_types/banco.heic",
+      "uncompressed_size": 43515,
+      "sha256": "b814f851e48ce8acc2f62ab55024b1340735e20afe2552e9f498284f37d807e3"
+    },
+    {
+      "path": "Icon Library/poi_types/beauty_salon.png",
+      "uncompressed_size": 45625,
+      "sha256": "553845527e1a3e6d9174492d577812237001222f86672b0a5336dc9b9d340a0b"
+    },
+    {
+      "path": "Icon Library/poi_types/carretera.heic",
+      "uncompressed_size": 32500,
+      "sha256": "c522359dd8753b28f53f11e987d487bca3c9b66e494b859e3ad09e4513dc10fd"
+    },
+    {
+      "path": "Icon Library/poi_types/church.png",
+      "uncompressed_size": 43035,
+      "sha256": "206cff82c1bc9511ee7011ffbfefe6a2e5047dc07348d4651db257e5e61c7cf7"
+    },
+    {
+      "path": "Icon Library/poi_types/credit_finance.png",
+      "uncompressed_size": 39612,
+      "sha256": "bb2e6cf836da04a456589e7286430b2d00cb0d436cd54815d5be5f0d5fc4dba9"
+    },
+    {
+      "path": "Icon Library/poi_types/ecological_park.png",
+      "uncompressed_size": 49053,
+      "sha256": "cf2cf55601f794ba4e6eb7f1e79f1251062984dca30753f55bc30836ccc6d03c"
+    },
+    {
+      "path": "Icon Library/poi_types/educational_institution.png",
+      "uncompressed_size": 38829,
+      "sha256": "9f8ff5592adb3b846aa601905b4ab421d50181fe4c5231248e9c005f10782bfa"
+    },
+    {
+      "path": "Icon Library/poi_types/estacio╠ün de bomberos.heic",
+      "uncompressed_size": 40340,
+      "sha256": "1bd444b527f642431da4d79d9d099f155bd5e42b015d9ea8b30c5bb2d968fe7a"
+    },
+    {
+      "path": "Icon Library/poi_types/estacio╠ün de tren.heic",
+      "uncompressed_size": 34201,
+      "sha256": "0968dd758d6d8f21505425ee281eea24d3b827309be8126898ed0fa36301e69c"
+    },
+    {
+      "path": "Icon Library/poi_types/fast food.heic",
+      "uncompressed_size": 36700,
+      "sha256": "0f333d7ae36f8900b116478f8ee25beb660a4826053de6843917768babc55cd9"
+    },
+    {
+      "path": "Icon Library/poi_types/ferreteri╠üa.heic",
+      "uncompressed_size": 38355,
+      "sha256": "c335fe5a5a8ad9d2b9ac1b0909c4b5806db95b6338c8b79af5515043381ebf77"
+    },
+    {
+      "path": "Icon Library/poi_types/food_truck.png",
+      "uncompressed_size": 41849,
+      "sha256": "abb19a84abaa9008fe530ca2a65a5ba13648c2838bf9fbd2257fc021f8a9a53d"
+    },
+    {
+      "path": "Icon Library/poi_types/food.heic",
+      "uncompressed_size": 41724,
+      "sha256": "27bb7a68114b0e91c18d6c24356702b29f7f146b502b289be2a160b534dc1ec5"
+    },
+    {
+      "path": "Icon Library/poi_types/Industrial.heic",
+      "uncompressed_size": 76755,
+      "sha256": "7e3bc2b04726ca2b8cd6cbe180b3bd3b593a84946c657b4cfe3c2ff4d322aae3"
+    },
+    {
+      "path": "Icon Library/poi_types/mall.heic",
+      "uncompressed_size": 38026,
+      "sha256": "9047588a6fdbc0d7eafb581601e337c96dd5a1a8a04a21aa0bbc62ae2aeae904"
+    },
+    {
+      "path": "Icon Library/poi_types/mantecado.heic",
+      "uncompressed_size": 36632,
+      "sha256": "ce8bcf6c4153dbdd12a9dd6478e7c243a85ac4f4261f762e27e883e546bd2c5d"
+    },
+    {
+      "path": "Icon Library/poi_types/meca╠ünico,gomera.heic",
+      "uncompressed_size": 44485,
+      "sha256": "d1f67bc631950f23b0112a17b4635bf394917b8eb4b2f88ca31e5207fd7bd55e"
+    },
+    {
+      "path": "Icon Library/poi_types/national guard.heic",
+      "uncompressed_size": 47093,
+      "sha256": "aee0e880cbbb97210834a380ac452518ae435598561e57f6c8f4dc909501af85"
+    },
+    {
+      "path": "Icon Library/poi_types/outdoor_adventure.png",
+      "uncompressed_size": 45564,
+      "sha256": "267de24c368f1449b749fb645a08ba49df975f68ef5d94c448b31a57406ef1ed"
+    },
+    {
+      "path": "Icon Library/poi_types/parking & ban╠âos.heic",
+      "uncompressed_size": 41133,
+      "sha256": "3458f16869b131557e9861703bcf9d5cae9d003d9da47053868cf2ec0554a5d7"
+    },
+    {
+      "path": "Icon Library/poi_types/parque (grande).heic",
+      "uncompressed_size": 586569,
+      "sha256": "8d8e552d12a50b5b241500015dbb977e6e30969ab4b1c617b180961eef784451"
+    },
+    {
+      "path": "Icon Library/poi_types/pharmacy.png",
+      "uncompressed_size": 44040,
+      "sha256": "98318b8355d2860a2bcdb6debb51fe5578dcc0ccd1a4ce32462fcdba5eabf055"
+    },
+    {
+      "path": "Icon Library/poi_types/pizza & barberi╠üa.heic",
+      "uncompressed_size": 37951,
+      "sha256": "30c1541323cef7da7c3a22af5fe4fadd6d241ea234ec5caba9b572ea66e2110f"
+    },
+    {
+      "path": "Icon Library/poi_types/poli╠ügono de tiro : shooting range.heic",
+      "uncompressed_size": 146658,
+      "sha256": "4b3ffa2acee67cde8fff006ca0a4e06825bec1d3d4a8a871d8e38776edb4a9e2"
+    },
+    {
+      "path": "Icon Library/poi_types/private_school.png",
+      "uncompressed_size": 45392,
+      "sha256": "37717498ce204e3fef32e54a0cb0d46d9dffcc8a37b95e05e28b79d6f84249ac"
+    },
+    {
+      "path": "Icon Library/poi_types/random.png",
+      "uncompressed_size": 40086,
+      "sha256": "61c42aaa68557fedf8750a10f7fae19ae0913cfe794b86d35b9c4a5b7b0a78db"
+    },
+    {
+      "path": "Icon Library/poi_types/tacos.heic",
+      "uncompressed_size": 70923,
+      "sha256": "90071a03e051152e8d4b240dd42e51e6eec684be82939b330532bb77fa613207"
+    }
+  ]
+}
