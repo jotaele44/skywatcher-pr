@@ -171,3 +171,19 @@ def test_normalize_hex_and_decode_trace_edge_cases():
     with pytest.raises(ProviderError):
         normalize_hex("zzzzzz")
     assert decode_trace({"trace": [None, [1, 2]]})["points"] == []
+
+
+def test_rate_limited_requests_are_not_retried(tmp_path):
+    import urllib.error
+
+    calls = []
+
+    def opener(request, timeout):
+        calls.append(request.full_url)
+        raise urllib.error.HTTPError(request.full_url, 429, "Too Many Requests", {}, None)
+
+    provider = AdsbLolProvider(api_base="https://api.test", site_base="https://site.test",
+                               cache_dir=tmp_path, opener=opener, clock=lambda: NOW)
+    with pytest.raises(ProviderError):
+        provider.fetch_aircraft(PR_BBOX)
+    assert len(calls) == 1

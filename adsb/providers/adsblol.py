@@ -229,7 +229,9 @@ class AdsbLolProvider(AdsbProvider):
             except urllib.error.HTTPError as exc:
                 if exc.code in (404, 410):
                     raise UpstreamNotFound(f"adsb.lol returned HTTP {exc.code} for {url}") from exc
-                if exc.code in (400, 403, 422):
+                if exc.code in (400, 403, 422, 429):
+                    # 429: retrying straight away only adds to the load that
+                    # triggered the rate limit; the next poll tries again.
                     raise ProviderError(f"adsb.lol returned HTTP {exc.code} for {url}") from exc
                 last_exc = exc
             except (urllib.error.URLError, OSError, TimeoutError) as exc:

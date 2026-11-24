@@ -68,7 +68,9 @@ def client_with():
         return TestClient(app)
 
     yield make
-    app.dependency_overrides.clear()
+    # Remove only our override: main.py wires other routes (e.g. the Sky Cameras
+    # reviewer guard) through app.dependency_overrides too.
+    app.dependency_overrides.pop(live_router.get_live_provider, None)
 
 
 def test_status_reports_feeds_and_openaip_credentials(client_with, monkeypatch):
