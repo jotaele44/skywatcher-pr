@@ -1,11 +1,17 @@
 import React, { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import Sidebar from "./Sidebar";
 import TopStatusStrip from "./TopStatusStrip";
+import { scrollRegion } from "@/lib/scrollRegion";
+
+// Routes that render an edge-to-edge map instead of a padded page.
+const FULL_BLEED_ROUTES = new Set(["/live"]);
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { pathname } = useLocation();
+  const fullBleed = FULL_BLEED_ROUTES.has(pathname);
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
       <TopStatusStrip />
@@ -28,18 +34,27 @@ export default function Layout() {
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex items-center gap-2 border-b border-border px-3 py-2 md:hidden">
             <button
+              type="button"
               onClick={() => setMobileOpen((v) => !v)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-secondary text-foreground"
+              aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
+              aria-expanded={mobileOpen}
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-secondary text-foreground"
             >
-              {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              {mobileOpen ? <X className="h-4 w-4" aria-hidden="true" /> : <Menu className="h-4 w-4" aria-hidden="true" />}
             </button>
             <span className="text-sm font-semibold">Skywatcher-PR</span>
           </div>
-          <main className="flex-1 overflow-y-auto scrollbar-thin">
-            <div className="mx-auto max-w-[1400px] space-y-5 p-4 md:p-6">
+          {fullBleed ? (
+            <main className="relative flex-1 overflow-hidden">
               <Outlet />
-            </div>
-          </main>
+            </main>
+          ) : (
+            <main {...scrollRegion()} className="flex-1 overflow-y-auto scrollbar-thin">
+              <div className="mx-auto max-w-[1400px] space-y-5 p-4 md:p-6">
+                <Outlet />
+              </div>
+            </main>
+          )}
         </div>
       </div>
     </div>

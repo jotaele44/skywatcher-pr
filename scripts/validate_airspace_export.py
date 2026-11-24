@@ -77,6 +77,8 @@ def validate_capture_bbox(value: Any) -> list[str]:
         geometry = json.loads(value)
     except json.JSONDecodeError as exc:
         return [f"capture_bbox_geojson is invalid JSON: {exc}"]
+    if not isinstance(geometry, dict):
+        return ["capture_bbox_geojson must be a JSON object"]
     if geometry.get("type") != "Polygon":
         return ["capture_bbox_geojson must be a Polygon"]
     rings = geometry.get("coordinates")
@@ -116,10 +118,9 @@ def load_observations(package_dir: Path) -> list[dict[str, Any]]:
     return observations
 
 
-def load_csv_ids(package_dir: Path) -> set[str]:
+def load_csv_observations(package_dir: Path) -> list[dict[str, str]]:
     with (package_dir / "observations.csv").open("r", encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle)
-        return {row.get("observation_id", "") for row in reader}
+        return list(csv.DictReader(handle))
 
 
 def validate_package(package_dir: Path, mode: str) -> list[str]:
@@ -137,6 +138,8 @@ def validate_package(package_dir: Path, mode: str) -> list[str]:
         manifest = load_json(package_dir / "manifest.json")
     except Exception as exc:  # noqa: BLE001
         return [f"manifest.json is invalid JSON: {exc}"]
+    if not isinstance(manifest, dict):
+        return ["manifest.json must contain a JSON object"]
 
     if not manifest.get("schema_version"):
         errors.append("manifest schema_version is required")
@@ -144,6 +147,8 @@ def validate_package(package_dir: Path, mode: str) -> list[str]:
         errors.append(f"manifest producer must be {PRODUCER_ID}")
     if manifest.get("mode") not in {"test", "production"}:
         errors.append("manifest mode must be test or production")
+    if manifest.get("mode") != mode:
+        errors.append(f"manifest mode must match requested mode ({mode})")
 
     try:
         observations = load_observations(package_dir)
@@ -151,15 +156,35 @@ def validate_package(package_dir: Path, mode: str) -> list[str]:
         return errors + [f"observations.geojson is invalid: {exc}"]
 
     try:
-        csv_ids = load_csv_ids(package_dir)
+        csv_observations = load_csv_observations(package_dir)
     except Exception as exc:  # noqa: BLE001
         errors.append(f"observations.csv is invalid: {exc}")
-        csv_ids = set()
+        csv_observations = []
+
+    observation_ids = [obs.get("observation_id", "") for obs in observations]
+    csv_ids = [row.get("observation_id", "") for row in csv_observations]
+    if not all(isinstance(value, str) and value for value in observation_ids):
+        errors.append("observations.geojson contains an invalid observation_id")
+    elif len(observation_ids) != len(set(observation_ids)):
+        errors.append("observations.geojson contains duplicate observation_id values")
+    if not all(isinstance(value, str) and value for value in csv_ids):
+        errors.append("observations.csv contains an invalid observation_id")
+    elif len(csv_ids) != len(set(csv_ids)):
+        errors.append("observations.csv contains duplicate observation_id values")
+    if (
+        not all(isinstance(value, str) and value for value in observation_ids)
+        or not all(isinstance(value, str) and value for value in csv_ids)
+        or len(observation_ids) != len(csv_ids)
+        or set(observation_ids) != set(csv_ids)
+    ):
+        errors.append("observations.csv IDs do not match observations.geojson")
 
     try:
-        sources = {item["source_id"] for item in load_json(package_dir / "sources.json")}
+        source_rows = load_json(package_dir / "sources.json")
+        sources = {item["source_id"] for item in source_rows}
     except Exception as exc:  # noqa: BLE001
         errors.append(f"sources.json is invalid: {exc}")
+        source_rows = []
         sources = set()
 
     try:
@@ -174,9 +199,14 @@ def validate_package(package_dir: Path, mode: str) -> list[str]:
         errors.append(f"confidence.json is invalid: {exc}")
         confidence_rows = set()
 
+    synthetic_by_id: dict[str, bool] = {}
     for index, obs in enumerate(observations, start=1):
         obs_id = obs.get("observation_id", f"feature-{index}")
-        missing = sorted(field for field in REQUIRED_OBSERVATION_FIELDS if field not in obs or obs[field] in {"", None})
+        missing = sorted(
+            field
+            for field in REQUIRED_OBSERVATION_FIELDS
+            if field not in obs or obs[field] is None or obs[field] == ""
+        )
         if missing:
             errors.append(f"{obs_id}: missing required fields: {', '.join(missing)}")
             continue
@@ -217,6 +247,8 @@ def validate_package(package_dir: Path, mode: str) -> list[str]:
         except ValueError as exc:
             errors.append(f"{obs_id}: {exc}")
             is_synthetic = False
+        if isinstance(obs_id, str):
+            synthetic_by_id[obs_id] = is_synthetic
         if mode == "production" and is_synthetic:
             errors.append(f"{obs_id}: synthetic rows are not allowed in production mode")
 
@@ -246,6 +278,26 @@ def validate_package(package_dir: Path, mode: str) -> list[str]:
                 errors.append(f"{obs_id}: {bbox_error}")
         elif point_status == "SOURCE_PROVIDED" and obs.get("position_precision") == "APPROXIMATE":
             errors.append(f"{obs_id}: SOURCE_PROVIDED points must not be labeled APPROXIMATE")
+
+    for index, row in enumerate(csv_observations, start=1):
+        obs_id = row.get("observation_id") or f"csv-row-{index}"
+        try:
+            is_synthetic = parse_bool(row.get("synthetic"))
+        except ValueError as exc:
+            errors.append(f"{obs_id}: observations.csv {exc}")
+            continue
+        if mode == "production" and is_synthetic:
+            errors.append(f"{obs_id}: synthetic CSV rows are not allowed in production mode")
+        if obs_id in synthetic_by_id and is_synthetic != synthetic_by_id[obs_id]:
+            errors.append(f"{obs_id}: synthetic flag differs between package outputs")
+
+    if mode == "production":
+        for source in source_rows:
+            if str(source.get("provenance_status") or "").startswith("synthetic"):
+                errors.append(
+                    f"{source.get('source_id', '<unknown>')}: synthetic sources are not allowed "
+                    "in production mode"
+                )
 
     return errors
 

@@ -20,14 +20,31 @@ export default function ReviewDetailDrawer({ id, onClose, go }) {
   const rs = REVIEW_STATUS[item.review_status] || REVIEW_STATUS.open;
   const target = r.reviewItemTarget(item);
 
-  const setStatus = (s) => {
+  const setStatus = async (s) => {
     const patch = { review_status: s };
     if (s === "resolved" || s === "rejected") patch.resolved_at = new Date().toISOString();
-    d.updateRecord("reviews", item.id, patch);
+    try {
+      await d.updateRecord("reviews", item.id, patch);
+      toast({ title: "Review status updated", description: `Status set to ${s}.` });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Review status was not updated",
+        description: String(error?.message ?? error),
+      });
+    }
   };
-  const saveNotes = () => {
-    d.updateRecord("reviews", item.id, { notes });
-    toast({ title: "Notes saved" });
+  const saveNotes = async () => {
+    try {
+      await d.updateRecord("reviews", item.id, { notes });
+      toast({ title: "Notes saved" });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Notes were not saved",
+        description: String(error?.message ?? error),
+      });
+    }
   };
 
   const openTarget = () => {

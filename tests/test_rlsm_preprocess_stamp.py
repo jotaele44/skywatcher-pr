@@ -57,10 +57,12 @@ def _row(c, sid, mode=None, scale=None, zone="label_layer"):
 
 
 class TestMigration:
-    def test_adds_both_columns(self, conn):
-        assert ensure_observation_columns(conn) == ["preprocess", "preprocess_scale"]
+    def test_adds_all_columns(self, conn):
+        assert ensure_observation_columns(conn) == [
+            "preprocess", "preprocess_scale", "word_boxes_version",
+        ]
         cols = {r[1] for r in conn.execute("PRAGMA table_info(ocr_observations)")}
-        assert {"preprocess", "preprocess_scale"} <= cols
+        assert {"preprocess", "preprocess_scale", "word_boxes_version"} <= cols
 
     def test_is_idempotent(self, conn):
         ensure_observation_columns(conn)
@@ -69,9 +71,24 @@ class TestMigration:
     def test_existing_rows_survive_and_read_as_unknown(self, conn):
         _row(conn, 1)
         ensure_observation_columns(conn)
-        got = conn.execute("SELECT preprocess, preprocess_scale "
+        got = conn.execute("SELECT preprocess, preprocess_scale, word_boxes_version "
                            "FROM ocr_observations").fetchone()
-        assert got == (None, None)
+        assert got == (None, None, None)
+
+    def test_insert_binding_word_boxes_version_succeeds_after_migration(self, conn):
+        """Regression: on a pre-existing DB (OLD_SHAPE, no word_boxes_version
+        column), the parallel OCR writer's INSERT binds a value to
+        word_boxes_version. Before this migration backfilled that column too,
+        this raised sqlite3.OperationalError."""
+        ensure_observation_columns(conn)
+        conn.execute(
+            "INSERT INTO ocr_observations "
+            "(screenshot_id, zone, raw_text, ocr_status, observed_at, word_boxes_version) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (1, "label_layer", "x", "ok", "2026-07-28T00:00:00Z", "rlsm-wordboxes-v1"),
+        )
+        got = conn.execute("SELECT word_boxes_version FROM ocr_observations").fetchone()
+        assert got == ("rlsm-wordboxes-v1",)
 
 
 class TestStalenessQuery:

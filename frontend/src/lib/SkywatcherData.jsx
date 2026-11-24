@@ -62,14 +62,14 @@ export function SkywatcherDataProvider({ children }) {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Optimistic local update + persisted write
+  // Reflect a diagnostic edit only after its persisted write succeeds.
   const updateRecord = useCallback(async (collection, id, patch) => {
     const entityName = ENTITIES[collection];
+    await federation.entities[entityName].update(id, patch);
     setData((prev) => ({
       ...prev,
       [collection]: prev[collection].map((r) => (r.id === id ? { ...r, ...patch } : r)),
     }));
-    await federation.entities[entityName].update(id, patch);
   }, []);
 
   const createReview = useCallback(async (payload) => {
