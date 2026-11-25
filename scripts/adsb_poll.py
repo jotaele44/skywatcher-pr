@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""POLL LIVE AIRCRAFT STATE VECTORS (OpenSky Network) AND PERSIST THEM
+"""POLL LIVE AIRCRAFT STATE VECTORS (OpenSky Network or adsb.lol) AND PERSIST THEM
 
 Automated replacement for the manual, quota-limited FR24 browser-export step
 (scripts/fr24_harvest.py's 25 CSV/day cap). Fetches current state vectors
-over the Puerto Rico AOI from the OpenSky Network and writes them to the
+over the Puerto Rico AOI from the selected provider (OpenSky Network by default,
+or adsb.lol) and writes them to the
 adsb_state_vectors table (see schemas/adsb_state_vectors.sql).
 
 This does NOT replace the FR24 screenshot/OCR corpus or its reconstructed
@@ -11,7 +12,9 @@ flights/track_points tables — those remain the historical source. It adds a
 live, automated feed alongside them.
 
 Usage:
-    python scripts/adsb_poll.py [--db PATH] [--bbox W S E N] [--provider opensky]
+    python scripts/adsb_poll.py [--db PATH] [--bbox W S E N] [--provider opensky|adsblol]
+
+``adsblol`` needs no credentials (adsb.lol public API, ODbL-1.0 data).
 """
 
 from __future__ import annotations
@@ -38,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
         help="SQLite DB path (default: SKYWATCHER_DB env / data/skywatcher.db)",
     )
     parser.add_argument(
-        "--provider", default="opensky", help="ADS-B provider name (default: opensky)"
+        "--provider", default="opensky", help="ADS-B provider: opensky (default) or adsblol"
     )
     parser.add_argument(
         "--bbox",

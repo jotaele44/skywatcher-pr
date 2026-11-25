@@ -36,6 +36,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from server.backend.console import router as console_router
+from server.backend.console.live_router import router as live_router
 from server.backend.console.repositories import RepositoryRegistry, row_has_complete_provenance
 from server.backend.console.repositories.normalize import attach_provenance
 from server.backend.console.source_taxonomy import build_provenance, normalize_observation
@@ -45,6 +46,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
+from server.backend.cameras_router import require_reviewer
+from server.backend.cameras_router import router as cameras_router
 from server.backend.spacetrack_router import router as spacetrack_router
 from skywatcher.fr24 import database as skywatcher_db
 from skywatcher.fr24.acquisition_receipts import (
@@ -99,7 +102,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(console_router)
+app.include_router(live_router)
 app.include_router(spacetrack_router)
+app.include_router(cameras_router)
 
 def _flight_corpus_v4_contract() -> dict[str, Any]:
     path = ROOT / "config" / "flight_corpus_v4.json"
@@ -355,6 +360,8 @@ def require_write_access(request: Request) -> None:
 
 
 _WRITE_GUARD = [Depends(require_write_access)]
+# Sky Cameras reviewer routes use this same guard (the router fails closed without it).
+app.dependency_overrides[require_reviewer] = require_write_access
 
 if not _WRITE_TOKEN:
     log.warning(

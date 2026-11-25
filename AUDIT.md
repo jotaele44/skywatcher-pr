@@ -25,7 +25,7 @@
 Modules: 15 `satim_*.py` (calibration, ensemble, contradiction resolution, temporal change, tile seam classification, etc.), `aircraft_intelligence.py`, `gis_intelligence.py`, `aasb_airspace_bridge.py`, `ilap_airspace_bridge.py`.
 Specialized dirs: `adsb/`, `fr24/`, `gebco/`, `imagery/`, `pipeline/`, `sensor_replay/`.
 
-**Gap:** `server/backend/console/` directory exists but is empty — `Console.jsx` frontend page has no backend counterpart.
+**Gap (corrected 2026-11-13):** the original audit said `server/backend/console/` was empty. That was wrong: it holds `router.py`, `capabilities.py`, `fr24_control_plane.py`, `migrations.py` and a `repositories/` package, mounted at `/api/console`. The real gap is narrower: 17 of the 24 capabilities in `capabilities.py` report `unavailable_no_adapter` or `unavailable_no_artifact`.
 
 **Frontend: Most complete individual repo** — 20 pages, full auth flow, calibration UI, spatial truth.
 
@@ -37,7 +37,7 @@ Pages: Aircraft, Airports, AnalysisLenses (12.4KB), Calibration (15.7KB), Consol
 
 ## Priority Actions for skywatcher
 
-1. **MEDIUM** — Implement `server/backend/console/` — wire Console.jsx to backend
+1. **MEDIUM** — Decide whether to build or retire the unavailable console capabilities (see `docs/AUDIT_AND_OPTIMIZATION_STRATEGY_2026-11-13.md`, Wave 4)
 2. **LOW** — Expand API client coverage beyond federationClient.js
 
 ---

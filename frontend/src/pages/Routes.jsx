@@ -15,6 +15,7 @@ import LoadingState from "@/components/skywatcher/LoadingState";
 import { Toolbar, SearchInput, FilterSelect } from "@/components/skywatcher/Toolbar";
 import { REVIEW_STATUS } from "@/lib/skywatcher";
 import { federation } from "@/api/federationClient";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 const REVIEW_OPTS = [
   { value: "all", label: "All review states" },
@@ -135,7 +136,7 @@ export default function Routes() {
                 {showProvenance ? "Hide provenance" : "Inspect provenance"}
               </button>
               {showProvenance && (
-                <div className="mt-3 max-h-64 overflow-auto rounded border border-border">
+                <div {...scrollRegion("Route provenance")} className="mt-3 max-h-64 overflow-auto rounded border border-border">
                   <table className="w-full text-left text-[10px]">
                     <thead><tr className="bg-secondary/40"><th className="p-2">Member</th><th className="p-2">Bytes</th><th className="p-2">SHA-256</th></tr></thead>
                     <tbody>{(deepCorpus.members || []).map((member) => <tr key={member.path} className="border-t border-border/50"><td className="p-2 font-mono">{member.path}</td><td className="p-2 font-mono">{member.size_bytes}</td><td className="p-2 font-mono">{member.sha256}</td></tr>)}</tbody>
@@ -155,6 +156,7 @@ export default function Routes() {
       {recurrence && (
         <Panel title="V4 Temporal Route-Family Recurrence">
           <EvidenceTable
+            label="Temporal route-family recurrence"
             columns={[
               { key: "month", header: "Month", render: (row) => row.utc_month },
               { key: "family", header: "Family", render: (row) => row.consensus_family_id },
@@ -176,6 +178,7 @@ export default function Routes() {
             {airportRecurrence && (
         <Panel title="V4 Airport-Edge Recurrence">
           <EvidenceTable
+            label="Airport-edge recurrence"
             scrollClassName="max-h-72 overflow-auto"
             columns={[
               { key: "month", header: "Month", render: (row) => row.utc_month },
@@ -200,6 +203,7 @@ export default function Routes() {
             {familyProvenance && (
         <Panel title="V4 Route-Family Methodology Provenance">
           <EvidenceTable
+            label="Route-family methodology provenance"
             columns={[
               { key: "v3_family", header: "V3 family", render: (row) => row.v3_family },
               { key: "v3_tracks", header: "V3 tracks", cellClassName: "p-2", render: (row) => row.v3_tracks },
@@ -242,7 +246,7 @@ export default function Routes() {
         {filtered.length === 0 ? (
           <EmptyState icon={RouteIcon} title="No route segments" />
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
+          <div {...scrollRegion("Route segments")} className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">

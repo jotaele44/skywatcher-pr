@@ -8,6 +8,7 @@ import RouteSegmentPanel from "../RouteSegmentPanel";
 import { useSkywatcher, useResolvers } from "@/lib/SkywatcherData";
 import { INGEST_STATUS } from "@/lib/skywatcher";
 import { toast } from "@/components/ui/use-toast";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 export default function CaptureDetailDrawer({ id, onClose, go }) {
   const d = useSkywatcher();
@@ -100,7 +101,7 @@ export default function CaptureDetailDrawer({ id, onClose, go }) {
         </div>
         <div className="mt-2 flex items-center gap-2 rounded border border-border bg-[hsl(220_30%_4%)] px-3 py-2">
           <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">sha256</span>
-          <code className="flex-1 overflow-x-auto whitespace-nowrap font-mono text-[10px] text-foreground/70 scrollbar-thin">{cap.sha256_hash}</code>
+          <code {...scrollRegion("SHA-256 hash")} className="flex-1 overflow-x-auto whitespace-nowrap font-mono text-[10px] text-foreground/70 scrollbar-thin">{cap.sha256_hash}</code>
           <button type="button" aria-label="Copy SHA-256 hash" onClick={copyHash} className="text-muted-foreground hover:text-primary"><Copy className="h-3 w-3" /></button>
         </div>
       </Section>
