@@ -104,15 +104,21 @@ function TargetRow({ target, selected, favorite, onSelect, onToggleFavorite, onC
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary" aria-hidden="true">
         <Icon className="h-4 w-4 text-primary" />
       </span>
-      <button
-        onClick={() => onSelect(target)}
-        type="button"
-        aria-label={target.display}
-        aria-describedby={descriptionId}
-        aria-current={selected ? "true" : undefined}
-        className="min-w-0 flex-1 text-left"
-      >
-        <span className="block truncate text-sm font-semibold text-foreground">{target.display}</span>
+      {/* The button holds only the target's name, so its accessible name is
+          exactly what is shown (speech control: "click Jupiter"). The detail
+          line sits beside it as its description; the button's ::after covers
+          the whole block, so the click area is unchanged. min-h-6 keeps the
+          button's own box at 24px, the minimum target size. */}
+      <div className="relative min-w-0 flex-1">
+        <button
+          onClick={() => onSelect(target)}
+          type="button"
+          aria-describedby={descriptionId}
+          aria-current={selected ? "true" : undefined}
+          className="block min-h-6 w-full truncate text-left text-sm font-semibold text-foreground after:absolute after:inset-0 after:content-['']"
+        >
+          {target.display}
+        </button>
         <span id={descriptionId} className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
           <span className={visibility.state === "UP" ? "font-mono text-foreground" : "font-mono"}>
             {visibility.text}
@@ -121,7 +127,7 @@ function TargetRow({ target, selected, favorite, onSelect, onToggleFavorite, onC
           {target.match?.field === "alias" ? <span>{`matches ${target.match.text}`}</span> : null}
           {extra}
         </span>
-      </button>
+      </div>
       <button
         onClick={() => onToggleFavorite(target)}
         type="button"
