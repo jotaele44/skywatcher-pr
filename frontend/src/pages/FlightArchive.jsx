@@ -6,6 +6,7 @@ import Panel from "@/components/skywatcher/Panel";
 import StatusChip from "@/components/skywatcher/StatusChip";
 import { federation } from "@/api/federationClient";
 import { FLIGHT_INGEST_STATUS, parseFlightFiles } from "@/lib/skywatcher";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 const ACCEPT = ".html,.htm,.csv,.kml,text/html,text/csv,application/vnd.google-earth.kml+xml";
 const TABS = [
@@ -240,7 +241,7 @@ export default function FlightArchive() {
         {storedSnapshots.length === 0 ? (
           <p className="text-sm text-muted-foreground">No persisted corpus snapshots in the configured Skywatcher database.</p>
         ) : (
-          <div className="max-h-48 space-y-1 overflow-auto">
+          <div {...scrollRegion("Persisted snapshots")} className="max-h-48 space-y-1 overflow-auto">
             {storedSnapshots.map((snapshot) => (
               <button
                 key={snapshot.snapshot_id}
@@ -325,7 +326,7 @@ export default function FlightArchive() {
 function CorpusTable({ records, empty = "Load a Master Flight Log HTML backup to populate the corpus." }) {
   if (!records.length) return <p className="text-sm text-muted-foreground">{empty}</p>;
   return (
-    <div className="max-h-[62vh] overflow-auto rounded-lg border border-border">
+    <div {...scrollRegion("Corpus records")} className="max-h-[62vh] overflow-auto rounded-lg border border-border">
       <table className="w-full text-sm">
         <thead><tr className="sticky top-0 border-b border-border bg-secondary text-left text-[10px] uppercase tracking-wide text-muted-foreground">
           <th className="px-3 py-2">Flight ID</th><th className="px-3 py-2">Callsign</th><th className="px-3 py-2">Start</th><th className="px-3 py-2">End</th><th className="px-3 py-2 text-right">Points</th><th className="px-3 py-2">KML</th><th className="px-3 py-2">Route</th>
@@ -363,7 +364,7 @@ function CanonicalCoverageTable({ ledger }) {
     <p className="mb-3 text-xs text-muted-foreground">
       As of {params.as_of || "—"} · {params.lookback_days ?? "—"}-day look-back · horizon {params.horizon || "—"} · gap gate ≥{params.gap_min_days ?? "—"} days and ≥{params.gap_multiplier ?? "—"}× median cadence.
     </p>
-    <div className="max-h-[62vh] overflow-auto rounded-lg border border-border">
+    <div {...scrollRegion("Acquisition priorities")} className="max-h-[62vh] overflow-auto rounded-lg border border-border">
       <table className="w-full text-sm">
         <thead><tr className="sticky top-0 border-b border-border bg-secondary text-left text-[10px] uppercase tracking-wide text-muted-foreground">
           <th className="px-3 py-2">Identity</th><th className="px-3 py-2">Basis</th><th className="px-3 py-2 text-right">Flights</th><th className="px-3 py-2 text-right">Days</th><th className="px-3 py-2">First</th><th className="px-3 py-2">Last</th><th className="px-3 py-2 text-right">Cadence</th><th className="px-3 py-2 text-right">KML missing</th>
@@ -428,7 +429,7 @@ function P1ExecutionReceipt({ receipt }) {
 
 function AcquisitionLedgerTable({ items }) {
   if (!items.length) return <p className="text-sm text-muted-foreground">No acquisition items under the current coverage rules.</p>;
-  return <div className="max-h-[62vh] overflow-auto rounded-lg border border-border">
+  return <div {...scrollRegion("Acquisition ledger")} className="max-h-[62vh] overflow-auto rounded-lg border border-border">
     <table className="w-full text-sm">
       <thead><tr className="sticky top-0 border-b border-border bg-secondary text-left text-[10px] uppercase tracking-wide text-muted-foreground">
         <th className="px-3 py-2">Type</th><th className="px-3 py-2">Identity</th><th className="px-3 py-2">Window</th><th className="px-3 py-2">State</th><th className="px-3 py-2 text-right">Recoverable</th><th className="px-3 py-2">Evidence note</th>
@@ -448,7 +449,7 @@ function AcquisitionLedgerTable({ items }) {
 function CoverageTable({ records }) {
   const rows = groupedCoverage(records);
   if (!rows.length) return <p className="text-sm text-muted-foreground">No corpus coverage loaded.</p>;
-  return <div className="overflow-auto rounded-lg border border-border"><table className="w-full text-sm">
+  return <div {...scrollRegion("Corpus coverage")} className="overflow-auto rounded-lg border border-border"><table className="w-full text-sm">
     <thead><tr className="border-b border-border bg-secondary/40 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
       <th className="px-3 py-2">Source callsign</th><th className="px-3 py-2 text-right">Flights</th><th className="px-3 py-2">First</th><th className="px-3 py-2">Last</th><th className="px-3 py-2 text-right">KML</th>
     </tr></thead>
@@ -461,7 +462,7 @@ function CoverageTable({ records }) {
 function Timeline({ records }) {
   const rows = [...records].filter((r) => r.startTimeUtc).sort((a, b) => a.startTimeUtc.localeCompare(b.startTimeUtc));
   if (!rows.length) return <p className="text-sm text-muted-foreground">No timestamped corpus records loaded.</p>;
-  return <div className="max-h-[62vh] space-y-1 overflow-auto">{rows.slice(0, 1000).map((row) =>
+  return <div {...scrollRegion("Corpus timeline")} className="max-h-[62vh] space-y-1 overflow-auto">{rows.slice(0, 1000).map((row) =>
     <div key={row.corpusUid} className="grid grid-cols-[10rem_8rem_1fr] gap-3 rounded-md border border-border bg-muted/20 px-3 py-2 text-xs">
       <span className="font-mono text-muted-foreground">{row.startTimeUtc}</span><span className="font-mono font-semibold text-foreground">{row.callsignRaw || "UNRESOLVED"}</span><span className="font-mono text-muted-foreground">{row.sourceFlightIdRaw || row.corpusUid}</span>
     </div>

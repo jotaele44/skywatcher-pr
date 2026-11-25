@@ -1,4 +1,5 @@
 import React from "react";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 /**
  * Shared scrollable evidence table used by the Routes page's temporal-
@@ -12,6 +13,7 @@ import React from "react";
  * @param {(row: object, index: number) => string} rowKey
  * @param {React.ReactNode} [footnote]
  * @param {string} [scrollClassName] - overflow/height classes for the table's scroll container.
+ * @param {string} [label] - names the scroll container for assistive technology.
  * @param {React.ReactNode} [children] - optional content rendered above the table (e.g. filter inputs).
  */
 export default function EvidenceTable({
@@ -20,12 +22,13 @@ export default function EvidenceTable({
   rowKey,
   footnote,
   scrollClassName = "overflow-x-auto",
+  label = "Evidence table",
   children,
 }) {
   return (
     <>
       {children}
-      <div className={`mt-3 rounded border border-border ${scrollClassName}`}>
+      <div {...scrollRegion(label)} className={`mt-3 rounded border border-border ${scrollClassName}`}>
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-secondary/40 text-left">

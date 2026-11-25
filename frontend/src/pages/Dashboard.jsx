@@ -22,6 +22,7 @@ import PuertoRicoMapShell from "@/components/skywatcher/PuertoRicoMapShell";
 import LoadingState from "@/components/skywatcher/LoadingState";
 import ProgramTimeline from "@/components/ProgramTimeline";
 import { REVIEW_STATUS, SYNC_STATUS } from "@/lib/skywatcher";
+import { scrollRegion } from "@/lib/scrollRegion";
 
 const PROGRAM_TIMELINE = [
   { id:"sky-aircraft-history", phase:"NOW", title:"Aircraft Identity & History", detail:"Resolve canonical airframe identity, lifecycle evidence, contradictions, and provenance without registration-only merges.", category:"Identity", href:"/aircraft" },
@@ -147,7 +148,7 @@ export default function Dashboard() {
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Recent observations */}
         <Panel title="Recent Observations" icon={Plane} className="lg:col-span-2" bodyClassName="p-0">
-          <div className="overflow-x-auto scrollbar-thin">
+          <div {...scrollRegion("Recent observations")} className="overflow-x-auto scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -188,7 +189,7 @@ export default function Dashboard() {
 
       {/* Federation sync events */}
       <Panel title="Recent Federation Sync Events" icon={Network} bodyClassName="p-0">
-        <div className="overflow-x-auto scrollbar-thin">
+        <div {...scrollRegion("Recent federation sync events")} className="overflow-x-auto scrollbar-thin">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
