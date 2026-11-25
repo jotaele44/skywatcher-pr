@@ -43,6 +43,26 @@ run programs under your account.
 (0.3.0). If you set the app up before that pin moved, run
 `python desktop/setup.py --force` once to install the newer runtime.
 
+The Launch Pad is registered as `desktop-launch-pad` in
+`.federation/gui-capabilities.json`. Its end-to-end test,
+`frontend/tests/desktop-launchpad.spec.mjs`, opens the runtime's real page in a
+browser and drives the real bridge and backend through
+`frontend/tests/support/launchpad_harness.py`; only the native window is
+replaced. It checks the readiness rows and start pages; that Guest may still
+use the two read-only POSTs (`/api/query`, `/api/entities/*/filter`) but is
+refused a write; that Operator's write gets through; and that an Operator
+option reaches the backend's environment. To run it, with
+`server/backend/requirements.txt` and `requirements-desktop.txt` installed:
+
+```bash
+cd frontend && npm run test:desktop-launchpad
+```
+
+It runs in CI in the GUI Reachability E2E job. One known runtime defect is
+asserted rather than hidden: in Guest, the pinned runtime dims Operator-only
+options below the WCAG contrast minimum (fixed in the hub, thehub-pr#435); the
+test fails if any other accessibility violation appears.
+
 Map tiles still require a network connection; local data, tables, and charts
 continue to work when those tiles are unavailable.
 
