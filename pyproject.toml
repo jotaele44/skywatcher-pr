@@ -19,8 +19,8 @@ requires-python = ">=3.10"
 dependencies = [
     "Pillow>=10.0",
     "PyMuPDF>=1.28.2",
-    "pytest>=8.0",
-    "pillow-heif>=1.5.0; platform_system != 'Windows'",
+    "pytest>=9.2.0",
+    "pillow-heif>=1.8.1; platform_system != 'Windows'",
     # Manual flight-log workbooks (.xlsx) read by fr24/log_verify.py. Imported
     # lazily at the call site, so only log-verification runs pay the import cost.
     "openpyxl>=3.1",
@@ -39,7 +39,7 @@ dependencies = [
 # Provider: OpenSky Network (free; OAuth2 client-credentials, anonymous fallback).
 adsb = [
     "opensky-api",
-    "python-dotenv>=1.0",
+    "python-dotenv>=1.2.4",
 ]
 dev = [
     "pytest-cov>=5",
@@ -73,7 +73,7 @@ geo = [
 imagery = [
     "fastmcp>=2.9,<3",
     "requests>=2.34.2",
-    "python-dotenv>=1.0",
+    "python-dotenv>=1.2.4",
     "numpy",
 ]
 
