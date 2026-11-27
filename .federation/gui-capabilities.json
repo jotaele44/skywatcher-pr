@@ -56,6 +56,28 @@
   },
   "capabilities": [
     {
+      "id": "laboratory-mount-binding-infrastructure",
+      "classification": "internal",
+      "status": "active",
+      "requires_terminal": false,
+      "rationale": "Opt-in laboratory-only adapter binding, semantic fingerprint and resolution primitives. No registered production adapters, HTTP dispatch, or independent operator workflow exists. Future user-selectable mount discovery and execution must receive separate reachable GUI mappings and E2E tests before exposure; this classification does not waive those gates.",
+      "analysis": {
+        "files": [
+          "src/skywatcher/core/lenses/mounts.py"
+        ],
+        "symbols": [
+          "src/skywatcher/core/lenses/mounts.py:MountBinding",
+          "src/skywatcher/core/lenses/mounts.py:MountBindings",
+          "src/skywatcher/core/lenses/mounts.py:lens_fingerprint"
+        ]
+      },
+      "tests": {
+        "contract": [
+          "tests/test_executable_mount_bindings.py"
+        ]
+      }
+    },
+    {
       "id": "pr-grid-v2-runtime-contract",
       "classification": "internal",
       "status": "active",
