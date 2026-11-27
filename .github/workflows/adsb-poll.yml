@@ -41,7 +41,7 @@ jobs:
       # access scope; repin it the same way the other steps below are
       # pinned when that's next in reach.
       - name: Restore polled database
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: data/skywatcher.db
           key: adsb-db-${{ github.run_id }}
@@ -54,7 +54,7 @@ jobs:
         run: uv run python scripts/adsb_poll.py
       - name: Save polled database
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: data/skywatcher.db
           key: adsb-db-${{ github.run_id }}
