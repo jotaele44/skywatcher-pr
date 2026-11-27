@@ -195,6 +195,18 @@ uv run pytest -q
 uv run python scripts/validate_airspace_export.py exports/examples/synthetic_airspace_package --mode test
 ```
 
+Type checking is gated by ratchet rather than by a clean run. `mypy` (in the
+`lint` job) and the frontend's `tsc` (in the `frontend` job) each have an
+error-count ceiling in `configs/quality_ceilings.json`; CI fails when a change
+adds errors. Run the same checks locally with:
+
+```bash
+python3 scripts/check_error_ceiling.py mypy -- uv run python -m mypy
+(cd frontend && python3 ../scripts/check_error_ceiling.py tsc -- npx tsc -p ./jsconfig.json)
+```
+
+When you fix errors, lower the ceiling to the new count in the same change.
+
 ## Provenance
 
 - Engine extracted from the Spiderweb airspace implementation branch.
