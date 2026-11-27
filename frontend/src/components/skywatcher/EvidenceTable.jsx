@@ -8,13 +8,14 @@ import { scrollRegion } from "@/lib/scrollRegion";
  * footnote below it — matching the markup those panels previously
  * duplicated three times.
  *
- * @param {Array<{key: string, header: React.ReactNode, render: (row, index) => React.ReactNode, cellClassName?: string}>} columns
- * @param {Array<object>} rows
- * @param {(row: object, index: number) => string} rowKey
- * @param {React.ReactNode} [footnote]
- * @param {string} [scrollClassName] - overflow/height classes for the table's scroll container.
- * @param {string} [label] - names the scroll container for assistive technology.
- * @param {React.ReactNode} [children] - optional content rendered above the table (e.g. filter inputs).
+ * @param {object} props
+ * @param {Array<{key: string, header: React.ReactNode, render: (row: any, index: number) => React.ReactNode, cellClassName?: string}>} props.columns
+ * @param {Array<object>} props.rows
+ * @param {(row: any, index: number) => string} props.rowKey
+ * @param {React.ReactNode} [props.footnote]
+ * @param {string} [props.scrollClassName] - overflow/height classes for the table's scroll container.
+ * @param {string} [props.label] - names the scroll container for assistive technology.
+ * @param {React.ReactNode} [props.children] - optional content rendered above the table (e.g. filter inputs).
  */
 export default function EvidenceTable({
   columns,

@@ -6,13 +6,13 @@
       "max_errors": 40,
       "pattern": ": error:",
       "ok_exit_codes": [0, 1],
-      "measured": "2026-11-21, mypy 2.4.1, scope [tool.mypy].files in pyproject.toml"
+      "measured": "2026-11-27 on main 91b8a96, mypy 2.4.1, scope [tool.mypy].files in pyproject.toml"
     },
     "tsc": {
-      "max_errors": 465,
+      "max_errors": 318,
       "pattern": "error TS[0-9]+:",
       "ok_exit_codes": [0, 2],
-      "measured": "2026-11-21, TypeScript 5.9.3, frontend/jsconfig.json"
+      "measured": "2026-11-27 on main 91b8a96, TypeScript 5.9.3, frontend/jsconfig.json with maxNodeModuleJsDepth 0 (JavaScript inside node_modules is not type-checked)"
     }
   }
 }
