@@ -81,6 +81,32 @@ def test_blocking_exit_under_ceiling_fails(strict_ceilings, capsys):
     assert "exited 2" in capsys.readouterr().out
 
 
+def test_incomplete_pattern_fails_even_with_allowed_exit(tmp_path, monkeypatch, capsys):
+    # TypeScript 7 exits 1 for type errors and for a broken config alike.
+    path = tmp_path / "quality_ceilings.json"
+    path.write_text(
+        json.dumps(
+            {
+                "ceilings": {
+                    "demo": {
+                        "max_errors": 5,
+                        "pattern": "error TS[0-9]+:",
+                        "ok_exit_codes": [0, 1],
+                        "incomplete_patterns": ["error TS5[0-9]{3}:"],
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(gate, "CEILINGS", path)
+    bad = "import sys; print(\"jsconfig.json(3,5): error TS5102: Option removed.\"); sys.exit(1)"
+    assert gate.main(["demo", "--", sys.executable, "-c", bad]) == 1
+    assert "incomplete pattern" in capsys.readouterr().out
+    ok = "import sys; print(\"a.js(1,1): error TS2339: x\"); sys.exit(1)"
+    assert gate.main(["demo", "--", sys.executable, "-c", ok]) == 0
+
+
 def test_committed_ceilings_are_well_formed():
     data = json.loads(gate.CEILINGS.read_text(encoding="utf-8"))
     assert set(data["ceilings"]) >= {"mypy", "tsc"}
