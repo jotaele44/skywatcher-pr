@@ -131,8 +131,8 @@ errors **before and after** (identical — these changes add none), `pytest` unc
 ## Backlog, ranked
 
 > **Status 2026-11-27:** items 1 and 4 are addressed by ratchet rather than by a
-> clean run. `mypy` (40 errors) and `tsc` (318 errors, against the 229 recorded
-> below in July) now gate CI through error-count ceilings in
+> clean run. `mypy` (40 errors) and `tsc` (265 errors under TypeScript 7 as of
+> 2026-11-28, against the 229 recorded below in July) now gate CI through error-count ceilings in
 > `configs/quality_ceilings.json`, checked by `scripts/check_error_ceiling.py`.
 > `frontend/jsconfig.json` sets `maxNodeModuleJsDepth: 0`, so tsc no longer
 > type-checks JavaScript inside `node_modules`; before that, a dependency bump

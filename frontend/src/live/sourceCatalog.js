@@ -31,6 +31,43 @@ const wms = (base, layers, extra = "") =>
 export const GLYPHS_URL = "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf";
 export const LABEL_FONT = ["Noto Sans Regular"];
 
+/**
+ * One map data source: a base layer or an overlay. Only id, title, group and
+ * kind are on every entry; the rest depend on the kind.
+ *
+ * @typedef {object} LiveSource
+ * @property {string} id
+ * @property {string} title
+ * @property {string} group
+ * @property {string} kind - "raster", "vector-style", "geojson" or "rainviewer".
+ * @property {string[]} [tiles]
+ * @property {number} [tileSize]
+ * @property {number} [minzoom]
+ * @property {number} [maxzoom]
+ * @property {string} [styleUrl]
+ * @property {string} [url]
+ * @property {string} [indexUrl]
+ * @property {string} [attribution]
+ * @property {string} [license]
+ * @property {string} [requires]
+ * @property {number} [opacity]
+ * @property {number} [refreshMs]
+ * @property {string} [fill]
+ * @property {string} [stroke]
+ * @property {number} [lineWidth]
+ * @property {boolean} [showLabel]
+ * @property {string} [labelField]
+ * @property {any} [labelExpression]
+ * @property {any} [bounds]
+ * @property {string} [description]
+ * @property {string} [titleSuffix]
+ * @property {string} [heading]
+ * @property {boolean} [proxied]
+ * @property {boolean} [cacheBust]
+ * @property {boolean} [validTime]
+ * @property {(options: {now?: Date}) => string[]} [buildTiles]
+ */
+
 export const LAYER_GROUPS = Object.freeze([
   { id: "world", title: "Worldwide" },
   { id: "us", title: "US" },
@@ -46,6 +83,7 @@ export function gibsDate(now = new Date()) {
   return utcDateString(new Date(now.getTime() - 86_400_000));
 }
 
+/** @returns {LiveSource} */
 const raster = (id, title, group, tiles, options = {}) => ({
   id,
   title,
@@ -59,7 +97,7 @@ const raster = (id, title, group, tiles, options = {}) => ({
 });
 
 // Base layers are mutually exclusive (radio buttons in the layer menu).
-export const BASE_LAYERS = Object.freeze([
+export const BASE_LAYERS = Object.freeze(/** @type {LiveSource[]} */ ([
   raster("osm", "OpenStreetMap", "world", "https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxzoom: 19, attribution: OSM_ATTRIBUTION, license: "ODbL-1.0 data; OSMF tile usage policy",
   }),
@@ -101,7 +139,7 @@ export const BASE_LAYERS = Object.freeze([
     tileSize: 256,
     minzoom: 0,
     maxzoom: 9,
-    buildTiles: ({ now = new Date() } = {}) => ["a", "b", "c"].map((s) =>
+    buildTiles: (/** @type {{now?: Date}} */ { now = new Date() } = {}) => ["a", "b", "c"].map((s) =>
       `https://gibs-${s}.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${gibsDate(now)}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`),
     attribution: 'MODIS Terra imagery provided by NASA Global Imagery Browse Services (<a href="https://earthdata.nasa.gov/gibs">GIBS</a>)',
     license: "NASA open data",
@@ -122,8 +160,9 @@ export const BASE_LAYERS = Object.freeze([
     "https://tiles.arcgis.com/tiles/ssFJjBXIUyZDrSYZ/arcgis/rest/services/IFR_High/MapServer/tile/{z}/{y}/{x}", {
       minzoom: 7, maxzoom: 11, attribution: FAA_CHART_ATTRIBUTION, license: "FAA public charts",
     }),
-]);
+]));
 
+/** @returns {LiveSource} */
 const geojson = (id, title, group, url, fill, stroke, options = {}) => ({
   id,
   title,
@@ -140,7 +179,7 @@ const geojson = (id, title, group, url, fill, stroke, options = {}) => ({
 });
 
 // Overlays stack independently (checkboxes in the layer menu).
-export const OVERLAYS = Object.freeze([
+export const OVERLAYS = Object.freeze(/** @type {LiveSource[]} */ ([
   raster("esri_geography_labels", "ESRI.com Geography Labels", "world",
     "https://services.arcgisonline.com/arcgis/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
       maxzoom: 19, opacity: 0.7, attribution: ESRI_ATTRIBUTION, license: "Esri terms of use",
@@ -222,7 +261,7 @@ export const OVERLAYS = Object.freeze([
     "rgba(52, 50, 168, 0.3)", "rgba(52, 50, 168, 1)"),
   geojson("uk_awacs", "UK AWACS Orbits", "europe", tar1090GeoJson("UK_Mil_AWACS_Orbits.geojson"),
     "rgba(252, 186, 3, 0.3)", "rgba(252, 186, 3, 1)", { showLabel: false }),
-]);
+]));
 
 // Aircraft and map-feature layers listed at the top of the layer menu.
 export const FEATURE_LAYERS = Object.freeze([

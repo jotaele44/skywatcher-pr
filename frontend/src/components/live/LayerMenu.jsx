@@ -4,6 +4,16 @@ import {
   BASE_LAYERS, FEATURE_LAYERS, LAYER_GROUPS, OVERLAYS, layerTitle, validateCustomTemplate,
 } from "@/live/sourceCatalog";
 
+/**
+ * @param {object} props
+ * @param {boolean} props.checked
+ * @param {boolean} [props.disabled]
+ * @param {(event: React.ChangeEvent<HTMLInputElement>) => void} props.onChange
+ * @param {React.ReactNode} props.label
+ * @param {string} [props.hint]
+ * @param {string} [props.type]
+ * @param {string} [props.name]
+ */
 function Check({ checked, disabled, onChange, label, hint, type = "checkbox", name }) {
   return (
     <label className={`flex items-start gap-2 py-0.5 ${disabled ? "opacity-50" : "cursor-pointer"}`} title={hint || undefined}>

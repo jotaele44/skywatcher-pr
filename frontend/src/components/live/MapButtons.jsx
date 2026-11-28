@@ -27,6 +27,15 @@ const tone = (active) => (active
   ? "border-white/70 bg-white/85 text-slate-900"
   : "border-white/15 bg-slate-700/75 text-slate-100 hover:bg-slate-600/85");
 
+/**
+ * @param {object} props
+ * @param {string} [props.label] - text shown when the button has no icon child.
+ * @param {string} props.title
+ * @param {boolean} [props.active]
+ * @param {() => void} props.onClick
+ * @param {React.ReactNode} [props.children]
+ * @param {string} [props.className]
+ */
 export function MapButton({ label, title, active = false, onClick, children, className = "" }) {
   return (
     <button

@@ -10,7 +10,10 @@ configs/quality_ceilings.json. It also fails, whatever the count, when the
 command exits with a code outside the entry's ``ok_exit_codes``: a checker with
 a known backlog exits non-zero on ordinary errors, but a different code means
 the check stopped early (for example mypy's "errors prevented further checking",
-exit 2, or tsc failing to read its config, exit 1) and the count is incomplete.
+exit 2) and the count is incomplete. Exit codes cannot always tell the two
+apart: TypeScript 7 exits 1 both for type errors and for a config it cannot
+use. So an entry may also list ``incomplete_patterns``; any output line matching
+one of them fails the check the same way, whatever the count or exit code.
 Without ``ok_exit_codes``, any non-zero exit with no countable errors fails.
 When the count drops below the ceiling, the script says so, so the ceiling can
 be lowered in the same change. Stdlib only.
@@ -45,6 +48,15 @@ def main(argv: list[str]) -> int:
     sys.stdout.write(output)
     count = sum(1 for line in output.splitlines() if pattern.search(line))
 
+    for raw in entry.get("incomplete_patterns", []):
+        incomplete = re.compile(raw)
+        hit = next((line for line in output.splitlines() if incomplete.search(line)), None)
+        if hit is not None:
+            print(
+                f"error-ceiling FAIL {name}: output matches incomplete pattern {raw!r}"
+                f" ({hit.strip()[:120]}). Tool failure; the check is incomplete.",
+            )
+            return 1
     ok_codes = entry.get("ok_exit_codes")
     if ok_codes is not None and proc.returncode not in ok_codes:
         print(
