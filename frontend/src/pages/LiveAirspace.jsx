@@ -61,7 +61,7 @@ export default function LiveAirspace() {
   const knownRef = useRef(new Map());
   const viewRef = useRef(null);
   const renderRef = useRef(() => {});
-  const selectRef = useRef(() => {});
+  const selectRef = useRef(/** @type {(hex: string, options?: {additive?: boolean}) => void} */ (() => {}));
   const selectedRef = useRef(new Set());
   const replayRef = useRef({ frames: [], fields: [], index: 0, timer: null, controller: null, prev: new Map() });
   const replayStateRef = useRef(null);
@@ -79,11 +79,11 @@ export default function LiveAirspace() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [mapError, setMapError] = useState(null);
-  const [feed, setFeed] = useState({ status: "loading" });
+  const [feed, setFeed] = useState(/** @type {{status: string, reason?: string, fetchedAt?: string, count?: number, coverage?: any}} */ ({ status: "loading" }));
   const [aircraftList, setAircraftList] = useState([]);
   const [details, setDetails] = useState({});
   const [liveStatus, setLiveStatus] = useState(null);
-  const [sourceErrors, setSourceErrors] = useState({});
+  const [sourceErrors, setSourceErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [youPosition, setYouPosition] = useState(null);
   const [geoError, setGeoError] = useState(null);
   const [viewVersion, setViewVersion] = useState(0);
@@ -397,7 +397,7 @@ export default function LiveAirspace() {
     }, ((current.interval_s || 10) * 1000) / Math.max(1, replayStateRef.current.speed));
   }, [showFrame]);
 
-  const loadReplayRef = useRef(() => {});
+  const loadReplayRef = useRef(/** @type {(tsMs: number, options?: {reset?: boolean}) => any} */ (() => {}));
   const loadReplay = useCallback(async (tsMs, { reset = true } = {}) => {
     const view = viewRef.current;
     if (!view?.bounds) return;

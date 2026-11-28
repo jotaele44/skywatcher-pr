@@ -231,6 +231,10 @@ export function trailSegments(points, { gapMs = 10 * 60_000 } = {}) {
 }
 
 // ── GeoJSON ─────────────────────────────────────────────────────────────────
+/**
+ * @param {Array<any>} aircraft
+ * @param {{labels?: boolean, extended?: boolean, selected?: Set<string>, units?: string}} [options]
+ */
 export function aircraftFeatureCollection(aircraft, { labels, extended, selected = new Set(), units = "nautical" } = {}) {
   return {
     type: "FeatureCollection",

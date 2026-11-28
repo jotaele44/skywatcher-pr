@@ -39,6 +39,19 @@ export function rasterBaseStyle(entry, apiBase) {
 }
 
 export class LiveMapEngine {
+  /**
+   * @param {object} options
+   * @param {any} options.maplibregl - the MapLibre GL JS module.
+   * @param {HTMLElement} options.container
+   * @param {{center: number[], zoom: number, bearing?: number, pitch?: number}} options.viewport
+   * @param {string} options.baseLayerId
+   * @param {string} [options.customTemplate]
+   * @param {string} [options.apiBase]
+   * @param {(hex: string, options: {additive: boolean}) => void} [options.onSelect]
+   * @param {(view: {center: number[], zoom: number, bounds: number[]}) => void} [options.onViewChange]
+   * @param {(sourceId: string, message: string) => void} [options.onSourceError]
+   * @param {(engine: LiveMapEngine) => void} [options.onReady]
+   */
   constructor({ maplibregl, container, viewport, baseLayerId, customTemplate, apiBase = "", onSelect, onViewChange, onSourceError, onReady }) {
     if (!maplibregl?.Map) throw new Error("MapLibre GL JS is unavailable.");
     this.maplibregl = maplibregl;

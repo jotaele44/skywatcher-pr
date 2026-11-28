@@ -10,11 +10,11 @@
       "measured": "2026-11-27 on main 91b8a96, mypy 2.4.1, scope [tool.mypy].files in pyproject.toml"
     },
     "tsc": {
-      "max_errors": 318,
+      "max_errors": 265,
       "pattern": "error TS[0-9]+:",
       "ok_exit_codes": [0, 1],
       "incomplete_patterns": ["error TS5[0-9]{3}:", "error TS18003:"],
-      "measured": "2026-11-27 on main 91b8a96, TypeScript 5.9.3, frontend/jsconfig.json with maxNodeModuleJsDepth 0 (JavaScript inside node_modules is not type-checked); re-measured 2026-11-28 under TypeScript 7.0.2 with strict false set explicitly: same 318"
+      "measured": "2026-11-28, TypeScript 7.0.2, frontend/jsconfig.json (strict false, maxNodeModuleJsDepth 0: JavaScript inside node_modules is not type-checked); 265 after typing the live airspace map (was 318)"
     }
   }
 }
